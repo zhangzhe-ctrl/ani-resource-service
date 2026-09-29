@@ -320,8 +320,8 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-05.4 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
 | IMG-05.5 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
 | IMG-05.6 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
-| IMG-06.1 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
-| IMG-06.2 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
+| IMG-06.1 | pass | pass | blocked | n_a | [Resource sub-gate](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-resource.md); exact SHA 71aa986, mTLS/race/PG/verify |
+| IMG-06.2 | pass | pass | blocked | n_a | [Resource sub-gate](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-resource.md); exact SHA 71aa986, mTLS/race/PG/verify |
 | IMG-06.3 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
 | IMG-06.4 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
 | IMG-06.5 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
