@@ -1,8 +1,8 @@
 # Image MVP 有界交付与续跑入口
 
 本记录交付已完成的后端代码和独立验证，**MVP未完成**。当前状态唯一入口为
-[Resource执行账本](../../../status.md#image-mvp)。live profile、普通容器owner/Namespace
-绑定、可写租户Console仓库三个输入缺失；没有共享Harbor/集群部署或产品验收。
+[Resource执行账本](../../../status.md#image-mvp)。用户于2026-09-30明确要求不做前端对接，IMG-09/A30移出本轮范围。
+live profile与普通容器owner/Namespace绑定仍缺失；没有共享Harbor/集群部署或产品验收。
 
 ## 分支与源码
 
@@ -10,7 +10,7 @@
 |---|---|---|
 | Resource | 基线 `a4ca2a0fcb18346fff27f682a5244874ca4c60c8`；已验代码 `62ecc67b839dd1040468323f8c316189a0c30653` | `codex/image-mvp-20260930` 已推；后续仅证据/说明文档提交 |
 | Governance | 实际基线 `d1a804f1d35d7294cb7eab48ee3f256d9d2482b5`；已验 `d64d6ee478801795afadb4573ba25f8c2de6b7fc` | 同名review分支已推；原checkout的 `_agent/` 保留 |
-| Console候选 | 基线 `47233a7279c6ec563ea2842192379bf14546f6e8`；本地准备 `674f2f0b09be0faf2b36ff334f291ad2575e21d7` | 未推、未生成、未验证；[权限阻塞](IMG-09-access-blocker.md) |
+| Console候选 | 基线 `47233a7279c6ec563ea2842192379bf14546f6e8`；本地准备 `674f2f0b09be0faf2b36ff334f291ad2575e21d7` | 仅保留未发布的历史准备；用户已排除前端对接，非本轮交付 |
 | 普通容器owner | 未找到符合范围的非ANI仓库/创建方法/tenant Namespace权威解析 | blocked；不拿KServe或技术Pod代替 |
 
 没有merge/rebase/amend/force-push、正式发布或PR合并。审阅时以候选代码SHA和各日志内
@@ -77,9 +77,8 @@ Root Network迁移bytes/checksum、旧RPC/SAN/迁移语义保留；Image迁移�
 2. owner：提供实际非ANI普通容器仓库/SHA/Create方法和tenant Namespace权威解析。
    再实现IMG-08的受信端口、固定意图持久化、唯一Namespace Secret generation/ownership及Always。
    运行pull凭证受控更换尚未接通，不能用手工改DB/Harbor密码代替owner同步。
-3. 前端：为当前身份开放候选仓write权限或明确另一个可写目标。先核对目标与现有本地准备提交，
-   push后才在Fedora导入OpenAPI/生成类型，实现列表/过滤/受控凭证弹窗/登记维护并跑原npm verify。
-   真实容器选择依赖owner绑定，不新造替代创建页。
+3. 前端：用户已明确排除，本轮不要求写权限，不恢复候选提交或增加页面。
+   已发生的[准备与权限错误](IMG-09-access-blocker.md)仅作为历史记录保留。
 4. 所有恢复继续同一个Source-first循环和Fedora既有重锁/预算；检查待定command和实际资源ID后
    才重试，不通过换key认领不明对象。原失败日志不能被覆盖成后续pass。
 

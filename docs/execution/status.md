@@ -279,13 +279,13 @@ NET-05 验收完成，按用户后续授权发布 Network main，ANI 成果继�
 
 ## Image MVP
 
-Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline and bindings](records/IMAGE-MVP/img-20260929T1718Z/README.md). Local edits/Git/transfer only; all generation and validation Fedora. This section is the only current Image ledger. Network history above retains its original scope.
+Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline and bindings](records/IMAGE-MVP/img-20260929T1718Z/README.md). Local edits/Git/transfer only; all generation and validation Fedora. This section is the only current Image ledger. Network history above retains its original scope. User scope update (2026-09-30): frontend integration is excluded; IMG-09 and A30 are n_a by explicit instruction, not passed.
 
 | Task | code | isolated | live | product | Evidence / next action |
 |---|---|---|---|---|---|
 | IMG-00.1 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
 | IMG-00.2 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
-| IMG-00.3 | blocked | not_run | blocked | blocked | frontend found; consumer/namespace owner unconfirmed |
+| IMG-00.3 | blocked | not_run | blocked | blocked | frontend excluded by user; consumer/namespace owner unconfirmed |
 | IMG-00.4 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
 | IMG-00.5 | n_a | n_a | blocked | blocked | approved live profile, Harbor version and TLS binding missing |
 | IMG-00.6 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
@@ -337,12 +337,12 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-08.4 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
 | IMG-08.5 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
 | IMG-08.6 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
-| IMG-09.1 | blocked | not_run | blocked | blocked | [Frontend access blocker](records/IMAGE-MVP/img-20260929T1718Z/IMG-09-access-blocker.md); local preparation 674f2f0 unpushed; GitHub write permission denied |
-| IMG-09.2 | blocked | not_run | blocked | blocked | [Frontend access blocker](records/IMAGE-MVP/img-20260929T1718Z/IMG-09-access-blocker.md); local preparation 674f2f0 unpushed; GitHub write permission denied |
-| IMG-09.3 | blocked | not_run | blocked | blocked | [Frontend access blocker](records/IMAGE-MVP/img-20260929T1718Z/IMG-09-access-blocker.md); local preparation 674f2f0 unpushed; GitHub write permission denied |
-| IMG-09.4 | blocked | not_run | blocked | blocked | [Frontend access blocker](records/IMAGE-MVP/img-20260929T1718Z/IMG-09-access-blocker.md); local preparation 674f2f0 unpushed; GitHub write permission denied |
-| IMG-09.5 | blocked | not_run | blocked | blocked | [Frontend access blocker](records/IMAGE-MVP/img-20260929T1718Z/IMG-09-access-blocker.md); local preparation 674f2f0 unpushed; GitHub write permission denied |
-| IMG-09.6 | blocked | not_run | blocked | blocked | Frontend write permission and IMG-08 ordinary-container owner missing |
+| IMG-09.1 | n_a | n_a | n_a | n_a | User explicitly excluded frontend integration on 2026-09-30; preparation 674f2f0 remains local/unpublished, no frontend delivery claimed |
+| IMG-09.2 | n_a | n_a | n_a | n_a | User explicitly excluded frontend integration on 2026-09-30; preparation 674f2f0 remains local/unpublished, no frontend delivery claimed |
+| IMG-09.3 | n_a | n_a | n_a | n_a | User explicitly excluded frontend integration on 2026-09-30; preparation 674f2f0 remains local/unpublished, no frontend delivery claimed |
+| IMG-09.4 | n_a | n_a | n_a | n_a | User explicitly excluded frontend integration on 2026-09-30; preparation 674f2f0 remains local/unpublished, no frontend delivery claimed |
+| IMG-09.5 | n_a | n_a | n_a | n_a | User explicitly excluded frontend integration on 2026-09-30; preparation 674f2f0 remains local/unpublished, no frontend delivery claimed |
+| IMG-09.6 | n_a | n_a | n_a | n_a | User explicitly excluded frontend integration on 2026-09-30; preparation 674f2f0 remains local/unpublished, no frontend delivery claimed |
 | IMG-10.1 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
 | IMG-10.2 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
 | IMG-10.3 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
@@ -355,4 +355,4 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-11.4 | running | running | n_a | n_a | [Bounded handoff](records/IMAGE-MVP/img-20260929T1718Z/HANDOFF.md) and review scope prepared; final cleanup evidence pending |
 | IMG-11.5 | running | n_a | n_a | n_a | [Checkpoint](records/IMAGE-MVP/img-20260929T1718Z/CHECKPOINT.md); active original gates, then external input blockers |
 
-IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: finish original Network regression and bounded handoff. IMG-08 requires owner/Namespace binding; IMG-09 requires writable frontend target; live requires approved profile.
+IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: finish original Network regression and bounded handoff. IMG-08 requires owner/Namespace binding; Frontend integration is excluded by user instruction; live requires approved profile.

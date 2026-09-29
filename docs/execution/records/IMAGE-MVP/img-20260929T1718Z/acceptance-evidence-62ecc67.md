@@ -37,7 +37,7 @@ Resource当前Image全套日志见[IMG-07](IMG-07-smoke.md)，Governance日志�
 | A27 产品创建 | 没有产品创建记录 | 同上；技术helper/Pod不算该项 |
 | A28 runtime imageID | 根Digest解析用例只覆盖用例层 | 实际Pod spec/imageID子manifest语义未测 |
 | A29 节点缓存/其他入口 | 没有节点/准入写入 | 共享节点缓存及其他Pod入口边界未测 |
-| A30 UI | 候选Console只有未推送、未验证的契约准备提交 | 写权限缺失；页面与真实选择运行未实现 |
+| A30 UI | 用户于2026-09-30明确排除前端对接；n_a，不是pass | 不属于本轮验收；既有本地准备未发布 |
 | A31 全量门禁 | Image定向/真PG/race/3mutation/verify通过；原Network integration已通过，race/mutation另记录 | Governance默认优化race仍有OOM限制；原Network最终结果见最终归档 |
 | A32 cleanup | Image/Governance隔离fixture删除日志、ID/ownership检查 | 没有live资源创建；不能用空清单声称真实清理流程已验收 |
 

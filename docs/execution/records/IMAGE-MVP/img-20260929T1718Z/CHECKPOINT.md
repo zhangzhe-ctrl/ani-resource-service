@@ -2,10 +2,11 @@
 
 Recorded 2026-09-29T21:14Z. Current authority remains Resource `docs/execution/status.md`.
 Goal is active and incomplete; no claim of completion or work after an agent session ends.
+User steering on 2026-09-30: do not perform frontend integration. IMG-09/A30 are excluded, not pass; do not resume Console work or request its write permission.
 
 - Resource runtime code verified at `62ecc67b839dd1040468323f8c316189a0c30653`; latest pushed documentation `e3142cf5ea891a7439945ef12de33ff687f8b5d6`.
 - Governance clean pushed `d64d6ee478801795afadb4573ba25f8c2de6b7fc`; default build/HTTP/old data-service-server regressions pass. Default optimized race OOM retained; full race instrumentation with only generated Ent inlining disabled passed. Details in IMG-06-governance.
-- Console independent worktree `/home/chabking/workspace/.worktrees/console-image-mvp-20260930`, local preparation commit `674f2f0b09be0faf2b36ff334f291ad2575e21d7`, original master untouched. SSH push denied to zhangzhe-ctrl, HTTPS stalled own Git terminated exit143; remote review branch absent. Bundle transferred only, no unpushed generation/test. Writable frontend input requested asynchronously.
+- Console independent worktree `/home/chabking/workspace/.worktrees/console-image-mvp-20260930`, local preparation commit `674f2f0b09be0faf2b36ff334f291ad2575e21d7`, original master untouched. SSH push denied to zhangzhe-ctrl, HTTPS stalled own Git terminated exit143; remote review branch absent. Bundle transferred only, no unpushed generation/test. The user subsequently excluded frontend integration; this local preparation is retained only as history.
 - IMG-07 CLI/platform/smoke code and isolated gates pass; evidence archived. Live profile remains unapproved. Smoke checks reject it before workdir or network. No shared Harbor/cluster writes.
 - IMG-08 actual ordinary-container owner/Create/tenant Namespace binding remains missing. Do not infer ownership from KServe, BOSS or old ANI. No ANI code read or modified.
 
@@ -23,5 +24,5 @@ The unchanged legacy tenant-mutation script requires `.tools/bin/sqlc`; `state/n
 
 1. Wait for actual Network gate exit; if failure, retain original logs and diagnose/reproduce relevant failing case, without lowering gates or changing unrelated Network behavior. Archive exact commands/log hashes/IDs/cleanup. Resume queued document checker and fix only actual document defects.
 2. Finish source/acceptance snapshot, update HANDOFF and the sole ledger with real Network results and cleanup; document all blocked/not_run live/product tasks. Verify final post-test diff remains documentation-only; push normal review commit.
-3. Missing inputs: approved live profile; actual non-ANI ordinary-container owner/Namespace resolver; writable frontend target. Resume corresponding blocked batches only after those are resolved. Do not invent a runtime listener/owner or publish to an unapproved alternate frontend fork.
+3. Missing inputs: approved live profile; actual non-ANI ordinary-container owner/Namespace resolver. Frontend is explicitly excluded. Resume corresponding blocked batches only after those are resolved. Do not invent a runtime listener/owner or publish to an unapproved alternate frontend fork.
 4. Keep all initial dirty work, local worktrees, Fedora snapshots/caches/evidence. Only exact owned test containers may be cleaned; no shared resource cleanup or global GC.
