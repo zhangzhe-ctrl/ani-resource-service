@@ -1,0 +1,25 @@
+2026-09-29T20:55:46Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/62ecc67b839dd1040468323f8c316189a0c30653'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 3d83c76 docs(image): import MVP plan and freeze execution bindings
+HEAD 目前位于 62ecc67 fix(image): align smoke preflight with Harbor project lookup
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/62ecc67b839dd1040468323f8c316189a0c30653
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+{
+  "source_sha": "62ecc67b839dd1040468323f8c316189a0c30653",
+  "files": []
+}
+2026-09-29T20:55:54Z
+exit=0

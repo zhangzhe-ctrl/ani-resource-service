@@ -329,25 +329,25 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-07.1 | pass | pass | blocked | n_a | [Platform evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-platform.md); exact 2b6a099, PG/race/3 mutations/verify; live profile missing |
 | IMG-07.2 | pass | pass | blocked | n_a | [Platform evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-platform.md); exact 2b6a099, PG/race/3 mutations/verify; live profile missing |
 | IMG-07.3 | pass | pass | blocked | n_a | [Platform evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-platform.md); exact 2b6a099, PG/race/3 mutations/verify; live profile missing |
-| IMG-07.4 | running | not_run | blocked | n_a | Implement bounded init/push/register/resolve driver; no approved live profile |
-| IMG-07.5 | running | not_run | blocked | n_a | Platform archive complete; smoke evidence pending |
-| IMG-08.1 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-08.2 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-08.3 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-08.4 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-08.5 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-08.6 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-09.1 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-09.2 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-09.3 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-09.4 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-09.5 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-09.6 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-10.1 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-10.2 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-10.3 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-10.4 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-10.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-07.4 | pass | pass | blocked | n_a | [Smoke evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-smoke.md); exact 62ecc67; driver/tests/PG/race/mutations/verify pass; no approved profile |
+| IMG-07.5 | pass | pass | blocked | n_a | [Smoke evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-smoke.md); failures/generation/hash/cleanup archived; live not executed |
+| IMG-08.1 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
+| IMG-08.2 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
+| IMG-08.3 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
+| IMG-08.4 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
+| IMG-08.5 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
+| IMG-08.6 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
+| IMG-09.1 | blocked | not_run | blocked | blocked | [Frontend access blocker](records/IMAGE-MVP/img-20260929T1718Z/IMG-09-access-blocker.md); local preparation 674f2f0 unpushed; GitHub write permission denied |
+| IMG-09.2 | blocked | not_run | blocked | blocked | [Frontend access blocker](records/IMAGE-MVP/img-20260929T1718Z/IMG-09-access-blocker.md); local preparation 674f2f0 unpushed; GitHub write permission denied |
+| IMG-09.3 | blocked | not_run | blocked | blocked | [Frontend access blocker](records/IMAGE-MVP/img-20260929T1718Z/IMG-09-access-blocker.md); local preparation 674f2f0 unpushed; GitHub write permission denied |
+| IMG-09.4 | blocked | not_run | blocked | blocked | [Frontend access blocker](records/IMAGE-MVP/img-20260929T1718Z/IMG-09-access-blocker.md); local preparation 674f2f0 unpushed; GitHub write permission denied |
+| IMG-09.5 | blocked | not_run | blocked | blocked | [Frontend access blocker](records/IMAGE-MVP/img-20260929T1718Z/IMG-09-access-blocker.md); local preparation 674f2f0 unpushed; GitHub write permission denied |
+| IMG-09.6 | blocked | not_run | blocked | blocked | Frontend write permission and IMG-08 ordinary-container owner missing |
+| IMG-10.1 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
+| IMG-10.2 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
+| IMG-10.3 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
+| IMG-10.4 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
+| IMG-10.5 | running | running | blocked | blocked | Resource 62ecc67 full original integration/race/tenant-mutations running on Fedora; Image gates pass; Governance bounded-compiler caveat retained |
 | IMG-10.6 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-11.1 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-11.2 | not_run | not_run | not_run | not_run | dependency gate pending |
@@ -355,4 +355,4 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-11.4 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-11.5 | not_run | not_run | not_run | not_run | dependency gate pending |
 
-IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: IMG-07 smoke driver and IMG-09 independent UI work; missing live/consumer inputs do not block independent tasks.
+IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: finish original Network regression and bounded handoff. IMG-08 requires owner/Namespace binding; IMG-09 requires writable frontend target; live requires approved profile.

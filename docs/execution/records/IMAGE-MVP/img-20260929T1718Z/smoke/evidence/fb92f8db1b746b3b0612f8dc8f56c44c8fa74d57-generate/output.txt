@@ -1,0 +1,9 @@
+2026-09-29T20:53:58Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/fb92f8db1b746b3b0612f8dc8f56c44c8fa74d57'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+致命错误：无法读取树（fb92f8db1b746b3b0612f8dc8f56c44c8fa74d57）
+2026-09-29T20:53:58Z
+exit=128

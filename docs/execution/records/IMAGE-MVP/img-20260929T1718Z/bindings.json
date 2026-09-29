@@ -21,12 +21,14 @@
     "images": "frontends/console/src/routes/_authenticated/images/index.tsx: ImagesPage (VM ISO, preserve)",
     "generation": "frontends/console/scripts/codegen.sh",
     "components": "React + Arco + TanStack Router/Query",
-    "binding_status": "candidate_awaiting_target_confirmation",
+    "binding_status": "identified_candidate; review push denied to zhangzhe-ctrl; writable target required",
     "generation_sources": [
       "openapi/v1.yaml",
       "openapi/services/v1.yaml"
     ],
-    "authentication": "src/api/client.ts: coreApi + useAuthStore; legacy /auth/refresh, not yet a Governance Image client"
+    "authentication": "src/api/client.ts: coreApi + useAuthStore; legacy /auth/refresh, not yet a Governance Image client",
+    "prepared_sha": "674f2f0b09be0faf2b36ff334f291ad2575e21d7",
+    "review_worktree": "/home/chabking/workspace/.worktrees/console-image-mvp-20260930"
   },
   "consumer": {
     "status": "blocked",

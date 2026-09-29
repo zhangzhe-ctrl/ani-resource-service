@@ -1,0 +1,36 @@
+2026-09-29T20:54:05Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/fb92f8d87642dee4a48ed750c6cc36ed4a520bb9'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 3d83c76 docs(image): import MVP plan and freeze execution bindings
+HEAD 目前位于 fb92f8d feat(image): add approved-profile Harbor technical smoke driver
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/fb92f8d87642dee4a48ed750c6cc36ed4a520bb9
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+{
+  "source_sha": "fb92f8d87642dee4a48ed750c6cc36ed4a520bb9",
+  "files": [
+    {
+      "path": "scripts/image-smoke-runtime/main.go",
+      "base_sha256": "e92162ab0ae9583608a79ec8d8d3a1566491c988c92467e8299d2e0a1d2b4edd",
+      "sha256": "442de7136761da533931806c3b476ae5bda562d62f8d4a50a5dd96785a214a3b"
+    },
+    {
+      "path": "scripts/image-smoke-runtime/main_test.go",
+      "base_sha256": "debc912dca08ac2d251a126c358cc13f1f2a5953bbab5f17d918c8969ad73b74",
+      "sha256": "57ba200a44f4a3040396a9b57ebedf5f954a9c5db957bd48b3857e6ba3857f17"
+    }
+  ]
+}
+2026-09-29T20:54:11Z
+exit=0

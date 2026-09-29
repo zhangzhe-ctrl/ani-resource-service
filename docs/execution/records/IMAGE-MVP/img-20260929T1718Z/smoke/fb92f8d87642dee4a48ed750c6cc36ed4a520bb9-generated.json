@@ -1,0 +1,15 @@
+{
+  "source_sha": "fb92f8d87642dee4a48ed750c6cc36ed4a520bb9",
+  "files": [
+    {
+      "path": "scripts/image-smoke-runtime/main.go",
+      "base_sha256": "e92162ab0ae9583608a79ec8d8d3a1566491c988c92467e8299d2e0a1d2b4edd",
+      "sha256": "442de7136761da533931806c3b476ae5bda562d62f8d4a50a5dd96785a214a3b"
+    },
+    {
+      "path": "scripts/image-smoke-runtime/main_test.go",
+      "base_sha256": "debc912dca08ac2d251a126c358cc13f1f2a5953bbab5f17d918c8969ad73b74",
+      "sha256": "57ba200a44f4a3040396a9b57ebedf5f954a9c5db957bd48b3857e6ba3857f17"
+    }
+  ]
+}
