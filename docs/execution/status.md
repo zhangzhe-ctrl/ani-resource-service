@@ -289,18 +289,18 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-00.4 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
 | IMG-00.5 | n_a | n_a | blocked | blocked | approved live profile, Harbor version and TLS binding missing |
 | IMG-00.6 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
-| IMG-01.1 | running | not_run | n_a | n_a | contract/pure-domain inputs; Fedora generation and tests pending |
-| IMG-01.2 | running | not_run | n_a | n_a | contract/pure-domain inputs; Fedora generation and tests pending |
-| IMG-01.3 | running | not_run | n_a | n_a | contract/pure-domain inputs; Fedora generation and tests pending |
-| IMG-01.4 | running | not_run | n_a | n_a | contract/pure-domain inputs; Fedora generation and tests pending |
-| IMG-01.5 | running | not_run | n_a | n_a | contract/pure-domain inputs; Fedora generation and tests pending |
-| IMG-01.6 | running | not_run | n_a | n_a | contract/pure-domain inputs; Fedora generation and tests pending |
-| IMG-02.1 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-02.2 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-02.3 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-02.4 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-02.5 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-02.6 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-01.1 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
+| IMG-01.2 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
+| IMG-01.3 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
+| IMG-01.4 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
+| IMG-01.5 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
+| IMG-01.6 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
+| IMG-02.1 | running | not_run | n_a | n_a | independent Image schema/sqlc/role and true-PG work |
+| IMG-02.2 | running | not_run | n_a | n_a | independent Image schema/sqlc/role and true-PG work |
+| IMG-02.3 | running | not_run | n_a | n_a | independent Image schema/sqlc/role and true-PG work |
+| IMG-02.4 | running | not_run | n_a | n_a | independent Image schema/sqlc/role and true-PG work |
+| IMG-02.5 | running | not_run | n_a | n_a | independent Image schema/sqlc/role and true-PG work |
+| IMG-02.6 | running | not_run | n_a | n_a | independent Image schema/sqlc/role and true-PG work |
 | IMG-03.1 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-03.2 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-03.3 | not_run | not_run | not_run | not_run | dependency gate pending |
@@ -355,4 +355,4 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-11.4 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-11.5 | not_run | not_run | not_run | not_run | dependency gate pending |
 
-IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: IMG-01 contract and pure-domain implementation; missing live/consumer inputs do not block backend independent tasks.
+IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: IMG-02 independent migrations, tenant SQL and true PostgreSQL; missing live/consumer inputs do not block backend independent tasks.

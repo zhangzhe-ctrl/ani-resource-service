@@ -1,6 +1,6 @@
 {
   "format": "image-mvp-source-lock/v1",
-  "observed_at": "2026-09-29T17:18:00Z",
+  "observed_at": "2026-09-29T17:08:33Z",
   "run_id": "img-20260929T1718Z",
   "repositories": {
     "resource": {
@@ -28,11 +28,11 @@
       "binding_status": "blocked: no ordinary-container owner in inspected non-ANI services"
     },
     "frontend": {
-      "repository": "ani-console (local repository)",
+      "repository": "https://github.com/liangzai006/ani-console",
       "execution_sha": "47233a7279c6ec563ea2842192379bf14546f6e8",
       "route_file": "frontends/console/src/routes/_authenticated/images/index.tsx",
       "api_generation_command": "npm run codegen",
-      "binding_status": "bound_existing_iso_route_preserved"
+      "binding_status": "candidate_awaiting_target_confirmation"
     }
   },
   "excluded_repositories": [
@@ -47,7 +47,13 @@
     "ssh_host": "fedora",
     "actual_home": "/home/chabking",
     "run_root": "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z",
-    "shared_heavy_lock": "/home/chabking/workspace/ani-network-service-runs/net05a-heavy.lock"
+    "shared_heavy_lock": "/home/chabking/workspace/ani-network-service-runs/net05a-heavy.lock",
+    "task_tmpdir": "/home/chabking/.im-1718",
+    "tools": {
+      "go": "go1.26.7-X:nodwarf5",
+      "buf": "1.60.0",
+      "sqlc": "1.31.1"
+    }
   },
   "note": "Observed inputs; no live profile approved; historical Network gates do not validate Image."
 }
