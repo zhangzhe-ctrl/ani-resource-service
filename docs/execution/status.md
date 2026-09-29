@@ -301,19 +301,19 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-02.4 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
 | IMG-02.5 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
 | IMG-02.6 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
-| IMG-03.1 | running | not_run | blocked | n_a | pinned Harbor API adapter; approved live profile missing |
-| IMG-03.2 | running | not_run | blocked | n_a | pinned Harbor API adapter; approved live profile missing |
-| IMG-03.3 | running | not_run | blocked | n_a | pinned Harbor API adapter; approved live profile missing |
-| IMG-03.4 | running | not_run | blocked | n_a | pinned Harbor API adapter; approved live profile missing |
-| IMG-03.5 | running | not_run | blocked | n_a | pinned Harbor API adapter; approved live profile missing |
-| IMG-03.6 | running | not_run | blocked | n_a | pinned Harbor API adapter; approved live profile missing |
-| IMG-04.1 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-04.2 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-04.3 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-04.4 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-04.5 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-04.6 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-04.7 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-03.1 | pass | pass | blocked | n_a | [IMG-03 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-03.md); exact SHA c17d64f, race + verify; live profile missing |
+| IMG-03.2 | pass | pass | blocked | n_a | [IMG-03 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-03.md); exact SHA c17d64f, race + verify; live profile missing |
+| IMG-03.3 | pass | pass | blocked | n_a | [IMG-03 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-03.md); exact SHA c17d64f, race + verify; live profile missing |
+| IMG-03.4 | pass | pass | blocked | n_a | [IMG-03 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-03.md); exact SHA c17d64f, race + verify; live profile missing |
+| IMG-03.5 | pass | pass | blocked | n_a | [IMG-03 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-03.md); exact SHA c17d64f, race + verify; live profile missing |
+| IMG-03.6 | pass | pass | blocked | n_a | [IMG-03 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-03.md); exact SHA c17d64f, race + verify; live profile missing |
+| IMG-04.1 | running | not_run | blocked | n_a | tenant space and credential recovery; approved live profile missing |
+| IMG-04.2 | running | not_run | blocked | n_a | tenant space and credential recovery; approved live profile missing |
+| IMG-04.3 | running | not_run | blocked | n_a | tenant space and credential recovery; approved live profile missing |
+| IMG-04.4 | running | not_run | blocked | n_a | tenant space and credential recovery; approved live profile missing |
+| IMG-04.5 | running | not_run | blocked | n_a | tenant space and credential recovery; approved live profile missing |
+| IMG-04.6 | running | not_run | blocked | n_a | tenant space and credential recovery; approved live profile missing |
+| IMG-04.7 | running | not_run | blocked | n_a | tenant space and credential recovery; approved live profile missing |
 | IMG-05.1 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-05.2 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-05.3 | not_run | not_run | not_run | not_run | dependency gate pending |
@@ -355,4 +355,4 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-11.4 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-11.5 | not_run | not_run | not_run | not_run | dependency gate pending |
 
-IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: IMG-03 Harbor adapter and AES-GCM; missing live/consumer inputs do not block backend independent tasks.
+IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: IMG-04 persisted space and credential recovery; missing live/consumer inputs do not block backend independent tasks.
