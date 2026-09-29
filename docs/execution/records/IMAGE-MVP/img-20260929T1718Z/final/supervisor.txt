@@ -1,0 +1,6 @@
+run-p920142-i9300000.scope
+9月 30 05:34:02 fedora systemd[2621756]: Started run-p920142-i9300000.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/final-docs-run.sh bd038b5a7813e6dd879ae54227955339c26e13ac.
+9月 30 05:34:05 fedora python3[920200]: detected unhandled Python exception in '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/final-snapshot.py'
+9月 30 05:34:05 fedora systemd[2621756]: run-p920142-i9300000.scope: Consumed 1.961s CPU time over 3.291s wall clock time, 257.7M memory peak.
+run-p920477-i9300043.scope
+9月 30 05:35:56 fedora systemd[2621756]: Started run-p920477-i9300043.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/final-docs-run-v2.sh bd038b5a7813e6dd879ae54227955339c26e13ac final-retry.

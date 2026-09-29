@@ -1,6 +1,6 @@
 # Image MVP continuation checkpoint
 
-Recorded after 2026-09-29T21:29:55Z cleanup. Current authority remains Resource `docs/execution/status.md`.
+Recorded after 2026-09-29T21:35:56Z final source/document checks. Current authority remains Resource `docs/execution/status.md`.
 The MVP is incomplete. There is no promise of work continuing after an agent session ends.
 
 ## Fixed code and completed work
@@ -9,7 +9,7 @@ The MVP is incomplete. There is no promise of work continuing after an agent ses
 - Governance clean pushed `d64d6ee478801795afadb4573ba25f8c2de6b7fc`; default build/HTTP/old data-service-server regressions pass. Default optimized race OOM retained; full race instrumentation with only generated Ent inlining disabled passed. Details in [IMG-06](IMG-06-governance.md).
 - IMG-01—07 code/isolated evidence archived. Image verify/PG/race/13 process crashes/3 mutations pass at exact62ecc67. Approved-profile smoke rejects the unapproved input before workdir or network; no shared Harbor/cluster writes.
 - Original Network integration/race/6 tenant mutations all pass at62ecc67, overall exit0 at21:28:52Z. The 3 created PG container IDs were independently confirmed absent at21:29:55Z. [Gate and cleanup record](IMG-10-regression.md).
-- Early documentation check at e3142cf exit0/368 links/8 root migration checksums; final documentation and source snapshot will be checked separately. No active heavy gate remains.
+- Final documentation/source check at bd038b5 exit0:387 links/8 root migration checksums, source entries equal tested62ecc67, generated file hashes and72 archived evidence checksums. Missing shallow-clone baseline was resolved by an exact baseline bundle; failed attempt retained. [Review evidence](IMG-11-review.md). No active heavy gate remains.
 
 ## User-directed blocks
 
@@ -20,8 +20,8 @@ The MVP is incomplete. There is no promise of work continuing after an agent ses
 
 ## Remaining safe actions
 
-1. Finish final exact-SHA documentation/source equality checks and archive their manifest; normal review push only. Compare all non-document Git entries against tested62ecc67 and verify generated-contract identity against the Governance pin71aa986.
-2. After that independent closeout, do not advance blocked container/frontend/live batches until their conditions are explicitly resolved. Report the incomplete scope and resume from those batches when appropriate; no repeated permission request is needed now.
+1. Closeout evidence is archived. The final records-only push receives the same Fedora document/source check; exact final HEAD is available from Git. All non-document Git entries remain equal to tested62ecc67; generated-contract identity matches the Governance pin71aa986.
+2. Independent closeout is complete. Do not advance blocked container/frontend/live batches until their conditions are explicitly resolved. Report the incomplete scope and resume from those batches when appropriate; no repeated permission request is needed now.
 3. Retain initial dirty work, worktrees, Fedora source snapshots/caches/evidence. No shared resource cleanup, global GC, merge, rebase, amend, force-push or release.
 
 Fedora run root `/home/chabking/ani-image-mvp-runs/img-20260929T1718Z`, private TMPDIR `/home/chabking/.im-1718`, existing lock `/home/chabking/workspace/ani-network-service-runs/net05a-heavy.lock`. All future generation/formatting/build/test/DB/image/API-driver work remains Fedora-only with the same source-first commit/push cycle and bounded resources. Recovery starts by reading the sole ledger, exact refs and owned-resource evidence.

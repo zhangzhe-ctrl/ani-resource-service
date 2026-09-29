@@ -349,10 +349,10 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-10.4 | blocked | not_run | blocked | blocked | No approved live profile; user blocks container integration without test conditions; isolated evidence does not satisfy live/product matrix |
 | IMG-10.5 | pass | pass (bounded compiler) | blocked | blocked | [Original Network gates](records/IMAGE-MVP/img-20260929T1718Z/IMG-10-regression.md): 62ecc67 integration/race/6 mutations exit0; Image verify/PG/race/3 mutations pass; Governance default optimized race OOM retained |
 | IMG-10.6 | pass | pass | blocked | blocked | [ID-based cleanup](records/IMAGE-MVP/img-20260929T1718Z/regression/cleanup.json): all isolated Image/Governance/Network fixtures cleaned; no shared live resources created |
-| IMG-11.1 | pass | running | n_a | n_a | Code refs and original Network evidence frozen; final source manifest/document check pending |
-| IMG-11.2 | pass | running | n_a | n_a | Sole ledger updated with actual regression results and explicit user-directed IMG-08/09/live blockers; final document check pending |
-| IMG-11.3 | pass | running | blocked | blocked | Deployment/CLI/smoke/recovery guide written; link check queued; runtime credential replacement requires actual owner |
-| IMG-11.4 | pass | running | n_a | n_a | [Bounded handoff](records/IMAGE-MVP/img-20260929T1718Z/HANDOFF.md), review scope, API/DB contracts and cleanup archived; final document check pending |
+| IMG-11.1 | pass | pass | n_a | n_a | [Source manifest/review evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-11-review.md): exact code, tree, generated hashes, protected paths and documentation-only later changes verified |
+| IMG-11.2 | pass | pass | n_a | n_a | Sole ledger records actual gates and explicit user-directed IMG-08/09/live blockers; source/document evidence archived |
+| IMG-11.3 | pass | pass | blocked | blocked | Deployment/CLI/smoke/recovery guide and links checked; runtime credential replacement requires actual owner and remains unverified |
+| IMG-11.4 | pass | pass | n_a | n_a | [Bounded handoff](records/IMAGE-MVP/img-20260929T1718Z/HANDOFF.md), source manifest, API/DB contracts and cleanup archived; review branches only |
 | IMG-11.5 | pass | n_a | n_a | n_a | [Checkpoint](records/IMAGE-MVP/img-20260929T1718Z/CHECKPOINT.md); no active heavy gates; remaining product/live/frontend conditions blocked |
 
-IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: verify final documentation/source snapshot. IMG-08 is blocked by user direction because no product test conditions; IMG-09 remains blocked pending frontend selection by user direction; live requires approved profile.
+IMG-00 n_a: baseline/import tasks have no product/live behavior. Independent backend closeout complete; MVP remains incomplete. Next unresolved batches: IMG-08 is blocked by user direction because no product test conditions; IMG-09 remains blocked pending frontend selection by user direction; live requires approved profile.
