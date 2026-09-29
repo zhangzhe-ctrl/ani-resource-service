@@ -276,3 +276,83 @@ NET-05 验收完成，按用户后续授权发布 Network main，ANI 成果继�
 2026-09-11 用户明确选择完成本仓交付收尾与提交推送，目标为 `origin/codex/vpc-snat-implementation`。[发布记录](records/VPC-SNAT-PUBLICATION-20260911/README.md)保留完整暂存树、ubuntu 门禁、历史证据的精确属性处理和最终 SBOM 流程。首轮 `make verify`、6 项 tenant-mutations、漏洞/密钥/SBOM/notice 门禁 `pass`；原全量 PG/race 对应的 140 项运行源码仍保持。当前交付分支的真实提交和 exact-SHA CI 以 Git/托管平台为准，不将临时验证提交冒充发布版本。
 
 本次源码交付不解除 kc 外部阻塞，不宣布原生 Overlay 出网通过。Underlay 物理、ANI Gateway/IAM、合并 main、PR、镜像发布和部署继续保持各自边界。
+
+## Image MVP
+
+Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline and bindings](records/IMAGE-MVP/img-20260929T1718Z/README.md). Local edits/Git/transfer only; all generation and validation Fedora. This section is the only current Image ledger. Network history above retains its original scope.
+
+| Task | code | isolated | live | product | Evidence / next action |
+|---|---|---|---|---|---|
+| IMG-00.1 | pass | pending | n_a | n_a | baseline/bindings; remote manifest/doc check pending |
+| IMG-00.2 | pass | pending | n_a | n_a | baseline/bindings; remote manifest/doc check pending |
+| IMG-00.3 | blocked | not_run | blocked | blocked | frontend found; consumer/namespace owner unconfirmed |
+| IMG-00.4 | pass | pending | n_a | n_a | baseline/bindings; remote manifest/doc check pending |
+| IMG-00.5 | n_a | n_a | blocked | blocked | approved live profile, Harbor version and TLS binding missing |
+| IMG-00.6 | pass | pending | n_a | n_a | baseline/bindings; remote manifest/doc check pending |
+| IMG-01.1 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-01.2 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-01.3 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-01.4 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-01.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-01.6 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-02.1 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-02.2 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-02.3 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-02.4 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-02.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-02.6 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-03.1 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-03.2 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-03.3 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-03.4 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-03.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-03.6 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-04.1 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-04.2 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-04.3 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-04.4 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-04.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-04.6 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-04.7 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-05.1 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-05.2 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-05.3 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-05.4 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-05.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-05.6 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-06.1 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-06.2 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-06.3 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-06.4 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-06.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-06.6 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-07.1 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-07.2 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-07.3 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-07.4 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-07.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-08.1 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-08.2 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-08.3 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-08.4 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-08.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-08.6 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-09.1 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-09.2 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-09.3 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-09.4 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-09.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-09.6 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-10.1 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-10.2 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-10.3 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-10.4 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-10.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-10.6 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-11.1 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-11.2 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-11.3 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-11.4 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-11.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+
+IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: remote baseline manifest and documentation checks, then IMG-01; missing live/consumer inputs do not block backend independent tasks.

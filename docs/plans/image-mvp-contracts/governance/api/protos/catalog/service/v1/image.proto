@@ -1,0 +1,275 @@
+// Public DTO design; tenant identity deliberately absent.
+syntax = "proto3";
+package catalog.service.v1;
+option go_package = "go-wind-admin/api/gen/go/catalog/service/v1;catalogpb";
+import "google/protobuf/timestamp.proto";
+
+message ImagePlatform {
+
+  string os = 1;
+
+  string architecture = 2;
+
+  string variant = 3;
+
+}
+
+message ImageSpace {
+
+  string space_id = 1;
+
+  string project_name = 2;
+
+  string registry_authority = 3;
+
+  string state = 4;
+
+  string reason = 5;
+
+  int64 version = 6;
+
+  int64 pull_credential_generation = 7;
+
+  google.protobuf.Timestamp created_at = 8;
+
+  google.protobuf.Timestamp updated_at = 9;
+
+}
+
+message PublisherCredential {
+
+  string space_id = 1;
+
+  int64 generation = 2;
+
+  string username = 3;
+
+  string state = 4;
+
+  int64 version = 5;
+
+  google.protobuf.Timestamp expires_at = 6;
+
+  google.protobuf.Timestamp updated_at = 7;
+
+}
+
+message ImageRegistration {
+
+  string image_id = 1;
+
+  string scope = 2;
+
+  string space_id = 3;
+
+  string display_name = 4;
+
+  string description = 5;
+
+  string repository = 6;
+
+  string source_reference = 7;
+
+  string digest = 8;
+
+  string resolved_reference = 9;
+
+  repeated ImagePlatform platforms = 10;
+
+  repeated string purposes = 11;
+
+  string accelerator = 12;
+
+  int64 version = 13;
+
+  google.protobuf.Timestamp created_at = 14;
+
+  google.protobuf.Timestamp updated_at = 15;
+
+  google.protobuf.Timestamp unregistered_at = 16;
+
+}
+
+message EnsureImageSpaceRequest {
+
+  string slug = 1;
+
+  string idempotency_key = 2;
+
+}
+
+message EnsureImageSpaceResponse {
+
+  ImageSpace space = 1;
+
+}
+
+message GetImageSpaceRequest {
+
+}
+
+message GetImageSpaceResponse {
+
+  ImageSpace space = 1;
+
+}
+
+message GetPublisherCredentialRequest {
+
+}
+
+message GetPublisherCredentialResponse {
+
+  PublisherCredential credential = 1;
+
+}
+
+message IssuePublisherCredentialRequest {
+
+  string idempotency_key = 1;
+
+  int64 expected_version = 2;
+
+}
+
+message IssuePublisherCredentialResponse {
+
+  PublisherCredential credential = 1;
+
+  string secret = 2;
+
+  google.protobuf.Timestamp replay_until = 3;
+
+}
+
+message ResetPublisherCredentialRequest {
+
+  string idempotency_key = 1;
+
+  int64 expected_version = 2;
+
+}
+
+message ResetPublisherCredentialResponse {
+
+  PublisherCredential credential = 1;
+
+  string secret = 2;
+
+  google.protobuf.Timestamp replay_until = 3;
+
+}
+
+message DisablePublisherCredentialRequest {
+
+  int64 expected_version = 1;
+
+  string idempotency_key = 2;
+
+}
+
+message DisablePublisherCredentialResponse {
+
+  PublisherCredential credential = 1;
+
+}
+
+message RegisterImageRequest {
+
+  string image_reference = 1;
+
+  string display_name = 2;
+
+  string description = 3;
+
+  repeated string purposes = 4;
+
+  string accelerator = 5;
+
+  string idempotency_key = 6;
+
+}
+
+message RegisterImageResponse {
+
+  ImageRegistration image = 1;
+
+}
+
+message GetImageRequest {
+
+  string scope = 1;
+
+  string image_id = 2;
+
+}
+
+message GetImageResponse {
+
+  ImageRegistration image = 1;
+
+}
+
+message ListImagesRequest {
+
+  string scope = 1;
+
+  string search = 2;
+
+  repeated string purposes = 3;
+
+  string accelerator = 4;
+
+  int32 limit = 5;
+
+  string cursor = 6;
+
+}
+
+message ListImagesResponse {
+
+  repeated ImageRegistration items = 1;
+
+  string next_cursor = 2;
+
+}
+
+message UpdateImageRequest {
+
+  string image_id = 1;
+
+  string display_name = 2;
+
+  string description = 3;
+
+  repeated string purposes = 4;
+
+  string accelerator = 5;
+
+  int64 expected_version = 6;
+
+  string idempotency_key = 7;
+
+}
+
+message UpdateImageResponse {
+
+  ImageRegistration image = 1;
+
+}
+
+message UnregisterImageRequest {
+
+  string image_id = 1;
+
+  int64 expected_version = 2;
+
+  string idempotency_key = 3;
+
+}
+
+message UnregisterImageResponse {
+
+  ImageRegistration image = 1;
+
+}

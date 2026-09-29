@@ -1,0 +1,41 @@
+{
+  "resource": {
+    "config_validate": "internal/conf/v1/validate.go: Bootstrap.Validate",
+    "composition": "cmd/ani-resource-service/governance.go: runGovernance",
+    "identity": "internal/server/governance.go: GovernanceUnary",
+    "migration": "cmd/ani-resource-service/main.go: main; internal/data/network/postgres.go"
+  },
+  "governance": {
+    "tenant": "app/admin/service/internal/service/network_service.go: ResourceTenantResolver.ResourceTenantID; trustedOperator",
+    "http": "app/admin/service/internal/server/rest_server.go: NewRESTServer",
+    "di": "app/admin/service/cmd/server/wiring_ent.go",
+    "modules": "api/protos/identity/service/v1/module.proto; pkg/constants/module_mapping.go",
+    "bootstrap": "sql/bootstrap/001_initial.sql; no implicit resync or grant authorized",
+    "docs": "docs/START-HERE.md absent; actual entry docs/development.md"
+  },
+  "frontend": {
+    "repo": "ani-console",
+    "sha": "47233a7279c6ec563ea2842192379bf14546f6e8",
+    "create": "frontends/console/src/views/container/ContainerCreatePage.tsx: ContainerInstanceCreatePage; coreApi.POST(/instances)",
+    "route": "frontends/console/src/routes/_authenticated/instances/container/create/route.tsx",
+    "images": "frontends/console/src/routes/_authenticated/images/index.tsx: ImagesPage (VM ISO, preserve)",
+    "generation": "frontends/console/scripts/codegen.sh",
+    "components": "React + Arco + TanStack Router/Query"
+  },
+  "consumer": {
+    "status": "blocked",
+    "namespace_resolution": null,
+    "searched": [
+      "ani-governance/app",
+      "ani-resource-service/internal",
+      "ani-inference-service/internal (KServe, excluded as ordinary container substitute)",
+      "ani-session-gateway/internal (session resolver, not creator)"
+    ],
+    "excluded": "ANI and ANI-derived containment copies not read"
+  },
+  "harbor": {
+    "status": "blocked",
+    "reason": "No approved live profile or management URL/version/CA binding supplied"
+  },
+  "proposed_new_methods": "See docs/specs/image-methods.md; none claimed implemented at IMG-00."
+}

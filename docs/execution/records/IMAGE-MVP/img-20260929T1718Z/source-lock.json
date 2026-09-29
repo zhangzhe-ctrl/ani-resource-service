@@ -1,0 +1,53 @@
+{
+  "format": "image-mvp-source-lock/v1",
+  "observed_at": "2026-09-29T17:18:00Z",
+  "run_id": "img-20260929T1718Z",
+  "repositories": {
+    "resource": {
+      "repository": "zhangzhe-ctrl/ani-resource-service",
+      "observed_sha": "a4ca2a0fcb18346fff27f682a5244874ca4c60c8",
+      "execution_sha": "a4ca2a0fcb18346fff27f682a5244874ca4c60c8",
+      "review_branch": "codex/image-mvp-20260930",
+      "initial_status": "clean",
+      "execution_worktree": "/home/chabking/workspace/ani-resource-service"
+    },
+    "governance": {
+      "repository": "zhangzhe-ctrl/ani-governance",
+      "observed_sha": "b7c249e4b420cbab78a2e8979eab874aba5ffe82",
+      "execution_sha": "d1a804f1d35d7294cb7eab48ee3f256d9d2482b5",
+      "review_branch": "codex/image-mvp-20260930",
+      "initial_status": "untracked _agent/ preserved",
+      "execution_worktree": "/home/chabking/workspace/.worktrees/governance-image-mvp-20260930"
+    },
+    "consumer": {
+      "repository": null,
+      "execution_sha": null,
+      "create_file": null,
+      "create_method": null,
+      "namespace_resolution": null,
+      "binding_status": "blocked: no ordinary-container owner in inspected non-ANI services"
+    },
+    "frontend": {
+      "repository": "ani-console (local repository)",
+      "execution_sha": "47233a7279c6ec563ea2842192379bf14546f6e8",
+      "route_file": "frontends/console/src/routes/_authenticated/images/index.tsx",
+      "api_generation_command": "npm run codegen",
+      "binding_status": "bound_existing_iso_route_preserved"
+    }
+  },
+  "excluded_repositories": [
+    "zhangzhe-ctrl/ANI"
+  ],
+  "harbor": {
+    "reference_version": "v2.15.0",
+    "actual_version": null,
+    "openapi_sha256": null
+  },
+  "remote": {
+    "ssh_host": "fedora",
+    "actual_home": "/home/chabking",
+    "run_root": "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z",
+    "shared_heavy_lock": "/home/chabking/workspace/ani-network-service-runs/net05a-heavy.lock"
+  },
+  "note": "Observed inputs; no live profile approved; historical Network gates do not validate Image."
+}
