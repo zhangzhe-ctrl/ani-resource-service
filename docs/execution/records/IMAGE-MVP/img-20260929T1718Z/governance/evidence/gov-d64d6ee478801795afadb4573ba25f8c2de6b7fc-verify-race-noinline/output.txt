@@ -1,0 +1,59 @@
+2026-09-29T20:24:07Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/d64d6ee478801795afadb4573ba25f8c2de6b7fc-serial
+GOMAXPROCS=1 GOFLAGS=-p=1,-trimpath,Ent=-l GOMEMLIMIT=768MiB GOGC=50
+ok  	go-wind-admin/pkg/middleware/auth	1.032s
+ok  	go-wind-admin/app/admin/service/internal/data	1.110s
+ok  	go-wind-admin/app/admin/service/internal/service	1.115s
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 16.10 (Debian 16.10-1.pgdg13+1)
+Redis server v=7.4.6 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=9b9852680eadfdc6
+fixture=149a8af3bd9a0ac393abc250849ae1910566777c5820b88ee5c047559b6f569c memory=805306368 memory_swap=805306368 nanocpus=1000000000
+fixture=db9defd1325e702a2ea4cdba4fcea09becb83513118edb22e328a80103c5de30 memory=134217728 memory_swap=134217728 nanocpus=500000000
+apply isolated migration=migrations/20260921134442_initial.sql
+apply isolated migration=migrations/20260922190000_quota_expand.sql
+apply isolated migration=migrations/20260922190100_quota_constraints.sql
+apply isolated migration=migrations/20260923130000_gpu_sqlc.sql
+apply isolated migration=migrations/20260923130100_gpu_no_rls_catalog.sql
+apply isolated migration=migrations/20260923130200_gpu_sync_ref.sql
+apply isolated migration=migrations/20260923143455_drop_geo_location.sql
+Image Governance joint fixture pg=149a8af3bd9a0ac393abc250849ae1910566777c5820b88ee5c047559b6f569c redis=db9defd1325e702a2ea4cdba4fcea09becb83513118edb22e328a80103c5de30
+=== RUN   TestImageJointHTTP
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/publisher-credential -> 401
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/publisher-credential -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/registrations?scope=tenant -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/registrations?scope=platform -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/registrations/img_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?scope=tenant -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 200
+    image_joint_http_test.go:253: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:254: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:257: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:257: HTTP POST /api/v1/images/publisher-credential:reset -> 200
+    image_joint_http_test.go:260: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:268: HTTP POST /api/v1/images/space:enable -> 200
+    image_joint_http_test.go:268: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:268: HTTP POST /api/v1/images/registrations -> 200
+    image_joint_http_test.go:268: HTTP PATCH /api/v1/images/registrations/img_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa -> 200
+    image_joint_http_test.go:268: HTTP POST /api/v1/images/registrations/img_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:unregister -> 200
+    image_joint_http_test.go:272: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:272: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:272: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:274: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:275: HTTP POST /api/v1/images/publisher-credential:issue -> 401
+    image_joint_http_test.go:280: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:281: HTTP GET /api/v1/images/registrations?scope=tenant&search=x -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 503
+    image_joint_http_test.go:291: HTTP GET /api/v1/images/space -> 503
+    image_joint_http_test.go:296: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:297: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 401
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 403
+--- PASS: TestImageJointHTTP (2.77s)
+PASS
+ok  	go-wind-admin/app/admin/service/internal/service	3.881s
+removed Image Governance fixture=db9defd1325e702a2ea4cdba4fcea09becb83513118edb22e328a80103c5de30
+removed Image Governance fixture=149a8af3bd9a0ac393abc250849ae1910566777c5820b88ee5c047559b6f569c
+2026-09-29T20:32:27Z
+exit=0

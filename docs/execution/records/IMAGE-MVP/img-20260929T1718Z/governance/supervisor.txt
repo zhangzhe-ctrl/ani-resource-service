@@ -1,0 +1,42 @@
+run-p810982-i9200661.scope
+ActiveState=failed
+ActiveEnterTimestamp=Wed 2026-09-30 04:00:27 CST
+ActiveExitTimestamp=Wed 2026-09-30 04:08:55 CST
+Result=oom-kill
+MemoryPeak=2411732992
+exit=0
+9月 30 04:00:27 fedora systemd[2621756]: Started run-p810982-i9200661.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/governance-round06.sh d64d6ee478801795afadb4573ba25f8c2de6b7fc verify.
+9月 30 04:08:55 fedora systemd[2621756]: run-p810982-i9200661.scope: The kernel OOM killer killed some processes in this unit.
+9月 30 04:08:55 fedora systemd[2621756]: run-p810982-i9200661.scope: Failed with result 'oom-kill'.
+9月 30 04:08:55 fedora systemd[2621756]: run-p810982-i9200661.scope: Consumed 15min 51.800s CPU time over 8min 28.446s wall clock time, 2.2G memory peak.
+run-p826002-i9220950.scope
+ActiveState=failed
+ActiveEnterTimestamp=Wed 2026-09-30 04:09:43 CST
+ActiveExitTimestamp=Wed 2026-09-30 04:14:28 CST
+Result=oom-kill
+MemoryPeak=2411732992
+exit=0
+9月 30 04:09:43 fedora systemd[2621756]: Started run-p826002-i9220950.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/governance-round06-serial.sh d64d6ee478801795afadb4573ba25f8c2de6b7fc verify -serial.
+9月 30 04:14:28 fedora systemd[2621756]: run-p826002-i9220950.scope: The kernel OOM killer killed some processes in this unit.
+9月 30 04:14:29 fedora systemd[2621756]: run-p826002-i9220950.scope: Failed with result 'oom-kill'.
+9月 30 04:14:29 fedora systemd[2621756]: run-p826002-i9220950.scope: Consumed 6min 48.074s CPU time over 4min 45.391s wall clock time, 2.2G memory peak.
+run-p829459-i9218579.scope
+ActiveState=failed
+ActiveEnterTimestamp=Wed 2026-09-30 04:15:06 CST
+ActiveExitTimestamp=Wed 2026-09-30 04:23:26 CST
+Result=oom-kill
+MemoryPeak=2411732992
+exit=0
+9月 30 04:15:06 fedora systemd[2621756]: Started run-p829459-i9218579.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/gov06-remaining.sh.
+9月 30 04:23:26 fedora systemd[2621756]: run-p829459-i9218579.scope: The kernel OOM killer killed some processes in this unit.
+9月 30 04:23:27 fedora systemd[2621756]: run-p829459-i9218579.scope: Failed with result 'oom-kill'.
+9月 30 04:23:27 fedora systemd[2621756]: run-p829459-i9218579.scope: Consumed 7min 21.767s CPU time over 8min 21.005s wall clock time, 2.2G memory peak.
+run-p830669-i9206543.scope
+ActiveState=inactive
+ActiveEnterTimestamp=
+ActiveExitTimestamp=
+Result=success
+MemoryPeak=[not set]
+exit=0
+9月 30 04:24:07 fedora systemd[2621756]: Started run-p830669-i9206543.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/gov06-race-noinline.sh.
+9月 30 04:32:27 fedora systemd[2621756]: run-p830669-i9206543.scope: Consumed 7min 21.496s CPU time over 8min 20.605s wall clock time, 2.2G memory peak.

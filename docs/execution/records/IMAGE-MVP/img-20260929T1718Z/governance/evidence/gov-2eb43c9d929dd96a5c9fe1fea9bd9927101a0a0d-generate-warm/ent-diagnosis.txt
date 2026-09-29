@@ -1,0 +1,7 @@
+2026-09-29T19:37:06Z
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/2eb43c9d929dd96a5c9fe1fea9bd9927101a0a0d-warm
+entc/load: package command-line-arguments
+	.entc/entc_go-wind-admin_app_admin_service_internal_data_ent_schema_1790710628.go:16:2: use of internal package go-wind-admin/app/admin/service/internal/data/ent/schema not allowed
+exit status 1
+2026-09-29T19:37:08Z
+exit=1

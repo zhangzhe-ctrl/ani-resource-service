@@ -1,0 +1,958 @@
+2026-09-29T19:45:06Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/9690a811d257d2ff88e835bc064e1affb3bb126d'...
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/governance-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+HEAD 目前位于 9690a81 chore(image): import Fedora generated module contracts and formatted adapters
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/9690a811d257d2ff88e835bc064e1affb3bb126d
+go build -trimpath -o tools/bin/gow ./tools/localdeps/gow/cmd/gow
+make: 进入目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/9690a811d257d2ff88e835bc064e1affb3bb126d/app/admin/service”
+make -C "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/9690a811d257d2ff88e835bc064e1affb3bb126d/" gow
+make[1]: 进入目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/9690a811d257d2ff88e835bc064e1affb3bb126d”
+go build -trimpath -o tools/bin/gow ./tools/localdeps/gow/cmd/gow
+make[1]: 离开目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/9690a811d257d2ff88e835bc064e1affb3bb126d”
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/9690a811d257d2ff88e835bc064e1affb3bb126d/tools/bin/gow ent "admin"
+Generated ent for service admin successfully.
+make: 离开目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/9690a811d257d2ff88e835bc064e1affb3bb126d/app/admin/service”
+ok  	go-wind-admin/tests/imagecontract	0.010s
+ok  	go-wind-admin/sql/bootstrap	0.018s
+ok  	go-wind-admin/pkg/middleware/auth	0.012s
+ok  	go-wind-admin/pkg/middleware/logging	0.090s
+ok  	go-wind-admin/pkg/constants	0.021s
+ok  	go-wind-admin/pkg/localdeps/kratos-bootstrap/rpc	0.570s
+ok  	go-wind-admin/app/admin/service/internal/data	12.310s
+路径: /admin/v1/mfa/{credentialId}
+  方法: DELETE
+    描述: 撤销指定 MFA 凭证（按 id）。
+ ⚠️ 当前无前端调用方：DELETE 请求体在 Go 生成器（恒 BindQuery）与 TS 生成器
+ （发 body）之间不一致，贸然对接会静默丢参——需要时应改 POST（参见 DisableMFA）。
+    服务: MfaService MFA（多因素认证）服务 HTTP 桥接。
+ 管理侧 RPC（GetMFAStatus/ListEnrolledMethods/StartEnrollMethod/ConfirmEnrollMethod/
+ DisableMFA/RevokeMFADevice）需登录态，走正常 auth+authz 中间件，不加 security:{}。
+ 登录挑战侧 RPC（VerifyMFAChallenge）免鉴权，加 security:{} 并加入 rest_server 白名单。
+路径: /admin/v1/plan-modules/{id}
+  方法: GET
+    描述: 查询套餐模块详情
+    服务: PlanModuleService 套餐模块白名单管理服务
+  方法: PUT
+    描述: 更新套餐模块
+    服务: PlanModuleService 套餐模块白名单管理服务
+路径: /api/v1/auth/forgot-password
+  方法: POST
+    描述: 忘记密码：向已绑定邮箱的用户发送重置验证码（免鉴权；不泄露用户是否存在）
+    服务: AuthenticationService 用户后台登录认证服务
+
+ 路径规范：本服务的路由统一挂 /api/v1/auth/*，与 ANI Core OpenAPI 契约
+ （api/openapi/v1.yaml，servers[0].url = https://{host}/api/v1）拼出的最终 URL 一致。
+ 仓库内其余服务仍为 /admin/v1/*，两套前缀并存，按域逐步迁移。
+路径: /admin/v1/operation-audit-logs
+  方法: GET
+    描述: 查询操作审计日志列表
+    服务: OperationAuditLogService 操作审计日志管理服务
+路径: /admin/v1/server-monitor
+  方法: GET
+    描述: 查询服务监控信息
+    服务: ServerMonitorService 服务监控管理服务（只读）
+路径: /api/v1/accelerator/usages
+  方法: GET
+    服务: AcceleratorService JWT tenant user, active tenant, ACCELERATOR plan module, current role
+ permission and downstream delegation grant are all required.
+路径: /admin/v1/plans
+  方法: GET
+    描述: 分页查询套餐列表
+    服务: PlanService 套餐管理服务
+  方法: POST
+    描述: 创建套餐
+    服务: PlanService 套餐管理服务
+  方法: DELETE
+    描述: 删除套餐
+    服务: PlanService 套餐管理服务
+路径: /admin/v1/quota-definitions
+  方法: GET
+    描述: 查询配额目录（QUOTA-01）
+    服务: QuotaAdminService 配额目录与租户账户读取服务（QUOTA-01/02）。
+ 仅平台管理权限；读取沿用现有分页与成功 JSON 风格，不加全局 code/data envelope。
+路径: /admin/v1/operation-audit-logs/{id}
+  方法: GET
+    描述: 查询操作审计日志详情
+    服务: OperationAuditLogService 操作审计日志管理服务
+路径: /api/v1/auth/api-keys/{key_id}/secret
+  方法: PUT
+    描述: 重置密钥：生成新 Secret（响应明文返回一次）
+    服务: AccessKeyService OpenAPI 访问凭证（AK/SK）管理 — BFF
+路径: /admin/v1/internal-message/revoke
+  方法: POST
+    描述: 撤销某条消息
+    服务: InternalMessageService 站内信消息管理服务
+路径: /admin/v1/tenants:exists
+  方法: GET
+    描述: 租户是否存在
+    服务: TenantService 租户管理服务
+路径: /admin/v1/me
+  方法: GET
+    描述: 获取用户资料
+    服务: UserProfileService 用户个人资料服务
+  方法: PUT
+    描述: 更新用户资料
+    服务: UserProfileService 用户个人资料服务
+路径: /api/v1/images/publisher-credential:reset
+  方法: POST
+    摘要: ResetPublisherCredential
+    描述: Requires active tenant, IMAGE module and image:credential:reset. Tenant identity comes only from the authenticated principal. See image-api.md for limits, idempotency and error semantics.
+    服务: ImageService 
+路径: /admin/v1/internal-message/status
+  方法: POST
+    描述: 标记通知投递回执（SENT→RECEIVED；服务端写入即 RECEIVED，此端点为回执补偿通道）
+    服务: InternalMessageRecipientService 站内信消息管理服务
+路径: /admin/v1/internal-message/categories/{id}
+  方法: GET
+    描述: 查询站内信消息分类详情
+    服务: InternalMessageCategoryService 站内信消息分类管理服务
+  方法: PUT
+    描述: 更新站内信消息分类
+    服务: InternalMessageCategoryService 站内信消息分类管理服务
+  方法: DELETE
+    描述: 删除站内信消息分类
+    服务: InternalMessageCategoryService 站内信消息分类管理服务
+路径: /admin/v1/online-session/my-sessions/revoke
+  方法: POST
+    描述: 当前用户强制下线自己的指定会话
+    服务: OnlineSessionService 在线会话管理服务（在线用户列表 + 强制下线）
+路径: /admin/v1/permission-audit-logs
+  方法: GET
+    描述: 查询权限变更审计日志列表
+    服务: PermissionAuditLogService 权限变更审计日志服务
+路径: /admin/v1/dict/types/{id}
+  方法: GET
+    描述: 查询字典类型详情
+    服务: DictTypeService 数据字典分类管理服务
+  方法: PUT
+    描述: 更新字典类型
+    服务: DictTypeService 数据字典分类管理服务
+路径: /admin/v1/login-audit-logs/{id}
+  方法: GET
+    描述: 查询登录审计日志详情
+    服务: LoginAuditLogService 登录审计日志管理服务
+路径: /admin/v1/mfa/enroll/start
+  方法: POST
+    描述: 开始注册 MFA 方法（返回 secret/QR，仅 TOTP 本轮实现）
+    服务: MfaService MFA（多因素认证）服务 HTTP 桥接。
+ 管理侧 RPC（GetMFAStatus/ListEnrolledMethods/StartEnrollMethod/ConfirmEnrollMethod/
+ DisableMFA/RevokeMFADevice）需登录态，走正常 auth+authz 中间件，不加 security:{}。
+ 登录挑战侧 RPC（VerifyMFAChallenge）免鉴权，加 security:{} 并加入 rest_server 白名单。
+路径: /admin/v1/org-units
+  方法: GET
+    描述: 查询组织单元列表
+    服务: OrgUnitService 组织单元服务
+  方法: POST
+    描述: 创建组织单元
+    服务: OrgUnitService 组织单元服务
+路径: /admin/v1/policy-evaluation-logs/{id}
+  方法: GET
+    描述: 查询策略评估日志详情
+    服务: PolicyEvaluationLogService 策略评估日志服务
+路径: /api/v1/networks/eips
+  方法: GET
+    摘要: List EIPs in the authenticated tenant
+    描述: Requires user JWT or ANI HMAC-SHA256 signature, NETWORK subscription and network:eip:list permission. Cursor pagination; limit is 1..100. Only tenant-managed Public EIPs are listed.
+    服务: NetworkService 
+  方法: POST
+    摘要: Allocate a public EIP for the authenticated tenant
+    描述: Requires user JWT or ANI HMAC-SHA256 signature, NETWORK subscription and network:eip:create permission. Allocation is asynchronous; retries with the same idempotency_key replay the original result. Only Public addresses are allocatable.
+    服务: NetworkService 
+路径: /admin/v1/api-audit-logs/{id}
+  方法: GET
+    描述: 查询API审计日志详情
+    服务: ApiAuditLogService API审计日志管理服务
+路径: /admin/v1/online-session/force-logout
+  方法: POST
+    描述: 强制下线指定会话
+    服务: OnlineSessionService 在线会话管理服务（在线用户列表 + 强制下线）
+路径: /admin/v1/accelerator/supply-groups
+  方法: GET
+    服务: AcceleratorAdminService JWT platform user, current role permission and downstream exact actor/action/
+ cluster grant are all required. There is no implicit tenant-zero grant.
+路径: /admin/v1/apis
+  方法: POST
+    描述: 创建API资源
+    服务: ApiService API资源管理服务
+  方法: GET
+    描述: 查询API资源列表
+    服务: ApiService API资源管理服务
+路径: /admin/v1/tasks:control
+  方法: POST
+    描述: 控制调度任务
+    服务: TaskService 调度任务管理服务
+路径: /api/v1/me/quota-accounts
+  方法: GET
+    服务: QuotaSelfService 
+路径: /api/v1/images/registrations/{imageId}
+  方法: GET
+    摘要: GetImage
+    描述: Requires active tenant, IMAGE module and image:registration:get. Tenant identity comes only from the authenticated principal. See image-api.md for limits, idempotency and error semantics.
+    服务: ImageService 
+  方法: PATCH
+    摘要: UpdateImage
+    描述: Requires active tenant, IMAGE module and image:registration:update. Tenant identity comes only from the authenticated principal. See image-api.md for limits, idempotency and error semantics.
+    服务: ImageService 
+路径: /admin/v1/apis/sync
+  方法: POST
+    描述: 同步API资源
+    服务: ApiService API资源管理服务
+路径: /admin/v1/roles
+  方法: GET
+    描述: 查询角色列表
+    服务: RoleService 角色管理服务
+  方法: POST
+    描述: 创建角色
+    服务: RoleService 角色管理服务
+路径: /admin/v1/positions
+  方法: POST
+    描述: 创建职位
+    服务: PositionService 职位管理服务
+  方法: GET
+    描述: 查询职位列表
+    服务: PositionService 职位管理服务
+路径: /admin/v1/online-session/sessions
+  方法: GET
+    描述: 查询在线会话列表
+    服务: OnlineSessionService 在线会话管理服务（在线用户列表 + 强制下线）
+路径: /admin/v1/accelerator/clusters
+  方法: GET
+    服务: AcceleratorAdminService JWT platform user, current role permission and downstream exact actor/action/
+ cluster grant are all required. There is no implicit tenant-zero grant.
+  方法: POST
+    服务: AcceleratorAdminService JWT platform user, current role permission and downstream exact actor/action/
+ cluster grant are all required. There is no implicit tenant-zero grant.
+路径: /api/v1/auth/password/login
+  方法: POST
+    描述: 租户账密登录（免鉴权）
+    服务: AuthenticationService 用户后台登录认证服务
+
+ 路径规范：本服务的路由统一挂 /api/v1/auth/*，与 ANI Core OpenAPI 契约
+ （api/openapi/v1.yaml，servers[0].url = https://{host}/api/v1）拼出的最终 URL 一致。
+ 仓库内其余服务仍为 /admin/v1/*，两套前缀并存，按域逐步迁移。
+路径: /admin/v1/accelerator/capacity
+  方法: GET
+    服务: AcceleratorAdminService JWT platform user, current role permission and downstream exact actor/action/
+ cluster grant are all required. There is no implicit tenant-zero grant.
+路径: /api/v1/networks/vpcs/{vpc_id}/snat/bindings
+  方法: POST
+    摘要: Bind a public EIP as a VPC's SNAT egress
+    描述: Requires user JWT or ANI HMAC-SHA256 signature, NETWORK subscription and network:snat:bind permission. Binding is asynchronous and exclusive; retries with the same idempotency_key replay the original result.
+    服务: NetworkService 
+路径: /admin/v1/notification-channels/{id}
+  方法: DELETE
+    描述: 删除通知渠道
+    服务: NotificationChannelService 通知渠道管理服务（平台级配置）
+  方法: GET
+    描述: 查询通知渠道详情
+    服务: NotificationChannelService 通知渠道管理服务（平台级配置）
+  方法: PUT
+    描述: 更新通知渠道
+    服务: NotificationChannelService 通知渠道管理服务（平台级配置）
+路径: /api/v1/images/registrations
+  方法: GET
+    摘要: ListImages
+    描述: Requires active tenant, IMAGE module and image:registration:list. Tenant identity comes only from the authenticated principal. See image-api.md for limits, idempotency and error semantics.
+    服务: ImageService 
+  方法: POST
+    摘要: RegisterImage
+    描述: Requires active tenant, IMAGE module and image:registration:create. Tenant identity comes only from the authenticated principal. See image-api.md for limits, idempotency and error semantics.
+    服务: ImageService 
+路径: /admin/v1/configs
+  方法: GET
+    描述: 查询系统参数列表
+    服务: ConfigService 系统参数管理服务
+  方法: POST
+    描述: 创建系统参数
+    服务: ConfigService 系统参数管理服务
+路径: /admin/v1/mfa/enroll/confirm
+  方法: POST
+    描述: 确认注册 MFA 方法（提交首码完成绑定）
+    服务: MfaService MFA（多因素认证）服务 HTTP 桥接。
+ 管理侧 RPC（GetMFAStatus/ListEnrolledMethods/StartEnrollMethod/ConfirmEnrollMethod/
+ DisableMFA/RevokeMFADevice）需登录态，走正常 auth+authz 中间件，不加 security:{}。
+ 登录挑战侧 RPC（VerifyMFAChallenge）免鉴权，加 security:{} 并加入 rest_server 白名单。
+路径: /admin/v1/permission-audit-logs/{id}
+  方法: GET
+    描述: 查询权限变更审计日志详情
+    服务: PermissionAuditLogService 权限变更审计日志服务
+路径: /admin/v1/permissions/sync:perms
+  方法: POST
+    描述: 同步权限点
+    服务: PermissionService 权限点管理服务
+路径: /admin/v1/tasks/{id}
+  方法: DELETE
+    描述: 删除调度任务
+    服务: TaskService 调度任务管理服务
+  方法: GET
+    描述: 查询调度任务详情
+    服务: TaskService 调度任务管理服务
+  方法: PUT
+    描述: 更新调度任务
+    服务: TaskService 调度任务管理服务
+路径: /api/v1/accelerator/profiles/{profile_id}
+  方法: GET
+    服务: AcceleratorService JWT tenant user, active tenant, ACCELERATOR plan module, current role
+ permission and downstream delegation grant are all required.
+路径: /api/v1/auth/captcha/verify
+  方法: POST
+    描述: 验证验证码（免鉴权）
+    服务: AuthenticationService 用户后台登录认证服务
+
+ 路径规范：本服务的路由统一挂 /api/v1/auth/*，与 ANI Core OpenAPI 契约
+ （api/openapi/v1.yaml，servers[0].url = https://{host}/api/v1）拼出的最终 URL 一致。
+ 仓库内其余服务仍为 /admin/v1/*，两套前缀并存，按域逐步迁移。
+路径: /admin/v1/tasks:start
+  方法: POST
+    描述: 启动所有的调度任务
+    服务: TaskService 调度任务管理服务
+路径: /api/v1/images/registrations/{imageId}:unregister
+  方法: POST
+    摘要: UnregisterImage
+    描述: Requires active tenant, IMAGE module and image:registration:unregister. Tenant identity comes only from the authenticated principal. See image-api.md for limits, idempotency and error semantics.
+    服务: ImageService 
+路径: /admin/v1/dict/types/code/{code}
+  方法: GET
+    描述: 查询字典类型详情
+    服务: DictTypeService 数据字典分类管理服务
+路径: /admin/v1/redis-cache-monitor
+  方法: GET
+    描述: 查询Redis缓存监控信息
+    服务: RedisCacheMonitorService Redis缓存监控管理服务（只读）
+路径: /admin/v1/data-access-audit-logs
+  方法: GET
+    描述: 查询数据访问审计日志列表
+    服务: DataAccessAuditLogService 数据访问审计日志管理服务
+路径: /admin/v1/dict/langs/batch
+  方法: POST
+    描述: 批量创建语言
+    服务: LanguageService 语言管理服务
+路径: /admin/v1/tenants/{id}
+  方法: DELETE
+    描述: 删除租户
+    服务: TenantService 租户管理服务
+  方法: GET
+    描述: 获取租户数据
+    服务: TenantService 租户管理服务
+  方法: PUT
+    描述: 更新租户
+    服务: TenantService 租户管理服务
+路径: /admin/v1/accelerator/profiles
+  方法: GET
+    服务: AcceleratorAdminService JWT platform user, current role permission and downstream exact actor/action/
+ cluster grant are all required. There is no implicit tenant-zero grant.
+  方法: POST
+    服务: AcceleratorAdminService JWT platform user, current role permission and downstream exact actor/action/
+ cluster grant are all required. There is no implicit tenant-zero grant.
+路径: /api/v1/networks/eips/{eip_id}
+  方法: DELETE
+    摘要: Release an EIP in the authenticated tenant
+    描述: Requires user JWT or ANI HMAC-SHA256 signature, NETWORK subscription and network:eip:delete permission. Release is asynchronous; a bound EIP must be unbound first. Cross-tenant and missing EIPs both return 404.
+    服务: NetworkService 
+  方法: GET
+    摘要: Get an EIP in the authenticated tenant
+    描述: Requires user JWT or ANI HMAC-SHA256 signature, NETWORK subscription and network:eip:get permission. Only tenant-managed Public EIPs are visible; System-managed Intranet addresses are excluded including guessed IDs. Cross-tenant and missing EIPs both return 404.
+    服务: NetworkService 
+路径: /admin/v1/dict/langs
+  方法: DELETE
+    描述: 删除语言
+    服务: LanguageService 语言管理服务
+  方法: GET
+    描述: 分页查询语言列表
+    服务: LanguageService 语言管理服务
+  方法: POST
+    描述: 创建语言
+    服务: LanguageService 语言管理服务
+路径: /admin/v1/tasks
+  方法: GET
+    描述: 查询调度任务列表
+    服务: TaskService 调度任务管理服务
+  方法: POST
+    描述: 创建调度任务
+    服务: TaskService 调度任务管理服务
+路径: /admin/v1/dict/entries
+  方法: DELETE
+    描述: 删除字典条目
+    服务: DictEntryService 数据字典条目管理服务
+  方法: POST
+    描述: 创建字典条目
+    服务: DictEntryService 数据字典条目管理服务
+  方法: GET
+    描述: 分页查询字典条目列表
+    服务: DictEntryService 数据字典条目管理服务
+路径: /admin/v1/mfa/verify
+  方法: POST
+    描述: 验证登录 MFA 挑战。通过则返回 LoginResponse（含真 access_token）。
+ 免鉴权：登录流程在密码校验通过、待二次验证阶段调用。
+    服务: MfaService MFA（多因素认证）服务 HTTP 桥接。
+ 管理侧 RPC（GetMFAStatus/ListEnrolledMethods/StartEnrollMethod/ConfirmEnrollMethod/
+ DisableMFA/RevokeMFADevice）需登录态，走正常 auth+authz 中间件，不加 security:{}。
+ 登录挑战侧 RPC（VerifyMFAChallenge）免鉴权，加 security:{} 并加入 rest_server 白名单。
+路径: /admin/v1/policy-evaluation-logs
+  方法: GET
+    描述: 查询策略评估日志列表
+    服务: PolicyEvaluationLogService 策略评估日志服务
+路径: /admin/v1/dashboard/overview
+  方法: GET
+    描述: 获取概览统计（用户总数 / 角色总数 / 今日登录次数 / 今日操作审计条数）
+    服务: DashboardService 后台首页分析概览服务（只读聚合）
+路径: /admin/v1/tasks/type-name/{typeName}
+  方法: GET
+    描述: 查询调度任务详情
+    服务: TaskService 调度任务管理服务
+路径: /admin/v1/routes
+  方法: GET
+    描述: 查询前端路由表
+    服务: AdminPortalService 后台前端初始化数据与配置服务
+路径: /api/v1/networks/vpcs/{vpc_id}/snat
+  方法: GET
+    摘要: Get the SNAT binding of a VPC
+    描述: Requires user JWT or ANI HMAC-SHA256 signature, NETWORK subscription and network:snat:get permission. Returns the tenant-owned VPC's outbound SNAT binding state. Cross-tenant and missing VPCs both return 404.
+    服务: NetworkService 
+路径: /admin/v1/accelerator/pools
+  方法: GET
+    服务: AcceleratorAdminService JWT platform user, current role permission and downstream exact actor/action/
+ cluster grant are all required. There is no implicit tenant-zero grant.
+  方法: POST
+    服务: AcceleratorAdminService JWT platform user, current role permission and downstream exact actor/action/
+ cluster grant are all required. There is no implicit tenant-zero grant.
+路径: /admin/v1/login-policies/{id}
+  方法: GET
+    描述: 查询登录策略详情
+    服务: LoginPolicyService 登录策略管理服务
+  方法: PUT
+    描述: 更新登录策略
+    服务: LoginPolicyService 登录策略管理服务
+  方法: DELETE
+    描述: 删除登录策略
+    服务: LoginPolicyService 登录策略管理服务
+路径: /api/v1/auth/api-keys
+  方法: POST
+    描述: 创建访问凭证（响应中的 secret_key 仅本次返回，服务端加密存储）
+    服务: AccessKeyService OpenAPI 访问凭证（AK/SK）管理 — BFF
+  方法: GET
+    描述: 分页查询访问凭证列表
+    服务: AccessKeyService OpenAPI 访问凭证（AK/SK）管理 — BFF
+路径: /admin/v1/permission-groups/{id}
+  方法: GET
+    描述: 查询权限组详情
+    服务: PermissionGroupService 权限组管理服务
+  方法: DELETE
+    描述: 删除权限组
+    服务: PermissionGroupService 权限组管理服务
+  方法: PUT
+    描述: 更新权限组
+    服务: PermissionGroupService 权限组管理服务
+路径: /api/v1/images/publisher-credential:disable
+  方法: POST
+    摘要: DisablePublisherCredential
+    描述: Requires active tenant, IMAGE module and image:credential:disable. Tenant identity comes only from the authenticated principal. See image-api.md for limits, idempotency and error semantics.
+    服务: ImageService 
+路径: /admin/v1/internal-message/read
+  方法: POST
+    描述: 将通知标记为已读
+    服务: InternalMessageRecipientService 站内信消息管理服务
+路径: /api/v1/auth/invitations/accept
+  方法: POST
+    描述: 接受邀请（免登录；以一次性邀请令牌证明身份）。
+    服务: AuthenticationService 用户后台登录认证服务
+
+ 路径规范：本服务的路由统一挂 /api/v1/auth/*，与 ANI Core OpenAPI 契约
+ （api/openapi/v1.yaml，servers[0].url = https://{host}/api/v1）拼出的最终 URL 一致。
+ 仓库内其余服务仍为 /admin/v1/*，两套前缀并存，按域逐步迁移。
+路径: /api/v1/accelerator/usages/{owner_service}/{resource_id}/bindings
+  方法: GET
+    服务: AcceleratorService JWT tenant user, active tenant, ACCELERATOR plan module, current role
+ permission and downstream delegation grant are all required.
+路径: /api/v1/auth/reset-password-by-code
+  方法: POST
+    描述: 凭验证码重置密码（免鉴权；重置后吊销该用户全部会话）
+    服务: AuthenticationService 用户后台登录认证服务
+
+ 路径规范：本服务的路由统一挂 /api/v1/auth/*，与 ANI Core OpenAPI 契约
+ （api/openapi/v1.yaml，servers[0].url = https://{host}/api/v1）拼出的最终 URL 一致。
+ 仓库内其余服务仍为 /admin/v1/*，两套前缀并存，按域逐步迁移。
+路径: /admin/v1/accelerator/supply-groups/{group_id}:set-admission
+  方法: POST
+    服务: AcceleratorAdminService JWT platform user, current role permission and downstream exact actor/action/
+ cluster grant are all required. There is no implicit tenant-zero grant.
+路径: /api/v1/auth/captcha
+  方法: GET
+    描述: 生成验证码（免鉴权）
+ 保留的独立验证码接口；密码登录不再调用或依赖此接口。
+    服务: AuthenticationService 用户后台登录认证服务
+
+ 路径规范：本服务的路由统一挂 /api/v1/auth/*，与 ANI Core OpenAPI 契约
+ （api/openapi/v1.yaml，servers[0].url = https://{host}/api/v1）拼出的最终 URL 一致。
+ 仓库内其余服务仍为 /admin/v1/*，两套前缀并存，按域逐步迁移。
+路径: /admin/v1/data-access-audit-logs/{id}
+  方法: GET
+    描述: 查询数据访问审计日志详情
+    服务: DataAccessAuditLogService 数据访问审计日志管理服务
+路径: /admin/v1/plans/{id}
+  方法: GET
+    描述: 查询套餐详情
+    服务: PlanService 套餐管理服务
+  方法: PUT
+    描述: 更新套餐
+    服务: PlanService 套餐管理服务
+路径: /admin/v1/accelerator/supply-groups:adopt
+  方法: POST
+    服务: AcceleratorAdminService JWT platform user, current role permission and downstream exact actor/action/
+ cluster grant are all required. There is no implicit tenant-zero grant.
+路径: /admin/v1/dashboard/login-status-distribution
+  方法: GET
+    描述: 登录审计按 status 分布
+    服务: DashboardService 后台首页分析概览服务（只读聚合）
+路径: /admin/v1/internal-message/categories
+  方法: GET
+    描述: 查询站内信消息分类列表
+    服务: InternalMessageCategoryService 站内信消息分类管理服务
+  方法: POST
+    描述: 创建站内信消息分类
+    服务: InternalMessageCategoryService 站内信消息分类管理服务
+路径: /api/v1/auth/logout
+  方法: POST
+    描述: 登出：吊销当前用户的全部会话（非仅当前 jti）
+ jti 仅随请求上报用于审计留痕，不改变吊销范围。需携带有效访问令牌。
+    服务: AuthenticationService 用户后台登录认证服务
+
+ 路径规范：本服务的路由统一挂 /api/v1/auth/*，与 ANI Core OpenAPI 契约
+ （api/openapi/v1.yaml，servers[0].url = https://{host}/api/v1）拼出的最终 URL 一致。
+ 仓库内其余服务仍为 /admin/v1/*，两套前缀并存，按域逐步迁移。
+路径: /admin/v1/me/password
+  方法: POST
+    描述: 修改用户密码
+    服务: UserProfileService 用户个人资料服务
+路径: /api/v1/networks/vpcs
+  方法: POST
+    摘要: Create a VPC in the authenticated tenant
+    描述: Requires user JWT or ANI HMAC-SHA256 signature, NETWORK subscription and network:vpc:create permission. The VPC is created asynchronously; the response carries the persisted record and an operation id. Retries with the same idempotency_key replay the original result.
+    服务: NetworkService 
+  方法: GET
+    摘要: List VPCs in the authenticated tenant
+    描述: Requires user JWT or ANI HMAC-SHA256 signature, NETWORK subscription and network:vpc:list permission. Cursor pagination; limit is 1..100. The persisted tenant UUID is looked up from the trusted operator's tenant and replayed downstream. System-managed Intranet resources are excluded downstream.
+    服务: NetworkService 
+路径: /admin/v1/tenants
+  方法: GET
+    描述: 获取租户列表
+    服务: TenantService 租户管理服务
+  方法: POST
+    描述: 创建租户
+    服务: TenantService 租户管理服务
+路径: /api/v1/accelerator/admission-preview
+  方法: POST
+    服务: AcceleratorService JWT tenant user, active tenant, ACCELERATOR plan module, current role
+ permission and downstream delegation grant are all required.
+路径: /admin/v1/accelerator/devices
+  方法: GET
+    服务: AcceleratorAdminService JWT platform user, current role permission and downstream exact actor/action/
+ cluster grant are all required. There is no implicit tenant-zero grant.
+路径: /admin/v1/mfa/methods
+  方法: GET
+    描述: 列出已注册的 MFA 凭证
+    服务: MfaService MFA（多因素认证）服务 HTTP 桥接。
+ 管理侧 RPC（GetMFAStatus/ListEnrolledMethods/StartEnrollMethod/ConfirmEnrollMethod/
+ DisableMFA/RevokeMFADevice）需登录态，走正常 auth+authz 中间件，不加 security:{}。
+ 登录挑战侧 RPC（VerifyMFAChallenge）免鉴权，加 security:{} 并加入 rest_server 白名单。
+路径: /admin/v1/tenants/{id}/usage
+  方法: GET
+    描述: 查询租户用量与配额
+    服务: TenantService 租户管理服务
+路径: /api/v1/accelerator/capacity
+  方法: GET
+    服务: AcceleratorService JWT tenant user, active tenant, ACCELERATOR plan module, current role
+ permission and downstream delegation grant are all required.
+路径: /admin/v1/internal-message/inbox
+  方法: GET
+    描述: 获取用户的收件箱列表 (通知类)
+    服务: InternalMessageRecipientService 站内信消息管理服务
+路径: /admin/v1/apis/{id}
+  方法: GET
+    描述: 查询API资源详情
+    服务: ApiService API资源管理服务
+  方法: PUT
+    描述: 更新API资源
+    服务: ApiService API资源管理服务
+  方法: DELETE
+    描述: 删除API资源
+    服务: ApiService API资源管理服务
+路径: /admin/v1/notification-channels
+  方法: GET
+    描述: 查询通知渠道列表
+    服务: NotificationChannelService 通知渠道管理服务（平台级配置）
+  方法: POST
+    描述: 创建通知渠道
+    服务: NotificationChannelService 通知渠道管理服务（平台级配置）
+路径: /admin/v1/login-policies
+  方法: GET
+    描述: 查询登录策略列表
+    服务: LoginPolicyService 登录策略管理服务
+  方法: POST
+    描述: 创建登录策略
+    服务: LoginPolicyService 登录策略管理服务
+路径: /api/v1/auth/api-keys/{key_id}
+  方法: DELETE
+    描述: 删除访问凭证
+    服务: AccessKeyService OpenAPI 访问凭证（AK/SK）管理 — BFF
+  方法: PUT
+    描述: 更新访问凭证（名称/状态/过期时间）
+    服务: AccessKeyService OpenAPI 访问凭证（AK/SK）管理 — BFF
+  方法: GET
+    描述: 查询访问凭证详情
+    服务: AccessKeyService OpenAPI 访问凭证（AK/SK）管理 — BFF
+路径: /admin/v1/internal-message/messages/{id}
+  方法: DELETE
+    描述: 删除站内信消息
+    服务: InternalMessageService 站内信消息管理服务
+  方法: PUT
+    描述: 更新站内信消息
+    服务: InternalMessageService 站内信消息管理服务
+  方法: GET
+    描述: 查询站内信消息详情
+    服务: InternalMessageService 站内信消息管理服务
+路径: /admin/v1/users/username/{username}
+  方法: GET
+    描述: 获取用户数据
+    服务: UserService 用户管理服务
+  方法: DELETE
+    描述: 删除用户
+    服务: UserService 用户管理服务
+路径: /admin/v1/permissions
+  方法: GET
+    描述: 查询权限点列表
+    服务: PermissionService 权限点管理服务
+  方法: POST
+    描述: 创建权限点
+    服务: PermissionService 权限点管理服务
+路径: /admin/v1/plan-modules
+  方法: GET
+    描述: 分页查询套餐模块列表
+    服务: PlanModuleService 套餐模块白名单管理服务
+  方法: POST
+    描述: 创建套餐模块
+    服务: PlanModuleService 套餐模块白名单管理服务
+  方法: DELETE
+    描述: 删除套餐模块
+    服务: PlanModuleService 套餐模块白名单管理服务
+路径: /admin/v1/notification-channels/{id}/send-test-email
+  方法: POST
+    描述: 发送测试邮件（验证渠道配置）
+    服务: NotificationChannelService 通知渠道管理服务（平台级配置）
+路径: /admin/v1/me/contact
+  方法: POST
+    描述: 绑定手机号码/邮箱
+    服务: UserProfileService 用户个人资料服务
+路径: /admin/v1/users/{id}
+  方法: GET
+    描述: 获取用户数据
+    服务: UserService 用户管理服务
+  方法: PUT
+    描述: 更新用户
+    服务: UserService 用户管理服务
+  方法: DELETE
+    描述: 删除用户
+    服务: UserService 用户管理服务
+路径: /admin/v1/internal-message/inbox/delete
+  方法: POST
+    描述: 删除用户收件箱中的通知记录
+    服务: InternalMessageRecipientService 站内信消息管理服务
+路径: /admin/v1/dict/langs/{id}
+  方法: GET
+    描述: 查询语言详情
+    服务: LanguageService 语言管理服务
+  方法: PUT
+    描述: 更新语言
+    服务: LanguageService 语言管理服务
+路径: /admin/v1/tenants:with-admin
+  方法: POST
+    描述: 创建租户及管理员用户
+    服务: TenantService 租户管理服务
+路径: /admin/v1/accelerator/bindings
+  方法: GET
+    服务: AcceleratorAdminService JWT platform user, current role permission and downstream exact actor/action/
+ cluster grant are all required. There is no implicit tenant-zero grant.
+路径: /admin/v1/roles/{id}
+  方法: GET
+    描述: 查询角色详情
+    服务: RoleService 角色管理服务
+  方法: PUT
+    描述: 更新角色
+    服务: RoleService 角色管理服务
+  方法: DELETE
+    描述: 删除角色
+    服务: RoleService 角色管理服务
+路径: /admin/v1/initial-context
+  方法: GET
+    描述: 一次性获取进入后台所需的所有上下文
+    服务: AdminPortalService 后台前端初始化数据与配置服务
+路径: /admin/v1/org-units/{id}
+  方法: DELETE
+    描述: 删除组织单元
+    服务: OrgUnitService 组织单元服务
+  方法: GET
+    描述: 查询组织单元详情
+    服务: OrgUnitService 组织单元服务
+  方法: PUT
+    描述: 更新组织单元
+    服务: OrgUnitService 组织单元服务
+路径: /admin/v1/tenants/{id}/cleanup
+  方法: POST
+    描述: 清理租户数据
+    服务: TenantService 租户管理服务
+路径: /admin/v1/api-audit-logs
+  方法: GET
+    描述: 查询API审计日志列表
+    服务: ApiAuditLogService API审计日志管理服务
+路径: /admin/v1/permission-groups
+  方法: GET
+    描述: 查询权限组列表
+    服务: PermissionGroupService 权限组管理服务
+  方法: POST
+    描述: 创建权限组
+    服务: PermissionGroupService 权限组管理服务
+路径: /admin/v1/internal-message/messages
+  方法: GET
+    描述: 查询站内信消息列表
+    服务: InternalMessageService 站内信消息管理服务
+路径: /admin/v1/users/{userId}/password
+  方法: POST
+    描述: 修改用户密码
+    服务: UserService 用户管理服务
+路径: /admin/v1/menus
+  方法: GET
+    描述: 查询菜单列表
+    服务: MenuService 后台菜单管理服务
+  方法: POST
+    描述: 创建菜单
+    服务: MenuService 后台菜单管理服务
+路径: /admin/v1/tasks:stop
+  方法: POST
+    描述: 停止所有的调度任务
+    服务: TaskService 调度任务管理服务
+路径: /api/v1/images/space:enable
+  方法: POST
+    摘要: EnsureImageSpace
+    描述: Requires active tenant, IMAGE module and image:space:enable. Tenant identity comes only from the authenticated principal. See image-api.md for limits, idempotency and error semantics.
+    服务: ImageService 
+路径: /api/v1/networks/operations/{operation_id}
+  方法: GET
+    摘要: Get a network operation result
+    描述: Requires user JWT or ANI HMAC-SHA256 signature, NETWORK subscription and network:operation:get permission. Returns the processing result of one tenant-owned operation; cross-tenant and missing operations both return 404.
+    服务: NetworkService 
+路径: /admin/v1/configs/{id}
+  方法: DELETE
+    描述: 删除系统参数
+    服务: ConfigService 系统参数管理服务
+  方法: GET
+    描述: 查询系统参数详情
+    服务: ConfigService 系统参数管理服务
+  方法: PUT
+    描述: 更新系统参数
+    服务: ConfigService 系统参数管理服务
+路径: /admin/v1/tasks:restart
+  方法: POST
+    描述: 重启所有的调度任务
+    服务: TaskService 调度任务管理服务
+路径: /admin/v1/dict/types
+  方法: GET
+    描述: 分页查询字典类型列表
+    服务: DictTypeService 数据字典分类管理服务
+  方法: DELETE
+    描述: 删除字典类型
+    服务: DictTypeService 数据字典分类管理服务
+  方法: POST
+    描述: 创建字典类型
+    服务: DictTypeService 数据字典分类管理服务
+路径: /api/v1/images/publisher-credential:issue
+  方法: POST
+    摘要: IssuePublisherCredential
+    描述: Requires active tenant, IMAGE module and image:credential:issue. Tenant identity comes only from the authenticated principal. See image-api.md for limits, idempotency and error semantics.
+    服务: ImageService 
+路径: /admin/v1/plan-quotas
+  方法: POST
+    描述: 创建套餐配额
+    服务: PlanQuotaService 套餐配额管理服务
+  方法: DELETE
+    描述: 删除套餐配额
+    服务: PlanQuotaService 套餐配额管理服务
+  方法: GET
+    描述: 分页查询套餐配额列表
+    服务: PlanQuotaService 套餐配额管理服务
+路径: /admin/v1/dashboard/operation-action-distribution
+  方法: GET
+    描述: 操作审计按 action 分布
+    服务: DashboardService 后台首页分析概览服务（只读聚合）
+路径: /admin/v1/plan-quotas/{id}
+  方法: PUT
+    描述: 更新套餐配额
+    服务: PlanQuotaService 套餐配额管理服务
+路径: /admin/v1/dict/entries/by-type-code
+  方法: GET
+    描述: 查询启用的字典条目
+    服务: DictEntryService 数据字典条目管理服务
+路径: /admin/v1/menus/{id}
+  方法: DELETE
+    描述: 删除菜单
+    服务: MenuService 后台菜单管理服务
+  方法: GET
+    描述: 查询菜单详情
+    服务: MenuService 后台菜单管理服务
+  方法: PUT
+    描述: 更新菜单
+    服务: MenuService 后台菜单管理服务
+路径: /admin/v1/tenants/{id}/quota-accounts
+  方法: GET
+    描述: 查询指定租户配额账户（QUOTA-02）
+    服务: QuotaAdminService 配额目录与租户账户读取服务（QUOTA-01/02）。
+ 仅平台管理权限；读取沿用现有分页与成功 JSON 风格，不加全局 code/data envelope。
+路径: /admin/v1/internal-message/send
+  方法: POST
+    描述: 发送消息
+    服务: InternalMessageService 站内信消息管理服务
+路径: /api/v1/auth/refresh
+  方法: POST
+    描述: 刷新认证令牌（免鉴权）
+ refresh token 经 HttpOnly Cookie 传输，请求体只承载可选的 client_id / device_id
+ 用于延续审计留痕与会话元数据；cookie 缺失即拒绝。
+    服务: AuthenticationService 用户后台登录认证服务
+
+ 路径规范：本服务的路由统一挂 /api/v1/auth/*，与 ANI Core OpenAPI 契约
+ （api/openapi/v1.yaml，servers[0].url = https://{host}/api/v1）拼出的最终 URL 一致。
+ 仓库内其余服务仍为 /admin/v1/*，两套前缀并存，按域逐步迁移。
+路径: /admin/v1/apis/walk-route
+  方法: GET
+    描述: 查询路由数据
+    服务: ApiService API资源管理服务
+路径: /admin/v1/tasks:type-names
+  方法: GET
+    描述: 任务类型名称列表
+    服务: TaskService 调度任务管理服务
+路径: /api/v1/networks/vpcs/{vpc_id}
+  方法: DELETE
+    摘要: Delete a VPC in the authenticated tenant
+    描述: Requires user JWT or ANI HMAC-SHA256 signature, NETWORK subscription and network:vpc:delete permission. Deletion is asynchronous; the response carries the final record state and an operation id. Cross-tenant and missing VPCs both return 404.
+    服务: NetworkService 
+  方法: GET
+    摘要: Get a VPC in the authenticated tenant
+    描述: Requires user JWT or ANI HMAC-SHA256 signature, NETWORK subscription and network:vpc:get permission. vpc_id must be vpc_ followed by 32 lowercase hex digits. Query parameters and body are rejected. Public identity headers are ignored. The persisted tenant UUID is looked up from the trusted operator's tenant and replayed downstream. Cross-tenant and missing VPCs both return 404. No network lifecycle or data-plane operation is performed.
+    服务: NetworkService 
+路径: /api/v1/auth/platform/password/login
+  方法: POST
+    描述: 平台账密登录（免鉴权）
+ 与租户登录分为两端点：平台身份的爆破影响面是全局，独立端点便于施加更严的限流/审计。
+    服务: AuthenticationService 用户后台登录认证服务
+
+ 路径规范：本服务的路由统一挂 /api/v1/auth/*，与 ANI Core OpenAPI 契约
+ （api/openapi/v1.yaml，servers[0].url = https://{host}/api/v1）拼出的最终 URL 一致。
+ 仓库内其余服务仍为 /admin/v1/*，两套前缀并存，按域逐步迁移。
+路径: /api/v1/images/space
+  方法: GET
+    摘要: GetImageSpace
+    描述: Requires active tenant, IMAGE module and image:space:get. Tenant identity comes only from the authenticated principal. See image-api.md for limits, idempotency and error semantics.
+    服务: ImageService 
+路径: /admin/v1/users
+  方法: GET
+    描述: 获取用户列表
+    服务: UserService 用户管理服务
+  方法: POST
+    描述: 创建用户
+    服务: UserService 用户管理服务
+路径: /api/v1/images/publisher-credential
+  方法: GET
+    摘要: GetPublisherCredential
+    描述: Requires active tenant, IMAGE module and image:credential:get. Tenant identity comes only from the authenticated principal. See image-api.md for limits, idempotency and error semantics.
+    服务: ImageService 
+路径: /api/v1/accelerator/usages/{owner_service}/{resource_id}
+  方法: GET
+    服务: AcceleratorService JWT tenant user, active tenant, ACCELERATOR plan module, current role
+ permission and downstream delegation grant are all required.
+路径: /admin/v1/positions/{id}
+  方法: DELETE
+    描述: 删除职位
+    服务: PositionService 职位管理服务
+  方法: GET
+    描述: 查询职位详情
+    服务: PositionService 职位管理服务
+  方法: PUT
+    描述: 更新职位
+    服务: PositionService 职位管理服务
+路径: /admin/v1/permissions/{id}
+  方法: DELETE
+    描述: 删除权限点
+    服务: PermissionService 权限点管理服务
+  方法: GET
+    描述: 查询权限点详情
+    服务: PermissionService 权限点管理服务
+  方法: PUT
+    描述: 更新权限点
+    服务: PermissionService 权限点管理服务
+路径: /admin/v1/mfa/disable
+  方法: POST
+    描述: 禁用/移除已注册 MFA 凭证。
+ 注意：kratos http 生成器不支持 DELETE 请求体（handler 只 BindQuery），
+ 而 TS 生成器默认把 message 序列化为 body——为两端一致改用 POST + body。
+    服务: MfaService MFA（多因素认证）服务 HTTP 桥接。
+ 管理侧 RPC（GetMFAStatus/ListEnrolledMethods/StartEnrollMethod/ConfirmEnrollMethod/
+ DisableMFA/RevokeMFADevice）需登录态，走正常 auth+authz 中间件，不加 security:{}。
+ 登录挑战侧 RPC（VerifyMFAChallenge）免鉴权，加 security:{} 并加入 rest_server 白名单。
+路径: /admin/v1/dict/entries/{id}
+  方法: PUT
+    描述: 更新字典条目
+    服务: DictEntryService 数据字典条目管理服务
+路径: /admin/v1/login-audit-logs
+  方法: GET
+    描述: 查询登录审计日志列表
+    服务: LoginAuditLogService 登录审计日志管理服务
+路径: /admin/v1/menus/sync
+  方法: POST
+    描述: 同步菜单
+    服务: MenuService 后台菜单管理服务
+路径: /admin/v1/perm-codes
+  方法: GET
+    描述: 查询权限码列表
+    服务: AdminPortalService 后台前端初始化数据与配置服务
+路径: /admin/v1/me/contact/verify
+  方法: POST
+    描述: 验证手机号码/邮箱
+    服务: UserProfileService 用户个人资料服务
+路径: /api/v1/accelerator/profiles
+  方法: GET
+    服务: AcceleratorService JWT tenant user, active tenant, ACCELERATOR plan module, current role
+ permission and downstream delegation grant are all required.
+路径: /admin/v1/online-session/my-sessions
+  方法: GET
+    描述: 查询当前登录用户的在线会话（个人中心自助视图）
+    服务: OnlineSessionService 在线会话管理服务（在线用户列表 + 强制下线）
+路径: /admin/v1/mfa/status
+  方法: GET
+    描述: 查询当前登录用户 MFA 总览
+    服务: MfaService MFA（多因素认证）服务 HTTP 桥接。
+ 管理侧 RPC（GetMFAStatus/ListEnrolledMethods/StartEnrollMethod/ConfirmEnrollMethod/
+ DisableMFA/RevokeMFADevice）需登录态，走正常 auth+authz 中间件，不加 security:{}。
+ 登录挑战侧 RPC（VerifyMFAChallenge）免鉴权，加 security:{} 并加入 rest_server 白名单。
+路径: /admin/v1/dashboard/login-trend
+  方法: GET
+    描述: 获取近 N 天每日登录次数趋势
+    服务: DashboardService 后台首页分析概览服务（只读聚合）
+路径: /admin/v1/users:exists
+  方法: GET
+    描述: 用户是否存在
+    服务: UserService 用户管理服务
+ERROR msg=network VPC RPC failed: rpc error: code = NotFound desc = private dependency detail
+ERROR msg=network VPC RPC failed: rpc error: code = InvalidArgument desc = private dependency detail
+ERROR msg=network VPC RPC failed: rpc error: code = PermissionDenied desc = private dependency detail
+ERROR msg=network VPC RPC failed: rpc error: code = Unauthenticated desc = private dependency detail
+ERROR msg=network VPC RPC failed: rpc error: code = Unavailable desc = private dependency detail
+ERROR msg=network VPC RPC failed: rpc error: code = DeadlineExceeded desc = private dependency detail
+--- FAIL: TestTaskService_RealAsynqSchedulerLifecycle (0.00s)
+    task_service_asynq_sqlite_test.go:134: ANI_TEST_REDIS_URI is not set: run this package through 'bash scripts/ci/with-redis.sh run -- ...' (the Makefile verify-gpu-regressions recipe does that as well)
+FAIL
+FAIL	go-wind-admin/app/admin/service/internal/service	18.107s
+ok  	go-wind-admin/app/admin/service/internal/server	0.703s
+?   	go-wind-admin/app/admin/service/cmd/server	[no test files]
+FAIL
+2026-09-29T19:51:49Z
+exit=1

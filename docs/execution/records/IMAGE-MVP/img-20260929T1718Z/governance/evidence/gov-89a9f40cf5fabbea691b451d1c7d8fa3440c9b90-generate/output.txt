@@ -1,0 +1,12 @@
+2026-09-29T19:13:38Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/89a9f40cf5fabbea691b451d1c7d8fa3440c9b90'...
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/governance-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+HEAD 目前位于 89a9f40 feat(image): add Governance client BFF module and HTTP admission
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/89a9f40cf5fabbea691b451d1c7d8fa3440c9b90
+go: downloading github.com/zhangzhe-ctrl/ani-resource-service v0.0.0-20260929185545-71aa986078df
+go: github.com/zhangzhe-ctrl/ani-resource-service@71aa986078dfb64388d783a7b2de01b7a94b0027: github.com/zhangzhe-ctrl/ani-resource-service@v0.0.0-20260929185545-71aa986078df: verifying module: github.com/zhangzhe-ctrl/ani-resource-service@v0.0.0-20260929185545-71aa986078df: reading https://goproxy.cn/sumdb/sum.golang.org/lookup/github.com/zhangzhe-ctrl/ani-resource-service@v0.0.0-20260929185545-71aa986078df: 404 Not Found
+	server response: not found: temporarily unavailable
+2026-09-29T19:14:00Z
+exit=1

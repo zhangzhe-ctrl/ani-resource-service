@@ -1,0 +1,21 @@
+2026-09-29T19:14:53Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/89a9f40cf5fabbea691b451d1c7d8fa3440c9b90
+go: downloading github.com/zhangzhe-ctrl/ani-resource-service v0.0.0-20260929185545-71aa986078df
+go: added github.com/zhangzhe-ctrl/ani-resource-service v0.0.0-20260929185545-71aa986078df
+protos/identity/service/v1/module.proto:5:1:Import "gnostic/openapi/v3/annotations.proto" is unused.
+protos/identity/service/v1/module.proto:11:3:Enum value name "DASHBOARD" should be prefixed with "MODULE_".
+protos/identity/service/v1/module.proto:12:3:Enum value name "OPM" should be prefixed with "MODULE_".
+protos/identity/service/v1/module.proto:13:3:Enum value name "SYSTEM" should be prefixed with "MODULE_".
+protos/identity/service/v1/module.proto:14:3:Enum value name "DICT" should be prefixed with "MODULE_".
+protos/identity/service/v1/module.proto:15:3:Enum value name "TENANT" should be prefixed with "MODULE_".
+protos/identity/service/v1/module.proto:16:3:Enum value name "PERMISSION" should be prefixed with "MODULE_".
+protos/identity/service/v1/module.proto:17:3:Enum value name "LOG" should be prefixed with "MODULE_".
+protos/identity/service/v1/module.proto:18:3:Enum value name "INTERNAL_MESSAGE" should be prefixed with "MODULE_".
+protos/identity/service/v1/module.proto:19:3:Enum value name "TASK" should be prefixed with "MODULE_".
+protos/identity/service/v1/module.proto:20:3:Enum value name "NETWORK" should be prefixed with "MODULE_".
+protos/identity/service/v1/module.proto:21:3:Enum value name "MODEL" should be prefixed with "MODULE_".
+protos/identity/service/v1/module.proto:22:3:Enum value name "ACCELERATOR" should be prefixed with "MODULE_".
+protos/identity/service/v1/module.proto:23:3:Enum value name "IMAGE" should be prefixed with "MODULE_".
+2026-09-29T19:15:25Z
+exit=100

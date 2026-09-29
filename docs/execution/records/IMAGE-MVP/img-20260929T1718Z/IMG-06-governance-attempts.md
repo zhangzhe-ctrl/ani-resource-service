@@ -27,3 +27,7 @@ Governance 隔离工作树 `/home/chabking/workspace/.worktrees/governance-image
 `d64d6ee478801795afadb4573ba25f8c2de6b7fc` 首轮 verify（2026-09-29T20:00:27Z—20:08:55Z，scope `run-p810982-i9200661.scope`）重生成 clean、基础合同/鉴权/日志测试通过，真实私有 Redis 上的完整 data/service/server 回归通过，含原 Asynq lifecycle；随后 race 编译触发 systemd `Result=oom-kill`，内存峰值2.2G，SSH exit 141。该轮没有总门禁通过，不能以 scope 终止前的局部 pass 代替。两个 fixture `c1f877877f8715968a5aa68b139f8ba828a73982475d84871e909222b3e05a9e`（PG）、`cdfd301a82a864f332e360767493e0cdb90565c70e3e8fa392fc5300d40da41c`（Redis）均在 race 前按 ownership 清理；scope 已失败终止，无残留本 SHA 编译进程。
 
 恢复采用同 SHA 的新目录 `-serial`，沿用原 flock 和 CPUQuota=200%/MemoryMax=2300M/MemorySwapMax=0，仅把 Go 编译并发降为 `-p=1`、GOMEMLIMIT=768MiB、GOGC=50。2026-09-29T20:09:43Z 启动 scope `run-p826002-i9220950.scope`，完整重跑生成、回归、race、build、HTTP 联调，未跳过门禁或增加预算。源码没有因资源失败而修改；结果单独归档。
+
+`-serial` 在2026-09-29T20:14:28Z再次由OOM终止，SSH exit141；完整原有回归已通过，fixture清理后才进入race。随后 `gov06-remaining.sh` 同SHA先完成默认优化的server/admin build和真实HTTP联合测试（0.69s），再以GOMAXPROCS=1、GOMEMLIMIT=512MiB、GOGC=20尝试race；scope `run-p829459-i9218579.scope` 于20:23:26Z由OOM终止，SSH exit141。两个失败都是编译资源失败，没有断言失败或race报告。
+
+最后仅对生成Ent包设置 `-gcflags=go-wind-admin/app/admin/service/internal/data/ent=-l`，保留所有race插桩和断言，仍为原2300M/无swap预算。2026-09-29T20:24:07Z—20:32:27Z，scope `run-p830669-i9206543.scope`：auth/data/service Image定向race、真PG/Redis HTTP/mTLS race全部pass，整轮exit0。默认优化race仍属未完成，不能用该参数的成功覆盖三轮OOM。实际命令、hash与资源清理见[结果记录](IMG-06-governance.md)。

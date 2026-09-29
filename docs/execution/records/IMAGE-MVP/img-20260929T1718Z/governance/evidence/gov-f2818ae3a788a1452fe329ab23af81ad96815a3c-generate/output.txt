@@ -1,0 +1,150 @@
+2026-09-29T19:41:12Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/f2818ae3a788a1452fe329ab23af81ad96815a3c'...
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/governance-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+HEAD 目前位于 f2818ae fix(image): preserve existing OpenAPI postprocessing in staged generation
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/f2818ae3a788a1452fe329ab23af81ad96815a3c
+go: added github.com/zhangzhe-ctrl/ani-resource-service v0.0.0-20260929185545-71aa986078df
+go build -trimpath -o tools/bin/gow ./tools/localdeps/gow/cmd/gow
+make: 进入目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/f2818ae3a788a1452fe329ab23af81ad96815a3c/app/admin/service”
+make -C "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/f2818ae3a788a1452fe329ab23af81ad96815a3c/" gow
+make[1]: 进入目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/f2818ae3a788a1452fe329ab23af81ad96815a3c”
+go build -trimpath -o tools/bin/gow ./tools/localdeps/gow/cmd/gow
+make[1]: 离开目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/f2818ae3a788a1452fe329ab23af81ad96815a3c”
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/f2818ae3a788a1452fe329ab23af81ad96815a3c/tools/bin/gow ent "admin"
+Generated ent for service admin successfully.
+make: 离开目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/f2818ae3a788a1452fe329ab23af81ad96815a3c/app/admin/service”
+{
+  "source_sha": "f2818ae3a788a1452fe329ab23af81ad96815a3c",
+  "resource_contract_sha": "71aa986078dfb64388d783a7b2de01b7a94b0027",
+  "files": [
+    {
+      "path": "api/gen/go/identity/service/v1/module.pb.go",
+      "base_sha256": "9f9df8ea596104422914c3cd8d02e8d7c21e65646667172ddbe6da091af97581",
+      "sha256": "3864f1695b46d33f3835f7d1c956b22697d7229c07f2413ec13feb387822b9b9"
+    },
+    {
+      "path": "app/admin/service/cmd/server/assets/openapi.yaml",
+      "base_sha256": "c0d65615ae06769bcaf1df7bac6809f8ad7226febd23cfc38f94d48b3a0d15c6",
+      "sha256": "e1881e6975cb9d2b6e45d58bd7c425bff352237b3b6814e3b5c89e9c468c45a1"
+    },
+    {
+      "path": "app/admin/service/cmd/server/wiring_ent.go",
+      "base_sha256": "c5d06f8f8242f27f33071eefd629087aead2722908175c6a5191f1b5354f4c1d",
+      "sha256": "40961fd9835da48d116bded92ccb0308accd758d04fad0071834e56edfbb157d"
+    },
+    {
+      "path": "app/admin/service/internal/data/ent/api/api.go",
+      "base_sha256": "e2a45dd5456064cf0e548ac946ab0e1d196b527b27bdb4bb64bbf70aca8c8d41",
+      "sha256": "111ff4a47d2f519616832a0711e60d1d28879aaf426d709b090532c3837919b6"
+    },
+    {
+      "path": "app/admin/service/internal/data/ent/migrate/schema.go",
+      "base_sha256": "5a2ed068c8c8516d1f1aa70fb366c1ab29b69a3af3088036e2bc99ad4ea14570",
+      "sha256": "10ec5f53f9e193d41ef926f6933fc7d5ffd87404d443c89fa5b46fb1829533c3"
+    },
+    {
+      "path": "app/admin/service/internal/data/ent/planmodule/planmodule.go",
+      "base_sha256": "2e96d219632a5cd02692c32432249adf390331a97fd6f24512d6dbb46649e2b9",
+      "sha256": "387d06491736174804c3aa0aa0994b7eeaf39c919396e41814460246ca7a977f"
+    },
+    {
+      "path": "app/admin/service/internal/data/image_client.go",
+      "base_sha256": "d5efff7e550a36b6d22a33aa3499b81f72370f1817437ae2e7ab43487391ee02",
+      "sha256": "69657b9bea8270b228211539ad3dea3163732e709f085d4eee18a4bc79066409"
+    },
+    {
+      "path": "app/admin/service/internal/data/image_client_test.go",
+      "base_sha256": "711f81929ec5795847aa655452e1d293c9e9c44a5e33892c8af829aca5db6cd0",
+      "sha256": "89d39c09c8deb98e8be8b36d40735bb4613d9613e21c2dbbb3ffd78cbc415d24"
+    },
+    {
+      "path": "app/admin/service/internal/data/tenant_access_checker_sqlite_test.go",
+      "base_sha256": "c83e3de76d10a23302c6a238cde8a817cd65e31b4d27d43d825f668a26fb19f0",
+      "sha256": "b41a78b786b06eb08a1a69b13fb06d17e77a46bcd79f4583f3fcf5ec4efe68aa"
+    },
+    {
+      "path": "app/admin/service/internal/service/image_joint_fixture_test.go",
+      "base_sha256": "d18af6ff90d8a5ecd707c7a3ce00ec7171c7f1665ee547959afb6a3bcc1872af",
+      "sha256": "fa654c7ed4d671aa2bc2bacdd2394bb5a761b715ba4ad84dc2dc0b992b5c291e"
+    },
+    {
+      "path": "app/admin/service/internal/service/image_joint_http_test.go",
+      "base_sha256": "47286848096e8096a63738b4fbbaae19333f3a71a8a9523f24ff1f5e9fbc43f8",
+      "sha256": "f259a605e57a7315e80f9f3f880407b410a761d9a668cf08b9dd90d666c5b5fa"
+    },
+    {
+      "path": "app/admin/service/internal/service/image_service.go",
+      "base_sha256": "7af392f1e72e8913fbee8ad91982265b974fbc526c09b00fd2717ffcff84039e",
+      "sha256": "5fc891630c061323d3489c25fef1854b4a1974798fd98e97ac20578ee8a5670d"
+    },
+    {
+      "path": "app/admin/service/internal/service/image_views.go",
+      "base_sha256": "bcdb2cedef79dc484ef91ee1e761fe1ec1540760f79b969a7da4a9d68864fe86",
+      "sha256": "47dc505cdbec01f27c574f80b89a066e1aecfb3916f74951057a7977998a2132"
+    },
+    {
+      "path": "app/admin/service/internal/service/image_views_test.go",
+      "base_sha256": "4615721adb986c3e7ff99f8c582cf65cc64131bcdc202e46b6711d57b6d3c8c2",
+      "sha256": "db7f5fd2661d6cf89c7734127e3ea0907402f94d028ad309c310820c99382be1"
+    },
+    {
+      "path": "app/admin/service/internal/service/permission_service.go",
+      "base_sha256": "9aad4bc659814f4a632dae87474eeba0123fc7e94c1e047c6abe7bcc30243493",
+      "sha256": "83efa522ceb9dd70a682308293cbe79ec7b06cab92c709c6eb3597137940314e"
+    },
+    {
+      "path": "go.mod",
+      "base_sha256": "5e33988887af338ab737ab094ccb89f67a96aff922a4088995543b62f12a646d",
+      "sha256": "e0f10e98108987f396c40fb5b249ea3080ddff95f93bbaac9c574a5e883ed7d3"
+    },
+    {
+      "path": "go.sum",
+      "base_sha256": "997d541cec2913e4a5846a3c2fbe16eebcc857ba3fbaf504f96ecc956af85135",
+      "sha256": "5afff133f0acf5cc4d20ecd99c0c16e51a3445b5820ec96936c4c748038c6c32"
+    },
+    {
+      "path": "pkg/constants/module_mapping.go",
+      "base_sha256": "9ba5be2850da8d7ce72c60fc0a5835729b44949080a3b39859ea1f553dd30918",
+      "sha256": "aada7703603276bed3438cb2c5649eb775f5dfbb64245f864eda66024042ae22"
+    },
+    {
+      "path": "pkg/constants/module_mapping_test.go",
+      "base_sha256": "90b6b255526f407a7a0c33c8da5f00c344f5d9b44e1b19c22f78ef46ebbbc5e5",
+      "sha256": "5a768e24dcdd5a301634c88a5ad0c57b10dcea6ae7f96a2926f093611cacdbef"
+    },
+    {
+      "path": "pkg/localdeps/kratos-bootstrap/rpc/rest.go",
+      "base_sha256": "4a746f9e41a53b79af836e2d6185b28252ad87ea915749860e1c42b1dd72891c",
+      "sha256": "b9bf978bcf106f9ab695d33051d96675e8b0adb40caf32543bc97f0422dece4d"
+    },
+    {
+      "path": "pkg/localdeps/kratos-bootstrap/rpc/rest_filters_test.go",
+      "base_sha256": "dad038f1f4b50d37965e829ff562d5c09e5614e09f11221f30325fa9371be8b9",
+      "sha256": "06e6a62c46ad502312331af21300bbacdf90634f2c1d485f096df898704318a6"
+    },
+    {
+      "path": "pkg/middleware/auth/image_policy.go",
+      "base_sha256": "15af84bc6103362f6c469eb23eb0ea5270d18e5f7f0467b9826cb64317268b02",
+      "sha256": "fdb34b05f5d62453ece9bbbb1e0e223c8cfba42857787c797cf26bd09daeece9"
+    },
+    {
+      "path": "pkg/middleware/auth/image_policy_test.go",
+      "base_sha256": "169203da997312b7b3d93c465152dbfdc54c6cbb8440bfab62124f1c3a2f772b",
+      "sha256": "f804840a8787c226414e8a401f4cd1f8f71650abfcd843cc21baab1f67367d7f"
+    },
+    {
+      "path": "pkg/middleware/auth/signature.go",
+      "base_sha256": "e6f8b181357194b0a19d998290b579bdba166c4b91614e7ce05e1cb3e5ba0d2d",
+      "sha256": "f9b7b673c91fc7da12499ca64e8c6edae87c2cb17d1a72d3dd3b3089b1f7a9a0"
+    },
+    {
+      "path": "tests/imagecontract/contract_test.go",
+      "base_sha256": "aff1a0acd455d3a25d39232a125b6311b7d4c1e4cdc17c90e5ab610e700651c4",
+      "sha256": "b81f3ca9e9be3f8ed733c66fcef58b8e78cb20a34e9517a830b265d6428caa55"
+    }
+  ]
+}
+2026-09-29T19:43:55Z
+exit=0
