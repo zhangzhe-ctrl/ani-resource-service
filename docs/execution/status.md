@@ -322,10 +322,10 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-05.6 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
 | IMG-06.1 | pass | pass | blocked | n_a | [Resource sub-gate](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-resource.md); exact SHA 71aa986, mTLS/race/PG/verify |
 | IMG-06.2 | pass | pass | blocked | n_a | [Resource sub-gate](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-resource.md); exact SHA 71aa986, mTLS/race/PG/verify |
-| IMG-06.3 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
-| IMG-06.4 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
-| IMG-06.5 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
-| IMG-06.6 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
+| IMG-06.3 | running | not_run | blocked | blocked | Governance source 9690a81 pushed; new SHA verification running; [generation attempts](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-governance-attempts.md) |
+| IMG-06.4 | running | not_run | blocked | blocked | Governance source 9690a81 pushed; new SHA verification running; [generation attempts](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-governance-attempts.md) |
+| IMG-06.5 | running | not_run | blocked | blocked | Governance source 9690a81 pushed; new SHA verification running; [generation attempts](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-governance-attempts.md) |
+| IMG-06.6 | running | not_run | blocked | blocked | Governance source 9690a81 pushed; new SHA verification running; [generation attempts](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-governance-attempts.md) |
 | IMG-07.1 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-07.2 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-07.3 | not_run | not_run | not_run | not_run | dependency gate pending |
