@@ -295,18 +295,18 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-01.4 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
 | IMG-01.5 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
 | IMG-01.6 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
-| IMG-02.1 | running | not_run | n_a | n_a | independent Image schema/sqlc/role and true-PG work |
-| IMG-02.2 | running | not_run | n_a | n_a | independent Image schema/sqlc/role and true-PG work |
-| IMG-02.3 | running | not_run | n_a | n_a | independent Image schema/sqlc/role and true-PG work |
-| IMG-02.4 | running | not_run | n_a | n_a | independent Image schema/sqlc/role and true-PG work |
-| IMG-02.5 | running | not_run | n_a | n_a | independent Image schema/sqlc/role and true-PG work |
-| IMG-02.6 | running | not_run | n_a | n_a | independent Image schema/sqlc/role and true-PG work |
-| IMG-03.1 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-03.2 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-03.3 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-03.4 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-03.5 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-03.6 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-02.1 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
+| IMG-02.2 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
+| IMG-02.3 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
+| IMG-02.4 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
+| IMG-02.5 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
+| IMG-02.6 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
+| IMG-03.1 | running | not_run | blocked | n_a | pinned Harbor API adapter; approved live profile missing |
+| IMG-03.2 | running | not_run | blocked | n_a | pinned Harbor API adapter; approved live profile missing |
+| IMG-03.3 | running | not_run | blocked | n_a | pinned Harbor API adapter; approved live profile missing |
+| IMG-03.4 | running | not_run | blocked | n_a | pinned Harbor API adapter; approved live profile missing |
+| IMG-03.5 | running | not_run | blocked | n_a | pinned Harbor API adapter; approved live profile missing |
+| IMG-03.6 | running | not_run | blocked | n_a | pinned Harbor API adapter; approved live profile missing |
 | IMG-04.1 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-04.2 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-04.3 | not_run | not_run | not_run | not_run | dependency gate pending |
@@ -355,4 +355,4 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-11.4 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-11.5 | not_run | not_run | not_run | not_run | dependency gate pending |
 
-IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: IMG-02 independent migrations, tenant SQL and true PostgreSQL; missing live/consumer inputs do not block backend independent tasks.
+IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: IMG-03 Harbor adapter and AES-GCM; missing live/consumer inputs do not block backend independent tasks.

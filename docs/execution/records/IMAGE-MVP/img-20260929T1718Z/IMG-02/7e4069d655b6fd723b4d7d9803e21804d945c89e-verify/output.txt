@@ -1,0 +1,108 @@
+2026-09-29T17:56:43Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/7e4069d655b6fd723b4d7d9803e21804d945c89e
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	1.022s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=623877c92e7bcb857d4dc85a66718b112ccd645919aa6565865c2577eebb62e8 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=623877c92e7bcb857d4dc85a66718b112ccd645919aa6565865c2577eebb62e8 loopback_port=32796
+=== RUN   TestTenantQueriesAndAtomicCatalog
+--- PASS: TestTenantQueriesAndAtomicCatalog (0.29s)
+=== RUN   TestCatalogCASAndPagination
+--- PASS: TestCatalogCASAndPagination (0.28s)
+=== RUN   TestConcurrentSpaceSlug
+--- PASS: TestConcurrentSpaceSlug (0.21s)
+=== RUN   TestRuntimeRoleAndMigration
+--- PASS: TestRuntimeRoleAndMigration (0.25s)
+=== RUN   TestTenantCompositeFKAndPlatformFK
+--- PASS: TestTenantCompositeFKAndPlatformFK (0.24s)
+=== RUN   TestCredentialGenerationAndSpaceReadiness
+--- PASS: TestCredentialGenerationAndSpaceReadiness (0.25s)
+=== RUN   TestSpaceWriteLockTimeoutAndRelease
+--- PASS: TestSpaceWriteLockTimeoutAndRelease (0.23s)
+PASS
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	2.776s
+removed Image task PostgreSQL=623877c92e7bcb857d4dc85a66718b112ccd645919aa6565865c2577eebb62e8
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=612209db30d1496310fbae07613139e4dac8106600ee6232a397b15de121cece memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=612209db30d1496310fbae07613139e4dac8106600ee6232a397b15de121cece loopback_port=32797
+--- FAIL: TestTenantQueriesAndAtomicCatalog (0.17s)
+    postgres_integration_test.go:156: tenant query exposed another tenant image
+FAIL
+FAIL	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.180s
+FAIL
+--- FAIL: TestTenantQueriesAndAtomicCatalog (0.17s)
+Image mutation tenant-query rejected with assertion exit=1
+--- FAIL: TestTenantCompositeFKAndPlatformFK (0.14s)
+    postgres_integration_test.go:372: invalid credentials relation accepted: scope tenant space 51844057-04e6-4589-87bb-34bd3b9d69a9
+FAIL
+FAIL	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.147s
+FAIL
+--- FAIL: TestTenantCompositeFKAndPlatformFK (0.14s)
+Image mutation tenant-fk rejected with assertion exit=1
+migrations/image/001_image.sql: 成功
+internal/data/image/queries/registrations.sql: 成功
+removed Image task PostgreSQL=612209db30d1496310fbae07613139e4dac8106600ee6232a397b15de121cece
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+./scripts/verify-source /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc
+./scripts/verify-boundaries
+boundary fixture rejected: internal/biz/network/nested -> database/sql
+boundary fixture rejected: internal/biz/image/nested -> net/http
+boundary fixture rejected: internal/biz/image/nested -> example.invalid/boundary-fixture/internal/data/image
+boundary fixture rejected: internal/data/image -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/service/image -> example.invalid/boundary-fixture/internal/service/network
+boundary fixture rejected: internal/biz/network/nested -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/service/network -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/data/network -> example.invalid/boundary-fixture/internal/service/network
+boundary fixture rejected: internal/data/network -> example.invalid/boundary-fixture/internal/data/storage
+boundary fixture rejected: internal/service/network -> example.invalid/boundary-fixture/internal/service/storage
+recursive domain and repository ownership boundaries verified
+./scripts/net05a-build-faults.py --network-only
+{"fault_build": "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/7e4069d655b6fd723b4d7d9803e21804d945c89e/.work/fault-build", "status": "pass"}
+go mod tidy -diff
+go test -count=1 ./...
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/cmd/ani-resource-service	0.016s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	0.004s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network	0.009s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/conf/v1	0.010s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	0.027s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/server	2.132s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network	0.007s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations/image	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	0.012s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/scripts/vpc-read-probe	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/relay	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/rpc	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider	0.010s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/runtime	0.045s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv	0.008s
+go vet ./...
+go build -trimpath ./...
+go mod verify
+all modules verified
+git diff --check
+2026-09-29T17:58:48Z
+exit=0
