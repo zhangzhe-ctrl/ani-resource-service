@@ -164,12 +164,18 @@ func GovernanceUnary() grpc.UnaryServerInterceptor {
 		if err != nil {
 			return nil, err
 		}
-		if _, ok := governanceReadMethods[info.FullMethod]; !ok {
+		_, imageMethod := imageGovernanceMethods[info.FullMethod]
+		if _, ok := governanceReadMethods[info.FullMethod]; !ok && !imageMethod {
 			return nil, status.Error(codes.PermissionDenied, "governance credential does not permit this method")
 		}
 		r, ok := req.(proto.Message)
 		if !ok {
 			return nil, status.Error(codes.PermissionDenied, "governance requests must be proto messages")
+		}
+		if imageMethod {
+			ctx, err = withImageGovernanceCaller(ctx, p, r)
+			if err != nil { return nil, err }
+			return next(ctx, req)
 		}
 		value := r.ProtoReflect()
 		// Bind the request's tenant field to the authenticated governance

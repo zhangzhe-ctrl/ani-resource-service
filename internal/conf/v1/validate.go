@@ -94,7 +94,7 @@ func (c *Bootstrap) Validate() error {
 			}
 		}
 	}
-	return nil
+	return c.Image.Validate()
 }
 
 func validateListener(name, network, address string, timeout *durationpb.Duration) error {
