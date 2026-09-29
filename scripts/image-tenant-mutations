@@ -8,7 +8,7 @@ test -n "${IMAGE_TEST_ADMIN_DSN_FILE:-}"
 stage=$(mktemp -d "${TMPDIR:?}/imut.XXXXXX")
 trap 'rm -rf -- "$stage"' EXIT
 sha256sum migrations/image/001_image.sql internal/data/image/queries/registrations.sql > "$stage/source-before.sha256"
-for mutation in tenant-query tenant-fk; do
+for mutation in tenant-query tenant-fk platform-write; do
  mkdir "$stage/$mutation"
  git archive HEAD | tar -x -C "$stage/$mutation"
  (
@@ -22,13 +22,19 @@ if sys.argv[1]=='tenant-query':
  # Make the tenant predicate ineffective while preserving its generated type.
  part=s[start:end];bad=part.replace(' AND tenant_id=sqlc.arg(tenant_id)',' AND (tenant_id=sqlc.arg(tenant_id) OR TRUE)')
  assert bad!=part;s=s[:start]+bad+s[end:];p.write_text(s)
-else:
+elif sys.argv[1]=='tenant-fk':
  p=Path('migrations/image/001_image.sql');s=p.read_text();line='    FOREIGN KEY (space_id,tenant_id) REFERENCES image.spaces(space_id,tenant_id),\n'
  assert s.count(line)==3;p.write_text(s.replace(line,''))
+else:
+ p=Path('internal/data/image/queries/registrations.sql');s=p.read_text()
+ start=s.index('-- name: UpdatePlatformMetadata :one');end=s.index('-- name:',start+9)
+ part=s[start:end];bad=part.replace("owner_scope='platform' AND tenant_id IS NULL",'TRUE')
+ assert bad!=part;p.write_text(s[:start]+bad+s[end:])
 PY
   "$SQLC" generate
   test_name=TestTenantQueriesAndAtomicCatalog
   if [[ $mutation == tenant-fk ]]; then test_name=TestTenantCompositeFKAndPlatformFK; fi
+  if [[ $mutation == platform-write ]]; then test_name=TestPlatformLifecycleCatalogAndTenantBoundaries; fi
   set +e
   go test -tags=imageintegration -count=1 -timeout=20m ./internal/data/image -run "^$test_name$" > "$stage/$mutation.txt" 2>&1
   rc=$?

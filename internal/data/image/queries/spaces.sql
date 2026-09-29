@@ -56,3 +56,6 @@ RETURNING *;
 -- name: InspectSpaceForOperator :one
 -- Local operator mode only; never used by tenant RPC paths.
 SELECT * FROM image.spaces WHERE space_id=sqlc.arg(space_id);
+
+-- name: LockPlatformSpace :exec
+SELECT pg_advisory_xact_lock(hashtextextended('image.platform', 0));

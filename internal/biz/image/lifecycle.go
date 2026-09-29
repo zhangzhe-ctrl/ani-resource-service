@@ -21,6 +21,7 @@ type LifecycleConfig struct {
 }
 type Lifecycle struct {
 	repo     LifecycleRepository
+	platformRepo PlatformRepository
 	registry Registry
 	cipher   SecretCipher
 	cfg      LifecycleConfig
@@ -177,7 +178,7 @@ func (l *Lifecycle) phase(ctx context.Context, c *Command, phase string) error {
 	c.Phase = phase
 	c.State = "running"
 	c.Reason = ""
-	saved, err := l.repo.SaveTenantCommandPhase(ctx, *c)
+	saved, err := l.saveCommandPhase(ctx, *c)
 	if err == nil {
 		*c = saved
 	}
@@ -186,12 +187,12 @@ func (l *Lifecycle) phase(ctx context.Context, c *Command, phase string) error {
 func (l *Lifecycle) unconfirmedProject(ctx context.Context, s *Space, c *Command) error {
 	c.State = "blocked"
 	c.Reason = SpaceOwnershipUnconfirmed
-	saved, err := l.repo.SaveTenantCommandPhase(ctx, *c)
+	saved, err := l.saveCommandPhase(ctx, *c)
 	if err != nil {
 		return err
 	}
 	*c = saved
-	blocked, err := l.repo.BlockTenantSpace(ctx, *s, SpaceOwnershipUnconfirmed)
+	blocked, err := l.blockSpace(ctx, *s, SpaceOwnershipUnconfirmed)
 	if err != nil {
 		return err
 	}
@@ -224,7 +225,7 @@ func (l *Lifecycle) resumeProject(ctx context.Context, s *Space, c *Command) err
 		}
 		// Persist the returned ID before the next provider read. A lost commit is
 		// resolved by a fresh command/space read on the next same-key request.
-		bound, err := l.repo.BindTenantProject(ctx, *s, project.ID)
+		bound, err := l.bindProject(ctx, *s, project.ID)
 		if err != nil {
 			return err
 		}
@@ -347,7 +348,7 @@ func (l *Lifecycle) prepareCandidate(ctx context.Context, s Space, c Command, pr
 	c.DeliverySecret = encrypted
 	c.Phase = "candidate_prepared"
 	c.State = "running"
-	return l.repo.PrepareTenantCandidate(ctx, c)
+	return l.prepareStoredCandidate(ctx, c)
 }
 func (l *Lifecycle) candidateRequest(s Space, c Command) (RobotRequest, error) {
 	perms, err := RobotPermissions(s.ProjectName, l.cfg.PlatformProject, c.Candidate.Purpose, s.Scope)
@@ -368,7 +369,7 @@ func (l *Lifecycle) verifyCandidate(r Robot, c Command, want RobotRequest) error
 	return ValidateRobotPermissions(r.Permissions, want.Permissions)
 }
 func (l *Lifecycle) currentCandidate(ctx context.Context, s Space, c Command) error {
-	latest, err := l.repo.FindTenantCommand(ctx, s.TenantID, s.ID, c.Key)
+	latest, err := l.findCommand(ctx, s, c.Key)
 	if err != nil {
 		return err
 	}
@@ -377,7 +378,7 @@ func (l *Lifecycle) currentCandidate(ctx context.Context, s Space, c Command) er
 	}
 	var info CredentialInfo
 	if c.Candidate.Purpose == "publisher" {
-		info, err = l.repo.GetTenantPublisher(ctx, s.TenantID, s.ID)
+		info, err = l.publisher(ctx, s)
 	} else {
 		var stored StoredCredential
 		stored, err = l.repo.GetTenantPull(ctx, s.TenantID, s.ID)
@@ -502,7 +503,7 @@ func (l *Lifecycle) runCandidate(ctx context.Context, s Space, c Command, previo
 		until := l.now().Add(10 * time.Minute)
 		c.ReplayUntil = &until
 	}
-	return l.repo.ActivateTenantCandidate(ctx, s, c, pull)
+	return l.activateCandidate(ctx, s, c, pull)
 }
 func (l *Lifecycle) verifyPrevious(r Robot, s Space, previous CredentialInfo, permissions []RobotPermission) error {
 	prefix := fmt.Sprintf("ani-image:v1:%s:%s:%s:%d:", s.InstallationID, s.ID, previous.Purpose, previous.Generation)
@@ -518,7 +519,7 @@ func (l *Lifecycle) replayDelivery(ctx context.Context, s Space, c Command) (Cre
 	if c.State != "succeeded" || c.Result.Credential == nil || c.ReplayUntil == nil || !l.now().Before(*c.ReplayUntil) || len(c.DeliverySecret.Ciphertext) == 0 {
 		return CredentialDelivery{}, Fail(CredentialDeliveryExpired, "credential delivery window expired; reset required")
 	}
-	info, err := l.repo.GetTenantPublisher(ctx, s.TenantID, s.ID)
+	info, err := l.publisher(ctx, s)
 	if err != nil {
 		return CredentialDelivery{}, err
 	}

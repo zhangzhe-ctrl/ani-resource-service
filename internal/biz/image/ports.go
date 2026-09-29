@@ -97,3 +97,24 @@ type LifecycleRepository interface {
 	RecoverTenantProject(context.Context, Space, Command, int64, string) (Space, error)
 	PurgeExpiredDeliverySecrets(context.Context, time.Time) (int64, error)
 }
+
+// PlatformRepository has explicit platform-only queries. Only the local
+// operator use case receives this port; no tenant input selects these writes.
+type PlatformRepository interface {
+	FindPlatformSpace(context.Context) (Space, error)
+	FindPlatformCommand(context.Context, string, string) (Command, error)
+	ReservePlatformSpace(context.Context, Space, Command) (Space, Command, error)
+	BindPlatformProject(context.Context, Space, int64) (Space, error)
+	BlockPlatformSpace(context.Context, Space, Reason) (Space, error)
+	SavePlatformCommandPhase(context.Context, Command) (Command, error)
+	CompletePlatformEnable(context.Context, Space, Command) (Space, Command, error)
+	GetPlatformPublisher(context.Context, string) (CredentialInfo, error)
+	BeginPlatformCredentialCommand(context.Context, Command, int64) (Command, error)
+	PreparePlatformCandidate(context.Context, Command) (Command, error)
+	ActivatePlatformCandidate(context.Context, Space, Command) (Space, Command, error)
+	OpenPlatformExternalCommand(context.Context, string) (Command, error)
+	RecoverPlatformProject(context.Context, Space, Command, int64, string) (Space, error)
+	ApplyPlatformRegistration(context.Context, Command, Registration) (Registration, error)
+	ApplyPlatformMetadata(context.Context, Command, UpdateImage) (Registration, error)
+	ApplyPlatformUnregister(context.Context, Command, UnregisterImage) (Registration, error)
+}
