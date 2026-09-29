@@ -64,6 +64,9 @@ func ApplyImageMigrations(ctx context.Context, cfg OwnerConfig) error {
 	}
 	defer conn.Release()
 	if _, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", imageMigrationLock); err != nil {
+		cleanup, done := context.WithTimeout(context.Background(), 5*time.Second)
+		defer done()
+		_ = conn.Hijack().Close(cleanup)
 		return fmt.Errorf("Image migration lock unavailable")
 	}
 	defer func() {
