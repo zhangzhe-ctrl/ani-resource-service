@@ -23,7 +23,7 @@ def profile():
         'smoke': {'execution_host': socket.gethostname(), 'allow_technical_runtime_read': True,
                   'cluster_uid': '10000000-0000-4000-8000-000000000001', 'platform_project': run + '-platform',
                   'timeout_seconds': 60, 'max_image_bytes': 100000, 'resource_sha': 'a' * 40,
-                  'governance_sha': 'b' * 40, 'runtime_binary': '/unit/runtime',
+                  'governance_sha': 'b' * 40, 'runtime_binary': '/unit/runtime', 'governance_url': 'https://governance.invalid',
                   'target_platform': {'OS': 'linux', 'Architecture': 'amd64', 'Variant': ''}},
         'resource_budget': {'go_cpu_quota_percent': 200, 'go_memory_max': '2300M', 'go_swap_max': 0},
         'base_image_digest': 'docker.io/library/unit@sha256:' + 'c' * 64,

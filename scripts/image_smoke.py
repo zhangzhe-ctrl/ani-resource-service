@@ -301,9 +301,9 @@ class Probe:
         # existing project is claimed, and no global catalog body is archived.
         for project in self.h['allowed_project_names']:
             status, _, body = self.http(self.h['management_url'], self.h['ca_file'], 'GET',
-                '/api/v2.0/projects?project_name=' + urllib.parse.quote(project, safe=''),
+                '/api/v2.0/projects/' + urllib.parse.quote(project, safe=''),
                 headers={'Authorization': 'Basic ' + management})
-            require(status == 200 and decode(body) == [], 'project already exists or preflight unavailable; recovery required')
+            require(status == 404, 'project already exists or preflight unavailable; recovery required')
         for i in range(2):
             error = self.gov(i, 'GET', '/space', expected=404)
             require(error.get('reason') == 'SPACE_NOT_FOUND', 'Governance Image space absence is unconfirmed')
