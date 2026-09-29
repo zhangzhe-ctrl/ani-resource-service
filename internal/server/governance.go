@@ -174,7 +174,9 @@ func GovernanceUnary() grpc.UnaryServerInterceptor {
 		}
 		if imageMethod {
 			ctx, err = withImageGovernanceCaller(ctx, p, r)
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			return next(ctx, req)
 		}
 		value := r.ProtoReflect()

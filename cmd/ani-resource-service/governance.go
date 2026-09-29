@@ -32,7 +32,9 @@ func runGovernance(bc *conf.Bootstrap, logger *slog.Logger) error {
 		return err
 	}
 	images, err := openImage(context.Background(), bc.Image)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer images.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	repository, err := data.OpenPostgres(ctx, bc.Network.DatabaseDsn, data.Placement{ClusterID: bc.Network.ClusterId, NamespacePrefix: bc.Network.NamespacePrefix})
@@ -94,7 +96,9 @@ func runGovernance(bc *conf.Bootstrap, logger *slog.Logger) error {
 	networkv1.RegisterNetworkServiceServer(gs, networkService.NewNetworkService(networkUC))
 	networkv1.RegisterTenantEgressServiceServer(gs, networkService.NewTenantEgressService(egress))
 	networkv1.RegisterTenantLoadBalancerServiceServer(gs, networkService.NewTenantLoadBalancerService(lbs))
-	if images != nil { imagev1.RegisterTenantImageServiceServer(gs, images.tenant) }
+	if images != nil {
+		imagev1.RegisterTenantImageServiceServer(gs, images.tenant)
+	}
 	admin := server.NewAdminServer(bc.Server.Admin, readiness, observability.Gatherer(), middlewares...)
 	return kratos.New(kratos.ID(id), kratos.Name(Name), kratos.Version(Version), kratos.Logger(logger),
 		kratos.Server(gs, admin, execution),

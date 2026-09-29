@@ -17,8 +17,8 @@ import (
 	"time"
 
 	imagev1 "github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1"
-	imagebiz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image"
 	networkv1 "github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1"
+	imagebiz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -30,10 +30,16 @@ type vpcIdentityProbe struct {
 	networkv1.UnimplementedNetworkServiceServer
 }
 
-type imageIdentityProbe struct { imagev1.UnimplementedTenantImageServiceServer }
-func(imageIdentityProbe)GetImageSpace(ctx context.Context,r *imagev1.GetImageSpaceRequest)(*imagev1.GetImageSpaceResponse,error){
- c,err:=imagebiz.RequireTenant(ctx,r.GetTenantId());if err!=nil{return nil,err}
- return &imagev1.GetImageSpaceResponse{Space:&imagev1.ImageSpace{TenantId:c.TenantID,SpaceId:c.Actor,State:string(c.Kind),ProjectName:c.Subject}},nil
+type imageIdentityProbe struct {
+	imagev1.UnimplementedTenantImageServiceServer
+}
+
+func (imageIdentityProbe) GetImageSpace(ctx context.Context, r *imagev1.GetImageSpaceRequest) (*imagev1.GetImageSpaceResponse, error) {
+	c, err := imagebiz.RequireTenant(ctx, r.GetTenantId())
+	if err != nil {
+		return nil, err
+	}
+	return &imagev1.GetImageSpaceResponse{Space: &imagev1.ImageSpace{TenantId: c.TenantID, SpaceId: c.Actor, State: string(c.Kind), ProjectName: c.Subject}}, nil
 }
 
 func (vpcIdentityProbe) GetVPC(ctx context.Context, req *networkv1.GetVPCRequest) (*networkv1.GetVPCResponse, error) {
@@ -166,10 +172,14 @@ func TestGovernanceMTLSBoundary(t *testing.T) {
 				t.Fatalf("principal lost: %v", out)
 			}
 			if tc.method == "" {
-				imageOut:=new(imagev1.GetImageSpaceResponse)
-				e=conn.Invoke(ctx,imagev1.TenantImageService_GetImageSpace_FullMethodName,&imagev1.GetImageSpaceRequest{TenantId:tc.tenant},imageOut)
-				if status.Code(e)!=tc.want {t.Fatalf("Image code=%s want=%s",status.Code(e),tc.want)}
-				if e==nil&&(imageOut.GetSpace().GetTenantId()!=tenant||imageOut.GetSpace().GetSpaceId()!=md.Get("x-ani-actor")[0]||imageOut.GetSpace().GetState()!="governance"||imageOut.GetSpace().GetProjectName()!=GovernanceSAN){t.Fatal("Image trusted caller lost")}
+				imageOut := new(imagev1.GetImageSpaceResponse)
+				e = conn.Invoke(ctx, imagev1.TenantImageService_GetImageSpace_FullMethodName, &imagev1.GetImageSpaceRequest{TenantId: tc.tenant}, imageOut)
+				if status.Code(e) != tc.want {
+					t.Fatalf("Image code=%s want=%s", status.Code(e), tc.want)
+				}
+				if e == nil && (imageOut.GetSpace().GetTenantId() != tenant || imageOut.GetSpace().GetSpaceId() != md.Get("x-ani-actor")[0] || imageOut.GetSpace().GetState() != "governance" || imageOut.GetSpace().GetProjectName() != GovernanceSAN) {
+					t.Fatal("Image trusted caller lost")
+				}
 			}
 		})
 	}
