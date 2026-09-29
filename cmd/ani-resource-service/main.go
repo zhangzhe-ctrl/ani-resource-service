@@ -44,8 +44,12 @@ func main() {
 	logger := newRuntimeLogger(os.Stdout)
 	log.SetDefault(logger)
 	execute := func() error {
-		if err := validateImageAdminModes(); err != nil { return err }
-		if imageAdminAction != "" { return runImageAdmin() }
+		if err := validateImageAdminModes(); err != nil {
+			return err
+		}
+		if imageAdminAction != "" {
+			return runImageAdmin()
+		}
 		if flagImageMigrate {
 			if flagMigrate || flagNodeFacts || baseConnectivityAction != "" {
 				return fmt.Errorf("Image migration, Network migration, node facts and base connectivity modes are exclusive")

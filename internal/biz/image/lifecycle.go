@@ -20,12 +20,12 @@ type LifecycleConfig struct {
 	AllowNeverExpires                                  bool
 }
 type Lifecycle struct {
-	repo     LifecycleRepository
+	repo         LifecycleRepository
 	platformRepo PlatformRepository
-	registry Registry
-	cipher   SecretCipher
-	cfg      LifecycleConfig
-	now      func() time.Time
+	registry     Registry
+	cipher       SecretCipher
+	cfg          LifecycleConfig
+	now          func() time.Time
 }
 
 func NewLifecycle(repo LifecycleRepository, registry Registry, cipher SecretCipher, cfg LifecycleConfig, now func() time.Time) (*Lifecycle, error) {

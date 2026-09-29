@@ -164,6 +164,15 @@ func (q *Queries) InspectSpaceForOperator(ctx context.Context, arg InspectSpaceF
 	return i, err
 }
 
+const lockPlatformSpace = `-- name: LockPlatformSpace :exec
+SELECT pg_advisory_xact_lock(hashtextextended('image.platform', 0))
+`
+
+func (q *Queries) LockPlatformSpace(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, lockPlatformSpace)
+	return err
+}
+
 const lockTenantSpace = `-- name: LockTenantSpace :exec
 SELECT pg_advisory_xact_lock(hashtextextended('image.tenant:' || $1::text, 0))
 `
