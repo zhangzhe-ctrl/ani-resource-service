@@ -119,3 +119,65 @@ exclusive-create 保留新文件，存在的文件或符号链接一律失败。
 已过期交付不会返回旧 Secret。文件写入失败时保留原请求并使用一个新文件名重放，
 不要不检查现状就改 key。只有显式 `rotate=true` 才替换已有发布身份并停用旧 Robot。
 取消登记不删除 Harbor 内容；本命令没有任意对象删除或 HTTP 透传能力。
+
+## Harbor 技术验收驱动
+
+`scripts/image-smoke` 执行 `init → push → register → resolve`，没有Pod创建或产品owner
+替身。它使用真实平台CLI、Governance租户HTTP、skopeo registry客户端，以及独立的
+`scripts/image-smoke-runtime` 只读技术helper；后者无listener，不注册公共Runtime RPC。
+技术helper直接调用已实现的 `ResolveImageForWorkload/GetTenantPullMaterial`，显式使用
+profile允许的技术身份，只输出固定Digest元数据，拉取认证材料只写新0600文件。
+它证明的范围是技术链路，普通容器创建方身份认证、Namespace/Secret归属和运行结果仍须
+由IMG-08/10实测。
+
+[smoke.example.json](smoke.example.json) 扩展了live profile，默认不能执行。
+只能由有权批准该环境的操作者填写真实引用并批准，不能将示例改为approved来绕过授权。
+运行前准备如下输入，全部构建/工具检查/驱动操作仍只在Fedora本run预算scope和既有锁内：
+
+- 从profile的完整Resource SHA干净副本构建两个二进制：
+  `go build -trimpath -o <private-resource-binary> ./cmd/ani-resource-service` 和
+  `go build -trimpath -o <private-runtime-binary> ./scripts/image-smoke-runtime`。
+  `go version -m` 必须含相同 `vcs.revision` 及 `vcs.modified=false`。
+  实际Governance部署SHA另填profile；驱动记录此批准绑定，**不声称HTTP已证明部署SHA**。
+- `runtime_config` 是单独0600 **JSON** 文件（与既有Bootstrap相同snake_case字段，
+  `request_timeout` 如 `"10s"`）。CLI和helper读取同一个文件；数据库是已迁移的独立
+  Image runtime DSN。不得借此复用Network DSN或改变既有服务配置。
+- `operator_config.secret_output_directory` 必须等于 `<work_directory>/private`。
+  work_directory为批准的、尚不存在的绝对路径；驱动创建0700目录。重复运行同目录会失败，
+  失败后必须先依据事件中的幂等键/ID核对实际状态，不用新key盲目重试或认领已有Project。
+- run_id为8～32位小写字母数字/短横线；平台Project精确为 `<run_id>-platform`，
+  两tenant的slug精确为 `<run_id>-a`、`<run_id>-b`，Project为 `t-<slug>`。
+  `allowed_project_names` 仅含这三个名字；三者事前都必须不存在，两个测试tenant事前
+  都未开通Image空间。平台写入现有Project不在本驱动范围。
+- `user_credential_files` 按A/B顺序引用两份私有JWT文件，账号需通过既有登录方式取得，
+  具备本次明确授予的Image权限/模块及可信tenant映射；驱动不修改密码或授权。
+  `harbor.management_credential_file` 引用runtime的Harbor密码文件，只供后端与事前
+  检查；skopeo仅接收签发的受限Robot认证文件。
+- `file_sha256` 以绝对文件路径为键，固定runtime/operator配置、kubeconfig、Harbor密码、
+  两JWT、Harbor/Governance CA、两个二进制、runtime DSN/keyring/cursor文件的实际SHA256。
+  `tool_version_sha256` 是 `kubectl version --client=true -o json` 与 `skopeo --version`
+  的原始stdout SHA256。工具须事先在本run按已核对版本准备，不自动全局安装。
+- cluster需固定context、API、kubeconfig内嵌CA PEM字节SHA256及kube-system Namespace UID。
+  驱动只读取该UID，不创建/修改Namespace；不接受insecure TLS或proxy-url。
+  Harbor实际 `harbor_version`、HTTPS authority/CA、Governance HTTPS origin/CA均固定。
+- base_image_digest指向已批准、匿名可读、最多32 MiB的单平台OCI/Docker schema2镜像。
+  index/list在本驱动返回明确阻塞，不能悄悄挑选平台改变根Digest。预读根manifest核对
+  SHA和各layer/config总大小后，用 `skopeo copy --preserve-digests` 直接Push三份；
+  保留现有客户端签名策略及registry门禁，TLS验证显式开启。
+
+运行方式：在已限资源且持有既有锁的Fedora执行上下文中执行
+`./scripts/image-smoke --profile <private-profile> --workdir <approved-new-directory>`。
+脚本有最长20分钟截止时间；超过预算或依赖错误即非零退出，不把HTTP 404/5xx/网络错误当成
+Registry越权拒绝。A/B各自成功读后，才接受A读B的401/403为负例；两tenant都以自身只读
+凭证读平台和自身固定Digest，并再次拒绝另一tenant内容。登记HTTP使用实际公共DTO字段，
+包括 `image_id` 与小写scope/purposes/accelerator。
+
+事件日志 `events.jsonl` 仅写命令标签、退出码、版本/指纹、幂等键、空间/Project/Image ID
+及固定引用。第三方原始stdout/stderr和Secret不进入证据。所有本次临时交付/auth文件在
+成功或失败后删除；CA文件及脱敏事件保留。Harbor内容、Robot、空间和登记**不会自动删除**，
+无全局GC，也不对外部对象推断清理授权。使用实际ID/安装ownership与批准清单逐项核验清理；
+丢响应时可能存在尚无ID的资源，先用原key恢复/核对。事件中的retained必须进入交付报告。
+
+离线驱动检查：`python3 -B -m unittest discover -s scripts -p image_smoke_test.py -v`，
+以及 `go test -race ./scripts/image-smoke-runtime`。受控协议fixture只验证驱动边界和
+字段/阶段编排，不能作为真实Harbor、真实Governance部署或产品验收证据。
