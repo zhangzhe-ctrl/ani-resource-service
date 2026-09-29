@@ -65,9 +65,10 @@ type Registry interface {
 	FindProjectByName(context.Context, string) (Project, error)
 	CreatePrivateProject(context.Context, string) (Project, error)
 	CreateRobot(context.Context, RobotRequest) (Robot, error)
+	FindOwnedRobot(context.Context, RobotRequest) (Robot, error)
 	GetRobot(context.Context, int64) (Robot, error)
-	SetRobotSecret(context.Context, int64, Secret) error
-	SetRobotDisabled(context.Context, int64, bool) error
+	SetRobotSecret(context.Context, Robot, Secret) error
+	SetRobotDisabled(context.Context, Robot, bool) error
 	ResolveArtifact(context.Context, string, string, string) (Artifact, error)
 	GetArtifactByDigest(context.Context, string, string, string) (Artifact, error)
 }
