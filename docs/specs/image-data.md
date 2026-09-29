@@ -1,6 +1,6 @@
 # Image 数据库设计：无 RLS
 
-起稿：[DDL](../plans/image-mvp-contracts/database/001_image.sql)、[典型 sqlc 查询](../plans/image-mvp-contracts/database/queries.sql)。尚未运行 PG/生成；IMG-02 必须用 Fedora 真 PostgreSQL 检验 DDL、sqlc、权限和跨租户约束。
+起稿：[DDL](../../migrations/image/001_image.sql)、[典型 sqlc 查询](../../internal/data/image/queries/)。尚未运行 PG/生成；IMG-02 必须用 Fedora 真 PostgreSQL 检验 DDL、sqlc、权限和跨租户约束。
 
 ## 1. 数据归属与迁移
 

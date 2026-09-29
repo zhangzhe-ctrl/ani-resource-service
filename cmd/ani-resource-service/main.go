@@ -27,6 +27,7 @@ var (
 	Version       = "dev"
 	flagconf      string
 	flagMigrate   bool
+	flagImageMigrate bool
 	flagNodeFacts bool
 	id, _         = os.Hostname()
 )
@@ -35,6 +36,7 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "configs", "config path, for example -conf configs/config.yaml")
 	flag.BoolVar(&flagNodeFacts, "node-facts", false, "run the separately authorized read-only node facts collector")
 	flag.BoolVar(&flagMigrate, "migrate", false, "apply Network migrations using explicit owner environment")
+	flag.BoolVar(&flagImageMigrate, "image-migrate", false, "apply Image migrations using explicit owner secret file")
 }
 
 func main() {
@@ -42,6 +44,12 @@ func main() {
 	logger := newRuntimeLogger(os.Stdout)
 	log.SetDefault(logger)
 	execute := func() error {
+		if flagImageMigrate {
+			if flagMigrate || flagNodeFacts || baseConnectivityAction != "" {
+				return fmt.Errorf("Image migration, Network migration, node facts and base connectivity modes are exclusive")
+			}
+			return runImageMigration()
+		}
 		if baseConnectivityAction != "" {
 			if flagNodeFacts || flagMigrate {
 				return fmt.Errorf("base connectivity, node facts and migration modes are exclusive")

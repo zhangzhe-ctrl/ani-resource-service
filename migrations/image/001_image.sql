@@ -1,5 +1,3 @@
--- DESIGN INPUT: not applied or PostgreSQL-validated in this document session.
--- Move to migrations/image/001_image.sql during IMG-02.
 -- Execute only with the dedicated Image owner. No RLS and no Network changes.
 CREATE SCHEMA IF NOT EXISTS image;
 REVOKE ALL ON SCHEMA image FROM PUBLIC;

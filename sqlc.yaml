@@ -1,12 +1,53 @@
 version: "2"
 sql:
   - engine: postgresql
-    schema: migrations
+    schema:
+      - migrations/0001_vpc.sql
+      - migrations/0002_subnet.sql
+      - migrations/0003_attachment.sql
+      - migrations/0004_observation.sql
+      - migrations/0005_vpc_egress.sql
+      - migrations/0006_vpc_base_connectivity.sql
+      - migrations/0007_load_balancers.sql
+      - migrations/0008_lb_health_check_port.sql
     queries: internal/data/network/queries
     gen:
       go:
         package: sqlcgen
         out: internal/data/network/sqlcgen
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        query_parameter_limit: 0
+        overrides:
+          - db_type: text
+            nullable: true
+            go_type:
+              type: string
+              pointer: true
+          - db_type: uuid
+            go_type: string
+          - db_type: uuid
+            nullable: true
+            go_type:
+              type: string
+              pointer: true
+          - db_type: timestamptz
+            go_type:
+              import: time
+              type: Time
+          - db_type: timestamptz
+            nullable: true
+            go_type:
+              import: time
+              type: Time
+              pointer: true
+  - engine: postgresql
+    schema: migrations/image
+    queries: internal/data/image/queries
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/data/image/sqlcgen
         sql_package: pgx/v5
         emit_empty_slices: true
         query_parameter_limit: 0
