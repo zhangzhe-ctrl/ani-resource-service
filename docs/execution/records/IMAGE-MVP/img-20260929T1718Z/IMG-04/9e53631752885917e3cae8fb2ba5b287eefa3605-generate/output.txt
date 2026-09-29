@@ -1,0 +1,36 @@
+2026-09-29T18:30:37Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/9e53631752885917e3cae8fb2ba5b287eefa3605'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 3d83c76 docs(image): import MVP plan and freeze execution bindings
+HEAD 目前位于 9e53631 test(image): prove reset crash recovery and stale command rejection
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/9e53631752885917e3cae8fb2ba5b287eefa3605
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+{
+  "source_sha": "9e53631752885917e3cae8fb2ba5b287eefa3605",
+  "files": [
+    {
+      "path": "internal/data/image/lifecycle_process_integration_test.go",
+      "base_sha256": "f311c6036a259a5d216324d5d6e8a7a1c4bb894ed7b579a0a364ae76cbf23dda",
+      "sha256": "5141616025e92e37d9864fce93f40d0add9616d070adff361b4c936d39300c77"
+    },
+    {
+      "path": "internal/data/image/lifecycle_stale_integration_test.go",
+      "base_sha256": "4d2d4bf1ec7c1ccfe5804f2634db51d6c3ceda5d632de3e8c2205c94f6a086a1",
+      "sha256": "b729df64e5fa24d6b9bf33928785c1fced896275e7c1a274a7cf826639535540"
+    }
+  ]
+}
+2026-09-29T18:30:42Z
+exit=0
