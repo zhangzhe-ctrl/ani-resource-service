@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+cd "$(dirname "$0")/.."
+source_repo=$PWD
+SQLC=${SQLC:?set SQLC to pinned sqlc v1.31.1}
+test "$("$SQLC" version)" = v1.31.1
+test -n "${IMAGE_TEST_ADMIN_DSN_FILE:-}"
+stage=$(mktemp -d "${TMPDIR:?}/imut.XXXXXX")
+trap 'rm -rf -- "$stage"' EXIT
+sha256sum migrations/image/001_image.sql internal/data/image/queries/registrations.sql > "$stage/source-before.sha256"
+for mutation in tenant-query tenant-fk; do
+ mkdir "$stage/$mutation"
+ git archive HEAD | tar -x -C "$stage/$mutation"
+ (
+  cd "$stage/$mutation"
+  python3 - "$mutation" <<'PY'
+from pathlib import Path
+import sys
+if sys.argv[1]=='tenant-query':
+ p=Path('internal/data/image/queries/registrations.sql');s=p.read_text()
+ start=s.index('-- name: GetTenantRegistration :one');end=s.index('-- name:',start+9)
+ # Make the tenant predicate ineffective while preserving its generated type.
+ part=s[start:end];bad=part.replace(' AND tenant_id=sqlc.arg(tenant_id)',' AND (tenant_id=sqlc.arg(tenant_id) OR TRUE)')
+ assert bad!=part;s=s[:start]+bad+s[end:];p.write_text(s)
+else:
+ p=Path('migrations/image/001_image.sql');s=p.read_text();line='    FOREIGN KEY (space_id,tenant_id) REFERENCES image.spaces(space_id,tenant_id),\n'
+ assert s.count(line)==3;p.write_text(s.replace(line,''))
+PY
+  "$SQLC" generate
+  test_name=TestTenantQueriesAndAtomicCatalog
+  if [[ $mutation == tenant-fk ]]; then test_name=TestTenantCompositeFKAndPlatformFK; fi
+  set +e
+  go test -tags=imageintegration -count=1 -timeout=20m ./internal/data/image -run "^$test_name$" > "$stage/$mutation.txt" 2>&1
+  rc=$?
+  set -e
+  cat "$stage/$mutation.txt"
+  test "$rc" -eq 1
+  grep -F -- "--- FAIL: $test_name" "$stage/$mutation.txt"
+  printf 'Image mutation %s rejected with assertion exit=%s\n' "$mutation" "$rc"
+ )
+done
+cd "$source_repo"
+sha256sum -c "$stage/source-before.sha256"

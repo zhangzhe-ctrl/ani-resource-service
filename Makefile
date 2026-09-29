@@ -138,3 +138,13 @@ help:
 	@echo "make audit    run vulnerability, secret, SBOM, license, and notice gates"
 
 .DEFAULT_GOAL := help
+
+.PHONY: image-unit image-integration image-tenant-mutations
+image-unit:
+	$(GO) test -count=1 ./internal/biz/image ./internal/data/image
+
+image-integration:
+	./scripts/image-integration
+
+image-tenant-mutations: check-sqlc
+	SQLC=$(SQLC) ./scripts/image-integration --mutations
