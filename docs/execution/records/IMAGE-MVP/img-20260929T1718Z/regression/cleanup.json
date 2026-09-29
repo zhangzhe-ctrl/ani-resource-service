@@ -1,0 +1,27 @@
+{
+  "checked_at": "2026-09-29T21:29:55Z",
+  "containers": [
+    {
+      "container_id": "97e877ed1e2bc9db309761962179ec650b5c7c80e723fe8d64e10d9d7cb67f9d",
+      "inspect_exit": 1,
+      "status": "absent"
+    },
+    {
+      "container_id": "7b6b00b0f776ed3cb830cd0202ff2bd452313c3a9a98ae7b1cc6c61d536bf1fd",
+      "inspect_exit": 1,
+      "status": "absent"
+    },
+    {
+      "container_id": "74a8f96a4d7d0dfc92b7f3dde0193436f986bcb6c874df6569d427eee7cd095c",
+      "inspect_exit": 1,
+      "status": "absent"
+    }
+  ],
+  "shared_resources_created": false,
+  "retained": [
+    "source snapshots",
+    "caches",
+    "evidence",
+    "local worktrees"
+  ]
+}

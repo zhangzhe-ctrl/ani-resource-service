@@ -1,0 +1,86 @@
+2026-09-29T21:03:04Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/62ecc67b839dd1040468323f8c316189a0c30653
+blocked: approved live profile with approval reference required
+unapproved live profile rejected before workdir/network; expected driver exit=1
+gate=make integration
+./scripts/integration -timeout 20m ./...
+owned_fixture=97e877ed1e2bc9db309761962179ec650b5c7c80e723fe8d64e10d9d7cb67f9d memory=805306368 memory_swap=805306368 nanocpus=1000000000
+127.0.0.1:5432 - accepting connections
+PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=97e877ed1e2bc9db309761962179ec650b5c7c80e723fe8d64e10d9d7cb67f9d
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/cmd/ani-resource-service	3.772s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	0.005s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network	0.008s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/conf/v1	0.013s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.422s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	689.048s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/server	2.126s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/image	0.007s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network	0.006s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations/image	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/image-smoke-runtime	0.007s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	0.014s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/scripts/vpc-read-probe	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/relay	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/rpc	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider	0.010s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/runtime	0.045s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv	0.008s
+removed task container=97e877ed1e2bc9db309761962179ec650b5c7c80e723fe8d64e10d9d7cb67f9d
+gate=make race
+./scripts/integration -timeout 20m -race ./...
+owned_fixture=7b6b00b0f776ed3cb830cd0202ff2bd452313c3a9a98ae7b1cc6c61d536bf1fd memory=805306368 memory_swap=805306368 nanocpus=1000000000
+127.0.0.1:5432 - accepting connections
+PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=7b6b00b0f776ed3cb830cd0202ff2bd452313c3a9a98ae7b1cc6c61d536bf1fd
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/cmd/ani-resource-service	8.275s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	1.021s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network	1.032s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/conf/v1	1.048s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	2.084s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	763.516s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/server	3.401s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/image	1.023s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network	1.022s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations/image	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/image-smoke-runtime	1.021s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	1.038s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/scripts/vpc-read-probe	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/relay	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/rpc	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider	1.035s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/runtime	1.142s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv	1.028s
+removed task container=7b6b00b0f776ed3cb830cd0202ff2bd452313c3a9a98ae7b1cc6c61d536bf1fd
+gate=make tenant-mutations
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+./scripts/integration --mutations
+owned_fixture=74a8f96a4d7d0dfc92b7f3dde0193436f986bcb6c874df6569d427eee7cd095c memory=805306368 memory_swap=805306368 nanocpus=1000000000
+127.0.0.1:5432 - accepting connections
+PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=74a8f96a4d7d0dfc92b7f3dde0193436f986bcb6c874df6569d427eee7cd095c
+tenant mutation killed by behavioral assertion: GetVPC
+tenant mutation killed by behavioral assertion: GetOperation
+tenant mutation killed by behavioral assertion: ListVPCs
+tenant mutation killed by behavioral assertion: GetSubnet
+tenant mutation killed by behavioral assertion: ListSubnets
+tenant mutation killed by behavioral assertion: GetAttachment
+original SQL and generated queries restored
+removed task container=74a8f96a4d7d0dfc92b7f3dde0193436f986bcb6c874df6569d427eee7cd095c
+gate=protected source and cleanup
+confirmed fixture absent=97e877ed1e2bc9db309761962179ec650b5c7c80e723fe8d64e10d9d7cb67f9d
+confirmed fixture absent=7b6b00b0f776ed3cb830cd0202ff2bd452313c3a9a98ae7b1cc6c61d536bf1fd
+confirmed fixture absent=74a8f96a4d7d0dfc92b7f3dde0193436f986bcb6c874df6569d427eee7cd095c
+2026-09-29T21:28:52Z
+exit=0

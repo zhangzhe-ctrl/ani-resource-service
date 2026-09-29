@@ -1,0 +1,9 @@
+run-p909592-i9314307.scope
+9月 30 05:03:04 fedora systemd[2621756]: Started run-p909592-i9314307.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/resource-final-regression.sh.
+9月 30 05:28:52 fedora systemd[2621756]: run-p909592-i9314307.scope: Consumed 16min 58.356s CPU time over 25min 48.232s wall clock time, 1.8G memory peak.
+run-p919518-i9304067.scope
+9月 30 05:28:52 fedora systemd[2621756]: Started run-p919518-i9304067.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/review-docs-run.sh.
+9月 30 05:28:55 fedora systemd[2621756]: run-p919518-i9304067.scope: Consumed 2.759s CPU time over 3.156s wall clock time, 259.4M memory peak.
+run-p919636-i9304096.scope
+9月 30 05:29:31 fedora systemd[2621756]: Started run-p919636-i9304096.scope - [systemd-run] /usr/bin/python3 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/closeout-archive.py run-p909592-i9314307.scope run-p919518-i9304067.scope.
+9月 30 05:29:31 fedora python3[919636]: detected unhandled Python exception in '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/closeout-archive.py'

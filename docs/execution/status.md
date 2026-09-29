@@ -279,13 +279,13 @@ NET-05 验收完成，按用户后续授权发布 Network main，ANI 成果继�
 
 ## Image MVP
 
-Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline and bindings](records/IMAGE-MVP/img-20260929T1718Z/README.md). Local edits/Git/transfer only; all generation and validation Fedora. This section is the only current Image ledger. Network history above retains its original scope. User scope update (2026-09-30): frontend integration is excluded; IMG-09 and A30 are n_a by explicit instruction, not passed.
+Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline and bindings](records/IMAGE-MVP/img-20260929T1718Z/README.md). Local edits/Git/transfer only; all generation and validation Fedora. This section is the only current Image ledger. Network history above retains its original scope. User clarification (2026-09-30): frontend is not selected; retain IMG-09/A30 blocked and do not perform frontend integration now. User also explicitly retains IMG-08 blocked because product test conditions are unavailable; do not advance product integration.
 
 | Task | code | isolated | live | product | Evidence / next action |
 |---|---|---|---|---|---|
 | IMG-00.1 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
 | IMG-00.2 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
-| IMG-00.3 | blocked | not_run | blocked | blocked | frontend excluded by user; consumer/namespace owner unconfirmed |
+| IMG-00.3 | blocked | not_run | blocked | blocked | frontend selection pending by user direction; consumer/namespace owner unconfirmed |
 | IMG-00.4 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
 | IMG-00.5 | n_a | n_a | blocked | blocked | approved live profile, Harbor version and TLS binding missing |
 | IMG-00.6 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
@@ -331,28 +331,28 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-07.3 | pass | pass | blocked | n_a | [Platform evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-platform.md); exact 2b6a099, PG/race/3 mutations/verify; live profile missing |
 | IMG-07.4 | pass | pass | blocked | n_a | [Smoke evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-smoke.md); exact 62ecc67; driver/tests/PG/race/mutations/verify pass; no approved profile |
 | IMG-07.5 | pass | pass | blocked | n_a | [Smoke evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-smoke.md); failures/generation/hash/cleanup archived; live not executed |
-| IMG-08.1 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
-| IMG-08.2 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
-| IMG-08.3 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
-| IMG-08.4 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
-| IMG-08.5 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
-| IMG-08.6 | blocked | not_run | blocked | blocked | Ordinary-container owner repository/Create method and authoritative tenant Namespace resolver missing; no substitute owner/Pod created |
-| IMG-09.1 | n_a | n_a | n_a | n_a | User explicitly excluded frontend integration on 2026-09-30; preparation 674f2f0 remains local/unpublished, no frontend delivery claimed |
-| IMG-09.2 | n_a | n_a | n_a | n_a | User explicitly excluded frontend integration on 2026-09-30; preparation 674f2f0 remains local/unpublished, no frontend delivery claimed |
-| IMG-09.3 | n_a | n_a | n_a | n_a | User explicitly excluded frontend integration on 2026-09-30; preparation 674f2f0 remains local/unpublished, no frontend delivery claimed |
-| IMG-09.4 | n_a | n_a | n_a | n_a | User explicitly excluded frontend integration on 2026-09-30; preparation 674f2f0 remains local/unpublished, no frontend delivery claimed |
-| IMG-09.5 | n_a | n_a | n_a | n_a | User explicitly excluded frontend integration on 2026-09-30; preparation 674f2f0 remains local/unpublished, no frontend delivery claimed |
-| IMG-09.6 | n_a | n_a | n_a | n_a | User explicitly excluded frontend integration on 2026-09-30; preparation 674f2f0 remains local/unpublished, no frontend delivery claimed |
-| IMG-10.1 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
-| IMG-10.2 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
-| IMG-10.3 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
-| IMG-10.4 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
-| IMG-10.5 | running | running | blocked | blocked | Resource 62ecc67 full original integration/race/tenant-mutations running on Fedora; Image gates pass; Governance bounded-compiler caveat retained |
-| IMG-10.6 | running | running | blocked | blocked | Isolated Image/Governance fixtures cleaned; original Network regression fixture active; no shared live resources created |
-| IMG-11.1 | running | running | n_a | n_a | Code refs and source-only diff frozen; final original Network evidence and documentation check pending |
-| IMG-11.2 | running | running | n_a | n_a | Sole ledger updated with explicit IMG-08/09/live blockers; final regression status pending |
+| IMG-08.1 | blocked | not_run | blocked | blocked | User explicitly blocks ordinary-container integration: no product test conditions; owner/Create/tenant Namespace binding remains unresolved; no substitute owner/Pod created |
+| IMG-08.2 | blocked | not_run | blocked | blocked | User explicitly blocks ordinary-container integration: no product test conditions; owner/Create/tenant Namespace binding remains unresolved; no substitute owner/Pod created |
+| IMG-08.3 | blocked | not_run | blocked | blocked | User explicitly blocks ordinary-container integration: no product test conditions; owner/Create/tenant Namespace binding remains unresolved; no substitute owner/Pod created |
+| IMG-08.4 | blocked | not_run | blocked | blocked | User explicitly blocks ordinary-container integration: no product test conditions; owner/Create/tenant Namespace binding remains unresolved; no substitute owner/Pod created |
+| IMG-08.5 | blocked | not_run | blocked | blocked | User explicitly blocks ordinary-container integration: no product test conditions; owner/Create/tenant Namespace binding remains unresolved; no substitute owner/Pod created |
+| IMG-08.6 | blocked | not_run | blocked | blocked | User explicitly blocks ordinary-container integration: no product test conditions; owner/Create/tenant Namespace binding remains unresolved; no substitute owner/Pod created |
+| IMG-09.1 | blocked | not_run | blocked | blocked | User retains IMG-09 blocked pending frontend selection; no integration now; preparation 674f2f0 remains local/unpublished |
+| IMG-09.2 | blocked | not_run | blocked | blocked | User retains IMG-09 blocked pending frontend selection; no integration now; preparation 674f2f0 remains local/unpublished |
+| IMG-09.3 | blocked | not_run | blocked | blocked | User retains IMG-09 blocked pending frontend selection; no integration now; preparation 674f2f0 remains local/unpublished |
+| IMG-09.4 | blocked | not_run | blocked | blocked | User retains IMG-09 blocked pending frontend selection; no integration now; preparation 674f2f0 remains local/unpublished |
+| IMG-09.5 | blocked | not_run | blocked | blocked | User retains IMG-09 blocked pending frontend selection; no integration now; preparation 674f2f0 remains local/unpublished |
+| IMG-09.6 | blocked | not_run | blocked | blocked | User retains IMG-09 blocked pending frontend selection; no integration now; preparation 674f2f0 remains local/unpublished |
+| IMG-10.1 | blocked | not_run | blocked | blocked | No approved live profile; user blocks container integration without test conditions; isolated evidence does not satisfy live/product matrix |
+| IMG-10.2 | blocked | not_run | blocked | blocked | No approved live profile; user blocks container integration without test conditions; isolated evidence does not satisfy live/product matrix |
+| IMG-10.3 | blocked | not_run | blocked | blocked | No approved live profile; user blocks container integration without test conditions; isolated evidence does not satisfy live/product matrix |
+| IMG-10.4 | blocked | not_run | blocked | blocked | No approved live profile; user blocks container integration without test conditions; isolated evidence does not satisfy live/product matrix |
+| IMG-10.5 | pass | pass (bounded compiler) | blocked | blocked | [Original Network gates](records/IMAGE-MVP/img-20260929T1718Z/IMG-10-regression.md): 62ecc67 integration/race/6 mutations exit0; Image verify/PG/race/3 mutations pass; Governance default optimized race OOM retained |
+| IMG-10.6 | pass | pass | blocked | blocked | [ID-based cleanup](records/IMAGE-MVP/img-20260929T1718Z/regression/cleanup.json): all isolated Image/Governance/Network fixtures cleaned; no shared live resources created |
+| IMG-11.1 | pass | running | n_a | n_a | Code refs and original Network evidence frozen; final source manifest/document check pending |
+| IMG-11.2 | pass | running | n_a | n_a | Sole ledger updated with actual regression results and explicit user-directed IMG-08/09/live blockers; final document check pending |
 | IMG-11.3 | pass | running | blocked | blocked | Deployment/CLI/smoke/recovery guide written; link check queued; runtime credential replacement requires actual owner |
-| IMG-11.4 | running | running | n_a | n_a | [Bounded handoff](records/IMAGE-MVP/img-20260929T1718Z/HANDOFF.md) and review scope prepared; final cleanup evidence pending |
-| IMG-11.5 | running | n_a | n_a | n_a | [Checkpoint](records/IMAGE-MVP/img-20260929T1718Z/CHECKPOINT.md); active original gates, then external input blockers |
+| IMG-11.4 | pass | running | n_a | n_a | [Bounded handoff](records/IMAGE-MVP/img-20260929T1718Z/HANDOFF.md), review scope, API/DB contracts and cleanup archived; final document check pending |
+| IMG-11.5 | pass | n_a | n_a | n_a | [Checkpoint](records/IMAGE-MVP/img-20260929T1718Z/CHECKPOINT.md); no active heavy gates; remaining product/live/frontend conditions blocked |
 
-IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: finish original Network regression and bounded handoff. IMG-08 requires owner/Namespace binding; Frontend integration is excluded by user instruction; live requires approved profile.
+IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: verify final documentation/source snapshot. IMG-08 is blocked by user direction because no product test conditions; IMG-09 remains blocked pending frontend selection by user direction; live requires approved profile.

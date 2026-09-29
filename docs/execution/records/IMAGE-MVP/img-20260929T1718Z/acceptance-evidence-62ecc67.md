@@ -34,12 +34,12 @@ Resource当前Image全套日志见[IMG-07](IMG-07-smoke.md)，Governance日志�
 | A24 Harbor故障 | `TestHarborTransportBoundary` 状态码/超时/大小/重定向；持久化阶段故障 | 真实故障期间已有业务行为未测 |
 | A25 内部runtime | 公共/租户白名单拒绝内部两RPC，`Runtime`真PG归属/拉取材料测试 | 未绑定owner，因此没有内部listener/证书接入证明 |
 | A26 Namespace/Secret | 没有创建方实现或K8s写入 | owner/Namespace权威解析与live profile缺失 |
-| A27 产品创建 | 没有产品创建记录 | 同上；技术helper/Pod不算该项 |
+| A27 产品创建 | 没有产品创建记录；用户明确没有测试条件，普通容器对接先阻塞 | 待后续具备测试条件；技术helper/Pod不算该项 |
 | A28 runtime imageID | 根Digest解析用例只覆盖用例层 | 实际Pod spec/imageID子manifest语义未测 |
 | A29 节点缓存/其他入口 | 没有节点/准入写入 | 共享节点缓存及其他Pod入口边界未测 |
-| A30 UI | 用户于2026-09-30明确排除前端对接；n_a，不是pass | 不属于本轮验收；既有本地准备未发布 |
-| A31 全量门禁 | Image定向/真PG/race/3mutation/verify通过；原Network integration已通过，race/mutation另记录 | Governance默认优化race仍有OOM限制；原Network最终结果见最终归档 |
-| A32 cleanup | Image/Governance隔离fixture删除日志、ID/ownership检查 | 没有live资源创建；不能用空清单声称真实清理流程已验收 |
+| A30 UI | 用户于2026-09-30明确前端尚未确定，保留IMG-09 blocked；本次不做对接 | 待用户确定前端仓库；既有本地准备未发布，不能计pass或n_a |
+| A31 全量门禁 | Image定向/真PG/race/3mutation/verify通过；原Network integration/race/6mutation通过，见[精确代码记录](IMG-10-regression.md) | Governance默认优化race仍有OOM限制；不能声称该配置全绿 |
+| A32 cleanup | Image/Governance及原Network隔离fixture删除日志、ID/ownership及最终不存在检查 | 没有live资源创建；不能用空清单声称真实清理流程已验收 |
 
 Image进程测试中的helper仅在子进程带明确场景输入时执行，其父进程入口不是一个live用例。
 常规 `make verify` 的build-tag默认集合不能替代 `scripts/image-integration -v -race`；后者

@@ -21,7 +21,7 @@
     "images": "frontends/console/src/routes/_authenticated/images/index.tsx: ImagesPage (VM ISO, preserve)",
     "generation": "frontends/console/scripts/codegen.sh",
     "components": "React + Arco + TanStack Router/Query",
-    "binding_status": "excluded_by_user_2026-09-30; prior local preparation remains unpublished",
+    "binding_status": "blocked_pending_frontend_selection_by_user_2026-09-30; prior local preparation remains unpublished",
     "generation_sources": [
       "openapi/v1.yaml",
       "openapi/services/v1.yaml"
@@ -29,10 +29,11 @@
     "authentication": "src/api/client.ts: coreApi + useAuthStore; legacy /auth/refresh, not yet a Governance Image client",
     "prepared_sha": "674f2f0b09be0faf2b36ff334f291ad2575e21d7",
     "review_worktree": "/home/chabking/workspace/.worktrees/console-image-mvp-20260930",
-    "scope_instruction": "你不做前端对接工作"
+    "scope_instruction": "你不做前端对接工作；后续明确：前端尚未确定，先保留 IMG-09 阻塞"
   },
   "consumer": {
     "status": "blocked",
+    "user_instruction": "2026-09-30：先阻塞，没有测试条件；本次不推进普通容器业务对接",
     "namespace_resolution": null,
     "searched": [
       "ani-governance/app",

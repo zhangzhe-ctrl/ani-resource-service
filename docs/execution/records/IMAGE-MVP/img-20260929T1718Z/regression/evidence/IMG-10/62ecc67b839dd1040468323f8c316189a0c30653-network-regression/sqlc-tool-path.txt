@@ -1,0 +1,3 @@
+2026-09-29T21:11:22Z
+.tools/bin/sqlc
+Original mutation runner tool path bound to verified task sqlc; no tracked source changed; exit=0
