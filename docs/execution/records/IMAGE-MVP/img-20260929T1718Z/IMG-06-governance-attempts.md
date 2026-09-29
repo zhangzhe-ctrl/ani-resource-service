@@ -23,3 +23,7 @@ Governance 隔离工作树 `/home/chabking/workspace/.worktrees/governance-image
 审阅生成 OpenAPI 发现路径参数被 gnostic 转成 `{imageId}`，而 Kratos HTTP route/权限 catalog 使用 `{image_id}`。源码按现有 VPC 契约的方式显式固定 Image ID 字段 `json_name="image_id"`，没有改全站编码器；新增全部11路由的 OpenAPI/权限映射一致性测试，并用真实 HTTP 校验 `image_id` 和 int64 JSON。测试装配补 pgx stdlib 注册；隔离 fixture 增加 `--regressions`，提供带密码的自有 Redis URI 给原 Asynq 回归，不 skip 或删除旧测试。
 
 修正源码 `ac36068042d3714a612c408b63b6c46e3bdb4c5e` 生成 exit 0（2026-09-29T19:55:11Z—19:59:37Z），返回4文件，依白名单/base hash 导入提交 `d64d6ee478801795afadb4573ba25f8c2de6b7fc`，已推送。后续 runner 加 `-trimpath`，以免独立 SHA 目录的绝对路径导致每轮重编相同依赖；CPU/内存/swap 并发预算不变。新 SHA 的验证单独执行，前序局部结果不代替它。
+
+`d64d6ee478801795afadb4573ba25f8c2de6b7fc` 首轮 verify（2026-09-29T20:00:27Z—20:08:55Z，scope `run-p810982-i9200661.scope`）重生成 clean、基础合同/鉴权/日志测试通过，真实私有 Redis 上的完整 data/service/server 回归通过，含原 Asynq lifecycle；随后 race 编译触发 systemd `Result=oom-kill`，内存峰值2.2G，SSH exit 141。该轮没有总门禁通过，不能以 scope 终止前的局部 pass 代替。两个 fixture `c1f877877f8715968a5aa68b139f8ba828a73982475d84871e909222b3e05a9e`（PG）、`cdfd301a82a864f332e360767493e0cdb90565c70e3e8fa392fc5300d40da41c`（Redis）均在 race 前按 ownership 清理；scope 已失败终止，无残留本 SHA 编译进程。
+
+恢复采用同 SHA 的新目录 `-serial`，沿用原 flock 和 CPUQuota=200%/MemoryMax=2300M/MemorySwapMax=0，仅把 Go 编译并发降为 `-p=1`、GOMEMLIMIT=768MiB、GOGC=50。2026-09-29T20:09:43Z 启动 scope `run-p826002-i9220950.scope`，完整重跑生成、回归、race、build、HTTP 联调，未跳过门禁或增加预算。源码没有因资源失败而修改；结果单独归档。
