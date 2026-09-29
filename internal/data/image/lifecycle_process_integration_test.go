@@ -196,6 +196,7 @@ func registryHTTP(t *testing.T, r *registryFixture) *httptest.Server {
 }
 
 type crashInput struct {
+ Reset bool
 	DSN, URL   string
 	CA         []byte
 	Config     biz.LifecycleConfig
@@ -271,6 +272,8 @@ func (r *crashRegistry) SetRobotSecret(ctx context.Context, in biz.Robot, secret
 	return e
 }
 
+func(r *crashRegistry)SetRobotDisabled(ctx context.Context,in biz.Robot,disabled bool)error{e:=r.Registry.SetRobotDisabled(ctx,in,disabled);if e==nil{r.hit(robotPurpose(in.Description),"previous_disable_provider")};return e}
+
 // Entered only by our exact test binary subprocess; missing helper configuration
 // does not skip any acceptance test (the parent cases below always execute).
 func TestLifecycleCrashHelper(t *testing.T) {
@@ -305,14 +308,15 @@ func TestLifecycleCrashHelper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	l := lifecycle(t, &crashRepository{LifecycleRepository: repo, at: in.At}, &crashRegistry{Registry: harbor, at: in.At}, ring, in.Config, nil)
+	cr:=&crashRepository{LifecycleRepository:repo,at:in.At};hr:=&crashRegistry{Registry:harbor,at:in.At};if in.Reset{cr.at="";hr.at=""};l := lifecycle(t, cr, hr, ring, in.Config, nil)
 	ctx := biz.WithCaller(context.Background(), biz.Caller{Kind: biz.GovernanceCaller, Subject: "governance", Actor: "user:test", TenantID: in.Tenant})
 	if _, err = l.EnsureImageSpace(ctx, biz.EnableSpace{TenantID: in.Tenant, Slug: "process", IdempotencyKey: "process-enable"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = l.IssuePublisherCredential(ctx, biz.IssueCredential{TenantID: in.Tenant, IdempotencyKey: "process-issue", ExpectedVersion: 0}); err != nil {
+	if _, err = l.IssuePublisherCredential(ctx, biz.IssueCredential{TenantID: in.Tenant, IdempotencyKey: "process-issue", ExpectedVersion: 0}); err != nil && !(in.Reset && biz.ReasonOf(err)==biz.CredentialDeliveryExpired) {
 		t.Fatal(err)
 	}
+ if in.Reset {s,e:=repo.FindTenantSpace(ctx,in.Tenant);if e!=nil{t.Fatal(e)};original,e:=repo.FindTenantCommand(ctx,in.Tenant,s.ID,"process-issue");if e!=nil||original.Result.Credential==nil{t.Fatal("original issue not recorded")};cr.at=strings.TrimPrefix(in.At,"reset:");hr.at=cr.at;if _,e=l.ResetPublisherCredential(ctx,biz.ResetCredential{TenantID:in.Tenant,IdempotencyKey:"process-reset",ExpectedVersion:original.Result.Credential.Version});e!=nil{t.Fatal(e)}}
 }
 func childFile(t *testing.T, in crashInput) string {
 	t.Helper()
@@ -348,11 +352,11 @@ func runLifecycleChild(t *testing.T, in crashInput, expected int) {
 	t.Logf("owned process pid=%d boundary=%s exit=%d", cmd.Process.Pid, in.At, code)
 }
 func TestLifecycleActualProcessExitRecovery(t *testing.T) {
-	for _, at := range []string{"project_bind", "pull:candidate_prepared", "pull:robot_create", "pull:secret_set_provider", "publisher:robot_create", "publisher:robot_created", "publisher:secret_set_provider", "publisher:previous_disabled", "publisher:activate"} {
+	for _, at := range []string{"project_bind", "pull:candidate_prepared", "pull:robot_create", "pull:secret_set_provider", "publisher:robot_create", "publisher:robot_created", "publisher:secret_set_provider", "publisher:previous_disabled", "publisher:activate", "reset:publisher:secret_set_provider", "reset:publisher:previous_disable_provider", "reset:publisher:previous_disabled", "reset:publisher:activate"} {
 		t.Run(at, func(t *testing.T) {
 			f, r, cfg, _, ctx := lifecycleFixture(t)
 			server := registryHTTP(t, r)
-			in := crashInput{DSN: f.RuntimeDSN, URL: server.URL, CA: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw}), Config: cfg, Tenant: tenantFrom(t, ctx), At: at}
+			in := crashInput{DSN: f.RuntimeDSN, URL: server.URL, CA: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw}), Config: cfg, Tenant: tenantFrom(t, ctx), At: at, Reset:strings.HasPrefix(at,"reset:")}
 			runLifecycleChild(t, in, 73)
 			in.At = ""
 			runLifecycleChild(t, in, 0)
@@ -361,13 +365,14 @@ func TestLifecycleActualProcessExitRecovery(t *testing.T) {
 				t.Fatal("space not recovered", err)
 			}
 			credential, err := f.Repo.GetTenantPublisher(ctx, in.Tenant, info.ID)
-			if err != nil || credential.Generation != 1 || credential.State != "active" {
+			expectedGeneration:=int64(1);expectedRobots:=2;if in.Reset{expectedGeneration=2;expectedRobots=3}
+			if err != nil || credential.Generation != expectedGeneration || credential.State != "active" {
 				t.Fatal("credential not recovered", err)
 			}
 			r.mu.Lock()
 			projects, robots := r.creates, r.robotCreates
 			r.mu.Unlock()
-			if projects != 1 || robots != 2 {
+			if projects != 1 || robots != expectedRobots {
 				t.Fatal("process restart duplicated provider identities")
 			}
 		})
