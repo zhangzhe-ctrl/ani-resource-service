@@ -1,0 +1,55 @@
+{
+  "source_sha": "8b7a9f8932aad1194b7079f9c5f6dfa84b93cbe1",
+  "files": [
+    {
+      "path": "cmd/ani-resource-service/image_admin.go",
+      "base_sha256": "9b1a0a3849d4575846e21e0aec3455a9e6198568a140de8f56f2516538b1e7c6",
+      "sha256": "cc26ec371aa1ba7ecf5d390a58b25a9d9358d02e3381b4c79443cb3276d41210"
+    },
+    {
+      "path": "cmd/ani-resource-service/image_admin_test.go",
+      "base_sha256": "cc48c82ff43b8d668a7abb198cab9fbb02578e1cdbf311a8b3289118fb540611",
+      "sha256": "e90af7cd09f0dc50c15d7e2d76f0594aff1b548edbf84cea55be4e51e35cfb8e"
+    },
+    {
+      "path": "cmd/ani-resource-service/main.go",
+      "base_sha256": "7e5acdb727f02ca857b4b77bb340239d2ab47ffb580dfc7a3bb30aa120258050",
+      "sha256": "dd857da20433295c494ce66eedcd5e20db157a1ef3d21674956fb9b003e549ce"
+    },
+    {
+      "path": "internal/biz/image/lifecycle.go",
+      "base_sha256": "9df789f71f6ca623dd08dc970c8a96f96069fad01fa7f62f5ef5f6b84b016cec",
+      "sha256": "d9d0080b6097a3e57eee216bee2b251d45a692e751b4614bb21f2631a3f8bfee"
+    },
+    {
+      "path": "internal/biz/image/platform.go",
+      "base_sha256": "1245c50f92bd94acc442721f3e79cd1acf17fbb33cdc056e26ba1077bc9b9c44",
+      "sha256": "6fc226686b96092e8004f6faf8cde7e45aef12d30cadbb0abf8b87216ba24c88"
+    },
+    {
+      "path": "internal/biz/image/platform_state.go",
+      "base_sha256": "848ee2dd09798e43d5c9f83c55b224075d8cc9ff423cc79a21a1e9788a8bc79e",
+      "sha256": "2ab04bac8c5e536c9409cd206a69dddf32714b5b9733c60d1dc98986843baf7f"
+    },
+    {
+      "path": "internal/data/image/platform.go",
+      "base_sha256": "d1c11e4c048a9cf22bb50fd2e83858e8d581facd1b0b84294931c0b2a96f45a7",
+      "sha256": "a2b1820b14740ddd3dccb4b0af76a6baeff1d80a4d6110c42dc138b9e4bb52ad"
+    },
+    {
+      "path": "internal/data/image/platform_catalog.go",
+      "base_sha256": "153a297707078340dd976c062f6941e162fc266623071d4dc7eaf9eaee6e0341",
+      "sha256": "f3a1fc40b53b7a48658de09e5fdb87e3753cedef4f83fc85712e519b47bb0257"
+    },
+    {
+      "path": "internal/data/image/platform_integration_test.go",
+      "base_sha256": "5faec05189c6f572d763fdf70958aac111528d23111ae64cae1dab94f601b1e1",
+      "sha256": "e7adeb885f221e88b4015cc6af1d99f568866263f4f143d20cd2b7c2162ef370"
+    },
+    {
+      "path": "internal/data/image/sqlcgen/spaces.sql.go",
+      "base_sha256": "229cd2168846e5998d8f433dc91ba93ee94a189bfe8abf6f06dc3ea8b44fcd20",
+      "sha256": "4071af510d02553fc0d88d6c6d2d753f10cda9d37cfe6fe0eae4fad84750068b"
+    }
+  ]
+}

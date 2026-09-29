@@ -326,11 +326,11 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-06.4 | pass | pass (bounded compiler) | blocked | blocked | [Governance evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-governance.md); exact d64d6ee; default build/HTTP pass, full race with Ent inlining disabled pass; default-optimization race OOM retained |
 | IMG-06.5 | pass | pass (bounded compiler) | blocked | blocked | [Governance evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-governance.md); exact d64d6ee; default build/HTTP pass, full race with Ent inlining disabled pass; default-optimization race OOM retained |
 | IMG-06.6 | pass | pass (bounded compiler) | blocked | blocked | [Governance evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-governance.md); exact d64d6ee; default build/HTTP pass, full race with Ent inlining disabled pass; default-optimization race OOM retained |
-| IMG-07.1 | running | running | blocked | n_a | source 8b7a9f8; Fedora generation imported as 2b6a099; exact-SHA verification running; CLI/platform/private deployment config; live profile missing |
-| IMG-07.2 | running | running | blocked | n_a | source 8b7a9f8; Fedora generation imported as 2b6a099; exact-SHA verification running; CLI/platform/private deployment config; live profile missing |
-| IMG-07.3 | running | running | blocked | n_a | source 8b7a9f8; Fedora generation imported as 2b6a099; exact-SHA verification running; CLI/platform/private deployment config; live profile missing |
-| IMG-07.4 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-07.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-07.1 | pass | pass | blocked | n_a | [Platform evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-platform.md); exact 2b6a099, PG/race/3 mutations/verify; live profile missing |
+| IMG-07.2 | pass | pass | blocked | n_a | [Platform evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-platform.md); exact 2b6a099, PG/race/3 mutations/verify; live profile missing |
+| IMG-07.3 | pass | pass | blocked | n_a | [Platform evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-platform.md); exact 2b6a099, PG/race/3 mutations/verify; live profile missing |
+| IMG-07.4 | running | not_run | blocked | n_a | Implement bounded init/push/register/resolve driver; no approved live profile |
+| IMG-07.5 | running | not_run | blocked | n_a | Platform archive complete; smoke evidence pending |
 | IMG-08.1 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-08.2 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-08.3 | not_run | not_run | not_run | not_run | dependency gate pending |
@@ -355,4 +355,4 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-11.4 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-11.5 | not_run | not_run | not_run | not_run | dependency gate pending |
 
-IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: IMG-06 Resource and Governance trusted transport integration; missing live/consumer inputs do not block backend independent tasks.
+IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: IMG-07 smoke driver and IMG-09 independent UI work; missing live/consumer inputs do not block independent tasks.

@@ -1,0 +1,6 @@
+run-p833850-i9221947.scope
+9月 30 04:32:27 fedora systemd[2621756]: Started run-p833850-i9221947.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/resource-round07.sh 8b7a9f8932aad1194b7079f9c5f6dfa84b93cbe1 generate.
+9月 30 04:32:35 fedora systemd[2621756]: run-p833850-i9221947.scope: Consumed 6.159s CPU time over 7.269s wall clock time, 358.3M memory peak.
+run-p834381-i9215102.scope
+9月 30 04:34:48 fedora systemd[2621756]: Started run-p834381-i9215102.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/resource-round07.sh 2b6a0998827e655a6164eca104d4813c0ce2c0ac verify.
+9月 30 04:37:57 fedora systemd[2621756]: run-p834381-i9215102.scope: Consumed 3min 44.841s CPU time over 3min 9.009s wall clock time, 1.3G memory peak.
