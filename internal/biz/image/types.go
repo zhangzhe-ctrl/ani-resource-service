@@ -155,8 +155,8 @@ type ResolvedImage struct {
 // secret field. Recovery stores only bounded domain facts.
 type Candidate struct {
 	RobotID, Generation, PreviousRobotID    int64
- CredentialVersion int64
- RecoveryEvidence string
+	CredentialVersion                       int64
+	RecoveryEvidence                        string
 	RobotName, Username, Ownership, Purpose string
 	ExpiresAt                               *time.Time
 }

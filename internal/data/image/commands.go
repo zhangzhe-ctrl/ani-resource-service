@@ -71,9 +71,9 @@ func reserveTenantCommand(ctx context.Context, q *sqlcgen.Queries, c biz.Command
 	return fromCommand(row)
 }
 func (p *Postgres) SaveTenantCommandPhase(ctx context.Context, c biz.Command) (biz.Command, error) {
- return saveTenantCommandPhase(ctx,sqlcgen.New(p.pool),c)
+	return saveTenantCommandPhase(ctx, sqlcgen.New(p.pool), c)
 }
-func saveTenantCommandPhase(ctx context.Context,q *sqlcgen.Queries, c biz.Command) (biz.Command,error) {
+func saveTenantCommandPhase(ctx context.Context, q *sqlcgen.Queries, c biz.Command) (biz.Command, error) {
 	if _, err := biz.ParseTenant(c.TenantID); err != nil {
 		return biz.Command{}, err
 	}

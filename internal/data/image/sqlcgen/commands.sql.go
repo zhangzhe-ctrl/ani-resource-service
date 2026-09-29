@@ -12,6 +12,8 @@ import (
 
 const completePlatformCommand = `-- name: CompletePlatformCommand :one
 UPDATE image.commands SET state='succeeded',phase='completed',result=$1,reason='',
+ secret_ciphertext=CASE WHEN $2::timestamptz IS NULL THEN NULL ELSE secret_ciphertext END,
+ secret_key_id=CASE WHEN $2::timestamptz IS NULL THEN NULL ELSE secret_key_id END,
  secret_replay_until=$2,completed_at=clock_timestamp(),updated_at=clock_timestamp(),version=version+1
 WHERE owner_scope='platform' AND tenant_id IS NULL AND space_id=$3 AND command_id=$4
  AND version=$5 AND state IN ('pending','running','retryable','blocked')
@@ -63,6 +65,8 @@ func (q *Queries) CompletePlatformCommand(ctx context.Context, arg CompletePlatf
 
 const completeTenantCommand = `-- name: CompleteTenantCommand :one
 UPDATE image.commands SET state='succeeded',phase='completed',result=$1,reason='',
+ secret_ciphertext=CASE WHEN $2::timestamptz IS NULL THEN NULL ELSE secret_ciphertext END,
+ secret_key_id=CASE WHEN $2::timestamptz IS NULL THEN NULL ELSE secret_key_id END,
  secret_replay_until=$2,completed_at=clock_timestamp(),updated_at=clock_timestamp(),version=version+1
 WHERE owner_scope='tenant' AND tenant_id=$3 AND space_id=$4 AND command_id=$5
  AND version=$6 AND state IN ('pending','running','retryable','blocked')

@@ -1,8 +1,8 @@
 package biz
 
 import (
-"context"
-"time"
+	"context"
+	"time"
 )
 
 // RuntimeImages is consumed by the actual workload owner; Image owns no Pods.
@@ -53,7 +53,7 @@ type Robot struct {
 	Disabled                    bool
 	Permissions                 []RobotPermission
 	ExpiresAt                   int64
- DurationDays int64
+	DurationDays                int64
 }
 type RobotRequest struct {
 	Name, Description string
@@ -80,20 +80,20 @@ type Registry interface {
 // LifecycleRepository persists only this domain's bounded external commands.
 // All mutations retain explicit tenant scope and CAS in their implementations.
 type LifecycleRepository interface {
- SpaceRepository
- CommandRepository
- CredentialRepository
- BindTenantProject(context.Context, Space, int64) (Space,error)
- BeginTenantCredentialCommand(context.Context, Command, int64) (Command,error)
- PrepareTenantCandidate(context.Context, Command) (Command,error)
- SaveTenantCommandPhase(context.Context, Command) (Command,error)
- CompleteTenantCommand(context.Context, Command) (Command,error)
- CompleteTenantEnable(context.Context, Space, Command) (Space,Command,error)
- ActivateTenantCandidate(context.Context, Space, Command, EncryptedSecret) (Space,Command,error)
- CompleteTenantDisable(context.Context, Command) (Command,error)
- BlockTenantSpace(context.Context, Space, Reason) (Space,error)
- InspectSpaceForOperator(context.Context, string) (Space,error)
- OpenTenantExternalCommand(context.Context, string, string) (Command,error)
- RecoverTenantProject(context.Context, Space, Command, int64, string) (Space,error)
- PurgeExpiredDeliverySecrets(context.Context, time.Time) (int64,error)
+	SpaceRepository
+	CommandRepository
+	CredentialRepository
+	BindTenantProject(context.Context, Space, int64) (Space, error)
+	BeginTenantCredentialCommand(context.Context, Command, int64) (Command, error)
+	PrepareTenantCandidate(context.Context, Command) (Command, error)
+	SaveTenantCommandPhase(context.Context, Command) (Command, error)
+	CompleteTenantCommand(context.Context, Command) (Command, error)
+	CompleteTenantEnable(context.Context, Space, Command) (Space, Command, error)
+	ActivateTenantCandidate(context.Context, Space, Command, EncryptedSecret) (Space, Command, error)
+	CompleteTenantDisable(context.Context, Command) (Command, error)
+	BlockTenantSpace(context.Context, Space, Reason) (Space, error)
+	InspectSpaceForOperator(context.Context, string) (Space, error)
+	OpenTenantExternalCommand(context.Context, string, string) (Command, error)
+	RecoverTenantProject(context.Context, Space, Command, int64, string) (Space, error)
+	PurgeExpiredDeliverySecrets(context.Context, time.Time) (int64, error)
 }

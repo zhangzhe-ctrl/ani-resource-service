@@ -135,6 +135,35 @@ func (q *Queries) GetTenantSpace(ctx context.Context, arg GetTenantSpaceParams) 
 	return i, err
 }
 
+const inspectSpaceForOperator = `-- name: InspectSpaceForOperator :one
+SELECT space_id, owner_scope, tenant_id, installation_id, registry_authority, project_name, harbor_project_id, state, reason, version, created_at, updated_at FROM image.spaces WHERE space_id=$1
+`
+
+type InspectSpaceForOperatorParams struct {
+	SpaceID string
+}
+
+// Local operator mode only; never used by tenant RPC paths.
+func (q *Queries) InspectSpaceForOperator(ctx context.Context, arg InspectSpaceForOperatorParams) (ImageSpace, error) {
+	row := q.db.QueryRow(ctx, inspectSpaceForOperator, arg.SpaceID)
+	var i ImageSpace
+	err := row.Scan(
+		&i.SpaceID,
+		&i.OwnerScope,
+		&i.TenantID,
+		&i.InstallationID,
+		&i.RegistryAuthority,
+		&i.ProjectName,
+		&i.HarborProjectID,
+		&i.State,
+		&i.Reason,
+		&i.Version,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const lockTenantSpace = `-- name: LockTenantSpace :exec
 SELECT pg_advisory_xact_lock(hashtextextended('image.tenant:' || $1::text, 0))
 `

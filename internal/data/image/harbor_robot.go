@@ -82,7 +82,7 @@ func (r harborRobot) domain() (biz.Robot, error) {
 	if err := biz.ValidateRobotPermissions(permissions, permissions); err != nil {
 		return biz.Robot{}, err
 	}
-	return biz.Robot{ID: r.ID, Name: r.Name, Username: r.Name, Description: r.Description, Disabled: r.Disable, Permissions: permissions, ExpiresAt: r.ExpiresAt, DurationDays:r.Duration}, nil
+	return biz.Robot{ID: r.ID, Name: r.Name, Username: r.Name, Description: r.Description, Disabled: r.Disable, Permissions: permissions, ExpiresAt: r.ExpiresAt, DurationDays: r.Duration}, nil
 }
 func (h *Harbor) rawRobot(ctx context.Context, id int64) (harborRobot, error) {
 	var r harborRobot
@@ -113,7 +113,7 @@ func (h *Harbor) validateRobotRequest(r biz.RobotRequest) error {
 	return err
 }
 func (h *Harbor) matches(r biz.Robot, want biz.RobotRequest) error {
-	if r.Name != h.robotPrefix+want.Name || r.Username != r.Name || r.Description != want.Description || r.DurationDays!=want.DurationDays {
+	if r.Name != h.robotPrefix+want.Name || r.Username != r.Name || r.Description != want.Description || r.DurationDays != want.DurationDays {
 		return robotDenied()
 	}
 	return biz.ValidateRobotPermissions(r.Permissions, want.Permissions)
@@ -141,7 +141,7 @@ func (h *Harbor) CreateRobot(ctx context.Context, want biz.RobotRequest) (biz.Ro
 		return biz.Robot{}, robotDenied()
 	}
 	// Caller persists ID before verification; no second request can erase that ID.
-	return biz.Robot{ID: created.ID, Name: created.Name, Username: created.Name, Description: want.Description, Permissions: want.Permissions, ExpiresAt: created.ExpiresAt, DurationDays:want.DurationDays}, nil
+	return biz.Robot{ID: created.ID, Name: created.Name, Username: created.Name, Description: want.Description, Permissions: want.Permissions, ExpiresAt: created.ExpiresAt, DurationDays: want.DurationDays}, nil
 }
 func (h *Harbor) FindOwnedRobot(ctx context.Context, want biz.RobotRequest) (biz.Robot, error) {
 	if err := h.validateRobotRequest(want); err != nil {
