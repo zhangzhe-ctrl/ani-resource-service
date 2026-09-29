@@ -7,3 +7,5 @@ Fedora read-only probe: host=fedora, HOME=/home/chabking, Go=go1.26.7-X:nodwarf5
 No shared cluster, Harbor, credentials or business DB accessed. Live profile requested asynchronously; missing inputs block live only. Consumer binding remains blocked, frontend identified; no ANI source read. No runtime implementation or acceptance claimed by importing plans.
 
 GOAL source-first commit/push cycle takes precedence over AGENTS pre-commit verify ordering; make verify remains required on resulting generated candidate.
+
+Fedora preflight on 3d83c7618b861f354ca4e34d8e0a9d09cb2bb0b4: [raw output](preflight.txt), exit 0; Buf 1.60.0/sqlc 1.31.1 module identities match, 274 imported document link targets exist, protected Network/config/README/AGENTS paths unchanged. [Root migration hashes](network-migrations.sha256). Local SSH 22 push failed; official ssh.github.com:443 push succeeded without global config changes.

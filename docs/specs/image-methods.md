@@ -41,7 +41,7 @@ migrations/image/{001_image.sql,embed.go}
 
 ## 3. ports 与 data/image
 
-biz接口不引用net/http、pgx、Kubernetes、gRPC、Kratos。示例窄运行接口见 [Go契约](../plans/image-mvp-contracts/go/runtime_ports.go)。其他Repository接口按下面目标定义，由单一Image Postgres实现即可，不创建泛型通用仓储。
+biz接口不引用net/http、pgx、Kubernetes、gRPC、Kratos。示例窄运行接口见 [Go契约](../../internal/biz/image/ports.go)。其他Repository接口按下面目标定义，由单一Image Postgres实现即可，不创建泛型通用仓储。
 
 | adapter/文件 | 方法 | 必要实现细节 |
 |---|---|---|

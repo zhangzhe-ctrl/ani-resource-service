@@ -1,6 +1,6 @@
 # Image API 规格
 
-契约起稿在 [Resource Proto](../plans/image-mvp-contracts/resource/api/image/v1/image.proto)、[内部运行 Proto](../plans/image-mvp-contracts/resource/api/image/v1/runtime.proto)、[公开 DTO](../plans/image-mvp-contracts/governance/api/protos/catalog/service/v1/image.proto)、[HTTP 绑定](../plans/image-mvp-contracts/governance/api/protos/admin/service/v1/i_image.proto)。字段号明确，但未在 Fedora 编译；IMG-01 必须生成/验证。迁入实际源码后以源码为唯一契约，不维护第二份副本。
+契约起稿在 [Resource Proto](../../api/image/v1/image.proto)、[内部运行 Proto](../../api/image/v1/runtime.proto)、[公开 DTO](../plans/image-mvp-contracts/governance/api/protos/catalog/service/v1/image.proto)、[HTTP 绑定](../plans/image-mvp-contracts/governance/api/protos/admin/service/v1/i_image.proto)。字段号明确，但未在 Fedora 编译；IMG-01 必须生成/验证。迁入实际源码后以源码为唯一契约，不维护第二份副本。
 
 ## 1. 通用规则
 
