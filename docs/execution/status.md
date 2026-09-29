@@ -348,11 +348,11 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-10.3 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
 | IMG-10.4 | blocked | not_run | blocked | blocked | Approved live profile/test identities and actual container owner missing; isolated evidence does not satisfy live/product matrix |
 | IMG-10.5 | running | running | blocked | blocked | Resource 62ecc67 full original integration/race/tenant-mutations running on Fedora; Image gates pass; Governance bounded-compiler caveat retained |
-| IMG-10.6 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-11.1 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-11.2 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-11.3 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-11.4 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-11.5 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-10.6 | running | running | blocked | blocked | Isolated Image/Governance fixtures cleaned; original Network regression fixture active; no shared live resources created |
+| IMG-11.1 | running | running | n_a | n_a | Code refs and source-only diff frozen; final original Network evidence and documentation check pending |
+| IMG-11.2 | running | running | n_a | n_a | Sole ledger updated with explicit IMG-08/09/live blockers; final regression status pending |
+| IMG-11.3 | pass | running | blocked | blocked | Deployment/CLI/smoke/recovery guide written; link check queued; runtime credential replacement requires actual owner |
+| IMG-11.4 | running | running | n_a | n_a | [Bounded handoff](records/IMAGE-MVP/img-20260929T1718Z/HANDOFF.md) and review scope prepared; final cleanup evidence pending |
+| IMG-11.5 | running | n_a | n_a | n_a | [Checkpoint](records/IMAGE-MVP/img-20260929T1718Z/CHECKPOINT.md); active original gates, then external input blockers |
 
 IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: finish original Network regression and bounded handoff. IMG-08 requires owner/Namespace binding; IMG-09 requires writable frontend target; live requires approved profile.
