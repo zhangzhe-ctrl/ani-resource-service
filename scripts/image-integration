@@ -32,13 +32,15 @@ import secrets,sys
 p=Path(sys.argv[1]);(p/'postgres.env').write_text('POSTGRES_PASSWORD='+secrets.token_hex(32)+'\n')
 PY
 docker image inspect "$image" >/dev/null 2>&1 || docker pull "$image"
-container=$(docker run -d --label "ani.image.fixture=$private" --memory=768m --cpus=1 \
+container=$(docker run -d --label "ani.image.fixture=$private" --memory=768m --memory-swap=768m --cpus=1 \
  --mount type=tmpfs,destination=/var/lib/postgresql --env-file "$private/postgres.env" -p 127.0.0.1::5432 "$image")
 for attempt in $(seq 1 45); do
  if docker exec "$container" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1; then break; fi
  sleep 1
 done
 docker exec "$container" pg_isready -h 127.0.0.1 -U postgres
+docker exec "$container" postgres --version
+docker inspect --format 'fixture={{.Id}} memory={{.HostConfig.Memory}} memory_swap={{.HostConfig.MemorySwap}} nanocpus={{.HostConfig.NanoCpus}}' "$container"
 port=$(docker port "$container" 5432/tcp | awk -F: '$1 == "127.0.0.1" {print $2}')
 [[ $port =~ ^[0-9]+$ ]]
 python3 - "$private" "$port" <<'PY'

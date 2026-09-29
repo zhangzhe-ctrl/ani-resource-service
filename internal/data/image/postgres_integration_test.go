@@ -434,7 +434,11 @@ func TestSpaceWriteLockTimeoutAndRelease(t *testing.T) {
 			return nil
 		})
 	}()
-	<-entered
+	select {
+	case <-entered:
+	case err := <-result:
+		t.Fatal("first writer did not acquire lock", err)
+	}
 	short, cancel := context.WithTimeout(ctx, 30*time.Millisecond)
 	defer cancel()
 	err := f.Repo.WithSpaceWriteLock(short, space, func(context.Context) error {
