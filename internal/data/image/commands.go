@@ -71,6 +71,9 @@ func reserveTenantCommand(ctx context.Context, q *sqlcgen.Queries, c biz.Command
 	return fromCommand(row)
 }
 func (p *Postgres) SaveTenantCommandPhase(ctx context.Context, c biz.Command) (biz.Command, error) {
+ return saveTenantCommandPhase(ctx,sqlcgen.New(p.pool),c)
+}
+func saveTenantCommandPhase(ctx context.Context,q *sqlcgen.Queries, c biz.Command) (biz.Command,error) {
 	if _, err := biz.ParseTenant(c.TenantID); err != nil {
 		return biz.Command{}, err
 	}
@@ -82,7 +85,7 @@ func (p *Postgres) SaveTenantCommandPhase(ctx context.Context, c biz.Command) (b
 	if c.DeliverySecret.KeyID != "" {
 		key = &c.DeliverySecret.KeyID
 	}
-	row, err := sqlcgen.New(p.pool).UpdateTenantCommandPhase(ctx, sqlcgen.UpdateTenantCommandPhaseParams{TenantID: &c.TenantID, SpaceID: c.SpaceID, CommandID: c.ID, ExpectedVersion: c.Version, Phase: c.Phase, State: c.State, Reason: string(c.Reason), Candidate: candidate, SecretCiphertext: c.DeliverySecret.Ciphertext, SecretKeyID: key})
+	row, err := q.UpdateTenantCommandPhase(ctx, sqlcgen.UpdateTenantCommandPhaseParams{TenantID: &c.TenantID, SpaceID: c.SpaceID, CommandID: c.ID, ExpectedVersion: c.Version, Phase: c.Phase, State: c.State, Reason: string(c.Reason), Candidate: candidate, SecretCiphertext: c.DeliverySecret.Ciphertext, SecretKeyID: key})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return biz.Command{}, biz.Fail(biz.VersionConflict, "command version changed")
 	}

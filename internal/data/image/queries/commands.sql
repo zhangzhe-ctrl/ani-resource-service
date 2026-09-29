@@ -32,6 +32,8 @@ RETURNING *;
 
 -- name: CompleteTenantCommand :one
 UPDATE image.commands SET state='succeeded',phase='completed',result=sqlc.arg(result),reason='',
+ secret_ciphertext=CASE WHEN sqlc.narg(secret_replay_until)::timestamptz IS NULL THEN NULL ELSE secret_ciphertext END,
+ secret_key_id=CASE WHEN sqlc.narg(secret_replay_until)::timestamptz IS NULL THEN NULL ELSE secret_key_id END,
  secret_replay_until=sqlc.narg(secret_replay_until),completed_at=clock_timestamp(),updated_at=clock_timestamp(),version=version+1
 WHERE owner_scope='tenant' AND tenant_id=sqlc.arg(tenant_id) AND space_id=sqlc.arg(space_id) AND command_id=sqlc.arg(command_id)
  AND version=sqlc.arg(expected_version) AND state IN ('pending','running','retryable','blocked')
@@ -39,6 +41,8 @@ RETURNING *;
 
 -- name: CompletePlatformCommand :one
 UPDATE image.commands SET state='succeeded',phase='completed',result=sqlc.arg(result),reason='',
+ secret_ciphertext=CASE WHEN sqlc.narg(secret_replay_until)::timestamptz IS NULL THEN NULL ELSE secret_ciphertext END,
+ secret_key_id=CASE WHEN sqlc.narg(secret_replay_until)::timestamptz IS NULL THEN NULL ELSE secret_key_id END,
  secret_replay_until=sqlc.narg(secret_replay_until),completed_at=clock_timestamp(),updated_at=clock_timestamp(),version=version+1
 WHERE owner_scope='platform' AND tenant_id IS NULL AND space_id=sqlc.arg(space_id) AND command_id=sqlc.arg(command_id)
  AND version=sqlc.arg(expected_version) AND state IN ('pending','running','retryable','blocked')

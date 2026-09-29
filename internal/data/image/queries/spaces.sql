@@ -52,3 +52,7 @@ RETURNING *;
 UPDATE image.spaces SET state=sqlc.arg(state),reason=sqlc.arg(reason),version=version+1,updated_at=clock_timestamp()
 WHERE owner_scope='platform' AND tenant_id IS NULL AND space_id=sqlc.arg(space_id) AND version=sqlc.arg(expected_version)
 RETURNING *;
+
+-- name: InspectSpaceForOperator :one
+-- Local operator mode only; never used by tenant RPC paths.
+SELECT * FROM image.spaces WHERE space_id=sqlc.arg(space_id);
