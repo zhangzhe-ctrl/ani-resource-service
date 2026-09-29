@@ -314,18 +314,18 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-04.5 | pass | pass | blocked | n_a | [IMG-04 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-04.md); exact SHA 53f6c16, true PG/race/process exits/verify |
 | IMG-04.6 | pass | pass | blocked | n_a | [IMG-04 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-04.md); exact SHA 53f6c16, true PG/race/process exits/verify |
 | IMG-04.7 | pass | pass | blocked | n_a | [IMG-04 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-04.md); exact SHA 53f6c16, true PG/race/process exits/verify |
-| IMG-05.1 | running | not_run | blocked | n_a | fixed digest catalog, signed cursor and internal runtime use cases |
-| IMG-05.2 | running | not_run | blocked | n_a | fixed digest catalog, signed cursor and internal runtime use cases |
-| IMG-05.3 | running | not_run | blocked | n_a | fixed digest catalog, signed cursor and internal runtime use cases |
-| IMG-05.4 | running | not_run | blocked | n_a | fixed digest catalog, signed cursor and internal runtime use cases |
-| IMG-05.5 | running | not_run | blocked | n_a | fixed digest catalog, signed cursor and internal runtime use cases |
-| IMG-05.6 | running | not_run | blocked | n_a | fixed digest catalog, signed cursor and internal runtime use cases |
-| IMG-06.1 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-06.2 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-06.3 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-06.4 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-06.5 | not_run | not_run | not_run | not_run | dependency gate pending |
-| IMG-06.6 | not_run | not_run | not_run | not_run | dependency gate pending |
+| IMG-05.1 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
+| IMG-05.2 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
+| IMG-05.3 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
+| IMG-05.4 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
+| IMG-05.5 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
+| IMG-05.6 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
+| IMG-06.1 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
+| IMG-06.2 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
+| IMG-06.3 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
+| IMG-06.4 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
+| IMG-06.5 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
+| IMG-06.6 | running | not_run | blocked | blocked | Resource trusted entry, Governance client/BFF and HTTP boundary |
 | IMG-07.1 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-07.2 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-07.3 | not_run | not_run | not_run | not_run | dependency gate pending |
@@ -355,4 +355,4 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-11.4 | not_run | not_run | not_run | not_run | dependency gate pending |
 | IMG-11.5 | not_run | not_run | not_run | not_run | dependency gate pending |
 
-IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: IMG-05 catalog and runtime resolution; missing live/consumer inputs do not block backend independent tasks.
+IMG-00 n_a: baseline/import tasks have no product/live behavior. Next: IMG-06 Resource and Governance trusted transport integration; missing live/consumer inputs do not block backend independent tasks.

@@ -1,0 +1,51 @@
+2026-09-29T18:39:24Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/1eb486ac17e9f50471b296761ab07c5e1b2b5487'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 3d83c76 docs(image): import MVP plan and freeze execution bindings
+HEAD 目前位于 1eb486a feat(image): add immutable catalog and runtime resolution use cases
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/1eb486ac17e9f50471b296761ab07c5e1b2b5487
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+{
+  "source_sha": "1eb486ac17e9f50471b296761ab07c5e1b2b5487",
+  "files": [
+    {
+      "path": "internal/biz/image/catalog.go",
+      "base_sha256": "e4425140cab85549465bbf415cb783509cc83623e34387aa24a50eecb1c6b8b7",
+      "sha256": "2787c8ada911bebb11c9bac5d5af35ce413310c46f8e7612bfed0ec7c5f50eab"
+    },
+    {
+      "path": "internal/biz/image/cursor.go",
+      "base_sha256": "95d2a9b808f5248577c7e4e363b0228fedf5d9110f2b84cf7cba7c1d1671f6b3",
+      "sha256": "85d98c5d67c050ac535a013638470757cbe5cebd744f86cb4d739e59d47ccc47"
+    },
+    {
+      "path": "internal/biz/image/cursor_test.go",
+      "base_sha256": "5fd5ec7e8f00b273aff6e991bb2a429b6364f96eef3833c43cfa147e85907584",
+      "sha256": "ae05fa2a4c8e688597b679130b688a68181506dabb450ef536514ce438c811e8"
+    },
+    {
+      "path": "internal/biz/image/runtime.go",
+      "base_sha256": "9dea3ab895fc9948fd5721a90e0e082fa8eaee0ec582736b9913a0f2491e975a",
+      "sha256": "d4afc1bfefdcd5f0ebf000e45a5faa34e4c4aefe92b3bf89b70a8817ab107d0f"
+    },
+    {
+      "path": "internal/data/image/catalog_usecase_integration_test.go",
+      "base_sha256": "57c19ced7842f890105a41504e13313396c3b660ee61806fdb20d260f3d64c89",
+      "sha256": "200632d9a0ac0b0adb7362eae0fd2c8fd3ffcec3df1e144715337ef86a0e505f"
+    }
+  ]
+}
+2026-09-29T18:39:31Z
+exit=0
