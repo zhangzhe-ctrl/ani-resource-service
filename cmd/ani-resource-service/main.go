@@ -23,13 +23,13 @@ import (
 
 // Name and Version can be overridden with -ldflags at build time.
 var (
-	Name          = "ani-resource-service"
-	Version       = "dev"
-	flagconf      string
-	flagMigrate   bool
+	Name             = "ani-resource-service"
+	Version          = "dev"
+	flagconf         string
+	flagMigrate      bool
 	flagImageMigrate bool
-	flagNodeFacts bool
-	id, _         = os.Hostname()
+	flagNodeFacts    bool
+	id, _            = os.Hostname()
 )
 
 func init() {
