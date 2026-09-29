@@ -181,3 +181,31 @@ Registry越权拒绝。A/B各自成功读后，才接受A读B的401/403为负例
 离线驱动检查：`python3 -B -m unittest discover -s scripts -p image_smoke_test.py -v`，
 以及 `go test -race ./scripts/image-smoke-runtime`。受控协议fixture只验证驱动边界和
 字段/阶段编排，不能作为真实Harbor、真实Governance部署或产品验收证据。
+
+## 到期、故障恢复与清理交接
+
+发布凭证到期/丢失时，先读取当前metadata version，再以新幂等键执行租户
+`publisher-credential:reset`（平台使用 `issue-platform-publisher` 且 `rotate=true`）。
+仅在受控交付窗口保存Secret，更新发布客户端后销毁本次交付文件。重置使旧Robot停用，
+不保证已经签出的Registry Token立即失效；实际Token TTL必须在获批Harbor上另测。
+普通GET不会恢复Secret；窗口到期必须显式重置，不能直接解密数据库或复用旧command。
+
+**当前没有运行pull凭证更换/Namespace Secret同步的已接通产品操作。**
+代码读取并校验 `expires_at`，已过期材料会拒绝交付；再次enable同一空间不能越过此检查。
+上线方须把该能力作为接入前门禁，结合真实owner和唯一tenant Namespace完成受控更换：
+准备并验证新材料、通过owner更新/确认其Secret generation、再停用旧身份。
+这段顺序是待接入约束，不是声称已经存在的CLI；不得直接改Image行、在Harbor单独改密钥，
+或宣称365天有效期等于永久可用。没有该更换链路时，应在到期前阻止新的创建尝试并报告
+需要owner修复；不能承诺已有工作负载重建或换节点时仍能拉取。
+
+空间/Robot创建请求超时后，先保留原actor、幂等键和完全相同的输入。查 `inspect-space`
+的实际绑定，再重试原操作；不要用新key覆盖未决command。已落库候选ID按其代次恢复，
+旧command不得刷新新代次。未知同名Project只允许在人工核对私有Project ID、安装归属与
+外部证据后使用 `recover-project`；证据SHA256是核对记录的引用，不是自动归属证明。
+缺少证据保持blocked。密钥文件缺失/错误AAD/密文损坏同样保持失败，不能丢弃行后重建身份。
+
+取消登记只停止后续基于该登记的新解析，不触碰Harbor内容或已持久化的业务镜像意图。
+停用Image或回退应用不会替你删除schema/Project/Robot/Namespace/Secret。
+物理清理必须按当前run创建的实际ID/UID、安装/owner标识和清单逐项核对；包含不明对象
+或存储时保留并报告。测试进程被强杀或主机中断后，私有交付目录可能仍有文件，先确认本run
+归属再清理；任何自动退出路径都不能替代恢复后的独立资源核验。
