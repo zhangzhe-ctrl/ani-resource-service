@@ -23,7 +23,7 @@ func (p *Postgres) GetTenantPublisher(ctx context.Context, tenant, space string)
 	if s.ID != space {
 		return biz.CredentialInfo{}, biz.Fail(biz.SpaceNotFound, "image space not found")
 	}
-	row, err := sqlcgen.New(p.pool).GetTenantPublisherCredential(ctx, sqlcgen.GetTenantPublisherCredentialParams{TenantID: &tenant, SpaceID: space})
+	row, err := sqlcgen.New(p.connection(ctx)).GetTenantPublisherCredential(ctx, sqlcgen.GetTenantPublisherCredentialParams{TenantID: &tenant, SpaceID: space})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return biz.CredentialInfo{TenantID: tenant, SpaceID: space, Scope: biz.TenantImages, Purpose: "publisher", State: "not_issued"}, nil
 	}
@@ -43,7 +43,7 @@ func (p *Postgres) GetTenantPull(ctx context.Context, tenant, space string) (biz
 	if s.ID != space {
 		return biz.StoredCredential{}, biz.Fail(biz.SpaceNotFound, "image space not found")
 	}
-	row, err := sqlcgen.New(p.pool).GetTenantPullCredential(ctx, sqlcgen.GetTenantPullCredentialParams{TenantID: &tenant, SpaceID: space})
+	row, err := sqlcgen.New(p.connection(ctx)).GetTenantPullCredential(ctx, sqlcgen.GetTenantPullCredentialParams{TenantID: &tenant, SpaceID: space})
 	if err != nil {
 		return biz.StoredCredential{}, databaseError(err)
 	}

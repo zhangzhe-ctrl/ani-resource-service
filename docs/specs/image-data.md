@@ -62,7 +62,7 @@ Project 创建先保存 `project_sent` 再发请求。只有适配器确认的�
 
 每个tenant方法tenant参数必填，不做“同一个查询tenant为NULL就查platform”。所有业务DML由sqlc生成；数据库catalog/readiness、角色校验、迁移基础设施SQL可在adapter中显式书写，沿用现有风格。
 
-唯一project冲突检查可用平台管理查询，但不能返回对方tenant身份给调用者。Session advisory锁实现放data/image，使用单独acquired连接、锁释放/断链后丢弃连接、加锁等待上限；不引入跨域共享锁框架。
+唯一project冲突检查可用平台管理查询，但不能返回对方tenant身份给调用者。Session advisory锁实现放data/image，从现有最多8连接的 Image 池 acquire 一个 session，锁等待最多5秒。回调期间本 Postgres 实例的串行查询和短事务复用该连接，不再次向同池申请；回调不得并发使用或保存该 context，嵌套同实例空间锁拒绝。HTTP 期间 session 保留锁但没有 SQL 事务，短事务在各数据方法返回前结束。解锁/加锁失败时丢弃异常连接，解锁清理使用独立有界 context；不增加连接池、不引入跨域共享锁框架。
 
 ## 6. 查询分页
 

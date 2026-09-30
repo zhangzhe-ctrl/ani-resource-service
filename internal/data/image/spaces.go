@@ -23,7 +23,7 @@ func (p *Postgres) FindTenantSpace(ctx context.Context, tenant string) (biz.Spac
 	if _, err := biz.ParseTenant(tenant); err != nil {
 		return biz.Space{}, err
 	}
-	v, err := sqlcgen.New(p.pool).GetTenantSpace(ctx, sqlcgen.GetTenantSpaceParams{TenantID: &tenant})
+	v, err := sqlcgen.New(p.connection(ctx)).GetTenantSpace(ctx, sqlcgen.GetTenantSpaceParams{TenantID: &tenant})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return biz.Space{}, biz.Fail(biz.SpaceNotFound, "image space not found")
 	}
@@ -33,7 +33,7 @@ func (p *Postgres) FindTenantSpace(ctx context.Context, tenant string) (biz.Spac
 	return fromSpace(v), nil
 }
 func (p *Postgres) FindPlatformSpace(ctx context.Context) (biz.Space, error) {
-	v, err := sqlcgen.New(p.pool).GetPlatformSpace(ctx)
+	v, err := sqlcgen.New(p.connection(ctx)).GetPlatformSpace(ctx)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return biz.Space{}, biz.Fail(biz.SpaceNotFound, "platform image space not found")
 	}
@@ -50,7 +50,7 @@ func (p *Postgres) ReserveTenantSpace(ctx context.Context, s biz.Space, c biz.Co
 	if s.Scope != biz.TenantImages || c.Scope != biz.TenantImages || s.TenantID != c.TenantID || c.Kind != "enable_space" {
 		return biz.Space{}, biz.Command{}, biz.Fail(biz.InvalidArgument, "invalid space reservation")
 	}
-	tx, err := p.pool.Begin(ctx)
+	tx, err := p.connection(ctx).Begin(ctx)
 	if err != nil {
 		return biz.Space{}, biz.Command{}, databaseError(err)
 	}
@@ -88,7 +88,7 @@ func (p *Postgres) BindTenantProject(ctx context.Context, s biz.Space, projectID
 	if projectID <= 0 {
 		return biz.Space{}, biz.Fail(biz.InvalidArgument, "invalid project ID")
 	}
-	row, err := sqlcgen.New(p.pool).BindTenantProject(ctx, sqlcgen.BindTenantProjectParams{ProjectID: pgtype.Int8{Int64: projectID, Valid: true}, TenantID: &s.TenantID, SpaceID: s.ID, ExpectedVersion: s.Version})
+	row, err := sqlcgen.New(p.connection(ctx)).BindTenantProject(ctx, sqlcgen.BindTenantProjectParams{ProjectID: pgtype.Int8{Int64: projectID, Valid: true}, TenantID: &s.TenantID, SpaceID: s.ID, ExpectedVersion: s.Version})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return biz.Space{}, biz.Fail(biz.VersionConflict, "image space version changed")
 	}

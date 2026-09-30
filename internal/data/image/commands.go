@@ -38,7 +38,7 @@ func (p *Postgres) FindTenantCommand(ctx context.Context, tenant, space, key str
 	if _, err := biz.ParseTenant(tenant); err != nil {
 		return biz.Command{}, err
 	}
-	row, err := sqlcgen.New(p.pool).GetTenantCommand(ctx, sqlcgen.GetTenantCommandParams{TenantID: &tenant, SpaceID: space, IdempotencyKey: key})
+	row, err := sqlcgen.New(p.connection(ctx)).GetTenantCommand(ctx, sqlcgen.GetTenantCommandParams{TenantID: &tenant, SpaceID: space, IdempotencyKey: key})
 	if err != nil {
 		return biz.Command{}, databaseError(err)
 	}
@@ -71,7 +71,7 @@ func reserveTenantCommand(ctx context.Context, q *sqlcgen.Queries, c biz.Command
 	return fromCommand(row)
 }
 func (p *Postgres) SaveTenantCommandPhase(ctx context.Context, c biz.Command) (biz.Command, error) {
-	return saveTenantCommandPhase(ctx, sqlcgen.New(p.pool), c)
+	return saveTenantCommandPhase(ctx, sqlcgen.New(p.connection(ctx)), c)
 }
 func saveTenantCommandPhase(ctx context.Context, q *sqlcgen.Queries, c biz.Command) (biz.Command, error) {
 	if _, err := biz.ParseTenant(c.TenantID); err != nil {
@@ -112,7 +112,7 @@ func (p *Postgres) CompleteTenantCommand(ctx context.Context, c biz.Command) (bi
 	if _, err := biz.ParseTenant(c.TenantID); err != nil {
 		return biz.Command{}, err
 	}
-	return completeTenantCommand(ctx, sqlcgen.New(p.pool), c)
+	return completeTenantCommand(ctx, sqlcgen.New(p.connection(ctx)), c)
 }
 
 // WithSpaceWriteLock serializes bounded provider writes without holding a SQL
@@ -121,6 +121,9 @@ func (p *Postgres) WithSpaceWriteLock(ctx context.Context, space string, fn func
 	if _, err = biz.ParseTenant(space); err != nil {
 		return err
 	} // space IDs use canonical nonzero UUIDs too.
+	if held, ok := ctx.Value(spaceWriteConnectionKey{}).(spaceWriteConnection); ok && held.owner == p {
+		return biz.Fail(biz.InvalidArgument, "nested Image space write lock is unsupported")
+	}
 	lockCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	conn, err := p.pool.Acquire(lockCtx)
@@ -145,5 +148,5 @@ func (p *Postgres) WithSpaceWriteLock(ctx context.Context, space string, fn func
 			}
 		}
 	}()
-	return fn(ctx)
+	return fn(context.WithValue(ctx, spaceWriteConnectionKey{}, spaceWriteConnection{owner: p, conn: conn}))
 }

@@ -26,7 +26,7 @@ func (p *Postgres) FindTenantRegistration(ctx context.Context, tenant, id string
 	if _, err := biz.ParseTenant(tenant); err != nil {
 		return biz.Registration{}, err
 	}
-	row, err := sqlcgen.New(p.pool).GetTenantRegistration(ctx, sqlcgen.GetTenantRegistrationParams{TenantID: &tenant, ImageID: id})
+	row, err := sqlcgen.New(p.connection(ctx)).GetTenantRegistration(ctx, sqlcgen.GetTenantRegistrationParams{TenantID: &tenant, ImageID: id})
 	if err != nil {
 		return biz.Registration{}, databaseError(err)
 	}
@@ -37,7 +37,7 @@ func (p *Postgres) FindTenantRegistration(ctx context.Context, tenant, id string
 	return fromRegistration(row, s)
 }
 func (p *Postgres) FindPlatformRegistration(ctx context.Context, id string) (biz.Registration, error) {
-	row, err := sqlcgen.New(p.pool).GetPlatformRegistration(ctx, sqlcgen.GetPlatformRegistrationParams{ImageID: id})
+	row, err := sqlcgen.New(p.connection(ctx)).GetPlatformRegistration(ctx, sqlcgen.GetPlatformRegistrationParams{ImageID: id})
 	if err != nil {
 		return biz.Registration{}, databaseError(err)
 	}
@@ -65,7 +65,7 @@ func (p *Postgres) PageTenantRegistrations(ctx context.Context, tenant string, f
 		return nil, err
 	}
 	has, after, id := pagePosition(key)
-	rows, err := sqlcgen.New(p.pool).ListTenantRegistrations(ctx, sqlcgen.ListTenantRegistrationsParams{TenantID: &tenant, SearchText: f.Search, SearchPattern: searchPattern(f.Search), Purposes: f.Purposes, Accelerator: f.Accelerator, HasCursor: has, AfterCreatedAt: after, AfterImageID: id, FetchLimit: int32(f.Limit + 1)})
+	rows, err := sqlcgen.New(p.connection(ctx)).ListTenantRegistrations(ctx, sqlcgen.ListTenantRegistrationsParams{TenantID: &tenant, SearchText: f.Search, SearchPattern: searchPattern(f.Search), Purposes: f.Purposes, Accelerator: f.Accelerator, HasCursor: has, AfterCreatedAt: after, AfterImageID: id, FetchLimit: int32(f.Limit + 1)})
 	if err != nil {
 		return nil, databaseError(err)
 	}
@@ -84,7 +84,7 @@ func (p *Postgres) PagePlatformRegistrations(ctx context.Context, f biz.Filter, 
 		return nil, err
 	}
 	has, after, id := pagePosition(key)
-	rows, err := sqlcgen.New(p.pool).ListPlatformRegistrations(ctx, sqlcgen.ListPlatformRegistrationsParams{SearchText: f.Search, SearchPattern: searchPattern(f.Search), Purposes: f.Purposes, Accelerator: f.Accelerator, HasCursor: has, AfterCreatedAt: after, AfterImageID: id, FetchLimit: int32(f.Limit + 1)})
+	rows, err := sqlcgen.New(p.connection(ctx)).ListPlatformRegistrations(ctx, sqlcgen.ListPlatformRegistrationsParams{SearchText: f.Search, SearchPattern: searchPattern(f.Search), Purposes: f.Purposes, Accelerator: f.Accelerator, HasCursor: has, AfterCreatedAt: after, AfterImageID: id, FetchLimit: int32(f.Limit + 1)})
 	if err != nil {
 		return nil, databaseError(err)
 	}
@@ -115,7 +115,7 @@ func (p *Postgres) applyTenantCatalog(ctx context.Context, c biz.Command, change
 	if _, err := biz.ParseTenant(c.TenantID); err != nil {
 		return biz.Registration{}, err
 	}
-	tx, err := p.pool.Begin(ctx)
+	tx, err := p.connection(ctx).Begin(ctx)
 	if err != nil {
 		return biz.Registration{}, databaseError(err)
 	}

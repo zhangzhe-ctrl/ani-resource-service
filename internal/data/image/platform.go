@@ -26,7 +26,7 @@ func platformVersion(err error) error {
 
 // Only short database work runs in this transaction; provider calls stay in biz.
 func (p *Postgres) platformTransaction(ctx context.Context, fn func(*sqlcgen.Queries) error) error {
-	tx, err := p.pool.Begin(ctx)
+	tx, err := p.connection(ctx).Begin(ctx)
 	if err != nil {
 		return databaseError(err)
 	}
@@ -41,7 +41,7 @@ func (p *Postgres) platformTransaction(ctx context.Context, fn func(*sqlcgen.Que
 	return databaseError(tx.Commit(ctx))
 }
 func (p *Postgres) FindPlatformCommand(ctx context.Context, space, key string) (biz.Command, error) {
-	row, err := sqlcgen.New(p.pool).GetPlatformCommand(ctx, sqlcgen.GetPlatformCommandParams{SpaceID: space, IdempotencyKey: key})
+	row, err := sqlcgen.New(p.connection(ctx)).GetPlatformCommand(ctx, sqlcgen.GetPlatformCommandParams{SpaceID: space, IdempotencyKey: key})
 	if err != nil {
 		return biz.Command{}, databaseError(err)
 	}
@@ -89,7 +89,7 @@ func savePlatformCommand(ctx context.Context, q *sqlcgen.Queries, c biz.Command)
 	return fromCommand(row)
 }
 func (p *Postgres) SavePlatformCommandPhase(ctx context.Context, c biz.Command) (biz.Command, error) {
-	return savePlatformCommand(ctx, sqlcgen.New(p.pool), c)
+	return savePlatformCommand(ctx, sqlcgen.New(p.connection(ctx)), c)
 }
 func completePlatformCommand(ctx context.Context, q *sqlcgen.Queries, c biz.Command) (biz.Command, error) {
 	if err := platformScope(c.Scope, c.TenantID); err != nil {
@@ -140,7 +140,7 @@ func (p *Postgres) BindPlatformProject(ctx context.Context, s biz.Space, id int6
 	if id <= 0 {
 		return biz.Space{}, biz.Fail(biz.InvalidArgument, "invalid project ID")
 	}
-	row, err := sqlcgen.New(p.pool).BindPlatformProject(ctx, sqlcgen.BindPlatformProjectParams{SpaceID: s.ID, ExpectedVersion: s.Version, ProjectID: pgtype.Int8{Int64: id, Valid: true}})
+	row, err := sqlcgen.New(p.connection(ctx)).BindPlatformProject(ctx, sqlcgen.BindPlatformProjectParams{SpaceID: s.ID, ExpectedVersion: s.Version, ProjectID: pgtype.Int8{Int64: id, Valid: true}})
 	if err != nil {
 		return biz.Space{}, platformVersion(err)
 	}
@@ -150,7 +150,7 @@ func (p *Postgres) BlockPlatformSpace(ctx context.Context, s biz.Space, reason b
 	if err := platformScope(s.Scope, s.TenantID); err != nil {
 		return biz.Space{}, err
 	}
-	row, err := sqlcgen.New(p.pool).SetPlatformSpaceReason(ctx, sqlcgen.SetPlatformSpaceReasonParams{SpaceID: s.ID, ExpectedVersion: s.Version, State: "blocked", Reason: string(reason)})
+	row, err := sqlcgen.New(p.connection(ctx)).SetPlatformSpaceReason(ctx, sqlcgen.SetPlatformSpaceReasonParams{SpaceID: s.ID, ExpectedVersion: s.Version, State: "blocked", Reason: string(reason)})
 	if err != nil {
 		return biz.Space{}, platformVersion(err)
 	}
@@ -194,7 +194,7 @@ func (p *Postgres) GetPlatformPublisher(ctx context.Context, space string) (biz.
 	if s.ID != space {
 		return biz.CredentialInfo{}, biz.Fail(biz.SpaceNotFound, "platform space not found")
 	}
-	return platformPublisher(ctx, sqlcgen.New(p.pool), space)
+	return platformPublisher(ctx, sqlcgen.New(p.connection(ctx)), space)
 }
 func (p *Postgres) BeginPlatformCredentialCommand(ctx context.Context, c biz.Command, expected int64) (biz.Command, error) {
 	if err := platformScope(c.Scope, c.TenantID); err != nil {
@@ -310,7 +310,7 @@ func (p *Postgres) ActivatePlatformCandidate(ctx context.Context, s biz.Space, c
 	return s, c, err
 }
 func (p *Postgres) OpenPlatformExternalCommand(ctx context.Context, space string) (biz.Command, error) {
-	row, err := sqlcgen.New(p.pool).GetOpenPlatformExternalCommand(ctx, sqlcgen.GetOpenPlatformExternalCommandParams{SpaceID: space})
+	row, err := sqlcgen.New(p.connection(ctx)).GetOpenPlatformExternalCommand(ctx, sqlcgen.GetOpenPlatformExternalCommandParams{SpaceID: space})
 	if err != nil {
 		return biz.Command{}, databaseError(err)
 	}

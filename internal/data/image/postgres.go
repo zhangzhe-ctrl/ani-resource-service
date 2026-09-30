@@ -9,9 +9,30 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	imagebiz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image/sqlcgen"
 )
 
 type Postgres struct{ pool *pgxpool.Pool }
+
+// A space write owns one session, not a transaction. Its sequential repository
+// calls borrow that session for SQL and short transactions, so eight admitted
+// writers never wait for a ninth connection from the same eight-slot pool.
+type spaceWriteConnectionKey struct{}
+type spaceWriteConnection struct {
+	owner *Postgres
+	conn  *pgxpool.Conn
+}
+type imageConnection interface {
+	sqlcgen.DBTX
+	Begin(context.Context) (pgx.Tx, error)
+}
+
+func (p *Postgres) connection(ctx context.Context) imageConnection {
+	if held, ok := ctx.Value(spaceWriteConnectionKey{}).(spaceWriteConnection); ok && held.owner == p {
+		return held.conn
+	}
+	return p.pool
+}
 
 func OpenPostgres(ctx context.Context, dsn string) (*Postgres, error) {
 	cfg, err := pgxpool.ParseConfig(dsn)

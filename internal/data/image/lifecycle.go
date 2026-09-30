@@ -37,7 +37,7 @@ func (p *Postgres) BeginTenantCredentialCommand(ctx context.Context, c biz.Comma
 	if expected < 0 {
 		return biz.Command{}, biz.Fail(biz.InvalidArgument, "invalid expected version")
 	}
-	tx, err := p.pool.Begin(ctx)
+	tx, err := p.connection(ctx).Begin(ctx)
 	if err != nil {
 		return biz.Command{}, databaseError(err)
 	}
@@ -116,7 +116,7 @@ func (p *Postgres) PrepareTenantCandidate(ctx context.Context, c biz.Command) (b
 	if _, err := biz.ParseTenant(c.TenantID); err != nil {
 		return biz.Command{}, err
 	}
-	tx, err := p.pool.Begin(ctx)
+	tx, err := p.connection(ctx).Begin(ctx)
 	if err != nil {
 		return biz.Command{}, databaseError(err)
 	}
@@ -145,7 +145,7 @@ func (p *Postgres) PrepareTenantCandidate(ctx context.Context, c biz.Command) (b
 	return stored, nil
 }
 func (p *Postgres) CompleteTenantEnable(ctx context.Context, s biz.Space, c biz.Command) (biz.Space, biz.Command, error) {
-	tx, err := p.pool.Begin(ctx)
+	tx, err := p.connection(ctx).Begin(ctx)
 	if err != nil {
 		return biz.Space{}, biz.Command{}, databaseError(err)
 	}
@@ -192,7 +192,7 @@ func (p *Postgres) ActivateTenantCandidate(ctx context.Context, s biz.Space, c b
 	if s.TenantID != c.TenantID || s.ID != c.SpaceID {
 		return biz.Space{}, biz.Command{}, biz.Fail(biz.InvalidArgument, "invalid credential space")
 	}
-	tx, err := p.pool.Begin(ctx)
+	tx, err := p.connection(ctx).Begin(ctx)
 	if err != nil {
 		return biz.Space{}, biz.Command{}, databaseError(err)
 	}
@@ -243,7 +243,7 @@ func (p *Postgres) CompleteTenantDisable(ctx context.Context, c biz.Command) (bi
 	if _, err := biz.ParseTenant(c.TenantID); err != nil {
 		return biz.Command{}, err
 	}
-	tx, err := p.pool.Begin(ctx)
+	tx, err := p.connection(ctx).Begin(ctx)
 	if err != nil {
 		return biz.Command{}, databaseError(err)
 	}
@@ -281,7 +281,7 @@ func (p *Postgres) BlockTenantSpace(ctx context.Context, s biz.Space, reason biz
 	if _, err := biz.ParseTenant(s.TenantID); err != nil {
 		return biz.Space{}, err
 	}
-	row, err := sqlcgen.New(p.pool).SetTenantSpaceReason(ctx, sqlcgen.SetTenantSpaceReasonParams{TenantID: &s.TenantID, SpaceID: s.ID, ExpectedVersion: s.Version, State: "blocked", Reason: string(reason)})
+	row, err := sqlcgen.New(p.connection(ctx)).SetTenantSpaceReason(ctx, sqlcgen.SetTenantSpaceReasonParams{TenantID: &s.TenantID, SpaceID: s.ID, ExpectedVersion: s.Version, State: "blocked", Reason: string(reason)})
 	if err != nil {
 		return biz.Space{}, databaseError(err)
 	}
@@ -291,7 +291,7 @@ func (p *Postgres) InspectSpaceForOperator(ctx context.Context, id string) (biz.
 	if _, err := biz.ParseTenant(id); err != nil {
 		return biz.Space{}, err
 	}
-	row, err := sqlcgen.New(p.pool).InspectSpaceForOperator(ctx, sqlcgen.InspectSpaceForOperatorParams{SpaceID: id})
+	row, err := sqlcgen.New(p.connection(ctx)).InspectSpaceForOperator(ctx, sqlcgen.InspectSpaceForOperatorParams{SpaceID: id})
 	if err != nil {
 		return biz.Space{}, databaseError(err)
 	}
@@ -301,7 +301,7 @@ func (p *Postgres) OpenTenantExternalCommand(ctx context.Context, tenant, space 
 	if _, err := biz.ParseTenant(tenant); err != nil {
 		return biz.Command{}, err
 	}
-	row, err := sqlcgen.New(p.pool).GetOpenTenantExternalCommand(ctx, sqlcgen.GetOpenTenantExternalCommandParams{TenantID: &tenant, SpaceID: space})
+	row, err := sqlcgen.New(p.connection(ctx)).GetOpenTenantExternalCommand(ctx, sqlcgen.GetOpenTenantExternalCommandParams{TenantID: &tenant, SpaceID: space})
 	if err != nil {
 		return biz.Command{}, databaseError(err)
 	}
@@ -311,7 +311,7 @@ func (p *Postgres) RecoverTenantProject(ctx context.Context, s biz.Space, c biz.
 	if s.Scope != biz.TenantImages || s.TenantID != c.TenantID || s.ID != c.SpaceID || s.ProjectID != 0 || c.Kind != "enable_space" || c.Phase != "project_sent" || id <= 0 || len(evidence) != 64 {
 		return biz.Space{}, biz.Fail(biz.InvalidArgument, "invalid project recovery")
 	}
-	tx, err := p.pool.Begin(ctx)
+	tx, err := p.connection(ctx).Begin(ctx)
 	if err != nil {
 		return biz.Space{}, databaseError(err)
 	}
@@ -333,7 +333,7 @@ func (p *Postgres) RecoverTenantProject(ctx context.Context, s biz.Space, c biz.
 	return fromSpace(row), nil
 }
 func (p *Postgres) PurgeExpiredDeliverySecrets(ctx context.Context, now time.Time) (int64, error) {
-	n, err := sqlcgen.New(p.pool).ScrubExpiredDeliverySecrets(ctx, sqlcgen.ScrubExpiredDeliverySecretsParams{NowAt: &now})
+	n, err := sqlcgen.New(p.connection(ctx)).ScrubExpiredDeliverySecrets(ctx, sqlcgen.ScrubExpiredDeliverySecretsParams{NowAt: &now})
 	return n, databaseError(err)
 }
 
