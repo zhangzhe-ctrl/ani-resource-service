@@ -1,0 +1,206 @@
+"""Run-owned Harbor/Kubernetes technical acceptance; no product-API claim."""
+import base64, hashlib, json, os, re, socket, subprocess, sys, time, uuid
+import urllib.request, urllib.error
+from pathlib import Path
+os.umask(0o077)
+RUN='imgp-0930-0200'
+ROOT=Path.home()/'ani-image-mvp-runs/pod-pull-20260930T0200Z'
+PRIVATE=ROOT/'private'
+EVIDENCE=ROOT/'evidence'
+API='http://127.0.0.1:46483'
+HARBOR='https://172.16.101.10:30003'
+REGISTRY='172.16.101.10:30003'
+CA=Path.home()/'ani-image-mvp-runs/cluster-assessment-20260930T0110Z/image-harbor-ca-public.pem'
+CLUSTER='87ecef8e-ac4e-442b-8e15-5e906263be6b'
+PROJECTS={'a':'t-'+RUN+'-a','b':'t-'+RUN+'-b','platform':RUN+'-platform'}
+NAMESPACES={'a':RUN+'-a','b':RUN+'-b'}
+state={'run':RUN,'started_utc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'projects':[],'robots':[],'kubernetes':[],'checks':[],'cleanup':[]}
+def save():
+    (EVIDENCE/'result.json').write_text(json.dumps(state,indent=2)+'\n')
+def check(name,ok,**facts):
+    state['checks'].append(dict(name=name,pass_=bool(ok),**facts));save()
+    print(name, 'pass' if ok else 'FAIL',flush=True)
+    if not ok: raise RuntimeError(name)
+def kube(method,path,body=None,allowed=(200,)):
+    if method!='GET':
+        assert (path=='/api/v1/namespaces' and method=='POST' and body['metadata']['name'] in NAMESPACES.values()) or any(path.startswith('/api/v1/namespaces/'+ns) for ns in NAMESPACES.values())
+    req=urllib.request.Request(API+path,data=None if body is None else json.dumps(body).encode(),method=method,headers={'Content-Type':'application/json'})
+    try:
+        with urllib.request.urlopen(req,timeout=20) as r: code,raw=r.status,r.read()
+    except urllib.error.HTTPError as e: code,raw=e.code,e.read()
+    assert code in allowed, f'Kubernetes {method} {path}: {code}'
+    return code,json.loads(raw) if raw else None
+def harbor(method,path,body=None,allowed=(200,),anonymous=False):
+    assert path.startswith('/api/v2.0/')
+    cmd=['curl','--silent','--show-error','--max-time','30','--cacert',str(CA),'--request',method,'--dump-header',str(PRIVATE/'response-headers'),'--write-out','\n%{http_code}']
+    if not anonymous: cmd+=['--header','@'+str(PRIVATE/'admin-header')]
+    if body is not None:cmd+=['--header','Content-Type: application/json','--data-binary','@-']
+    p=subprocess.run(cmd+[HARBOR+path],input=None if body is None else json.dumps(body).encode(),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    assert p.returncode==0, f'Harbor TLS/transport curl exit {p.returncode}'
+    raw,code=p.stdout.rsplit(b'\n',1);code=int(code)
+    assert code in allowed,f'Harbor {method} {path}: {code}'
+    return code,json.loads(raw) if raw else None
+def authfile(label,robot):
+    auth=base64.b64encode((robot['name']+':'+robot['secret']).encode()).decode()
+    value={'auths':{REGISTRY:{'auth':auth}}}
+    path=PRIVATE/(label+'-auth.json');path.write_text(json.dumps(value))
+    return path,value
+def robot(label,projects,actions):
+    want={'name':RUN+'-'+label,'description':'ani-image:v1:technical-pod:'+RUN+':'+label,'level':'system','duration':1,'permissions':[{'kind':'project','namespace':p,'access':[{'resource':'repository','action':a,'effect':'allow'} for a in actions]} for p in projects]}
+    _,r=harbor('POST','/api/v2.0/robots',want,(201,))
+    owned={'id':r['id'],'name':r['name'],'description':want['description'],'permissions':want['permissions']}
+    state['robots'].append(owned);save()
+    _,actual=harbor('GET','/api/v2.0/robots/'+str(r['id']))
+    assert actual['permissions']==want['permissions'] and actual['description']==want['description']
+    assert not actual.get('cover_all',False) and actual['expires_at']>time.time()
+    return authfile(label,r)
+def skopeo(label,args,expect_success=True):
+    p=subprocess.run(['skopeo']+args,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=120)
+    # Skopeo receives credentials exclusively through private authfiles.
+    log=(p.stdout+p.stderr).decode(errors='replace')
+    (EVIDENCE/(label+'.txt')).write_text(log)
+    if expect_success: assert p.returncode==0, f'{label}: exit {p.returncode}'
+    else:check(label,p.returncode!=0 and bool(re.search(r'denied|unauthorized|authentication required',log,re.I)),exit_code=p.returncode)
+    return p.stdout
+def create_kube(ns,plural,obj):
+    obj.setdefault('metadata',{}).setdefault('labels',{})['ani-image-test-run']=RUN
+    path='/api/v1/namespaces'+('/'+ns+'/'+plural if ns else '')
+    _,created=kube('POST',path,obj,(201,))
+    rec={'namespace':ns,'plural':plural,'name':created['metadata']['name'],'uid':created['metadata']['uid']}
+    state['kubernetes'].append(rec);save()
+    return rec
+def pod(ns,name,node,ref):
+    return create_kube(ns,'pods',{'apiVersion':'v1','kind':'Pod','metadata':{'name':name},'spec':{'nodeSelector':{'kubernetes.io/hostname':node},'automountServiceAccountToken':False,'restartPolicy':'Never','activeDeadlineSeconds':900,'terminationGracePeriodSeconds':1,'imagePullSecrets':[{'name':'image-pull'}],'securityContext':{'runAsNonRoot':True,'runAsUser':65534,'seccompProfile':{'type':'RuntimeDefault'}},'containers':[{'name':'check','image':ref,'imagePullPolicy':'Always','command':['/bin/sh','-c','printf "ANI-IMAGE-PULL-OK\\n"; sleep 600'],'securityContext':{'allowPrivilegeEscalation':False,'readOnlyRootFilesystem':True,'capabilities':{'drop':['ALL']}},'resources':{'requests':{'cpu':'10m','memory':'16Mi'},'limits':{'cpu':'100m','memory':'64Mi'}}}]}})
+def observe(rec):
+    _,p=kube('GET','/api/v1/namespaces/'+rec['namespace']+'/pods/'+rec['name'])
+    assert p['metadata']['uid']==rec['uid']
+    return p
+def wait_positive(records):
+    deadline=time.monotonic()+150
+    while time.monotonic()<deadline:
+        pods=[observe(r) for r in records]
+        if all(any(c.get('ready') and c.get('state',{}).get('running') for c in p.get('status',{}).get('containerStatuses',[])) for p in pods):
+            for p in pods:
+                check('pull-'+p['metadata']['name'],True,uid=p['metadata']['uid'],node=p['spec']['nodeName'],image=p['spec']['containers'][0]['image'],image_pull_policy=p['spec']['containers'][0]['imagePullPolicy'],image_id=p['status']['containerStatuses'][0]['imageID'])
+            return
+        time.sleep(3)
+    for r in records:(EVIDENCE/(r['name']+'-pod.json')).write_text(json.dumps(observe(r),indent=2))
+    raise RuntimeError('positive Pod timeout')
+def wait_negative(records):
+    deadline=time.monotonic()+120
+    while time.monotonic()<deadline:
+        pods=[observe(r) for r in records]
+        statuses=[p.get('status',{}).get('containerStatuses',[{}])[0] for p in pods]
+        if any(c.get('containerID') or c.get('state',{}).get('running') for c in statuses):raise RuntimeError('cross-tenant Pod unexpectedly started')
+        if all(c.get('state',{}).get('waiting',{}).get('reason') in ('ErrImagePull','ImagePullBackOff') and re.search(r'401|403|denied|unauthorized|authorization failed',c.get('state',{}).get('waiting',{}).get('message',''),re.I) for c in statuses):
+            for p,c in zip(pods,statuses):check('cached-cross-tenant-'+p['spec']['nodeName'],True,uid=p['metadata']['uid'],node=p['spec']['nodeName'],waiting=c['state']['waiting'],image=p['spec']['containers'][0]['image'])
+            return
+        time.sleep(2)
+    raise RuntimeError('negative Pod did not show registry authorization rejection')
+def cleanup():
+    errors=[]
+    for rec in reversed(state['kubernetes']):
+        try:
+            path='/api/v1/namespaces/'+rec['name'] if not rec['namespace'] else '/api/v1/namespaces/'+rec['namespace']+'/'+rec['plural']+'/'+rec['name']
+            code,obj=kube('GET',path,allowed=(200,404))
+            if code==404:continue
+            assert obj['metadata']['uid']==rec['uid'] and obj['metadata']['labels']['ani-image-test-run']==RUN
+            if not rec['namespace']:
+                for plural in ('pods','secrets','configmaps','services','persistentvolumeclaims','resourcequotas','limitranges'):
+                    _,items=kube('GET',path+'/'+plural)
+                    for item in items['items']:
+                        if plural=='configmaps' and item['metadata']['name']=='kube-root-ca.crt':continue
+                        assert any(x['uid']==item['metadata']['uid'] for x in state['kubernetes']), 'unknown namespace member'
+            kube('DELETE',path,{'apiVersion':'v1','kind':'DeleteOptions','preconditions':{'uid':rec['uid']},'propagationPolicy':'Foreground'},(200,202))
+            state['cleanup'].append({'kind':rec['plural'],'uid':rec['uid'],'delete':'accepted'});save()
+        except Exception as e:errors.append('Kubernetes '+rec['name']+': '+str(e))
+    for r in reversed(state['robots']):
+        try:
+            _,actual=harbor('GET','/api/v2.0/robots/'+str(r['id']))
+            assert actual['id']==r['id'] and actual['name']==r['name'] and actual['description']==r['description']
+            harbor('DELETE','/api/v2.0/robots/'+str(r['id']),allowed=(200,))
+            harbor('GET','/api/v2.0/robots/'+str(r['id']),allowed=(404,))
+            state['cleanup'].append({'kind':'robot','id':r['id'],'absent':True});save()
+        except Exception as e:errors.append('robot '+str(r['id'])+': '+str(e))
+    for r in reversed(state['projects']):
+        try:
+            _,p=harbor('GET','/api/v2.0/projects/'+str(r['id']))
+            assert p['project_id']==r['id'] and p['name']==r['name'] and p['creation_time']==r['creation_time']
+            _,repos=harbor('GET','/api/v2.0/projects/'+str(r['id'])+'/repositories?page_size=100')
+            assert all(x['name']==r['name']+'/fixture' for x in repos),'unknown project repository'
+            for repo in repos:
+                _,artifacts=harbor('GET','/api/v2.0/projects/'+str(r['id'])+'/repositories/fixture/artifacts?page_size=100')
+                assert all(a['digest']==state.get('image_digest') for a in artifacts),'unknown project artifact'
+                for a in artifacts:harbor('DELETE','/api/v2.0/projects/'+str(r['id'])+'/repositories/fixture/artifacts/'+a['digest'],allowed=(200,))
+                harbor('DELETE','/api/v2.0/projects/'+str(r['id'])+'/repositories/fixture',allowed=(200,))
+            harbor('DELETE','/api/v2.0/projects/'+str(r['id']),allowed=(200,))
+            harbor('GET','/api/v2.0/projects/'+str(r['id']),allowed=(404,))
+            state['cleanup'].append({'kind':'project','id':r['id'],'absent':True});save()
+        except Exception as e:errors.append('project '+str(r['id'])+': '+str(e))
+    deadline=time.monotonic()+60
+    while time.monotonic()<deadline:
+        remaining=[r for r in state['kubernetes'] if not r['namespace'] and kube('GET','/api/v1/namespaces/'+r['name'],allowed=(200,404))[0]!=404]
+        if not remaining:break
+        time.sleep(2)
+    else:errors.append('namespace deletion not finished')
+    state['cleanup_errors']=errors;save()
+    if not errors:
+        for path in PRIVATE.iterdir():
+            if path.is_file():path.unlink()
+    return not errors
+def main():
+    assert socket.gethostname()=='fedora'
+    assert hashlib.sha256(CA.read_bytes()).hexdigest()=='59e87314e44f89c3c562bdaa0535da00b45567711bd013a1ae268299406e7b28'
+    _,cluster=kube('GET','/api/v1/namespaces/kube-system');assert cluster['metadata']['uid']==CLUSTER
+    assert not (EVIDENCE/'result.json').exists(), 'do not replay a started run'
+    _,nodes=kube('GET','/api/v1/nodes')
+    names=sorted(n['metadata']['name'] for n in nodes['items']);assert names==['ani-01','ani-02','ani-03']
+    base=json.loads((EVIDENCE/'base-image.json').read_text())
+    profile={'approved':True,'authorization':'User 2026-09-30: create own tenant namespaces and pull Pods; original GOAL run-owned projects/robots/cleanup','run_id':RUN,'scope':'technical fixtures; not real IAM tenants or product API','cluster_uid':CLUSTER,'harbor_origin':HARBOR,'harbor_ca_sha256':hashlib.sha256(CA.read_bytes()).hexdigest(),'kubernetes_transport':'loopback-only kubectl proxy over two authenticated SSH tunnels; node admin.conf validates API TLS; no cluster credential copied','projects':PROJECTS,'namespaces':NAMESPACES,'test_tenant_ids':{'a':str(uuid.uuid4()),'b':str(uuid.uuid4())},'base':base,'budget':{'fedora_cpu_percent':200,'fedora_memory_mib':2300,'swap':0,'max_pods':8,'per_pod_cpu_millicores':100,'per_pod_memory_mib':64,'timeout_seconds':1200,'max_image_bytes':33554432},'cleanup':'only newly recorded IDs and UIDs with ownership checks; no GC'}
+    (ROOT/'profile.json').write_text(json.dumps(profile,indent=2)+'\n')
+    for ns in NAMESPACES.values():kube('GET','/api/v1/namespaces/'+ns,allowed=(404,))
+    for p in PROJECTS.values():harbor('GET','/api/v2.0/projects/'+p,allowed=(404,))
+    certdir=ROOT/'certs';certdir.mkdir();(certdir/'ca.crt').write_bytes(CA.read_bytes())
+    image=ROOT/'image'
+    skopeo('base-copy',['copy','--override-os','linux','--override-arch','amd64','--preserve-digests','docker://'+base['Name']+'@'+base['Digest'],'dir:'+str(image)])
+    assert sum(p.stat().st_size for p in image.iterdir() if p.is_file())<=33554432
+    manifest=json.loads((image/'manifest.json').read_text())
+    state['image_digest']='sha256:'+hashlib.sha256((image/'manifest.json').read_bytes()).hexdigest()
+    state['image_config_digest']=manifest['config']['digest'];save()
+    for p in PROJECTS.values():
+        harbor('POST','/api/v2.0/projects',{'project_name':p,'metadata':{'public':'false'}},(201,))
+        location=re.search(r'^location: (?:https://172\.16\.101\.10:30003)?/api/v2\.0/projects/(\d+)\s*$',(PRIVATE/'response-headers').read_text(),re.I|re.M)
+        assert location, 'missing create receipt; do not adopt by name'
+        rec={'id':int(location.group(1)),'name':p,'creation_time':None}
+        state['projects'].append(rec);save()
+        _,actual=harbor('GET','/api/v2.0/projects/'+str(rec['id']))
+        assert actual['metadata']['public']=='false' and actual['name']==p
+        rec['creation_time']=actual['creation_time'];save()
+    publishers={k:robot('pub-'+k,[v],['pull','push'])[0] for k,v in PROJECTS.items()}
+    pulls={k:robot('pull-'+k,[PROJECTS[k],PROJECTS['platform']],['pull']) for k in ('a','b')}
+    for k,p in PROJECTS.items():
+        skopeo('push-'+k,['copy','--preserve-digests','--dest-cert-dir',str(certdir),'--dest-authfile',str(publishers[k]),'dir:'+str(image),'docker://'+REGISTRY+'/'+p+'/fixture:v1'])
+        raw=skopeo('manifest-'+k,['inspect','--raw','--cert-dir',str(certdir),'--authfile',str(publishers[k]),'docker://'+REGISTRY+'/'+p+'/fixture@'+state['image_digest']])
+        check('digest-'+k,'sha256:'+hashlib.sha256(raw).hexdigest()==state['image_digest'])
+    for label,auth,dest in [('pull-cannot-push',pulls['a'][0],PROJECTS['a']),('publisher-cannot-write-b',publishers['a'],PROJECTS['b']),('publisher-cannot-write-platform',publishers['a'],PROJECTS['platform'])]:
+        skopeo(label,['copy','--preserve-digests','--dest-cert-dir',str(certdir),'--dest-authfile',str(auth),'dir:'+str(image),'docker://'+REGISTRY+'/'+dest+'/forbidden:v1'],False)
+    for k,ns in NAMESPACES.items():
+        create_kube(None,'namespaces',{'apiVersion':'v1','kind':'Namespace','metadata':{'name':ns,'annotations':{'ani-image-test-scope':'technical fixture; not IAM tenant'}}})
+        create_kube(ns,'resourcequotas',{'apiVersion':'v1','kind':'ResourceQuota','metadata':{'name':'test-budget'},'spec':{'hard':{'pods':'5','requests.cpu':'100m','requests.memory':'128Mi','limits.cpu':'500m','limits.memory':'320Mi','persistentvolumeclaims':'0'}}})
+        create_kube(ns,'secrets',{'apiVersion':'v1','kind':'Secret','metadata':{'name':'image-pull'},'type':'kubernetes.io/dockerconfigjson','data':{'.dockerconfigjson':base64.b64encode(json.dumps(pulls[k][1]).encode()).decode()}})
+    ref=lambda k:REGISTRY+'/'+PROJECTS[k]+'/fixture@'+state['image_digest']
+    positives=[pod(NAMESPACES['a'],'own-a-'+n,n,ref('a')) for n in names]
+    positives += [pod(NAMESPACES['b'],'own-b','ani-01',ref('b')),pod(NAMESPACES['b'],'shared-platform','ani-02',ref('platform'))]
+    wait_positive(positives)
+    negatives=[pod(NAMESPACES['b'],'cross-a-'+n,n,ref('a')) for n in names]
+    wait_negative(negatives)
+    state['result']='pass_technical_scope_only';save()
+if __name__=='__main__':
+    try:main()
+    except Exception as e:
+        state['result']='failed';state['error']=str(e);save();print('FAILED:',str(e),flush=True)
+    finally:
+        clean=cleanup()
+        state['finished_utc']=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime());save()
+        print('RESULT',state.get('result'),'CLEANUP',clean,flush=True)
+    sys.exit(0 if state.get('result')=='pass_technical_scope_only' and clean else 1)

@@ -1,0 +1,16 @@
+Running as unit: run-p923381-i9308212.scope; invocation ID: 1be57c0ce22b4c968640addafec54f18
+digest-a pass
+digest-b pass
+digest-platform pass
+pull-cannot-push pass
+publisher-cannot-write-b pass
+publisher-cannot-write-platform pass
+pull-own-a-ani-01 pass
+pull-own-a-ani-02 pass
+pull-own-a-ani-03 pass
+pull-own-b pass
+pull-shared-platform pass
+cached-cross-tenant-ani-01 pass
+cached-cross-tenant-ani-02 pass
+cached-cross-tenant-ani-03 pass
+RESULT pass_technical_scope_only CLEANUP False

@@ -355,4 +355,14 @@ Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline an
 | IMG-11.4 | pass | pass | n_a | n_a | [Bounded handoff](records/IMAGE-MVP/img-20260929T1718Z/HANDOFF.md), source manifest, API/DB contracts and cleanup archived; review branches only |
 | IMG-11.5 | pass | n_a | n_a | n_a | [Checkpoint](records/IMAGE-MVP/img-20260929T1718Z/CHECKPOINT.md); no active heavy gates; remaining product/live/frontend conditions blocked |
 
-IMG-00 n_a: baseline/import tasks have no product/live behavior. Independent backend closeout complete; MVP remains incomplete. Next unresolved batches: IMG-08 is blocked by user direction because no product test conditions; IMG-09 remains blocked pending frontend selection by user direction; live requires approved profile.
+IMG-00 n_a: baseline/import tasks have no product/live behavior. Independent backend closeout complete; MVP remains incomplete. IMG-08 product owner/API and IMG-09 frontend remain blocked by user direction; the complete backend/product live profile is still absent.
+
+### 2026-09-30 授权测试 Pod 后的增量状态
+
+用户已允许自行创建测试 Namespace、拉取 Pod。上表 live blockers 指完整后端/产品链路；此前“未创建共享环境资源 / live profile 缺失”的描述不再适用于本次独立技术测试。三节点与 Harbor 绑定及本次技术测试 profile 已确认，完整产品 profile 仍缺少真实 owner/Governance 入口及租户身份。
+
+[三节点真实拉取证据](records/IMAGE-MVP/img-20260929T1718Z/cluster-pod-pull-20260930/README.md)：Fedora 创建两个隔离 Namespace、三个 Private Project、五个受限 Robot；5 个正向 Pod 成功，3 个同节点已有缓存的跨租户 Pod 被 registry 401 拒绝，三类越权 Push 被拒绝。A11/A12/A26/A28/A29 仅获得该技术范围内的证据，完整项目仍 blocked；未替代 IMG-08/A27 的业务 API 接入或 IMG-09/A30。其他 Pod 入口的强制拉取准入仍 not_verified。
+
+IMG-10.6 live 清理在本次受控范围 **pass**：主驱动测试断言通过但首次清理路径错误，exit 1 原样保留；ID/创建时间核对后的清理恢复 exit 0，所有本次 Project/Robot/Namespace 确认不存在，临时凭证及代理已移除。原 isolated 回归证据不变。
+
+Harbor 实际版本 `v2.15.2-a97e7b83`；CA 缺 Key Usage 导致 Python 默认 STRICT 拒绝，curl/skopeo/containerd 正常 TLS 校验下实测通过。未换共享 CA、未关闭 TLS、未修改产品源码。原 `image_smoke.py` 的严格 CA 兼容和匿名版本探测仍待处理，本次没有宣称其通过。

@@ -1,0 +1,43 @@
+{
+  "approved": true,
+  "authorization": "User 2026-09-30: create own tenant namespaces and pull Pods; original GOAL run-owned projects/robots/cleanup",
+  "run_id": "imgp-0930-0200",
+  "scope": "technical fixtures; not real IAM tenants or product API",
+  "cluster_uid": "87ecef8e-ac4e-442b-8e15-5e906263be6b",
+  "harbor_origin": "https://172.16.101.10:30003",
+  "harbor_ca_sha256": "59e87314e44f89c3c562bdaa0535da00b45567711bd013a1ae268299406e7b28",
+  "kubernetes_transport": "loopback-only kubectl proxy over two authenticated SSH tunnels; node admin.conf validates API TLS; no cluster credential copied",
+  "projects": {
+    "a": "t-imgp-0930-0200-a",
+    "b": "t-imgp-0930-0200-b",
+    "platform": "imgp-0930-0200-platform"
+  },
+  "namespaces": {
+    "a": "imgp-0930-0200-a",
+    "b": "imgp-0930-0200-b"
+  },
+  "test_tenant_ids": {
+    "a": "1e6a5b99-b5ff-4275-a9ec-327f5590aad7",
+    "b": "bdef15e9-9832-4916-b91f-298404568f48"
+  },
+  "base": {
+    "Name": "docker.io/library/busybox",
+    "Digest": "sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e",
+    "Architecture": "amd64",
+    "Os": "linux",
+    "Layers": [
+      "sha256:68fe9bff2ad4ad46da3e58db03faa64eb73c0ff16d546b0c42539eaa9854cb7f"
+    ]
+  },
+  "budget": {
+    "fedora_cpu_percent": 200,
+    "fedora_memory_mib": 2300,
+    "swap": 0,
+    "max_pods": 8,
+    "per_pod_cpu_millicores": 100,
+    "per_pod_memory_mib": 64,
+    "timeout_seconds": 1200,
+    "max_image_bytes": 33554432
+  },
+  "cleanup": "only newly recorded IDs and UIDs with ownership checks; no GC"
+}

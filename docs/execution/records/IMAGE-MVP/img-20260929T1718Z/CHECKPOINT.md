@@ -25,3 +25,9 @@ The MVP is incomplete. There is no promise of work continuing after an agent ses
 3. Retain initial dirty work, worktrees, Fedora source snapshots/caches/evidence. No shared resource cleanup, global GC, merge, rebase, amend, force-push or release.
 
 Fedora run root `/home/chabking/ani-image-mvp-runs/img-20260929T1718Z`, private TMPDIR `/home/chabking/.im-1718`, existing lock `/home/chabking/workspace/ani-network-service-runs/net05a-heavy.lock`. All future generation/formatting/build/test/DB/image/API-driver work remains Fedora-only with the same source-first commit/push cycle and bounded resources. Recovery starts by reading the sole ledger, exact refs and owned-resource evidence.
+
+## 2026-09-30T02:11:45Z follow-up
+
+User authorized isolated tenant namespaces and Pods. [Fresh technical evidence](cluster-pod-pull-20260930/README.md) supersedes the earlier unbound-cluster/no-shared-writes observation for this bounded test only: current cluster UID `87ecef8e-ac4e-442b-8e15-5e906263be6b`, Harbor v2.15.2; own/shared pulls and cached cross-tenant denials passed. Main driver exit1 was a cleanup path error, followed by verified cleanup recovery exit0. All recorded remote objects, transient credentials and proxy/tunnels are gone; no active job remains.
+
+Product code remains unchanged at tested62ecc67. IMG-08 business owner and IMG-09 frontend are still user-directed blocks. The complete product smoke was not executed; its Python strict-CA and anonymous-version assumptions remain unresolved. Resume from the sole ledger rather than replaying the historical driver (its run names and IDs are intentionally fixed).
