@@ -1,0 +1,138 @@
+{
+  "time": "2026-09-30T04:20:29.069447+00:00",
+  "containers": [
+    {
+      "id": "00738c5c3f94f3badea32fd0137a2f007891ca6263b62d8810a97df0fe8b7762",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "0fb520d1bc1525edc0eb6dda8167cd1f4da5fff2a9c6eb818d5ad291b6a0411e",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "17dcbf78d91660ce30eaeed81b54462745e1a3fbdf60c85f5513790cbfab0f43",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "1e5193f366851a7194c838d413e68b4868ff5d3ef653f401052ca799db0af29f",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "2d52721461daa51449b2bbcf015502ac771de301459c5d90b668cb9726abefd8",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "32efbdf73256a0af533767adbc9229db649a907b940b17be88762355ba2b3782",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "33938b2246ab34c2e5c3c764673fc561191f046e3d7142578e1314120e460390",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "3e31002046c913a24f88e939e588e07d9961e814c9ae1069767b5dd616ac59d4",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "42ade449121700678402b57b8583466fdef90ee31ffb710938344026c7b75e06",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "45eaa626baf561296a6184f3b068d38de35dd141eb6fd3b05abf4cc34de6fe3b",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "4d30b922c6a2f9fe6871c8a53729dc37aef28684699d5b43c0c1f7eeda911d01",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "4ea34dc1baa416bafcf55b530ade13d2831aea6cea4878437dc48910ea3988f3",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "67285a4c6f23874d7672c413daf142aa1c3dc4ef41da7f233b99ece734295753",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "6a22872ef7002a0832f0d871f7fa65bc99b959b09825561f6597691d42e94bef",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "7a4775aa5d38c68288bb25dc1d9a13bbb1940c78b3bdf14609fdc80f82ed7355",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "82d994ac941a7e65f59e4b06b3544b515b5d29a678389fa8b81468c2a661398e",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "a2beb6089ce3fceb585f303c41ae91ca930f0a929368bd805f2aba2cfefa3d4e",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "a4c0dbb976c182c8773b12c6bee8197ffbcff79a70523c19ef142a2a2c860b8f",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "a879d154ff85976c634288cb97d63edaa3a7cbc748b3d96e2216f2f05386ad21",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "abcfe660f8381eb5253614fdd9d43de84fa0fef8657480875cc9dd30e0328a49",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "b1a6063e8c1aa854e397b754bc87a704ec9e3925abfd100bfe53d5d572c8cf98",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "c19db9b49e677b44da05fb5818ce43f66f5c9deb6f0cc0cec4978b9079d10858",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "ca34bbb24c99cd596a10cfb15aeb24937fbc10b8091953962bf10ac5f2161f05",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "df3a8fda9d0f677255f56806fb88904e9b5603409f5e4701f0281f0d27631391",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "e673d1f4dd578e18178ea9346e639eb893b5f62a8be984c0ea932a5acea58918",
+      "inspect_exit": 1,
+      "absent": true
+    },
+    {
+      "id": "edd39a7557199ff54f0449a45567d780e8c0d9a8ca55d0cb4e795b7ba1d3c264",
+      "inspect_exit": 1,
+      "absent": true
+    }
+  ],
+  "shared_api_calls": 0,
+  "shared_resources_created": [],
+  "note": "Database roles/databases and private DSN directories also cleaned by successful fixture traps and Resource helper exit=0; no shared cleanup attempted."
+}

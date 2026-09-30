@@ -1,0 +1,229 @@
+2026-09-30T03:37:31Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=6a22872ef7002a0832f0d871f7fa65bc99b959b09825561f6597691d42e94bef memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=6a22872ef7002a0832f0d871f7fa65bc99b959b09825561f6597691d42e94bef loopback_port=32840
+=== RUN   TestHarborTransportBoundary
+=== RUN   TestHarborTransportBoundary/400
+=== RUN   TestHarborTransportBoundary/401
+=== RUN   TestHarborTransportBoundary/403
+=== RUN   TestHarborTransportBoundary/404
+=== RUN   TestHarborTransportBoundary/409
+=== RUN   TestHarborTransportBoundary/429
+=== RUN   TestHarborTransportBoundary/500
+=== RUN   TestHarborTransportBoundary/502
+=== RUN   TestHarborTransportBoundary/503
+=== RUN   TestHarborTransportBoundary/504
+=== RUN   TestHarborTransportBoundary/redirect
+=== RUN   TestHarborTransportBoundary/untrusted_TLS
+2026/09/30 03:37:47 http: TLS handshake error from 127.0.0.1:37262: remote error: tls: bad certificate
+=== RUN   TestHarborTransportBoundary/timeout
+=== RUN   TestHarborTransportBoundary/body_limit
+--- PASS: TestHarborTransportBoundary (0.91s)
+    --- PASS: TestHarborTransportBoundary/400 (0.33s)
+    --- PASS: TestHarborTransportBoundary/401 (0.01s)
+    --- PASS: TestHarborTransportBoundary/403 (0.02s)
+    --- PASS: TestHarborTransportBoundary/404 (0.01s)
+    --- PASS: TestHarborTransportBoundary/409 (0.01s)
+    --- PASS: TestHarborTransportBoundary/429 (0.06s)
+    --- PASS: TestHarborTransportBoundary/500 (0.01s)
+    --- PASS: TestHarborTransportBoundary/502 (0.07s)
+    --- PASS: TestHarborTransportBoundary/503 (0.07s)
+    --- PASS: TestHarborTransportBoundary/504 (0.07s)
+    --- PASS: TestHarborTransportBoundary/redirect (0.01s)
+    --- PASS: TestHarborTransportBoundary/untrusted_TLS (0.01s)
+    --- PASS: TestHarborTransportBoundary/timeout (0.03s)
+    --- PASS: TestHarborTransportBoundary/body_limit (0.18s)
+=== RUN   TestHarborPrivateProjectAndLocation
+--- PASS: TestHarborPrivateProjectAndLocation (0.06s)
+=== RUN   TestHarborRobotOwnershipAndWireContract
+--- PASS: TestHarborRobotOwnershipAndWireContract (0.02s)
+=== RUN   TestHarborArtifactDigestAndPlatforms
+=== RUN   TestHarborArtifactDigestAndPlatforms/manifest
+=== RUN   TestHarborArtifactDigestAndPlatforms/index
+=== RUN   TestHarborArtifactDigestAndPlatforms/attestation_ignored
+=== RUN   TestHarborArtifactDigestAndPlatforms/chart
+=== RUN   TestHarborArtifactDigestAndPlatforms/artifact
+=== RUN   TestHarborArtifactDigestAndPlatforms/unknown
+=== RUN   TestHarborArtifactDigestAndPlatforms/platform_mismatch
+=== RUN   TestHarborArtifactDigestAndPlatforms/descriptor_limit
+=== RUN   TestHarborArtifactDigestAndPlatforms/cycle
+=== RUN   TestHarborArtifactDigestAndPlatforms/depth
+--- PASS: TestHarborArtifactDigestAndPlatforms (0.16s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/manifest (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/index (0.02s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/attestation_ignored (0.02s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/chart (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/artifact (0.02s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/unknown (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/platform_mismatch (0.02s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/descriptor_limit (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/cycle (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/depth (0.02s)
+=== RUN   TestCipherWrongAADTamperKeyMissing
+--- PASS: TestCipherWrongAADTamperKeyMissing (0.01s)
+=== RUN   TestCatalogUseCasesAndRuntimeIsolation
+--- PASS: TestCatalogUseCasesAndRuntimeIsolation (0.35s)
+=== RUN   TestDisablePublisherContract
+--- PASS: TestDisablePublisherContract (0.34s)
+=== RUN   TestDisablePublisherContractLegacyCompletion
+--- PASS: TestDisablePublisherContractLegacyCompletion (0.27s)
+=== RUN   TestImageResourceContractHelper
+--- PASS: TestImageResourceContractHelper (0.00s)
+=== RUN   TestLifecycleTwoProcessesSameCommands
+    lifecycle_concurrency_integration_test.go:41: owned concurrent child pid=1008230 exit=0
+    lifecycle_concurrency_integration_test.go:41: owned concurrent child pid=1008231 exit=0
+--- PASS: TestLifecycleTwoProcessesSameCommands (2.00s)
+=== RUN   TestLifecycleEnableIssueResetDisableReplay
+--- PASS: TestLifecycleEnableIssueResetDisableReplay (0.30s)
+=== RUN   TestLifecycleConcurrentCredentialCommand
+--- PASS: TestLifecycleConcurrentCredentialCommand (0.29s)
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/project_bind
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/candidate_prepared
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/robot_created
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/secret_set
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/previous_disabled
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/activate
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_robot
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_secret
+--- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries (2.21s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/project_bind (0.27s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/candidate_prepared (0.26s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/robot_created (0.37s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/secret_set (0.27s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/previous_disabled (0.27s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/activate (0.25s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_robot (0.26s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_secret (0.25s)
+=== RUN   TestLifecycleProjectOwnershipRecovery
+=== RUN   TestLifecycleProjectOwnershipRecovery/false
+=== RUN   TestLifecycleProjectOwnershipRecovery/true
+--- PASS: TestLifecycleProjectOwnershipRecovery (0.55s)
+    --- PASS: TestLifecycleProjectOwnershipRecovery/false (0.26s)
+    --- PASS: TestLifecycleProjectOwnershipRecovery/true (0.28s)
+=== RUN   TestLifecycleCrashHelper
+--- PASS: TestLifecycleCrashHelper (0.00s)
+=== RUN   TestLifecycleActualProcessExitRecovery
+=== RUN   TestLifecycleActualProcessExitRecovery/project_bind
+    lifecycle_process_integration_test.go:386: owned process pid=1008326 boundary=project_bind exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008334 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/pull:candidate_prepared
+    lifecycle_process_integration_test.go:386: owned process pid=1008347 boundary=pull:candidate_prepared exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008354 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/pull:robot_create
+    lifecycle_process_integration_test.go:386: owned process pid=1008366 boundary=pull:robot_create exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008372 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/pull:secret_set_provider
+    lifecycle_process_integration_test.go:386: owned process pid=1008385 boundary=pull:secret_set_provider exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008391 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:robot_create
+    lifecycle_process_integration_test.go:386: owned process pid=1008403 boundary=publisher:robot_create exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008409 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:robot_created
+    lifecycle_process_integration_test.go:386: owned process pid=1008423 boundary=publisher:robot_created exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008429 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:secret_set_provider
+    lifecycle_process_integration_test.go:386: owned process pid=1008442 boundary=publisher:secret_set_provider exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008449 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:previous_disabled
+    lifecycle_process_integration_test.go:386: owned process pid=1008461 boundary=publisher:previous_disabled exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008468 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:activate
+    lifecycle_process_integration_test.go:386: owned process pid=1008480 boundary=publisher:activate exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008487 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/reset:publisher:secret_set_provider
+    lifecycle_process_integration_test.go:386: owned process pid=1008500 boundary=reset:publisher:secret_set_provider exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008506 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/reset:publisher:previous_disable_provider
+    lifecycle_process_integration_test.go:386: owned process pid=1008519 boundary=reset:publisher:previous_disable_provider exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008525 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/reset:publisher:previous_disabled
+    lifecycle_process_integration_test.go:386: owned process pid=1008537 boundary=reset:publisher:previous_disabled exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008544 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/reset:publisher:activate
+    lifecycle_process_integration_test.go:386: owned process pid=1008556 boundary=reset:publisher:activate exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008563 boundary= exit=0
+--- PASS: TestLifecycleActualProcessExitRecovery (27.16s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/project_bind (2.06s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/pull:candidate_prepared (2.04s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/pull:robot_create (2.09s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/pull:secret_set_provider (2.07s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:robot_create (2.10s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:robot_created (2.10s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:secret_set_provider (2.08s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:previous_disabled (2.12s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:activate (2.02s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/reset:publisher:secret_set_provider (2.21s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/reset:publisher:previous_disable_provider (2.10s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/reset:publisher:previous_disabled (2.09s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/reset:publisher:activate (2.09s)
+=== RUN   TestStaleGenerationCannotActivateOrReplay
+--- PASS: TestStaleGenerationCannotActivateOrReplay (0.28s)
+=== RUN   TestPlatformLifecycleCatalogAndTenantBoundaries
+--- PASS: TestPlatformLifecycleCatalogAndTenantBoundaries (0.36s)
+=== RUN   TestPlatformLostProjectAndRobotRecovery
+=== RUN   TestPlatformLostProjectAndRobotRecovery/project
+=== RUN   TestPlatformLostProjectAndRobotRecovery/robot
+=== RUN   TestPlatformLostProjectAndRobotRecovery/secret
+--- PASS: TestPlatformLostProjectAndRobotRecovery (0.77s)
+    --- PASS: TestPlatformLostProjectAndRobotRecovery/project (0.25s)
+    --- PASS: TestPlatformLostProjectAndRobotRecovery/robot (0.27s)
+    --- PASS: TestPlatformLostProjectAndRobotRecovery/secret (0.25s)
+=== RUN   TestTenantQueriesAndAtomicCatalog
+--- PASS: TestTenantQueriesAndAtomicCatalog (0.28s)
+=== RUN   TestCatalogCASAndPagination
+--- PASS: TestCatalogCASAndPagination (0.32s)
+=== RUN   TestConcurrentSpaceSlug
+--- PASS: TestConcurrentSpaceSlug (0.22s)
+=== RUN   TestRuntimeRoleAndMigration
+--- PASS: TestRuntimeRoleAndMigration (0.38s)
+=== RUN   TestTenantCompositeFKAndPlatformFK
+--- PASS: TestTenantCompositeFKAndPlatformFK (0.27s)
+=== RUN   TestCredentialGenerationAndSpaceReadiness
+--- PASS: TestCredentialGenerationAndSpaceReadiness (0.25s)
+=== RUN   TestSpaceWriteLockTimeoutAndRelease
+--- PASS: TestSpaceWriteLockTimeoutAndRelease (0.23s)
+=== RUN   TestProjectRejectedCreateSameKeyRetry
+=== RUN   TestProjectRejectedCreateSameKeyRetry/Bad_Request
+=== RUN   TestProjectRejectedCreateSameKeyRetry/Unauthorized
+=== RUN   TestProjectRejectedCreateSameKeyRetry/Forbidden
+--- PASS: TestProjectRejectedCreateSameKeyRetry (1.03s)
+    --- PASS: TestProjectRejectedCreateSameKeyRetry/Bad_Request (0.32s)
+    --- PASS: TestProjectRejectedCreateSameKeyRetry/Unauthorized (0.41s)
+    --- PASS: TestProjectRejectedCreateSameKeyRetry/Forbidden (0.29s)
+=== RUN   TestProjectUncertainCreateNeverResent
+=== RUN   TestProjectUncertainCreateNeverResent/500
+=== RUN   TestProjectUncertainCreateNeverResent/409
+=== RUN   TestProjectUncertainCreateNeverResent/truncated_403
+=== RUN   TestProjectUncertainCreateNeverResent/timeout_after_create
+=== RUN   TestProjectUncertainCreateNeverResent/lost_response
+=== RUN   TestProjectUncertainCreateNeverResent/missing_location
+=== RUN   TestProjectUncertainCreateNeverResent/bind_not_committed
+--- PASS: TestProjectUncertainCreateNeverResent (3.04s)
+    --- PASS: TestProjectUncertainCreateNeverResent/500 (0.30s)
+    --- PASS: TestProjectUncertainCreateNeverResent/409 (0.26s)
+    --- PASS: TestProjectUncertainCreateNeverResent/truncated_403 (0.27s)
+    --- PASS: TestProjectUncertainCreateNeverResent/timeout_after_create (1.30s)
+    --- PASS: TestProjectUncertainCreateNeverResent/lost_response (0.31s)
+    --- PASS: TestProjectUncertainCreateNeverResent/missing_location (0.30s)
+    --- PASS: TestProjectUncertainCreateNeverResent/bind_not_committed (0.29s)
+=== RUN   TestSpaceLockEightSpacesLifecycleProgress
+--- PASS: TestSpaceLockEightSpacesLifecycleProgress (0.39s)
+=== RUN   TestSpaceLockCallbackFailureAndCancellation
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/callback_error
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/request_cancel
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/connection_lost
+--- PASS: TestSpaceLockCallbackFailureAndCancellation (0.77s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/callback_error (0.28s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/request_cancel (0.23s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/connection_lost (0.26s)
+=== RUN   TestSpaceLockNoTransactionDuringHarbor
+--- PASS: TestSpaceLockNoTransactionDuringHarbor (0.32s)
+PASS
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	44.578s
+removed Image task PostgreSQL=6a22872ef7002a0832f0d871f7fa65bc99b959b09825561f6597691d42e94bef
+2026-09-30T03:38:31Z
+exit=0

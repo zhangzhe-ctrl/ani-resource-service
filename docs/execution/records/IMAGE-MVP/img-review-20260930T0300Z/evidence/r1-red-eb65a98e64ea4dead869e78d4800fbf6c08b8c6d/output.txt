@@ -1,0 +1,48 @@
+2026-09-30T03:03:05Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/eb65a98e64ea4dead869e78d4800fbf6c08b8c6d
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=a2beb6089ce3fceb585f303c41ae91ca930f0a929368bd805f2aba2cfefa3d4e memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=a2beb6089ce3fceb585f303c41ae91ca930f0a929368bd805f2aba2cfefa3d4e loopback_port=32825
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/project_bind
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/candidate_prepared
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/robot_created
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/secret_set
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/previous_disabled
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/activate
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_robot
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_secret
+--- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries (1.65s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/project_bind (0.20s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/candidate_prepared (0.28s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/robot_created (0.18s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/secret_set (0.17s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/previous_disabled (0.18s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/activate (0.29s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_robot (0.18s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_secret (0.17s)
+=== RUN   TestLifecycleProjectOwnershipRecovery
+=== RUN   TestLifecycleProjectOwnershipRecovery/false
+=== RUN   TestLifecycleProjectOwnershipRecovery/true
+--- PASS: TestLifecycleProjectOwnershipRecovery (0.36s)
+    --- PASS: TestLifecycleProjectOwnershipRecovery/false (0.18s)
+    --- PASS: TestLifecycleProjectOwnershipRecovery/true (0.19s)
+=== RUN   TestProjectRejectedCreateSameKeyRetry
+=== RUN   TestProjectRejectedCreateSameKeyRetry/Bad_Request
+    project_retry_integration_test.go:51: definite refusal must remain safely retryable: state=blocked phase=project_sent reason=SPACE_OWNERSHIP_UNCONFIRMED error=SPACE_OWNERSHIP_UNCONFIRMED: registry project requires explicit ownership recovery
+=== RUN   TestProjectRejectedCreateSameKeyRetry/Unauthorized
+    project_retry_integration_test.go:51: definite refusal must remain safely retryable: state=blocked phase=project_sent reason=SPACE_OWNERSHIP_UNCONFIRMED error=SPACE_OWNERSHIP_UNCONFIRMED: registry project requires explicit ownership recovery
+=== RUN   TestProjectRejectedCreateSameKeyRetry/Forbidden
+    project_retry_integration_test.go:51: definite refusal must remain safely retryable: state=blocked phase=project_sent reason=SPACE_OWNERSHIP_UNCONFIRMED error=SPACE_OWNERSHIP_UNCONFIRMED: registry project requires explicit ownership recovery
+--- FAIL: TestProjectRejectedCreateSameKeyRetry (0.58s)
+    --- FAIL: TestProjectRejectedCreateSameKeyRetry/Bad_Request (0.24s)
+    --- FAIL: TestProjectRejectedCreateSameKeyRetry/Unauthorized (0.17s)
+    --- FAIL: TestProjectRejectedCreateSameKeyRetry/Forbidden (0.16s)
+FAIL
+FAIL	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	2.600s
+FAIL
+removed Image task PostgreSQL=a2beb6089ce3fceb585f303c41ae91ca930f0a929368bd805f2aba2cfefa3d4e
+2026-09-30T03:03:17Z
+exit=1

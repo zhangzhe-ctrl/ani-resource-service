@@ -1,0 +1,11 @@
+2026-09-30T03:40:47Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/governance/e608cba9bf7c5ccfdb3dad41471525ff541c1ad1
+ok  	go-wind-admin/tests/imagecontract	0.227s
+ok  	go-wind-admin/sql/bootstrap	0.024s
+ok  	go-wind-admin/pkg/middleware/auth	0.014s
+ok  	go-wind-admin/pkg/middleware/logging	0.062s
+ok  	go-wind-admin/pkg/constants	0.011s
+ok  	go-wind-admin/pkg/localdeps/kratos-bootstrap/rpc	0.571s
+2026-09-30T03:40:59Z
+exit=0

@@ -1,0 +1,40 @@
+2026-09-30T03:12:29Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/46e8315e835c2d88d9a8dc9a844462731927803a
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=b1a6063e8c1aa854e397b754bc87a704ec9e3925abfd100bfe53d5d572c8cf98 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=b1a6063e8c1aa854e397b754bc87a704ec9e3925abfd100bfe53d5d572c8cf98 loopback_port=32828
+=== RUN   TestLifecycleTwoProcessesSameCommands
+    lifecycle_concurrency_integration_test.go:41: owned concurrent child pid=963753 exit=0
+    lifecycle_concurrency_integration_test.go:41: owned concurrent child pid=963754 exit=0
+--- PASS: TestLifecycleTwoProcessesSameCommands (0.36s)
+=== RUN   TestLifecycleConcurrentCredentialCommand
+--- PASS: TestLifecycleConcurrentCredentialCommand (0.20s)
+=== RUN   TestSpaceWriteLockTimeoutAndRelease
+--- PASS: TestSpaceWriteLockTimeoutAndRelease (0.18s)
+=== RUN   TestSpaceLockEightSpacesLifecycleProgress
+    space_lock_integration_test.go:93: writer result: DEPENDENCY_UNAVAILABLE: Image database unavailable
+    space_lock_integration_test.go:93: writer result: DEPENDENCY_UNAVAILABLE: Image database unavailable
+    space_lock_integration_test.go:93: writer result: DEPENDENCY_UNAVAILABLE: Image database unavailable
+    space_lock_integration_test.go:93: writer result: DEPENDENCY_UNAVAILABLE: Image database unavailable
+    space_lock_integration_test.go:93: writer result: DEPENDENCY_UNAVAILABLE: Image database unavailable
+    space_lock_integration_test.go:93: writer result: DEPENDENCY_UNAVAILABLE: Image database unavailable
+    space_lock_integration_test.go:93: writer result: DEPENDENCY_UNAVAILABLE: Image database unavailable
+    space_lock_integration_test.go:93: writer result: DEPENDENCY_UNAVAILABLE: Image database unavailable
+    space_lock_integration_test.go:101: eight-space progress: entered=8 succeeded=0 projects=0 robots=0 secrets=0
+--- FAIL: TestSpaceLockEightSpacesLifecycleProgress (8.15s)
+=== RUN   TestSpaceLockCallbackFailureAndCancellation
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/callback_error
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/request_cancel
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/connection_lost
+--- PASS: TestSpaceLockCallbackFailureAndCancellation (0.53s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/callback_error (0.17s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/request_cancel (0.19s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/connection_lost (0.17s)
+FAIL
+FAIL	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	9.426s
+FAIL
+removed Image task PostgreSQL=b1a6063e8c1aa854e397b754bc87a704ec9e3925abfd100bfe53d5d572c8cf98
+2026-09-30T03:12:47Z
+exit=1

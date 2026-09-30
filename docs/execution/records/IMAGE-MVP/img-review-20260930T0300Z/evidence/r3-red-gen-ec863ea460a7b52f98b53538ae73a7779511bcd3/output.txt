@@ -1,0 +1,25 @@
+2026-09-30T03:22:24Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/ec863ea460a7b52f98b53538ae73a7779511bcd3'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/inputs/resource.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 8f317de docs(image): record authorized three-node pull verification
+HEAD 目前位于 ec863ea test(image): exercise disable contract over real mTLS and PostgreSQL
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/ec863ea460a7b52f98b53538ae73a7779511bcd3
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+{
+  "source_sha": "ec863ea460a7b52f98b53538ae73a7779511bcd3",
+  "changes": []
+}
+2026-09-30T03:22:29Z
+exit=0

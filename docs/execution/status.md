@@ -279,6 +279,12 @@ NET-05 验收完成，按用户后续授权发布 Network main，ANI 成果继�
 
 ## Image MVP
 
+### 2026-09-30 审核修复 R1—R3
+
+本轮 [修复记录](records/IMAGE-MVP/img-review-20260930T0300Z/README.md)；Resource 运行候选 `fa56b55dbbc892bc40586a8303bff54826764e7e`，Governance 运行候选 `e608cba9bf7c5ccfdb3dad41471525ff541c1ad1`。R1、R2、R3 均已通过真实定向 red/green；最终候选 make verify、Image PG/并发/进程恢复/race/隔离与mutation、Governance默认优化build/合同/真实HTTP/JWT/AK/权限/既有回归、旧Network PG/race/mutation均exit0。Governance race使用记录中的Ent包关闭内联例外，不宣称默认优化race通过。26个本轮测试容器按实际ID复查不存在，失败日志和最终运行源码清单均已归档。交付两个review分支后停止，等待用户审核/手动合并；后端 Harbor smoke 因缺产品调用授权 profile 保持 blocked。IMG-08、IMG-09继续用户授权blocked，不接普通容器产品或前端，不宣称整个MVP或产品验收完成。
+
+### 原批次及历史证据
+
 Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline and bindings](records/IMAGE-MVP/img-20260929T1718Z/README.md). Local edits/Git/transfer only; all generation and validation Fedora. This section is the only current Image ledger. Network history above retains its original scope. User clarification (2026-09-30): frontend is not selected; retain IMG-09/A30 blocked and do not perform frontend integration now. User also explicitly retains IMG-08 blocked because product test conditions are unavailable; do not advance product integration.
 
 | Task | code | isolated | live | product | Evidence / next action |

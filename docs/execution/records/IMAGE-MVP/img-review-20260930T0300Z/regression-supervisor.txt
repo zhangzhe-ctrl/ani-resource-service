@@ -1,0 +1,764 @@
+command=systemd-run --user --scope CPUQuota=200% MemoryMax=2300M MemorySwapMax=0 timeout=1200s resource-run.sh fa56b55dbbc892bc40586a8303bff54826764e7e generate final-resource-gen 
+Running as unit: run-p970607-i9361408.scope; invocation ID: ca6a35d27566401a8f52f45245990e29
+2026-09-30T03:35:18Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/inputs/resource.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 8f317de docs(image): record authorized three-node pull verification
+HEAD 目前位于 fa56b55 test(image): synchronize HTTP fixture effect observations
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+{
+  "source_sha": "fa56b55dbbc892bc40586a8303bff54826764e7e",
+  "changes": []
+}
+2026-09-30T03:35:25Z
+exit=0
+command=systemd-run --user --scope CPUQuota=100% MemoryMax=1532M MemorySwapMax=0 timeout=1200s resource-run.sh fa56b55dbbc892bc40586a8303bff54826764e7e r1 final-r1 
+Running as unit: run-p970886-i9342700.scope; invocation ID: 80b28fbd8bdf439495ff0541c2db3a0d
+2026-09-30T03:35:25Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=45eaa626baf561296a6184f3b068d38de35dd141eb6fd3b05abf4cc34de6fe3b memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=45eaa626baf561296a6184f3b068d38de35dd141eb6fd3b05abf4cc34de6fe3b loopback_port=32837
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/project_bind
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/candidate_prepared
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/robot_created
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/secret_set
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/previous_disabled
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/activate
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_robot
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_secret
+--- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries (1.31s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/project_bind (0.18s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/candidate_prepared (0.16s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/robot_created (0.17s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/secret_set (0.15s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/previous_disabled (0.16s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/activate (0.17s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_robot (0.16s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_secret (0.15s)
+=== RUN   TestLifecycleProjectOwnershipRecovery
+=== RUN   TestLifecycleProjectOwnershipRecovery/false
+=== RUN   TestLifecycleProjectOwnershipRecovery/true
+--- PASS: TestLifecycleProjectOwnershipRecovery (0.42s)
+    --- PASS: TestLifecycleProjectOwnershipRecovery/false (0.26s)
+    --- PASS: TestLifecycleProjectOwnershipRecovery/true (0.16s)
+=== RUN   TestProjectRejectedCreateSameKeyRetry
+=== RUN   TestProjectRejectedCreateSameKeyRetry/Bad_Request
+=== RUN   TestProjectRejectedCreateSameKeyRetry/Unauthorized
+=== RUN   TestProjectRejectedCreateSameKeyRetry/Forbidden
+--- PASS: TestProjectRejectedCreateSameKeyRetry (0.67s)
+    --- PASS: TestProjectRejectedCreateSameKeyRetry/Bad_Request (0.32s)
+    --- PASS: TestProjectRejectedCreateSameKeyRetry/Unauthorized (0.18s)
+    --- PASS: TestProjectRejectedCreateSameKeyRetry/Forbidden (0.17s)
+=== RUN   TestProjectUncertainCreateNeverResent
+=== RUN   TestProjectUncertainCreateNeverResent/500
+=== RUN   TestProjectUncertainCreateNeverResent/409
+=== RUN   TestProjectUncertainCreateNeverResent/truncated_403
+=== RUN   TestProjectUncertainCreateNeverResent/timeout_after_create
+=== RUN   TestProjectUncertainCreateNeverResent/lost_response
+=== RUN   TestProjectUncertainCreateNeverResent/missing_location
+=== RUN   TestProjectUncertainCreateNeverResent/bind_not_committed
+--- PASS: TestProjectUncertainCreateNeverResent (2.29s)
+    --- PASS: TestProjectUncertainCreateNeverResent/500 (0.26s)
+    --- PASS: TestProjectUncertainCreateNeverResent/409 (0.15s)
+    --- PASS: TestProjectUncertainCreateNeverResent/truncated_403 (0.15s)
+    --- PASS: TestProjectUncertainCreateNeverResent/timeout_after_create (1.17s)
+    --- PASS: TestProjectUncertainCreateNeverResent/lost_response (0.18s)
+    --- PASS: TestProjectUncertainCreateNeverResent/missing_location (0.20s)
+    --- PASS: TestProjectUncertainCreateNeverResent/bind_not_committed (0.18s)
+PASS
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	4.709s
+removed Image task PostgreSQL=45eaa626baf561296a6184f3b068d38de35dd141eb6fd3b05abf4cc34de6fe3b
+2026-09-30T03:35:43Z
+exit=0
+command=systemd-run --user --scope CPUQuota=100% MemoryMax=1532M MemorySwapMax=0 timeout=1200s resource-run.sh fa56b55dbbc892bc40586a8303bff54826764e7e r2 final-r2 
+Running as unit: run-p971511-i9342783.scope; invocation ID: ec04dd591d3e4773b3d54a2ea91c2d6d
+2026-09-30T03:35:43Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=42ade449121700678402b57b8583466fdef90ee31ffb710938344026c7b75e06 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=42ade449121700678402b57b8583466fdef90ee31ffb710938344026c7b75e06 loopback_port=32838
+=== RUN   TestLifecycleTwoProcessesSameCommands
+    lifecycle_concurrency_integration_test.go:41: owned concurrent child pid=971899 exit=0
+    lifecycle_concurrency_integration_test.go:41: owned concurrent child pid=971900 exit=0
+--- PASS: TestLifecycleTwoProcessesSameCommands (0.30s)
+=== RUN   TestLifecycleConcurrentCredentialCommand
+--- PASS: TestLifecycleConcurrentCredentialCommand (0.19s)
+=== RUN   TestSpaceWriteLockTimeoutAndRelease
+--- PASS: TestSpaceWriteLockTimeoutAndRelease (0.17s)
+=== RUN   TestSpaceLockEightSpacesLifecycleProgress
+--- PASS: TestSpaceLockEightSpacesLifecycleProgress (0.27s)
+=== RUN   TestSpaceLockCallbackFailureAndCancellation
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/callback_error
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/request_cancel
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/connection_lost
+--- PASS: TestSpaceLockCallbackFailureAndCancellation (0.51s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/callback_error (0.20s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/request_cancel (0.15s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/connection_lost (0.15s)
+=== RUN   TestSpaceLockNoTransactionDuringHarbor
+--- PASS: TestSpaceLockNoTransactionDuringHarbor (0.34s)
+PASS
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	1.788s
+removed Image task PostgreSQL=42ade449121700678402b57b8583466fdef90ee31ffb710938344026c7b75e06
+2026-09-30T03:35:49Z
+exit=0
+command=systemd-run --user --scope CPUQuota=100% MemoryMax=1532M MemorySwapMax=0 timeout=1200s resource-run.sh fa56b55dbbc892bc40586a8303bff54826764e7e r3 final-r3 
+Running as unit: run-p972032-i9342834.scope; invocation ID: fa83af34a83342279e8ac124f783f150
+2026-09-30T03:35:49Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=3e31002046c913a24f88e939e588e07d9961e814c9ae1069767b5dd616ac59d4 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=3e31002046c913a24f88e939e588e07d9961e814c9ae1069767b5dd616ac59d4 loopback_port=32839
+=== RUN   TestDisablePublisherContract
+--- PASS: TestDisablePublisherContract (0.23s)
+=== RUN   TestDisablePublisherContractLegacyCompletion
+--- PASS: TestDisablePublisherContractLegacyCompletion (0.16s)
+PASS
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.400s
+removed Image task PostgreSQL=3e31002046c913a24f88e939e588e07d9961e814c9ae1069767b5dd616ac59d4
+2026-09-30T03:35:53Z
+exit=0
+command=systemd-run --user --scope CPUQuota=200% MemoryMax=2300M MemorySwapMax=0 timeout=1200s resource-run.sh fa56b55dbbc892bc40586a8303bff54826764e7e verify final-resource-verify 
+Running as unit: run-p972449-i9342890.scope; invocation ID: beb072906a4e484aaaea643df61c016a
+2026-09-30T03:35:53Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+./scripts/verify-source /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc
+./scripts/verify-boundaries
+boundary fixture rejected: internal/biz/network/nested -> database/sql
+boundary fixture rejected: internal/biz/image/nested -> net/http
+boundary fixture rejected: internal/biz/image/nested -> example.invalid/boundary-fixture/internal/data/image
+boundary fixture rejected: internal/data/image -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/service/image -> example.invalid/boundary-fixture/internal/service/network
+boundary fixture rejected: internal/biz/network/nested -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/service/network -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/data/network -> example.invalid/boundary-fixture/internal/service/network
+boundary fixture rejected: internal/data/network -> example.invalid/boundary-fixture/internal/data/storage
+boundary fixture rejected: internal/service/network -> example.invalid/boundary-fixture/internal/service/storage
+recursive domain and repository ownership boundaries verified
+./scripts/net05a-build-faults.py --network-only
+{"fault_build": "/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e/.work/fault-build", "status": "pass"}
+go mod tidy -diff
+go test -count=1 ./...
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/cmd/ani-resource-service	0.020s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	0.005s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network	0.007s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/conf/v1	0.013s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.437s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	0.047s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/server	2.134s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/image	0.006s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network	0.006s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations/image	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/image-smoke-runtime	0.005s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	0.012s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/scripts/vpc-read-probe	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/relay	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/rpc	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider	0.010s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/runtime	0.045s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv	0.008s
+go vet ./...
+go build -trimpath ./...
+go mod verify
+all modules verified
+git diff --check
+2026-09-30T03:37:31Z
+exit=0
+command=systemd-run --user --scope CPUQuota=100% MemoryMax=1532M MemorySwapMax=0 timeout=1200s resource-run.sh fa56b55dbbc892bc40586a8303bff54826764e7e image final-image-race 
+Running as unit: run-p1007696-i9412657.scope; invocation ID: d690b24cfa0b4fb6b21e7865593cd553
+2026-09-30T03:37:31Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=6a22872ef7002a0832f0d871f7fa65bc99b959b09825561f6597691d42e94bef memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=6a22872ef7002a0832f0d871f7fa65bc99b959b09825561f6597691d42e94bef loopback_port=32840
+=== RUN   TestHarborTransportBoundary
+=== RUN   TestHarborTransportBoundary/400
+=== RUN   TestHarborTransportBoundary/401
+=== RUN   TestHarborTransportBoundary/403
+=== RUN   TestHarborTransportBoundary/404
+=== RUN   TestHarborTransportBoundary/409
+=== RUN   TestHarborTransportBoundary/429
+=== RUN   TestHarborTransportBoundary/500
+=== RUN   TestHarborTransportBoundary/502
+=== RUN   TestHarborTransportBoundary/503
+=== RUN   TestHarborTransportBoundary/504
+=== RUN   TestHarborTransportBoundary/redirect
+=== RUN   TestHarborTransportBoundary/untrusted_TLS
+2026/09/30 03:37:47 http: TLS handshake error from 127.0.0.1:37262: remote error: tls: bad certificate
+=== RUN   TestHarborTransportBoundary/timeout
+=== RUN   TestHarborTransportBoundary/body_limit
+--- PASS: TestHarborTransportBoundary (0.91s)
+    --- PASS: TestHarborTransportBoundary/400 (0.33s)
+    --- PASS: TestHarborTransportBoundary/401 (0.01s)
+    --- PASS: TestHarborTransportBoundary/403 (0.02s)
+    --- PASS: TestHarborTransportBoundary/404 (0.01s)
+    --- PASS: TestHarborTransportBoundary/409 (0.01s)
+    --- PASS: TestHarborTransportBoundary/429 (0.06s)
+    --- PASS: TestHarborTransportBoundary/500 (0.01s)
+    --- PASS: TestHarborTransportBoundary/502 (0.07s)
+    --- PASS: TestHarborTransportBoundary/503 (0.07s)
+    --- PASS: TestHarborTransportBoundary/504 (0.07s)
+    --- PASS: TestHarborTransportBoundary/redirect (0.01s)
+    --- PASS: TestHarborTransportBoundary/untrusted_TLS (0.01s)
+    --- PASS: TestHarborTransportBoundary/timeout (0.03s)
+    --- PASS: TestHarborTransportBoundary/body_limit (0.18s)
+=== RUN   TestHarborPrivateProjectAndLocation
+--- PASS: TestHarborPrivateProjectAndLocation (0.06s)
+=== RUN   TestHarborRobotOwnershipAndWireContract
+--- PASS: TestHarborRobotOwnershipAndWireContract (0.02s)
+=== RUN   TestHarborArtifactDigestAndPlatforms
+=== RUN   TestHarborArtifactDigestAndPlatforms/manifest
+=== RUN   TestHarborArtifactDigestAndPlatforms/index
+=== RUN   TestHarborArtifactDigestAndPlatforms/attestation_ignored
+=== RUN   TestHarborArtifactDigestAndPlatforms/chart
+=== RUN   TestHarborArtifactDigestAndPlatforms/artifact
+=== RUN   TestHarborArtifactDigestAndPlatforms/unknown
+=== RUN   TestHarborArtifactDigestAndPlatforms/platform_mismatch
+=== RUN   TestHarborArtifactDigestAndPlatforms/descriptor_limit
+=== RUN   TestHarborArtifactDigestAndPlatforms/cycle
+=== RUN   TestHarborArtifactDigestAndPlatforms/depth
+--- PASS: TestHarborArtifactDigestAndPlatforms (0.16s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/manifest (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/index (0.02s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/attestation_ignored (0.02s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/chart (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/artifact (0.02s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/unknown (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/platform_mismatch (0.02s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/descriptor_limit (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/cycle (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/depth (0.02s)
+=== RUN   TestCipherWrongAADTamperKeyMissing
+--- PASS: TestCipherWrongAADTamperKeyMissing (0.01s)
+=== RUN   TestCatalogUseCasesAndRuntimeIsolation
+--- PASS: TestCatalogUseCasesAndRuntimeIsolation (0.35s)
+=== RUN   TestDisablePublisherContract
+--- PASS: TestDisablePublisherContract (0.34s)
+=== RUN   TestDisablePublisherContractLegacyCompletion
+--- PASS: TestDisablePublisherContractLegacyCompletion (0.27s)
+=== RUN   TestImageResourceContractHelper
+--- PASS: TestImageResourceContractHelper (0.00s)
+=== RUN   TestLifecycleTwoProcessesSameCommands
+    lifecycle_concurrency_integration_test.go:41: owned concurrent child pid=1008230 exit=0
+    lifecycle_concurrency_integration_test.go:41: owned concurrent child pid=1008231 exit=0
+--- PASS: TestLifecycleTwoProcessesSameCommands (2.00s)
+=== RUN   TestLifecycleEnableIssueResetDisableReplay
+--- PASS: TestLifecycleEnableIssueResetDisableReplay (0.30s)
+=== RUN   TestLifecycleConcurrentCredentialCommand
+--- PASS: TestLifecycleConcurrentCredentialCommand (0.29s)
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/project_bind
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/candidate_prepared
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/robot_created
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/secret_set
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/previous_disabled
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/activate
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_robot
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_secret
+--- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries (2.21s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/project_bind (0.27s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/candidate_prepared (0.26s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/robot_created (0.37s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/secret_set (0.27s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/previous_disabled (0.27s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/activate (0.25s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_robot (0.26s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_secret (0.25s)
+=== RUN   TestLifecycleProjectOwnershipRecovery
+=== RUN   TestLifecycleProjectOwnershipRecovery/false
+=== RUN   TestLifecycleProjectOwnershipRecovery/true
+--- PASS: TestLifecycleProjectOwnershipRecovery (0.55s)
+    --- PASS: TestLifecycleProjectOwnershipRecovery/false (0.26s)
+    --- PASS: TestLifecycleProjectOwnershipRecovery/true (0.28s)
+=== RUN   TestLifecycleCrashHelper
+--- PASS: TestLifecycleCrashHelper (0.00s)
+=== RUN   TestLifecycleActualProcessExitRecovery
+=== RUN   TestLifecycleActualProcessExitRecovery/project_bind
+    lifecycle_process_integration_test.go:386: owned process pid=1008326 boundary=project_bind exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008334 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/pull:candidate_prepared
+    lifecycle_process_integration_test.go:386: owned process pid=1008347 boundary=pull:candidate_prepared exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008354 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/pull:robot_create
+    lifecycle_process_integration_test.go:386: owned process pid=1008366 boundary=pull:robot_create exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008372 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/pull:secret_set_provider
+    lifecycle_process_integration_test.go:386: owned process pid=1008385 boundary=pull:secret_set_provider exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008391 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:robot_create
+    lifecycle_process_integration_test.go:386: owned process pid=1008403 boundary=publisher:robot_create exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008409 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:robot_created
+    lifecycle_process_integration_test.go:386: owned process pid=1008423 boundary=publisher:robot_created exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008429 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:secret_set_provider
+    lifecycle_process_integration_test.go:386: owned process pid=1008442 boundary=publisher:secret_set_provider exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008449 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:previous_disabled
+    lifecycle_process_integration_test.go:386: owned process pid=1008461 boundary=publisher:previous_disabled exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008468 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:activate
+    lifecycle_process_integration_test.go:386: owned process pid=1008480 boundary=publisher:activate exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008487 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/reset:publisher:secret_set_provider
+    lifecycle_process_integration_test.go:386: owned process pid=1008500 boundary=reset:publisher:secret_set_provider exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008506 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/reset:publisher:previous_disable_provider
+    lifecycle_process_integration_test.go:386: owned process pid=1008519 boundary=reset:publisher:previous_disable_provider exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008525 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/reset:publisher:previous_disabled
+    lifecycle_process_integration_test.go:386: owned process pid=1008537 boundary=reset:publisher:previous_disabled exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008544 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/reset:publisher:activate
+    lifecycle_process_integration_test.go:386: owned process pid=1008556 boundary=reset:publisher:activate exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=1008563 boundary= exit=0
+--- PASS: TestLifecycleActualProcessExitRecovery (27.16s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/project_bind (2.06s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/pull:candidate_prepared (2.04s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/pull:robot_create (2.09s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/pull:secret_set_provider (2.07s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:robot_create (2.10s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:robot_created (2.10s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:secret_set_provider (2.08s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:previous_disabled (2.12s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:activate (2.02s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/reset:publisher:secret_set_provider (2.21s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/reset:publisher:previous_disable_provider (2.10s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/reset:publisher:previous_disabled (2.09s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/reset:publisher:activate (2.09s)
+=== RUN   TestStaleGenerationCannotActivateOrReplay
+--- PASS: TestStaleGenerationCannotActivateOrReplay (0.28s)
+=== RUN   TestPlatformLifecycleCatalogAndTenantBoundaries
+--- PASS: TestPlatformLifecycleCatalogAndTenantBoundaries (0.36s)
+=== RUN   TestPlatformLostProjectAndRobotRecovery
+=== RUN   TestPlatformLostProjectAndRobotRecovery/project
+=== RUN   TestPlatformLostProjectAndRobotRecovery/robot
+=== RUN   TestPlatformLostProjectAndRobotRecovery/secret
+--- PASS: TestPlatformLostProjectAndRobotRecovery (0.77s)
+    --- PASS: TestPlatformLostProjectAndRobotRecovery/project (0.25s)
+    --- PASS: TestPlatformLostProjectAndRobotRecovery/robot (0.27s)
+    --- PASS: TestPlatformLostProjectAndRobotRecovery/secret (0.25s)
+=== RUN   TestTenantQueriesAndAtomicCatalog
+--- PASS: TestTenantQueriesAndAtomicCatalog (0.28s)
+=== RUN   TestCatalogCASAndPagination
+--- PASS: TestCatalogCASAndPagination (0.32s)
+=== RUN   TestConcurrentSpaceSlug
+--- PASS: TestConcurrentSpaceSlug (0.22s)
+=== RUN   TestRuntimeRoleAndMigration
+--- PASS: TestRuntimeRoleAndMigration (0.38s)
+=== RUN   TestTenantCompositeFKAndPlatformFK
+--- PASS: TestTenantCompositeFKAndPlatformFK (0.27s)
+=== RUN   TestCredentialGenerationAndSpaceReadiness
+--- PASS: TestCredentialGenerationAndSpaceReadiness (0.25s)
+=== RUN   TestSpaceWriteLockTimeoutAndRelease
+--- PASS: TestSpaceWriteLockTimeoutAndRelease (0.23s)
+=== RUN   TestProjectRejectedCreateSameKeyRetry
+=== RUN   TestProjectRejectedCreateSameKeyRetry/Bad_Request
+=== RUN   TestProjectRejectedCreateSameKeyRetry/Unauthorized
+=== RUN   TestProjectRejectedCreateSameKeyRetry/Forbidden
+--- PASS: TestProjectRejectedCreateSameKeyRetry (1.03s)
+    --- PASS: TestProjectRejectedCreateSameKeyRetry/Bad_Request (0.32s)
+    --- PASS: TestProjectRejectedCreateSameKeyRetry/Unauthorized (0.41s)
+    --- PASS: TestProjectRejectedCreateSameKeyRetry/Forbidden (0.29s)
+=== RUN   TestProjectUncertainCreateNeverResent
+=== RUN   TestProjectUncertainCreateNeverResent/500
+=== RUN   TestProjectUncertainCreateNeverResent/409
+=== RUN   TestProjectUncertainCreateNeverResent/truncated_403
+=== RUN   TestProjectUncertainCreateNeverResent/timeout_after_create
+=== RUN   TestProjectUncertainCreateNeverResent/lost_response
+=== RUN   TestProjectUncertainCreateNeverResent/missing_location
+=== RUN   TestProjectUncertainCreateNeverResent/bind_not_committed
+--- PASS: TestProjectUncertainCreateNeverResent (3.04s)
+    --- PASS: TestProjectUncertainCreateNeverResent/500 (0.30s)
+    --- PASS: TestProjectUncertainCreateNeverResent/409 (0.26s)
+    --- PASS: TestProjectUncertainCreateNeverResent/truncated_403 (0.27s)
+    --- PASS: TestProjectUncertainCreateNeverResent/timeout_after_create (1.30s)
+    --- PASS: TestProjectUncertainCreateNeverResent/lost_response (0.31s)
+    --- PASS: TestProjectUncertainCreateNeverResent/missing_location (0.30s)
+    --- PASS: TestProjectUncertainCreateNeverResent/bind_not_committed (0.29s)
+=== RUN   TestSpaceLockEightSpacesLifecycleProgress
+--- PASS: TestSpaceLockEightSpacesLifecycleProgress (0.39s)
+=== RUN   TestSpaceLockCallbackFailureAndCancellation
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/callback_error
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/request_cancel
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/connection_lost
+--- PASS: TestSpaceLockCallbackFailureAndCancellation (0.77s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/callback_error (0.28s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/request_cancel (0.23s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/connection_lost (0.26s)
+=== RUN   TestSpaceLockNoTransactionDuringHarbor
+--- PASS: TestSpaceLockNoTransactionDuringHarbor (0.32s)
+PASS
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	44.578s
+removed Image task PostgreSQL=6a22872ef7002a0832f0d871f7fa65bc99b959b09825561f6597691d42e94bef
+2026-09-30T03:38:31Z
+exit=0
+command=systemd-run --user --scope CPUQuota=100% MemoryMax=1532M MemorySwapMax=0 timeout=1200s resource-run.sh fa56b55dbbc892bc40586a8303bff54826764e7e mutations final-image-mutations 
+Running as unit: run-p1008799-i9412817.scope; invocation ID: 8fd438137df549e5b98b95b1b9991234
+2026-09-30T03:38:31Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=a4c0dbb976c182c8773b12c6bee8197ffbcff79a70523c19ef142a2a2c860b8f memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=a4c0dbb976c182c8773b12c6bee8197ffbcff79a70523c19ef142a2a2c860b8f loopback_port=32841
+--- FAIL: TestTenantQueriesAndAtomicCatalog (0.19s)
+    postgres_integration_test.go:156: tenant query exposed another tenant image
+FAIL
+FAIL	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.203s
+FAIL
+--- FAIL: TestTenantQueriesAndAtomicCatalog (0.19s)
+Image mutation tenant-query rejected with assertion exit=1
+--- FAIL: TestTenantCompositeFKAndPlatformFK (0.17s)
+    postgres_integration_test.go:372: invalid credentials relation accepted: scope tenant space 3357a2b5-29e8-47a2-808b-bf07969dcf69
+FAIL
+FAIL	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.181s
+FAIL
+--- FAIL: TestTenantCompositeFKAndPlatformFK (0.17s)
+Image mutation tenant-fk rejected with assertion exit=1
+--- FAIL: TestPlatformLifecycleCatalogAndTenantBoundaries (0.21s)
+    platform_integration_test.go:174: platform wrote tenant registration INTERNAL_ERROR: invalid stored image ownership
+FAIL
+FAIL	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.220s
+FAIL
+--- FAIL: TestPlatformLifecycleCatalogAndTenantBoundaries (0.21s)
+Image mutation platform-write rejected with assertion exit=1
+migrations/image/001_image.sql: 成功
+internal/data/image/queries/registrations.sql: 成功
+removed Image task PostgreSQL=a4c0dbb976c182c8773b12c6bee8197ffbcff79a70523c19ef142a2a2c860b8f
+2026-09-30T03:39:10Z
+exit=0
+command=systemd-run --user --scope CPUQuota=200% MemoryMax=2300M MemorySwapMax=0 timeout=1200s resource-run.sh fa56b55dbbc892bc40586a8303bff54826764e7e helper-race final-resource-helper 
+Running as unit: run-p1009608-i9412864.scope; invocation ID: 6d40b242ffc34dbeabe74747a09105ba
+2026-09-30T03:39:10Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+4e91c812179f2384d80071d7a4da22a8440eaa5925c2073dde51084a7bfaff78  /home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/state/resource-contract-fa56b55dbbc892bc40586a8303bff54826764e7e.test
+2026-09-30T03:39:14Z
+exit=0
+command=systemd-run --user --scope CPUQuota=200% MemoryMax=2300M MemorySwapMax=0 timeout=1200s governance-run.sh e608cba9bf7c5ccfdb3dad41471525ff541c1ad1 build final-governance-build 
+Running as unit: run-p1009667-i9412866.scope; invocation ID: 48e7a29180ba490b9f04314e08880b64
+2026-09-30T03:39:14Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/governance/e608cba9bf7c5ccfdb3dad41471525ff541c1ad1
+2026-09-30T03:40:47Z
+exit=0
+command=systemd-run --user --scope CPUQuota=200% MemoryMax=2300M MemorySwapMax=0 timeout=1200s governance-run.sh e608cba9bf7c5ccfdb3dad41471525ff541c1ad1 contracts final-governance-contracts 
+Running as unit: run-p1009740-i9412879.scope; invocation ID: 2778a772d83d4fe0a0bbe429ad520376
+2026-09-30T03:40:47Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/governance/e608cba9bf7c5ccfdb3dad41471525ff541c1ad1
+ok  	go-wind-admin/tests/imagecontract	0.227s
+ok  	go-wind-admin/sql/bootstrap	0.024s
+ok  	go-wind-admin/pkg/middleware/auth	0.014s
+ok  	go-wind-admin/pkg/middleware/logging	0.062s
+ok  	go-wind-admin/pkg/constants	0.011s
+ok  	go-wind-admin/pkg/localdeps/kratos-bootstrap/rpc	0.571s
+2026-09-30T03:40:59Z
+exit=0
+command=systemd-run --user --scope CPUQuota=50% MemoryMax=1404M MemorySwapMax=0 timeout=1200s governance-run.sh e608cba9bf7c5ccfdb3dad41471525ff541c1ad1 regressions final-governance-regressions 
+Running as unit: run-p1009825-i9412887.scope; invocation ID: fff8f6a934c942b2879a767c29958000
+2026-09-30T03:40:59Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/governance/e608cba9bf7c5ccfdb3dad41471525ff541c1ad1
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 16.10 (Debian 16.10-1.pgdg13+1)
+Redis server v=7.4.6 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=9b9852680eadfdc6
+fixture=7a4775aa5d38c68288bb25dc1d9a13bbb1940c78b3bdf14609fdc80f82ed7355 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+fixture=a879d154ff85976c634288cb97d63edaa3a7cbc748b3d96e2216f2f05386ad21 memory=134217728 memory_swap=134217728 nanocpus=500000000
+apply isolated migration=migrations/20260921134442_initial.sql
+apply isolated migration=migrations/20260922190000_quota_expand.sql
+apply isolated migration=migrations/20260922190100_quota_constraints.sql
+apply isolated migration=migrations/20260923130000_gpu_sqlc.sql
+apply isolated migration=migrations/20260923130100_gpu_no_rls_catalog.sql
+apply isolated migration=migrations/20260923130200_gpu_sync_ref.sql
+apply isolated migration=migrations/20260923143455_drop_geo_location.sql
+Image Governance joint fixture pg=7a4775aa5d38c68288bb25dc1d9a13bbb1940c78b3bdf14609fdc80f82ed7355 redis=a879d154ff85976c634288cb97d63edaa3a7cbc748b3d96e2216f2f05386ad21
+ok  	go-wind-admin/app/admin/service/internal/data	19.698s
+ok  	go-wind-admin/app/admin/service/internal/service	36.801s
+ok  	go-wind-admin/app/admin/service/internal/server	0.815s
+?   	go-wind-admin/app/admin/service/cmd/server	[no test files]
+removed Image Governance fixture=a879d154ff85976c634288cb97d63edaa3a7cbc748b3d96e2216f2f05386ad21
+removed Image Governance fixture=7a4775aa5d38c68288bb25dc1d9a13bbb1940c78b3bdf14609fdc80f82ed7355
+2026-09-30T03:45:12Z
+exit=0
+command=systemd-run --user --scope CPUQuota=50% MemoryMax=1404M MemorySwapMax=0 timeout=1200s governance-run.sh e608cba9bf7c5ccfdb3dad41471525ff541c1ad1 joint final-governance-http fa56b55dbbc892bc40586a8303bff54826764e7e
+Running as unit: run-p1010873-i9412996.scope; invocation ID: d59e6f937dc04ed5b86b5ee00525c503
+2026-09-30T03:45:12Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/governance/e608cba9bf7c5ccfdb3dad41471525ff541c1ad1
+Resource server source_sha=fa56b55dbbc892bc40586a8303bff54826764e7e
+4e91c812179f2384d80071d7a4da22a8440eaa5925c2073dde51084a7bfaff78  /home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/state/resource-contract-fa56b55dbbc892bc40586a8303bff54826764e7e.test
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 16.10 (Debian 16.10-1.pgdg13+1)
+Redis server v=7.4.6 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=9b9852680eadfdc6
+fixture=abcfe660f8381eb5253614fdd9d43de84fa0fef8657480875cc9dd30e0328a49 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+fixture=00738c5c3f94f3badea32fd0137a2f007891ca6263b62d8810a97df0fe8b7762 memory=134217728 memory_swap=134217728 nanocpus=500000000
+apply isolated migration=migrations/20260921134442_initial.sql
+apply isolated migration=migrations/20260922190000_quota_expand.sql
+apply isolated migration=migrations/20260922190100_quota_constraints.sql
+apply isolated migration=migrations/20260923130000_gpu_sqlc.sql
+apply isolated migration=migrations/20260923130100_gpu_no_rls_catalog.sql
+apply isolated migration=migrations/20260923130200_gpu_sync_ref.sql
+apply isolated migration=migrations/20260923143455_drop_geo_location.sql
+Image Governance joint fixture pg=abcfe660f8381eb5253614fdd9d43de84fa0fef8657480875cc9dd30e0328a49 redis=00738c5c3f94f3badea32fd0137a2f007891ca6263b62d8810a97df0fe8b7762
+=== RUN   TestImageJointHTTP
+    image_joint_http_test.go:239: real Resource disable contract via authenticated HTTP and mTLS
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/space:enable -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 409
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 409
+    image_joint_http_test.go:256: HTTP POST /api/v1/images/publisher-credential:disable -> 409
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 409
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/publisher-credential -> 401
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/publisher-credential -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/registrations?scope=tenant -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/registrations?scope=platform -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/registrations/img_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?scope=tenant -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 200
+    image_joint_http_test.go:280: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:281: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:284: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:284: HTTP POST /api/v1/images/publisher-credential:reset -> 200
+    image_joint_http_test.go:287: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:295: HTTP POST /api/v1/images/space:enable -> 200
+    image_joint_http_test.go:295: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:295: HTTP POST /api/v1/images/registrations -> 200
+    image_joint_http_test.go:295: HTTP PATCH /api/v1/images/registrations/img_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa -> 200
+    image_joint_http_test.go:295: HTTP POST /api/v1/images/registrations/img_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:unregister -> 200
+    image_joint_http_test.go:299: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:299: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:299: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:301: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:302: HTTP POST /api/v1/images/publisher-credential:issue -> 401
+    image_joint_http_test.go:307: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:308: HTTP GET /api/v1/images/registrations?scope=tenant&search=x -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 503
+    image_joint_http_test.go:318: HTTP GET /api/v1/images/space -> 503
+    image_joint_http_test.go:323: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:324: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 401
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 403
+    image_resource_contract_test.go:41: Resource contract helper pid=1011551 exit=0; owned database cleanup complete
+--- PASS: TestImageJointHTTP (2.52s)
+PASS
+ok  	go-wind-admin/app/admin/service/internal/service	2.561s
+removed Image Governance fixture=00738c5c3f94f3badea32fd0137a2f007891ca6263b62d8810a97df0fe8b7762
+removed Image Governance fixture=abcfe660f8381eb5253614fdd9d43de84fa0fef8657480875cc9dd30e0328a49
+2026-09-30T03:45:36Z
+exit=0
+command=systemd-run --user --scope CPUQuota=50% MemoryMax=1404M MemorySwapMax=0 timeout=1200s governance-run.sh e608cba9bf7c5ccfdb3dad41471525ff541c1ad1 race final-governance-race fa56b55dbbc892bc40586a8303bff54826764e7e
+Running as unit: run-p1011672-i9413150.scope; invocation ID: a3ed47e5509840af97078bb07543c77f
+2026-09-30T03:45:36Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/governance/e608cba9bf7c5ccfdb3dad41471525ff541c1ad1
+Resource server source_sha=fa56b55dbbc892bc40586a8303bff54826764e7e
+4e91c812179f2384d80071d7a4da22a8440eaa5925c2073dde51084a7bfaff78  /home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/state/resource-contract-fa56b55dbbc892bc40586a8303bff54826764e7e.test
+race: only generated Ent inlining disabled; all race instrumentation retained
+ok  	go-wind-admin/pkg/middleware/auth	1.035s
+ok  	go-wind-admin/app/admin/service/internal/data	1.201s
+ok  	go-wind-admin/app/admin/service/internal/service	1.269s
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 16.10 (Debian 16.10-1.pgdg13+1)
+Redis server v=7.4.6 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=9b9852680eadfdc6
+fixture=df3a8fda9d0f677255f56806fb88904e9b5603409f5e4701f0281f0d27631391 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+fixture=edd39a7557199ff54f0449a45567d780e8c0d9a8ca55d0cb4e795b7ba1d3c264 memory=134217728 memory_swap=134217728 nanocpus=500000000
+apply isolated migration=migrations/20260921134442_initial.sql
+apply isolated migration=migrations/20260922190000_quota_expand.sql
+apply isolated migration=migrations/20260922190100_quota_constraints.sql
+apply isolated migration=migrations/20260923130000_gpu_sqlc.sql
+apply isolated migration=migrations/20260923130100_gpu_no_rls_catalog.sql
+apply isolated migration=migrations/20260923130200_gpu_sync_ref.sql
+apply isolated migration=migrations/20260923143455_drop_geo_location.sql
+Image Governance joint fixture pg=df3a8fda9d0f677255f56806fb88904e9b5603409f5e4701f0281f0d27631391 redis=edd39a7557199ff54f0449a45567d780e8c0d9a8ca55d0cb4e795b7ba1d3c264
+=== RUN   TestImageJointHTTP
+    image_joint_http_test.go:239: real Resource disable contract via authenticated HTTP and mTLS
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/space:enable -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 409
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 409
+    image_joint_http_test.go:256: HTTP POST /api/v1/images/publisher-credential:disable -> 409
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 409
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/publisher-credential -> 401
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/publisher-credential -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/registrations?scope=tenant -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/registrations?scope=platform -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/registrations/img_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?scope=tenant -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 200
+    image_joint_http_test.go:280: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:281: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:284: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:284: HTTP POST /api/v1/images/publisher-credential:reset -> 200
+    image_joint_http_test.go:287: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:295: HTTP POST /api/v1/images/space:enable -> 200
+    image_joint_http_test.go:295: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:295: HTTP POST /api/v1/images/registrations -> 200
+    image_joint_http_test.go:295: HTTP PATCH /api/v1/images/registrations/img_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa -> 200
+    image_joint_http_test.go:295: HTTP POST /api/v1/images/registrations/img_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:unregister -> 200
+    image_joint_http_test.go:299: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:299: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:299: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:301: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:302: HTTP POST /api/v1/images/publisher-credential:issue -> 401
+    image_joint_http_test.go:307: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:308: HTTP GET /api/v1/images/registrations?scope=tenant&search=x -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 503
+    image_joint_http_test.go:318: HTTP GET /api/v1/images/space -> 503
+    image_joint_http_test.go:323: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:324: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 401
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 403
+    image_resource_contract_test.go:41: Resource contract helper pid=1012960 exit=0; owned database cleanup complete
+--- PASS: TestImageJointHTTP (7.25s)
+PASS
+ok  	go-wind-admin/app/admin/service/internal/service	8.519s
+removed Image Governance fixture=edd39a7557199ff54f0449a45567d780e8c0d9a8ca55d0cb4e795b7ba1d3c264
+removed Image Governance fixture=df3a8fda9d0f677255f56806fb88904e9b5603409f5e4701f0281f0d27631391
+2026-09-30T03:50:17Z
+exit=0
+command=systemd-run --user --scope CPUQuota=100% MemoryMax=1532M MemorySwapMax=0 timeout=1500s network-run.sh fa56b55dbbc892bc40586a8303bff54826764e7e integration final-network-integration 
+Running as unit: run-p1013079-i9413307.scope; invocation ID: f5b555c0c3bf40ceb5dc0839a32f19e6
+2026-09-30T03:50:17Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+./scripts/integration -timeout 20m ./...
+owned_fixture=4ea34dc1baa416bafcf55b530ade13d2831aea6cea4878437dc48910ea3988f3 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+127.0.0.1:5432 - accepting connections
+PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=4ea34dc1baa416bafcf55b530ade13d2831aea6cea4878437dc48910ea3988f3
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/cmd/ani-resource-service	8.265s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	0.005s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network	0.008s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/conf/v1	0.016s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.527s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	647.120s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/server	2.210s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/image	0.007s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network	0.007s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations/image	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/image-smoke-runtime	0.009s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	0.014s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/scripts/vpc-read-probe	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/relay	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/rpc	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider	0.011s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/runtime	0.102s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv	0.079s
+removed task container=4ea34dc1baa416bafcf55b530ade13d2831aea6cea4878437dc48910ea3988f3
+confirmed fixture absent=4ea34dc1baa416bafcf55b530ade13d2831aea6cea4878437dc48910ea3988f3
+2026-09-30T04:01:19Z
+exit=0
+command=systemd-run --user --scope CPUQuota=100% MemoryMax=1532M MemorySwapMax=0 timeout=1500s network-run.sh fa56b55dbbc892bc40586a8303bff54826764e7e race final-network-race 
+Running as unit: run-p1016219-i9413714.scope; invocation ID: 42a43ffe25914cee81ae64a208a48b38
+2026-09-30T04:01:19Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+./scripts/integration -timeout 20m -race ./...
+owned_fixture=17dcbf78d91660ce30eaeed81b54462745e1a3fbdf60c85f5513790cbfab0f43 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+127.0.0.1:5432 - accepting connections
+PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=17dcbf78d91660ce30eaeed81b54462745e1a3fbdf60c85f5513790cbfab0f43
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/cmd/ani-resource-service	18.033s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	1.082s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network	1.093s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/conf/v1	1.055s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	2.301s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	833.486s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/server	3.753s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/image	1.035s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network	1.021s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations/image	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/image-smoke-runtime	1.061s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	1.039s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/scripts/vpc-read-probe	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/relay	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/rpc	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider	1.044s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/runtime	1.203s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv	1.070s
+removed task container=17dcbf78d91660ce30eaeed81b54462745e1a3fbdf60c85f5513790cbfab0f43
+confirmed fixture absent=17dcbf78d91660ce30eaeed81b54462745e1a3fbdf60c85f5513790cbfab0f43
+2026-09-30T04:16:12Z
+exit=0
+command=systemd-run --user --scope CPUQuota=100% MemoryMax=1532M MemorySwapMax=0 timeout=1200s network-run.sh fa56b55dbbc892bc40586a8303bff54826764e7e mutations final-network-mutations 
+Running as unit: run-p1020224-i9414215.scope; invocation ID: b3018e9a19be46168b14635626134124
+2026-09-30T04:16:12Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+./scripts/integration --mutations
+owned_fixture=4d30b922c6a2f9fe6871c8a53729dc37aef28684699d5b43c0c1f7eeda911d01 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+127.0.0.1:5432 - accepting connections
+PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=4d30b922c6a2f9fe6871c8a53729dc37aef28684699d5b43c0c1f7eeda911d01
+tenant mutation killed by behavioral assertion: GetVPC
+tenant mutation killed by behavioral assertion: GetOperation
+tenant mutation killed by behavioral assertion: ListVPCs
+tenant mutation killed by behavioral assertion: GetSubnet
+tenant mutation killed by behavioral assertion: ListSubnets
+tenant mutation killed by behavioral assertion: GetAttachment
+original SQL and generated queries restored
+removed task container=4d30b922c6a2f9fe6871c8a53729dc37aef28684699d5b43c0c1f7eeda911d01
+confirmed fixture absent=4d30b922c6a2f9fe6871c8a53729dc37aef28684699d5b43c0c1f7eeda911d01
+2026-09-30T04:17:24Z
+exit=0
+2026-09-30T04:17:24Z
+supervisor_exit=0

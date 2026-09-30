@@ -1,0 +1,70 @@
+2026-09-30T03:33:28Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/governance/e608cba9bf7c5ccfdb3dad41471525ff541c1ad1
+Resource server source_sha=58d28575f523613444216ae93637b715a4463e78
+e4cf9716bbca3f3d679a6f18f775b901571a32bfe1025b1a0f57b3d373be35e1  /home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/state/resource-contract-58d28575f523613444216ae93637b715a4463e78.test
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 16.10 (Debian 16.10-1.pgdg13+1)
+Redis server v=7.4.6 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=9b9852680eadfdc6
+fixture=32efbdf73256a0af533767adbc9229db649a907b940b17be88762355ba2b3782 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+fixture=0fb520d1bc1525edc0eb6dda8167cd1f4da5fff2a9c6eb818d5ad291b6a0411e memory=134217728 memory_swap=134217728 nanocpus=500000000
+apply isolated migration=migrations/20260921134442_initial.sql
+apply isolated migration=migrations/20260922190000_quota_expand.sql
+apply isolated migration=migrations/20260922190100_quota_constraints.sql
+apply isolated migration=migrations/20260923130000_gpu_sqlc.sql
+apply isolated migration=migrations/20260923130100_gpu_no_rls_catalog.sql
+apply isolated migration=migrations/20260923130200_gpu_sync_ref.sql
+apply isolated migration=migrations/20260923143455_drop_geo_location.sql
+Image Governance joint fixture pg=32efbdf73256a0af533767adbc9229db649a907b940b17be88762355ba2b3782 redis=0fb520d1bc1525edc0eb6dda8167cd1f4da5fff2a9c6eb818d5ad291b6a0411e
+=== RUN   TestImageJointHTTP
+    image_joint_http_test.go:239: real Resource disable contract via authenticated HTTP and mTLS
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/space:enable -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 409
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 409
+    image_joint_http_test.go:256: HTTP POST /api/v1/images/publisher-credential:disable -> 409
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 409
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/publisher-credential -> 401
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/publisher-credential -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/registrations?scope=tenant -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/registrations?scope=platform -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/registrations/img_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?scope=tenant -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 200
+    image_joint_http_test.go:280: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:281: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:284: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:284: HTTP POST /api/v1/images/publisher-credential:reset -> 200
+    image_joint_http_test.go:287: HTTP POST /api/v1/images/publisher-credential:issue -> 200
+    image_joint_http_test.go:295: HTTP POST /api/v1/images/space:enable -> 200
+    image_joint_http_test.go:295: HTTP POST /api/v1/images/publisher-credential:disable -> 200
+    image_joint_http_test.go:295: HTTP POST /api/v1/images/registrations -> 200
+    image_joint_http_test.go:295: HTTP PATCH /api/v1/images/registrations/img_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa -> 200
+    image_joint_http_test.go:295: HTTP POST /api/v1/images/registrations/img_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:unregister -> 200
+    image_joint_http_test.go:299: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:299: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:299: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:301: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:302: HTTP POST /api/v1/images/publisher-credential:issue -> 401
+    image_joint_http_test.go:307: HTTP POST /api/v1/images/publisher-credential:issue -> 400
+    image_joint_http_test.go:308: HTTP GET /api/v1/images/registrations?scope=tenant&search=x -> 200
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 503
+    image_joint_http_test.go:318: HTTP GET /api/v1/images/space -> 503
+    image_joint_http_test.go:323: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:324: HTTP POST /api/v1/images/publisher-credential:issue -> 403
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 401
+    image_joint_http_test.go:235: HTTP GET /api/v1/images/space -> 403
+    image_resource_contract_test.go:41: Resource contract helper pid=970374 exit=0; owned database cleanup complete
+--- PASS: TestImageJointHTTP (1.45s)
+PASS
+ok  	go-wind-admin/app/admin/service/internal/service	1.534s
+removed Image Governance fixture=0fb520d1bc1525edc0eb6dda8167cd1f4da5fff2a9c6eb818d5ad291b6a0411e
+removed Image Governance fixture=32efbdf73256a0af533767adbc9229db649a907b940b17be88762355ba2b3782
+2026-09-30T03:35:02Z
+exit=0

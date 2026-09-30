@@ -1,0 +1,20 @@
+2026-09-30T04:16:12Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+./scripts/integration --mutations
+owned_fixture=4d30b922c6a2f9fe6871c8a53729dc37aef28684699d5b43c0c1f7eeda911d01 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+127.0.0.1:5432 - accepting connections
+PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=4d30b922c6a2f9fe6871c8a53729dc37aef28684699d5b43c0c1f7eeda911d01
+tenant mutation killed by behavioral assertion: GetVPC
+tenant mutation killed by behavioral assertion: GetOperation
+tenant mutation killed by behavioral assertion: ListVPCs
+tenant mutation killed by behavioral assertion: GetSubnet
+tenant mutation killed by behavioral assertion: ListSubnets
+tenant mutation killed by behavioral assertion: GetAttachment
+original SQL and generated queries restored
+removed task container=4d30b922c6a2f9fe6871c8a53729dc37aef28684699d5b43c0c1f7eeda911d01
+confirmed fixture absent=4d30b922c6a2f9fe6871c8a53729dc37aef28684699d5b43c0c1f7eeda911d01
+2026-09-30T04:17:24Z
+exit=0

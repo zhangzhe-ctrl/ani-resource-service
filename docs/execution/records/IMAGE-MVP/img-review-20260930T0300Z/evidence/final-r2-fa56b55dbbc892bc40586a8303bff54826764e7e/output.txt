@@ -1,0 +1,32 @@
+2026-09-30T03:35:43Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=42ade449121700678402b57b8583466fdef90ee31ffb710938344026c7b75e06 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=42ade449121700678402b57b8583466fdef90ee31ffb710938344026c7b75e06 loopback_port=32838
+=== RUN   TestLifecycleTwoProcessesSameCommands
+    lifecycle_concurrency_integration_test.go:41: owned concurrent child pid=971899 exit=0
+    lifecycle_concurrency_integration_test.go:41: owned concurrent child pid=971900 exit=0
+--- PASS: TestLifecycleTwoProcessesSameCommands (0.30s)
+=== RUN   TestLifecycleConcurrentCredentialCommand
+--- PASS: TestLifecycleConcurrentCredentialCommand (0.19s)
+=== RUN   TestSpaceWriteLockTimeoutAndRelease
+--- PASS: TestSpaceWriteLockTimeoutAndRelease (0.17s)
+=== RUN   TestSpaceLockEightSpacesLifecycleProgress
+--- PASS: TestSpaceLockEightSpacesLifecycleProgress (0.27s)
+=== RUN   TestSpaceLockCallbackFailureAndCancellation
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/callback_error
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/request_cancel
+=== RUN   TestSpaceLockCallbackFailureAndCancellation/connection_lost
+--- PASS: TestSpaceLockCallbackFailureAndCancellation (0.51s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/callback_error (0.20s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/request_cancel (0.15s)
+    --- PASS: TestSpaceLockCallbackFailureAndCancellation/connection_lost (0.15s)
+=== RUN   TestSpaceLockNoTransactionDuringHarbor
+--- PASS: TestSpaceLockNoTransactionDuringHarbor (0.34s)
+PASS
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	1.788s
+removed Image task PostgreSQL=42ade449121700678402b57b8583466fdef90ee31ffb710938344026c7b75e06
+2026-09-30T03:35:49Z
+exit=0

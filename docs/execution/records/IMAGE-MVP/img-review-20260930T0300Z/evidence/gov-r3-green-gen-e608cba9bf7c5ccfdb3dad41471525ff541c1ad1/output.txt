@@ -1,0 +1,14 @@
+2026-09-30T03:32:09Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/governance/e608cba9bf7c5ccfdb3dad41471525ff541c1ad1'...
+来自 /home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/inputs/governance.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 d64d6ee chore(image): import Fedora canonical path contracts and tests
+HEAD 目前位于 e608cba fix(image): preserve not-issued publisher conflict at HTTP boundary
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/governance/e608cba9bf7c5ccfdb3dad41471525ff541c1ad1
+{
+  "source_sha": "e608cba9bf7c5ccfdb3dad41471525ff541c1ad1",
+  "changes": []
+}
+2026-09-30T03:32:30Z
+exit=0
