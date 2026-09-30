@@ -138,7 +138,7 @@ func TestDisablePublisherContract(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("x-ani-tenant-id", tenant, "x-ani-actor", "governance:user:1", "x-ani-request-id", uuid.NewString()))
-	space, err := client.EnsureImageSpace(ctx, &imagev1.EnsureImageSpaceRequest{TenantId: tenant, Slug: "contract", IdempotencyKey: "enable"})
+	space, err := client.EnsureImageSpace(ctx, &imagev1.EnsureImageSpaceRequest{TenantId: tenant, Slug: "contract", IdempotencyKey: "contract-enable"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ func TestDisablePublisherContract(t *testing.T) {
 	if _, err = f.Repo.FindTenantCommand(ctx, tenant, space.Space.SpaceId, disable.IdempotencyKey); biz.ReasonOf(err) != biz.ImageNotFound {
 		t.Error("not-issued disable persisted a command")
 	}
-	issued, err := client.IssuePublisherCredential(ctx, &imagev1.IssuePublisherCredentialRequest{TenantId: tenant, IdempotencyKey: "issue", ExpectedVersion: 0})
+	issued, err := client.IssuePublisherCredential(ctx, &imagev1.IssuePublisherCredentialRequest{TenantId: tenant, IdempotencyKey: "contract-issue", ExpectedVersion: 0})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,13 +173,13 @@ func TestDisablePublisherContract(t *testing.T) {
 	otherActor := metadata.NewOutgoingContext(ctx, metadata.Pairs("x-ani-tenant-id", tenant, "x-ani-actor", "governance:user:2", "x-ani-request-id", uuid.NewString()))
 	_, err = client.DisablePublisherCredential(otherActor, disable)
 	requireImageRPCError(t, err, codes.AlreadyExists, "IDEMPOTENCY_CONFLICT")
-	_, err = client.DisablePublisherCredential(ctx, &imagev1.DisablePublisherCredentialRequest{TenantId: tenant, IdempotencyKey: "stale", ExpectedVersion: issued.Credential.Version})
+	_, err = client.DisablePublisherCredential(ctx, &imagev1.DisablePublisherCredentialRequest{TenantId: tenant, IdempotencyKey: "contract-stale", ExpectedVersion: issued.Credential.Version})
 	requireImageRPCError(t, err, codes.Aborted, "VERSION_CONFLICT")
 	again, err = client.DisablePublisherCredential(ctx, &imagev1.DisablePublisherCredentialRequest{TenantId: tenant, IdempotencyKey: "already-disabled", ExpectedVersion: disabled.Credential.Version})
 	if err != nil || again.Credential.Version != disabled.Credential.Version {
 		t.Fatal("already-disabled changed the credential", err)
 	}
-	_, err = client.IssuePublisherCredential(ctx, &imagev1.IssuePublisherCredentialRequest{TenantId: tenant, IdempotencyKey: "reissue", ExpectedVersion: disabled.Credential.Version})
+	_, err = client.IssuePublisherCredential(ctx, &imagev1.IssuePublisherCredentialRequest{TenantId: tenant, IdempotencyKey: "contract-reissue", ExpectedVersion: disabled.Credential.Version})
 	if err != nil {
 		t.Fatal(err)
 	}
