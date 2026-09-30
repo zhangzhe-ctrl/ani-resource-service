@@ -83,6 +83,9 @@ func (p *Postgres) BeginTenantCredentialCommand(ctx context.Context, c biz.Comma
 			return biz.Command{}, biz.Fail(biz.InvalidArgument, "publisher has not been issued")
 		}
 	case "disable_publisher":
+		if info.Generation == 0 {
+			return biz.Command{}, biz.Fail(biz.CredentialNotIssued, "publisher has not been issued")
+		}
 	default:
 		return biz.Command{}, biz.Fail(biz.InvalidArgument, "invalid credential command")
 	}
@@ -258,6 +261,9 @@ func (p *Postgres) CompleteTenantDisable(ctx context.Context, c biz.Command) (bi
 	}
 	if info.Version != c.Candidate.CredentialVersion || info.Generation != c.Candidate.Generation || info.RobotID != c.Candidate.RobotID {
 		return biz.Command{}, biz.Fail(biz.VersionConflict, "credential changed")
+	}
+	if info.Generation == 0 {
+		return biz.Command{}, biz.Fail(biz.CredentialNotIssued, "publisher has not been issued")
 	}
 	if info.State == "active" {
 		row, e := q.DisableTenantCredential(ctx, sqlcgen.DisableTenantCredentialParams{TenantID: &c.TenantID, SpaceID: c.SpaceID, Purpose: "publisher", ExpectedVersion: info.Version, Generation: info.Generation})

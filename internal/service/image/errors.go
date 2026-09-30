@@ -32,7 +32,7 @@ func rpcError(err error) error {
 		code = codes.AlreadyExists
 	case biz.VersionConflict:
 		code = codes.Aborted
-	case biz.SpaceNameImmutable, biz.SpaceNotReady, biz.CredentialAlreadyActive, biz.CredentialDeliveryExpired, biz.UnsupportedArtifact, biz.PlatformMismatch, biz.SpaceOwnershipUnconfirmed:
+	case biz.SpaceNameImmutable, biz.SpaceNotReady, biz.CredentialAlreadyActive, biz.CredentialNotIssued, biz.CredentialDeliveryExpired, biz.UnsupportedArtifact, biz.PlatformMismatch, biz.SpaceOwnershipUnconfirmed:
 		code = codes.FailedPrecondition
 	case biz.DependencyUnavailable, biz.RequestInProgress:
 		code = codes.Unavailable

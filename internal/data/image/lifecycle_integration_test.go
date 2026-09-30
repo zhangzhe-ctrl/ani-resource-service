@@ -26,6 +26,7 @@ type registryFixture struct {
 	secrets                           map[int64]string
 	next                              int64
 	creates, robotCreates, secretSets int
+	disableSets                       int
 	failAfter                         string
 }
 
@@ -140,6 +141,7 @@ func (r *registryFixture) SetRobotDisabled(_ context.Context, want biz.Robot, di
 	}
 	v.Disabled = disabled
 	r.robots[v.ID] = v
+	r.disableSets++
 	return nil
 }
 func (r *registryFixture) ResolveArtifact(context.Context, string, string, string) (biz.Artifact, error) {

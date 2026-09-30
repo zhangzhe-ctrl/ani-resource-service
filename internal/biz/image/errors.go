@@ -20,6 +20,7 @@ const (
 	VersionConflict           Reason = "VERSION_CONFLICT"
 	SpaceNotReady             Reason = "SPACE_NOT_READY"
 	CredentialAlreadyActive   Reason = "CREDENTIAL_ALREADY_ACTIVE"
+	CredentialNotIssued       Reason = "CREDENTIAL_NOT_ISSUED"
 	CredentialDeliveryExpired Reason = "CREDENTIAL_DELIVERY_EXPIRED"
 	UnsupportedArtifact       Reason = "UNSUPPORTED_ARTIFACT"
 	PlatformMismatch          Reason = "PLATFORM_MISMATCH"

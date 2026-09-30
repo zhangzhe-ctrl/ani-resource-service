@@ -74,6 +74,8 @@ search按字面量contains匹配，转义 `%`、`_`、`\\`，不能让用户构�
 
 credentials.secret_ciphertext只允许pull长期保存，publisher的当前行不保留可恢复密码。签发交付密文保存在command，success后设置10分钟重放窗口；请求时检查actor、kind、指纹、当前generation、window，全部满足才解密。
 
+publisher 尚未签发（generation=0）的新停用请求，在已有 command 重放/冲突检查和版本 CAS 后返回 CREDENTIAL_NOT_ISSUED，不创建 command。完成停用事务也拒绝 generation=0，避免未完成旧 command 将 not_issued 保存为成功。已完成 command 仍按其原结果重放；已签发/已停用的 CAS、幂等与无额外外部写语义不变。
+
 command.candidate只存RobotID、候选代次、名称、ownership标识及可恢复阶段；result只存脱敏响应快照/对象ID，不含Secret/认证头/原始provider响应。PG只约束JSON为object，内容脱敏靠typed编码和“哨兵Secret不得出现”测试。payload/key/nonce验证失败按密文损坏拒绝，不能当不存在后重建新身份。
 
 日志和SQL错误不可包含密文解密结果。密钥key_id支持读取已有版本，key文件权限0600或受控挂载；本轮不建设KMS服务或自动重加密后台。

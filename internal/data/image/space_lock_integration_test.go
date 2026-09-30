@@ -4,14 +4,18 @@ package data_test
 
 import (
 	"context"
+	"encoding/pem"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image"
+	imagedata "github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image"
 )
 
 type spaceLockBarrierRepository struct {
@@ -151,4 +155,35 @@ func TestSpaceLockCallbackFailureAndCancellation(t *testing.T) {
 			assertNoSpaceLocks(t, f)
 		})
 	}
+}
+
+func TestSpaceLockNoTransactionDuringHarbor(t *testing.T) {
+	f, registry, cfg, ring, ctx := lifecycleFixture(t)
+	upstream := registryHTTP(t, registry)
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var transactions int
+		if err := f.Runtime.QueryRow(context.Background(), `SELECT count(*) FROM pg_stat_activity WHERE usename=current_user AND pid<>pg_backend_pid() AND xact_start IS NOT NULL`).Scan(&transactions); err != nil || transactions != 0 {
+			t.Errorf("SQL transaction held across Harbor request: count=%d err=%v", transactions, err)
+		}
+		upstream.Config.Handler.ServeHTTP(w, r)
+	}))
+	t.Cleanup(server.Close)
+	h, err := imagedata.NewHarbor(imagedata.HarborConfig{URL: server.URL, Username: "fixture-admin", Password: biz.Secret("fixture-password"), RobotNamePrefix: "fixture$", CAPEM: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw})})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(h.Close)
+	l := lifecycle(t, f.Repo, h, ring, cfg, nil)
+	tenant := tenantFrom(t, ctx)
+	if _, err = l.EnsureImageSpace(ctx, biz.EnableSpace{TenantID: tenant, Slug: "transaction", IdempotencyKey: "transaction-enable"}); err != nil {
+		t.Fatal(err)
+	}
+	issued, err := l.IssuePublisherCredential(ctx, biz.IssueCredential{TenantID: tenant, IdempotencyKey: "transaction-issue"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = l.DisablePublisherCredential(ctx, biz.DisableCredential{TenantID: tenant, IdempotencyKey: "transaction-disable", ExpectedVersion: issued.Credential.Version}); err != nil {
+		t.Fatal(err)
+	}
+	assertNoSpaceLocks(t, f)
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/google/uuid"
 	imagev1 "github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image/sqlcgen"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/server"
 	imageservice "github.com/zhangzhe-ctrl/ani-resource-service/internal/service/image"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -153,6 +154,8 @@ func TestDisablePublisherContract(t *testing.T) {
 	if _, err = f.Repo.FindTenantCommand(ctx, tenant, space.Space.SpaceId, disable.IdempotencyKey); biz.ReasonOf(err) != biz.ImageNotFound {
 		t.Error("not-issued disable persisted a command")
 	}
+	_, err = client.DisablePublisherCredential(ctx, &imagev1.DisablePublisherCredentialRequest{TenantId: tenant, IdempotencyKey: "empty-stale-key", ExpectedVersion: 1})
+	requireImageRPCError(t, err, codes.Aborted, "VERSION_CONFLICT")
 	issued, err := client.IssuePublisherCredential(ctx, &imagev1.IssuePublisherCredentialRequest{TenantId: tenant, IdempotencyKey: "contract-issue", ExpectedVersion: 0})
 	if err != nil {
 		t.Fatal(err)
@@ -162,6 +165,10 @@ func TestDisablePublisherContract(t *testing.T) {
 	disabled, err := client.DisablePublisherCredential(ctx, disable)
 	if err != nil || disabled.GetCredential().GetState() != "disabled" {
 		t.Fatal("active disable did not complete", err)
+	}
+	stored, err := f.Repo.FindTenantCommand(ctx, tenant, space.Space.SpaceId, disable.IdempotencyKey)
+	if err != nil || stored.State != "succeeded" || stored.Result.Credential == nil || stored.Result.Credential.Version != disabled.Credential.Version {
+		t.Fatal("disable success was not durably recorded", err)
 	}
 	again, err := client.DisablePublisherCredential(ctx, disable)
 	if err != nil || again.Credential.Version != disabled.Credential.Version {
@@ -179,6 +186,12 @@ func TestDisablePublisherContract(t *testing.T) {
 	if err != nil || again.Credential.Version != disabled.Credential.Version {
 		t.Fatal("already-disabled changed the credential", err)
 	}
+	registry.mu.Lock()
+	disableWrites := registry.disableSets
+	registry.mu.Unlock()
+	if disableWrites != 1 {
+		t.Fatal("disable replay repeated an external write")
+	}
 	_, err = client.IssuePublisherCredential(ctx, &imagev1.IssuePublisherCredentialRequest{TenantId: tenant, IdempotencyKey: "contract-reissue", ExpectedVersion: disabled.Credential.Version})
 	if err != nil {
 		t.Fatal(err)
@@ -191,6 +204,32 @@ func TestDisablePublisherContract(t *testing.T) {
 	defer registry.mu.Unlock()
 	if registry.creates != 1 || registry.robotCreates != 3 || registry.secretSets != 3 {
 		t.Fatal("credential replay duplicated external identities")
+	}
+}
+
+func TestDisablePublisherContractLegacyCompletion(t *testing.T) {
+	f, registry, cfg, ring, ctx := lifecycleFixture(t)
+	tenant := tenantFrom(t, ctx)
+	s, err := lifecycle(t, f.Repo, registry, ring, cfg, nil).EnsureImageSpace(ctx, biz.EnableSpace{TenantID: tenant, Slug: "legacy-empty", IdempotencyKey: "legacy-enable"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Seed an interrupted pre-fix command, never a repair of a live command.
+	c := command(tenant, s.ID, "disable_publisher")
+	_, err = sqlcgen.New(f.Runtime).InsertTenantCommand(ctx, sqlcgen.InsertTenantCommandParams{CommandID: c.ID, SpaceID: c.SpaceID, TenantID: &tenant, IdempotencyKey: c.Key, Kind: c.Kind, Actor: c.Actor, Fingerprint: c.Fingerprint})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err = f.Repo.FindTenantCommand(ctx, tenant, s.ID, c.Key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = f.Repo.CompleteTenantDisable(ctx, c); biz.ReasonOf(err) != biz.Reason("CREDENTIAL_NOT_ISSUED") {
+		t.Fatal("not-issued completion accepted", err)
+	}
+	after, err := f.Repo.FindTenantCommand(ctx, tenant, s.ID, c.Key)
+	if err != nil || after.State != c.State || after.Version != c.Version || after.Result.Credential != nil {
+		t.Fatal("rejected completion changed command state", err)
 	}
 }
 

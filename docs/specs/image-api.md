@@ -50,6 +50,8 @@ Project POST 的完整确定拒绝响应（Harbor 400/401/403）保留原业务�
 
 都有幂等键和 expected_version。Issue 首次版本为0；停用后重发使用当前 metadata version；已 active 不允许 Issue 暗中换密钥，返回 CREDENTIAL_ALREADY_ACTIVE。Reset 只对已存在代次使用，expected_version 必须>0；包括从过期状态恢复。Disable 对有效身份停用，重复同键返回原结果；已停用的新键返回当前状态，无外部多余写。
 
+空间已开通但 publisher 尚未签发时，Disable（expected_version=0）返回 `CREDENTIAL_NOT_ISSUED` / FailedPrecondition / HTTP409，不预留或完成成功停用 command，不返回 `not_issued` 成功响应。新请求仍先执行版本 CAS；已有 command 的 actor/kind/指纹及成功结果重放检查先于当前凭证状态检查，后续重新签发不会遮蔽已完成停用的原结果。
+
 Issue/Reset 返回 `credential + secret + replay_until`。secret 只允许成功交付/受限10分钟重放，不在普通查询恢复。metadata version 每次状态写变化，generation 只在新 Robot 代次激活时增加。客户端版本冲突409，不自动覆盖。新的 Secret 不能使用登录密码/AKSK 代替。
 
 所有凭证相关响应设置 `Cache-Control: no-store`、`Pragma: no-cache`，不记录 request/response body、不放 URL/浏览器持久存储。Secret 用 password-stdin 或交互登录，不在命令行 -p 参数、shell history、截图或证据 JSON 中出现。
@@ -97,7 +99,7 @@ search 只匹配 display_name/repository，不开放任意 SQL/JSON filter。同
 | IMAGE_NOT_FOUND / SPACE_NOT_FOUND | NotFound | 404 |
 | IMAGE_ALREADY_REGISTERED / SPACE_NAME_CONFLICT / IDEMPOTENCY_CONFLICT | AlreadyExists | 409 |
 | VERSION_CONFLICT | Aborted | 409 |
-| SPACE_NOT_READY / CREDENTIAL_ALREADY_ACTIVE / CREDENTIAL_DELIVERY_EXPIRED / UNSUPPORTED_ARTIFACT / PLATFORM_MISMATCH / SPACE_OWNERSHIP_UNCONFIRMED | FailedPrecondition | 409 |
+| SPACE_NOT_READY / CREDENTIAL_ALREADY_ACTIVE / CREDENTIAL_NOT_ISSUED / CREDENTIAL_DELIVERY_EXPIRED / UNSUPPORTED_ARTIFACT / PLATFORM_MISMATCH / SPACE_OWNERSHIP_UNCONFIRMED | FailedPrecondition | 409 |
 | DEPENDENCY_UNAVAILABLE / REQUEST_IN_PROGRESS | Unavailable | 503 |
 | DEADLINE_EXCEEDED | DeadlineExceeded | 504 |
 | INTERNAL_ERROR | Internal | 500 |

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image"
 	imagedata "github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image"
@@ -102,7 +103,7 @@ func (r loseProjectBinding) BindTenantProject(context.Context, biz.Space, int64)
 }
 
 func TestProjectUncertainCreateNeverResent(t *testing.T) {
-	for _, fault := range []string{"500", "409", "lost_response", "missing_location", "bind_not_committed"} {
+	for _, fault := range []string{"500", "409", "truncated_403", "timeout_after_create", "lost_response", "missing_location", "bind_not_committed"} {
 		t.Run(fault, func(t *testing.T) {
 			f, registry, cfg, ring, ctx := lifecycleFixture(t)
 			upstream := registryHTTP(t, registry)
@@ -122,12 +123,20 @@ func TestProjectUncertainCreateNeverResent(t *testing.T) {
 					case "409":
 						w.WriteHeader(http.StatusConflict)
 						return
-					case "lost_response", "missing_location":
+					case "truncated_403":
+						w.Header().Set("Content-Length", "10")
+						w.WriteHeader(http.StatusForbidden)
+						return // The complete refusal response was not received.
+					case "lost_response", "missing_location", "timeout_after_create":
 						// Commit the external object, then lose only the receipt.
 						response := httptest.NewRecorder()
 						upstream.Config.Handler.ServeHTTP(response, r)
 						if response.Code != http.StatusCreated {
 							t.Error("fixture did not create project")
+						}
+						if fault == "timeout_after_create" {
+							<-r.Context().Done()
+							return
 						}
 						if fault == "lost_response" {
 							conn, _, err := w.(http.Hijacker).Hijack()
@@ -145,7 +154,7 @@ func TestProjectUncertainCreateNeverResent(t *testing.T) {
 				upstream.Config.Handler.ServeHTTP(w, r)
 			}))
 			t.Cleanup(server.Close)
-			h, err := imagedata.NewHarbor(imagedata.HarborConfig{URL: server.URL, Username: "fixture-admin", Password: biz.Secret("fixture-password"), RobotNamePrefix: "fixture$", CAPEM: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw})})
+			h, err := imagedata.NewHarbor(imagedata.HarborConfig{URL: server.URL, Username: "fixture-admin", Password: biz.Secret("fixture-password"), RobotNamePrefix: "fixture$", Timeout: time.Second, CAPEM: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw})})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -175,7 +184,7 @@ func TestProjectUncertainCreateNeverResent(t *testing.T) {
 			if err != nil || command.State != "blocked" || command.Phase != "project_sent" {
 				t.Fatal("uncertainty not durably recorded", command.State, command.Phase, err)
 			}
-			if fault == "500" || fault == "409" {
+			if fault == "500" || fault == "409" || fault == "truncated_403" {
 				if registry.creates != 0 {
 					t.Fatal("unexpected external object")
 				}
