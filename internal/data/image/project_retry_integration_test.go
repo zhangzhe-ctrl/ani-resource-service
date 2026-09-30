@@ -16,6 +16,12 @@ import (
 	imagedata "github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image"
 )
 
+func projectEffects(registry *registryFixture) (int, int) {
+	registry.mu.Lock()
+	defer registry.mu.Unlock()
+	return registry.creates, registry.robotCreates
+}
+
 func TestProjectRejectedCreateSameKeyRetry(t *testing.T) {
 	for _, refusal := range []int{400, 401, 403} {
 		t.Run(http.StatusText(refusal), func(t *testing.T) {
@@ -43,8 +49,9 @@ func TestProjectRejectedCreateSameKeyRetry(t *testing.T) {
 			in := biz.EnableSpace{TenantID: tenantFrom(t, ctx), Slug: "retry-refused", IdempotencyKey: "retry-refused-key"}
 			_, first := l.EnsureImageSpace(ctx, in)
 			space, err := f.Repo.FindTenantSpace(ctx, in.TenantID)
-			if err != nil || space.ProjectID != 0 || registry.creates != 0 || posts.Load() != 1 {
-				t.Fatalf("refusal side effects: project=%d creates=%d posts=%d err=%v", space.ProjectID, registry.creates, posts.Load(), err)
+			creates, _ := projectEffects(registry)
+			if err != nil || space.ProjectID != 0 || creates != 0 || posts.Load() != 1 {
+				t.Fatalf("refusal side effects: project=%d creates=%d posts=%d err=%v", space.ProjectID, creates, posts.Load(), err)
 			}
 			command, err := f.Repo.FindTenantCommand(ctx, in.TenantID, space.ID, in.IdempotencyKey)
 			if err != nil {
@@ -89,8 +96,9 @@ func TestProjectRejectedCreateSameKeyRetry(t *testing.T) {
 			if _, err = l.EnsureImageSpace(ctx, in); err != nil {
 				t.Fatal("completed replay", err)
 			}
-			if registry.creates != 1 || registry.robotCreates != 1 || posts.Load() != 2 {
-				t.Fatalf("duplicate writes: creates=%d robots=%d posts=%d", registry.creates, registry.robotCreates, posts.Load())
+			creates, robots := projectEffects(registry)
+			if creates != 1 || robots != 1 || posts.Load() != 2 {
+				t.Fatalf("duplicate writes: creates=%d robots=%d posts=%d", creates, robots, posts.Load())
 			}
 		})
 	}
@@ -173,8 +181,9 @@ func TestProjectUncertainCreateNeverResent(t *testing.T) {
 			if _, err = l.EnsureImageSpace(ctx, in); biz.ReasonOf(err) != biz.SpaceOwnershipUnconfirmed {
 				t.Fatal("uncertain write was not blocked", err)
 			}
-			if posts.Load() != 1 || registry.robotCreates != 0 {
-				t.Fatalf("404 allowed a duplicate POST: posts=%d robots=%d", posts.Load(), registry.robotCreates)
+			creates, robots := projectEffects(registry)
+			if posts.Load() != 1 || robots != 0 {
+				t.Fatalf("404 allowed a duplicate POST: posts=%d robots=%d", posts.Load(), robots)
 			}
 			space, err := f.Repo.FindTenantSpace(ctx, in.TenantID)
 			if err != nil || space.ProjectID != 0 {
@@ -185,7 +194,7 @@ func TestProjectUncertainCreateNeverResent(t *testing.T) {
 				t.Fatal("uncertainty not durably recorded", command.State, command.Phase, err)
 			}
 			if fault == "500" || fault == "409" || fault == "truncated_403" {
-				if registry.creates != 0 {
+				if creates != 0 {
 					t.Fatal("unexpected external object")
 				}
 				return
@@ -199,7 +208,8 @@ func TestProjectUncertainCreateNeverResent(t *testing.T) {
 				t.Fatal("controlled ownership recovery failed", err)
 			}
 			ready, err := l.EnsureImageSpace(ctx, in)
-			if err != nil || ready.State != "available" || ready.ProjectID != project.ID || registry.creates != 1 || posts.Load() != 1 {
+			creates, _ = projectEffects(registry)
+			if err != nil || ready.State != "available" || ready.ProjectID != project.ID || creates != 1 || posts.Load() != 1 {
 				t.Fatal("recovery duplicated or lost project", ready, err)
 			}
 		})
