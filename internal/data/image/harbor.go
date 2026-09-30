@@ -63,6 +63,16 @@ func harborUnavailable() error {
 	return biz.Fail(biz.DependencyUnavailable, "Image registry unavailable")
 }
 
+// Keep the HTTP result internal to this adapter. Domain reasons alone cannot
+// distinguish a complete rejection response from an uncertain write outcome.
+type harborResponseError struct {
+	status int
+	cause  error
+}
+
+func (e *harborResponseError) Error() string { return e.cause.Error() }
+func (e *harborResponseError) Unwrap() error { return e.cause }
+
 // Bodies, credentials, response headers and URL errors never enter error text.
 func mapHarborError(status int) error {
 	switch status {
@@ -129,7 +139,7 @@ func (h *Harbor) doJSON(ctx context.Context, method, path string, in, out any) (
 		}
 		if res.StatusCode < 200 || res.StatusCode >= 300 {
 			clear(data)
-			return nil, mapHarborError(res.StatusCode)
+			return nil, &harborResponseError{status: res.StatusCode, cause: mapHarborError(res.StatusCode)}
 		}
 		if out != nil {
 			if err = json.Unmarshal(data, out); err != nil {

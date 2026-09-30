@@ -204,9 +204,15 @@ func (l *Lifecycle) resumeProject(ctx context.Context, s *Space, c *Command) err
 		if c.State == "blocked" && c.Reason == SpaceOwnershipUnconfirmed {
 			return Fail(SpaceOwnershipUnconfirmed, "registry project requires explicit ownership recovery")
 		}
+		// A previous sent request may have created the project even when the
+		// current lookup says not found. Only a durable rejection receipt (or
+		// a request never sent) permits another POST under this same command.
+		if c.Phase != "reserved" && c.Phase != "project_rejected" {
+			return l.unconfirmedProject(ctx, s, c)
+		}
 		_, err := l.registry.FindProjectByName(ctx, s.ProjectName)
 		if err == nil {
-			if c.Phase == "reserved" {
+			if c.Phase == "reserved" || c.Phase == "project_rejected" {
 				if err = l.phase(ctx, c, "project_sent"); err != nil {
 					return err
 				}
@@ -221,6 +227,15 @@ func (l *Lifecycle) resumeProject(ctx context.Context, s *Space, c *Command) err
 		}
 		project, err := l.registry.CreatePrivateProject(ctx, s.ProjectName)
 		if err != nil {
+			if isProjectCreationRejected(err) {
+				c.Phase, c.State, c.Reason = "project_rejected", "retryable", ReasonOf(err)
+				saved, saveErr := l.saveCommandPhase(ctx, *c)
+				if saveErr != nil {
+					return saveErr
+				}
+				*c = saved
+				return err
+			}
 			return l.unconfirmedProject(ctx, s, c)
 		}
 		// Persist the returned ID before the next provider read. A lost commit is

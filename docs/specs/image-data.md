@@ -49,6 +49,8 @@ internal/data/image/sqlcgen/*               Fedora 生成
 
 幂等键在同space内跨方法共用；同键不同kind/actor/fingerprint拒绝。外部副作用同space只能一个未终结command；目录DB事务可以独立串行/CAS，不等待所有Harbor管理操作。Harbor调用前后使用短事务更新阶段，HTTP不跨长PG事务。
 
+Project 创建先保存 `project_sent` 再发请求。只有适配器确认的完整拒绝响应才允许将原 command 保存为 `retryable/project_rejected`；该阶段和原 reason 的持久化成功后，原 key 可重新检查绑定和同名对象再发送。`project_sent` 且无可信 Project ID 一律保留不确定性，不以查询404重置阶段。开放 command 唯一约束不变，不删除 command 或直接改库解除阻塞。
+
 ## 5. 必须实现的 sqlc 查询名
 
 | 文件 | 查询名 |

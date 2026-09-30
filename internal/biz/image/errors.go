@@ -49,3 +49,17 @@ func ReasonOf(err error) Reason {
 	}
 	return InternalError
 }
+
+// ProjectCreationRejected is evidence from the registry adapter that this
+// particular create request was rejected before any project could be created.
+// A generic reason (including PermissionDenied) is not sufficient evidence.
+func ProjectCreationRejected(err error) error { return &projectCreationRejected{err} }
+
+type projectCreationRejected struct{ error }
+
+func (e *projectCreationRejected) Unwrap() error { return e.error }
+
+func isProjectCreationRejected(err error) bool {
+	var rejected *projectCreationRejected
+	return errors.As(err, &rejected)
+}

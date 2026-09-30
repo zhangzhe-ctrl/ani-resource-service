@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"errors"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image"
 	"net/http"
 	"net/url"
@@ -64,6 +65,14 @@ func (h *Harbor) CreatePrivateProject(ctx context.Context, name string) (biz.Pro
 	}{name, map[string]string{"public": "false"}}
 	header, err := h.doJSON(ctx, http.MethodPost, "/api/v2.0/projects", request, nil)
 	if err != nil {
+		// Harbor's create handler authenticates/authorizes and validates the
+		// request before creating the project. Only complete 400/401/403
+		// responses establish a rejected write. Conflicts, 5xx, transport
+		// errors and missing success receipts remain uncertain.
+		var response *harborResponseError
+		if errors.As(err, &response) && (response.status == http.StatusBadRequest || response.status == http.StatusUnauthorized || response.status == http.StatusForbidden) {
+			return biz.Project{}, biz.ProjectCreationRejected(err)
+		}
 		return biz.Project{}, err
 	}
 	location, err := url.Parse(header.Get("Location"))

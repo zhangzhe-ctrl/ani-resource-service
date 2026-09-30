@@ -40,6 +40,8 @@ Resource 只提供 gRPC。浏览器 REST 由 Governance 实现，不增加 Image
 
 返回 `space_id/registry_authority/project_name/state/reason/version/pull_credential_generation/created_at/updated_at`。Secret 不在此返回。available 表示 Project+运行身份就绪，不等于 Namespace/Pod 已创建。暂态返回 Unavailable 并保留 durable command；客户端同键重试，不靠 202+后台任务假装实现异步。
 
+Project POST 的完整确定拒绝响应（Harbor 400/401/403）保留原业务错误，并持久化同一 command 的 `retryable/project_rejected`，修正原因后可以原 key 重试。重试仍先读取已完成结果与 Project 绑定，且不认领未知同名 Project。超时、断链、5xx、409、成功回执/ID 丢失或 `project_sent` 未绑定均不构成安全重发依据，即使单次查询返回404也不得重复 POST；继续使用受控归属恢复。历史 blocked command 没有确定拒绝凭据时，不根据当前404推断过去没有创建。
+
 ### GetImageSpace / GetPublisherCredential
 
 无用户可指定身份。前者未启用返回 SPACE_NOT_FOUND。后者空间存在但未签发时返回 `state=not_issued, generation=0, version=0, username=""`，不隐式签发；已签发返回元数据，**永不带 secret**。
