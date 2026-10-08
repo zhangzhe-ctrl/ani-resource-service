@@ -1,0 +1,3 @@
+Getting image source signatures
+Copying blob sha256:68fe9bff2ad4ad46da3e58db03faa64eb73c0ff16d546b0c42539eaa9854cb7f
+time="2026-09-30T10:09:05+08:00" level=fatal msg="trying to reuse blob sha256:68fe9bff2ad4ad46da3e58db03faa64eb73c0ff16d546b0c42539eaa9854cb7f at destination: checking whether a blob sha256:68fe9bff2ad4ad46da3e58db03faa64eb73c0ff16d546b0c42539eaa9854cb7f exists in 172.16.101.10:30003/imgp-0930-0200-platform/forbidden: authentication required"

@@ -56,6 +56,10 @@ def self_test():
     module = 'example.invalid/boundary-fixture'
     cases = [
         ('internal/biz/network/nested', 'database/sql'),
+        ('internal/biz/image/nested', 'net/http'),
+        ('internal/biz/image/nested', module + '/internal/data/image'),
+        ('internal/data/image', module + '/internal/data/network'),
+        ('internal/service/image', module + '/internal/service/network'),
         ('internal/biz/network/nested', module + '/internal/data/network'),
         ('internal/service/network', module + '/internal/data/network'),
         ('internal/data/network', module + '/internal/service/network'),

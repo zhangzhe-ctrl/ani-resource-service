@@ -1,0 +1,16 @@
+2026-09-30T03:22:52Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/ec863ea460a7b52f98b53538ae73a7779511bcd3
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=67285a4c6f23874d7672c413daf142aa1c3dc4ef41da7f233b99ece734295753 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=67285a4c6f23874d7672c413daf142aa1c3dc4ef41da7f233b99ece734295753 loopback_port=32830
+=== RUN   TestDisablePublisherContract
+    credential_contract_integration_test.go:143: rpc error: code = InvalidArgument desc = INVALID_ARGUMENT
+--- FAIL: TestDisablePublisherContract (0.17s)
+FAIL
+FAIL	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.177s
+FAIL
+removed Image task PostgreSQL=67285a4c6f23874d7672c413daf142aa1c3dc4ef41da7f233b99ece734295753
+2026-09-30T03:23:06Z
+exit=1

@@ -1,0 +1,20 @@
+2026-09-29T17:31:49Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/f535b64d7da25061f5742befdcdfe52c5aef1615'...
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/governance-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+HEAD 目前位于 f535b64 chore(image): apply Fedora public contract generation
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/f535b64d7da25061f5742befdcdfe52c5aef1615
+go: downloading google.golang.org/protobuf v1.36.12
+go: downloading github.com/go-kratos/kratos/v2 v2.9.2
+go: downloading github.com/google/gnostic v0.7.1
+go: downloading google.golang.org/genproto/googleapis/api v0.0.0-20260908043556-f8649ddbbfe6
+go: downloading google.golang.org/genproto v0.0.0-20260908043556-f8649ddbbfe6
+go: downloading google.golang.org/genproto/googleapis/rpc v0.0.0-20260908043556-f8649ddbbfe6
+go: downloading github.com/go-kratos/aegis v0.2.0
+go: downloading github.com/google/gnostic-models v0.7.1
+go: downloading go.yaml.in/yaml/v3 v3.0.5
+go: downloading github.com/go-playground/form/v4 v4.3.1
+ok  	go-wind-admin/tests/imagecontract	0.010s
+2026-09-29T17:32:25Z
+exit=0

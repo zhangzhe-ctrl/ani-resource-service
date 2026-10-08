@@ -1,0 +1,10 @@
+{
+  "exit_codes": {
+    "preflight": 0,
+    "driver": 1,
+    "cleanup_recovery": 0
+  },
+  "transport": "Fedora loopback reverse forwarding no longer listening",
+  "private_credentials": "all transient files removed",
+  "finished_utc": "2026-09-30T02:11:45Z"
+}

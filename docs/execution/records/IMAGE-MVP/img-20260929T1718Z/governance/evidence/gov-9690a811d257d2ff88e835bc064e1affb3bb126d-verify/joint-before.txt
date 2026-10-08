@@ -1,0 +1,30 @@
+2026-09-29T19:53:17Z
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/9690a811d257d2ff88e835bc064e1affb3bb126d
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 16.10 (Debian 16.10-1.pgdg13+1)
+Redis server v=7.4.6 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=9b9852680eadfdc6
+fixture=ae34f7edd34109823109846adcda272ffbd9fbc9bd7395d7131964d7a51ab07b memory=805306368 memory_swap=805306368 nanocpus=1000000000
+fixture=cb22bcb64679072748d01cc3e07fdab345846fc826a6606ae06ab6bc06cd9a1e memory=134217728 memory_swap=134217728 nanocpus=500000000
+apply isolated migration=migrations/20260921134442_initial.sql
+apply isolated migration=migrations/20260922190000_quota_expand.sql
+apply isolated migration=migrations/20260922190100_quota_constraints.sql
+apply isolated migration=migrations/20260923130000_gpu_sqlc.sql
+apply isolated migration=migrations/20260923130100_gpu_no_rls_catalog.sql
+apply isolated migration=migrations/20260923130200_gpu_sync_ref.sql
+apply isolated migration=migrations/20260923143455_drop_geo_location.sql
+Image Governance joint fixture pg=ae34f7edd34109823109846adcda272ffbd9fbc9bd7395d7131964d7a51ab07b redis=cb22bcb64679072748d01cc3e07fdab345846fc826a6606ae06ab6bc06cd9a1e
+=== RUN   TestImageJointHTTP
+    image_joint_http_test.go:76: 
+        	Error Trace:	/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/9690a811d257d2ff88e835bc064e1affb3bb126d/app/admin/service/internal/service/image_joint_http_test.go:70
+        	            				/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/9690a811d257d2ff88e835bc064e1affb3bb126d/app/admin/service/internal/service/image_joint_http_test.go:76
+        	Error:      	Received unexpected error:
+        	            	sql: unknown driver "pgx" (forgotten import?)
+        	Test:       	TestImageJointHTTP
+--- FAIL: TestImageJointHTTP (0.00s)
+FAIL
+FAIL	go-wind-admin/app/admin/service/internal/service	0.033s
+FAIL
+removed Image Governance fixture=cb22bcb64679072748d01cc3e07fdab345846fc826a6606ae06ab6bc06cd9a1e
+removed Image Governance fixture=ae34f7edd34109823109846adcda272ffbd9fbc9bd7395d7131964d7a51ab07b
+2026-09-29T19:53:53Z
+exit=1

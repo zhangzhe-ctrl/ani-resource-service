@@ -1,0 +1,8 @@
+2026-09-29T19:30:21Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/2eb43c9d929dd96a5c9fe1fea9bd9927101a0a0d'...
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/governance-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+HEAD 目前位于 2eb43c9 test(image): exercise real HTTP auth and mTLS with isolated data services
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/2eb43c9d929dd96a5c9fe1fea9bd9927101a0a0d
+go: added github.com/zhangzhe-ctrl/ani-resource-service v0.0.0-20260929185545-71aa986078df

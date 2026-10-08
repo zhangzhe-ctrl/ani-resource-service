@@ -1,0 +1,263 @@
+2026-09-29T18:32:00Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/53f6c1640792cb5fcd53c541ba57943c2b6f7fc3'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 3d83c76 docs(image): import MVP plan and freeze execution bindings
+HEAD 目前位于 53f6c16 chore(image): apply Fedora reset recovery test formatting
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/53f6c1640792cb5fcd53c541ba57943c2b6f7fc3
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	1.025s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	2.141s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=b8fe49e5dd07253f375e68faa084458132925404e4e67ffeb8dd535556cd7adc memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=b8fe49e5dd07253f375e68faa084458132925404e4e67ffeb8dd535556cd7adc loopback_port=32800
+=== RUN   TestHarborTransportBoundary
+=== RUN   TestHarborTransportBoundary/400
+=== RUN   TestHarborTransportBoundary/401
+=== RUN   TestHarborTransportBoundary/403
+=== RUN   TestHarborTransportBoundary/404
+=== RUN   TestHarborTransportBoundary/409
+=== RUN   TestHarborTransportBoundary/429
+=== RUN   TestHarborTransportBoundary/500
+=== RUN   TestHarborTransportBoundary/502
+=== RUN   TestHarborTransportBoundary/503
+=== RUN   TestHarborTransportBoundary/504
+=== RUN   TestHarborTransportBoundary/redirect
+=== RUN   TestHarborTransportBoundary/untrusted_TLS
+2026/09/29 18:32:14 http: TLS handshake error from 127.0.0.1:58860: remote error: tls: bad certificate
+=== RUN   TestHarborTransportBoundary/timeout
+=== RUN   TestHarborTransportBoundary/body_limit
+--- PASS: TestHarborTransportBoundary (0.84s)
+    --- PASS: TestHarborTransportBoundary/400 (0.31s)
+    --- PASS: TestHarborTransportBoundary/401 (0.01s)
+    --- PASS: TestHarborTransportBoundary/403 (0.01s)
+    --- PASS: TestHarborTransportBoundary/404 (0.01s)
+    --- PASS: TestHarborTransportBoundary/409 (0.01s)
+    --- PASS: TestHarborTransportBoundary/429 (0.06s)
+    --- PASS: TestHarborTransportBoundary/500 (0.02s)
+    --- PASS: TestHarborTransportBoundary/502 (0.07s)
+    --- PASS: TestHarborTransportBoundary/503 (0.06s)
+    --- PASS: TestHarborTransportBoundary/504 (0.06s)
+    --- PASS: TestHarborTransportBoundary/redirect (0.01s)
+    --- PASS: TestHarborTransportBoundary/untrusted_TLS (0.01s)
+    --- PASS: TestHarborTransportBoundary/timeout (0.03s)
+    --- PASS: TestHarborTransportBoundary/body_limit (0.15s)
+=== RUN   TestHarborPrivateProjectAndLocation
+--- PASS: TestHarborPrivateProjectAndLocation (0.06s)
+=== RUN   TestHarborRobotOwnershipAndWireContract
+--- PASS: TestHarborRobotOwnershipAndWireContract (0.02s)
+=== RUN   TestHarborArtifactDigestAndPlatforms
+=== RUN   TestHarborArtifactDigestAndPlatforms/manifest
+=== RUN   TestHarborArtifactDigestAndPlatforms/index
+=== RUN   TestHarborArtifactDigestAndPlatforms/attestation_ignored
+=== RUN   TestHarborArtifactDigestAndPlatforms/chart
+=== RUN   TestHarborArtifactDigestAndPlatforms/artifact
+=== RUN   TestHarborArtifactDigestAndPlatforms/unknown
+=== RUN   TestHarborArtifactDigestAndPlatforms/platform_mismatch
+=== RUN   TestHarborArtifactDigestAndPlatforms/descriptor_limit
+=== RUN   TestHarborArtifactDigestAndPlatforms/cycle
+=== RUN   TestHarborArtifactDigestAndPlatforms/depth
+--- PASS: TestHarborArtifactDigestAndPlatforms (0.15s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/manifest (0.02s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/index (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/attestation_ignored (0.02s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/chart (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/artifact (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/unknown (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/platform_mismatch (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/descriptor_limit (0.01s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/cycle (0.02s)
+    --- PASS: TestHarborArtifactDigestAndPlatforms/depth (0.02s)
+=== RUN   TestCipherWrongAADTamperKeyMissing
+--- PASS: TestCipherWrongAADTamperKeyMissing (0.00s)
+=== RUN   TestLifecycleTwoProcessesSameCommands
+    lifecycle_concurrency_integration_test.go:41: owned concurrent child pid=672334 exit=0
+    lifecycle_concurrency_integration_test.go:41: owned concurrent child pid=672335 exit=0
+--- PASS: TestLifecycleTwoProcessesSameCommands (1.73s)
+=== RUN   TestLifecycleEnableIssueResetDisableReplay
+--- PASS: TestLifecycleEnableIssueResetDisableReplay (0.34s)
+=== RUN   TestLifecycleConcurrentCredentialCommand
+--- PASS: TestLifecycleConcurrentCredentialCommand (0.32s)
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/project_bind
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/candidate_prepared
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/robot_created
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/secret_set
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/previous_disabled
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/activate
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_robot
+=== RUN   TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_secret
+--- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries (2.25s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/project_bind (0.27s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/candidate_prepared (0.28s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/robot_created (0.29s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/secret_set (0.30s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/previous_disabled (0.27s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/activate (0.27s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_robot (0.29s)
+    --- PASS: TestLifecycleResumeAtPersistenceAndProviderBoundaries/provider_secret (0.28s)
+=== RUN   TestLifecycleProjectOwnershipRecovery
+=== RUN   TestLifecycleProjectOwnershipRecovery/false
+=== RUN   TestLifecycleProjectOwnershipRecovery/true
+--- PASS: TestLifecycleProjectOwnershipRecovery (0.66s)
+    --- PASS: TestLifecycleProjectOwnershipRecovery/false (0.29s)
+    --- PASS: TestLifecycleProjectOwnershipRecovery/true (0.38s)
+=== RUN   TestLifecycleCrashHelper
+--- PASS: TestLifecycleCrashHelper (0.00s)
+=== RUN   TestLifecycleActualProcessExitRecovery
+=== RUN   TestLifecycleActualProcessExitRecovery/project_bind
+    lifecycle_process_integration_test.go:386: owned process pid=672442 boundary=project_bind exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672449 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/pull:candidate_prepared
+    lifecycle_process_integration_test.go:386: owned process pid=672463 boundary=pull:candidate_prepared exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672471 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/pull:robot_create
+    lifecycle_process_integration_test.go:386: owned process pid=672485 boundary=pull:robot_create exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672492 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/pull:secret_set_provider
+    lifecycle_process_integration_test.go:386: owned process pid=672506 boundary=pull:secret_set_provider exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672513 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:robot_create
+    lifecycle_process_integration_test.go:386: owned process pid=672528 boundary=publisher:robot_create exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672535 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:robot_created
+    lifecycle_process_integration_test.go:386: owned process pid=672549 boundary=publisher:robot_created exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672556 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:secret_set_provider
+    lifecycle_process_integration_test.go:386: owned process pid=672570 boundary=publisher:secret_set_provider exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672578 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:previous_disabled
+    lifecycle_process_integration_test.go:386: owned process pid=672592 boundary=publisher:previous_disabled exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672600 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/publisher:activate
+    lifecycle_process_integration_test.go:386: owned process pid=672613 boundary=publisher:activate exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672620 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/reset:publisher:secret_set_provider
+    lifecycle_process_integration_test.go:386: owned process pid=672634 boundary=reset:publisher:secret_set_provider exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672641 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/reset:publisher:previous_disable_provider
+    lifecycle_process_integration_test.go:386: owned process pid=672655 boundary=reset:publisher:previous_disable_provider exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672664 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/reset:publisher:previous_disabled
+    lifecycle_process_integration_test.go:386: owned process pid=672677 boundary=reset:publisher:previous_disabled exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672685 boundary= exit=0
+=== RUN   TestLifecycleActualProcessExitRecovery/reset:publisher:activate
+    lifecycle_process_integration_test.go:386: owned process pid=672698 boundary=reset:publisher:activate exit=73
+    lifecycle_process_integration_test.go:388: owned process pid=672706 boundary= exit=0
+--- PASS: TestLifecycleActualProcessExitRecovery (26.91s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/project_bind (2.07s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/pull:candidate_prepared (2.10s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/pull:robot_create (2.06s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/pull:secret_set_provider (2.04s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:robot_create (2.08s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:robot_created (2.05s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:secret_set_provider (2.08s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:previous_disabled (2.09s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/publisher:activate (2.03s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/reset:publisher:secret_set_provider (2.06s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/reset:publisher:previous_disable_provider (2.10s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/reset:publisher:previous_disabled (2.10s)
+    --- PASS: TestLifecycleActualProcessExitRecovery/reset:publisher:activate (2.06s)
+=== RUN   TestStaleGenerationCannotActivateOrReplay
+--- PASS: TestStaleGenerationCannotActivateOrReplay (0.31s)
+=== RUN   TestTenantQueriesAndAtomicCatalog
+--- PASS: TestTenantQueriesAndAtomicCatalog (0.25s)
+=== RUN   TestCatalogCASAndPagination
+--- PASS: TestCatalogCASAndPagination (0.27s)
+=== RUN   TestConcurrentSpaceSlug
+--- PASS: TestConcurrentSpaceSlug (0.24s)
+=== RUN   TestRuntimeRoleAndMigration
+--- PASS: TestRuntimeRoleAndMigration (0.27s)
+=== RUN   TestTenantCompositeFKAndPlatformFK
+--- PASS: TestTenantCompositeFKAndPlatformFK (0.23s)
+=== RUN   TestCredentialGenerationAndSpaceReadiness
+--- PASS: TestCredentialGenerationAndSpaceReadiness (0.23s)
+=== RUN   TestSpaceWriteLockTimeoutAndRelease
+--- PASS: TestSpaceWriteLockTimeoutAndRelease (0.24s)
+PASS
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	36.361s
+removed Image task PostgreSQL=b8fe49e5dd07253f375e68faa084458132925404e4e67ffeb8dd535556cd7adc
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=4c22159852dc6fa7078fa70718d3e9aa6084cde8c4450f227cf72f3afb72cac1 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=4c22159852dc6fa7078fa70718d3e9aa6084cde8c4450f227cf72f3afb72cac1 loopback_port=32801
+--- FAIL: TestTenantQueriesAndAtomicCatalog (0.18s)
+    postgres_integration_test.go:156: tenant query exposed another tenant image
+FAIL
+FAIL	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.183s
+FAIL
+--- FAIL: TestTenantQueriesAndAtomicCatalog (0.18s)
+Image mutation tenant-query rejected with assertion exit=1
+--- FAIL: TestTenantCompositeFKAndPlatformFK (0.15s)
+    postgres_integration_test.go:372: invalid credentials relation accepted: scope tenant space 7a0f88f6-9730-4caf-bd70-de086f6a0f29
+FAIL
+FAIL	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.159s
+FAIL
+--- FAIL: TestTenantCompositeFKAndPlatformFK (0.15s)
+Image mutation tenant-fk rejected with assertion exit=1
+migrations/image/001_image.sql: 成功
+internal/data/image/queries/registrations.sql: 成功
+removed Image task PostgreSQL=4c22159852dc6fa7078fa70718d3e9aa6084cde8c4450f227cf72f3afb72cac1
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+./scripts/verify-source /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc
+./scripts/verify-boundaries
+boundary fixture rejected: internal/biz/network/nested -> database/sql
+boundary fixture rejected: internal/biz/image/nested -> net/http
+boundary fixture rejected: internal/biz/image/nested -> example.invalid/boundary-fixture/internal/data/image
+boundary fixture rejected: internal/data/image -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/service/image -> example.invalid/boundary-fixture/internal/service/network
+boundary fixture rejected: internal/biz/network/nested -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/service/network -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/data/network -> example.invalid/boundary-fixture/internal/service/network
+boundary fixture rejected: internal/data/network -> example.invalid/boundary-fixture/internal/data/storage
+boundary fixture rejected: internal/service/network -> example.invalid/boundary-fixture/internal/service/storage
+recursive domain and repository ownership boundaries verified
+./scripts/net05a-build-faults.py --network-only
+{"fault_build": "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/53f6c1640792cb5fcd53c541ba57943c2b6f7fc3/.work/fault-build", "status": "pass"}
+go mod tidy -diff
+go test -count=1 ./...
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/cmd/ani-resource-service	0.011s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	0.005s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network	0.009s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/conf/v1	0.014s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.430s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	0.023s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/server	2.125s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network	0.005s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations/image	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	0.012s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/scripts/vpc-read-probe	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/relay	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/rpc	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider	0.010s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/runtime	0.043s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv	0.010s
+go vet ./...
+go build -trimpath ./...
+go mod verify
+all modules verified
+git diff --check
+2026-09-29T18:34:25Z
+exit=0

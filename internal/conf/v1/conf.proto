@@ -9,6 +9,27 @@ import "google/protobuf/duration.proto";
 message Bootstrap {
   Server server = 1;
   Network network = 2;
+  Image image = 3;
+}
+
+// Independent Image connections and private secret files. Disabled Image has
+// no new startup dependency. The existing Network fields and tags are stable.
+message Image {
+  bool enabled = 1;
+  string database_dsn_file = 2;
+  string installation_id = 3;
+  string harbor_url = 4;
+  string harbor_ca_file = 5;
+  string harbor_username = 6;
+  string harbor_password_file = 7;
+  string robot_name_prefix = 8;
+  string platform_project = 9;
+  string encryption_keys_file = 10;
+  string cursor_signing_key_file = 11;
+  google.protobuf.Duration request_timeout = 12;
+  int64 publisher_days = 13;
+  int64 pull_days = 14;
+  bool allow_never_expires = 15;
 }
 
 message Network {

@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+# An isolated PostgreSQL instance, never a discovered/shared database.
+cd "$(dirname "$0")/.."
+readonly image='docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280'
+private=$(mktemp -d "${TMPDIR:?set a task-owned HOME TMPDIR}/ipg.XXXXXX")
+chmod 700 "$private"
+container=''
+cleanup() {
+ local rc=$? cleanup_rc=0
+ trap - EXIT
+ if [[ -n $container ]]; then
+  owner=$(docker inspect --format '{{index .Config.Labels "ani.image.fixture"}}' "$container") || cleanup_rc=$?
+  if [[ $owner == "$private" ]]; then
+   if docker rm -f -v "$container" >/dev/null; then
+    printf 'removed Image task PostgreSQL=%s\n' "$container"
+   else cleanup_rc=$?; fi
+  else
+   echo 'refusing cleanup: PostgreSQL fixture ownership mismatch' >&2
+   cleanup_rc=1
+  fi
+ fi
+ rm -rf -- "$private" || cleanup_rc=$?
+ if [[ $rc -ne 0 ]]; then exit "$rc"; fi
+ exit "$cleanup_rc"
+}
+trap cleanup EXIT
+umask 077
+python3 - "$private" <<'PY'
+from pathlib import Path
+import secrets,sys
+p=Path(sys.argv[1]);(p/'postgres.env').write_text('POSTGRES_PASSWORD='+secrets.token_hex(32)+'\n')
+PY
+docker image inspect "$image" >/dev/null 2>&1 || docker pull "$image"
+container=$(docker run -d --label "ani.image.fixture=$private" --memory=768m --memory-swap=768m --cpus=1 \
+ --mount type=tmpfs,destination=/var/lib/postgresql --env-file "$private/postgres.env" -p 127.0.0.1::5432 "$image")
+for attempt in $(seq 1 45); do
+ if docker exec "$container" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1; then break; fi
+ sleep 1
+done
+docker exec "$container" pg_isready -h 127.0.0.1 -U postgres
+docker exec "$container" postgres --version
+docker inspect --format 'fixture={{.Id}} memory={{.HostConfig.Memory}} memory_swap={{.HostConfig.MemorySwap}} nanocpus={{.HostConfig.NanoCpus}}' "$container"
+port=$(docker port "$container" 5432/tcp | awk -F: '$1 == "127.0.0.1" {print $2}')
+[[ $port =~ ^[0-9]+$ ]]
+python3 - "$private" "$port" <<'PY'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1]);password=(p/'postgres.env').read_text().strip().split('=',1)[1]
+(p/'admin.dsn').write_text('postgres://postgres:'+password+'@127.0.0.1:'+sys.argv[2]+'/postgres?sslmode=disable')
+PY
+export IMAGE_TEST_ADMIN_DSN_FILE="$private/admin.dsn"
+printf 'Image PostgreSQL image=%s container=%s loopback_port=%s\n' "$image" "$container" "$port"
+if [[ ${1:-} == --mutations ]]; then
+ shift
+ [[ $# -eq 0 ]]
+ scripts/image-tenant-mutations
+else
+ go test -tags=imageintegration -count=1 -timeout=20m "$@" ./internal/data/image
+fi

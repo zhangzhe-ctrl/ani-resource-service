@@ -1,0 +1,44 @@
+2026-09-29T19:55:11Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/ac36068042d3714a612c408b63b6c46e3bdb4c5e'...
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/governance-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+HEAD 目前位于 ac36068 test(image): register PostgreSQL driver in HTTP integration assembly
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/ac36068042d3714a612c408b63b6c46e3bdb4c5e
+go build -trimpath -o tools/bin/gow ./tools/localdeps/gow/cmd/gow
+make: 进入目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/ac36068042d3714a612c408b63b6c46e3bdb4c5e/app/admin/service”
+make -C "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/ac36068042d3714a612c408b63b6c46e3bdb4c5e/" gow
+make[1]: 进入目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/ac36068042d3714a612c408b63b6c46e3bdb4c5e”
+go build -trimpath -o tools/bin/gow ./tools/localdeps/gow/cmd/gow
+make[1]: 离开目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/ac36068042d3714a612c408b63b6c46e3bdb4c5e”
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/ac36068042d3714a612c408b63b6c46e3bdb4c5e/tools/bin/gow ent "admin"
+Generated ent for service admin successfully.
+make: 离开目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/ac36068042d3714a612c408b63b6c46e3bdb4c5e/app/admin/service”
+{
+  "source_sha": "ac36068042d3714a612c408b63b6c46e3bdb4c5e",
+  "resource_contract_sha": "71aa986078dfb64388d783a7b2de01b7a94b0027",
+  "files": [
+    {
+      "path": "api/gen/go/catalog/service/v1/image.pb.go",
+      "base_sha256": "f91290326ed785184fcc36bf617373d0f54e93c4415c461f9d7dbf0806124ff8",
+      "sha256": "dcf9e16a5c05ff0bcb578de54b36b483a583f385e83d83dc46328c5423b9bcb2"
+    },
+    {
+      "path": "app/admin/service/cmd/server/assets/openapi.yaml",
+      "base_sha256": "e1881e6975cb9d2b6e45d58bd7c425bff352237b3b6814e3b5c89e9c468c45a1",
+      "sha256": "b74af791f1b2a7808797e724117ef2ca1769cd8f76ace086c6b494c49eab504c"
+    },
+    {
+      "path": "app/admin/service/internal/service/image_joint_http_test.go",
+      "base_sha256": "2d1302b23a13e04efdf997afe5aa547e4199b9df6ebbfb34921434a963a724bc",
+      "sha256": "9f8a08e316edbd2dad0b10293ac39d7648cbd3a94a65f2ae1dfdd4b22f3160b6"
+    },
+    {
+      "path": "tests/imagecontract/contract_test.go",
+      "base_sha256": "3c59eed9510474836753fd407ff3b21d19a55e6cc9df32f18b4e838192aeae74",
+      "sha256": "7e93c61a7c6f0c086921b708d540dc321e70b9d9ef8a70296e430ca05fb200ac"
+    }
+  ]
+}
+2026-09-29T19:59:37Z
+exit=0

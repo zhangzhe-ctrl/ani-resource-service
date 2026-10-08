@@ -276,3 +276,103 @@ NET-05 验收完成，按用户后续授权发布 Network main，ANI 成果继�
 2026-09-11 用户明确选择完成本仓交付收尾与提交推送，目标为 `origin/codex/vpc-snat-implementation`。[发布记录](records/VPC-SNAT-PUBLICATION-20260911/README.md)保留完整暂存树、ubuntu 门禁、历史证据的精确属性处理和最终 SBOM 流程。首轮 `make verify`、6 项 tenant-mutations、漏洞/密钥/SBOM/notice 门禁 `pass`；原全量 PG/race 对应的 140 项运行源码仍保持。当前交付分支的真实提交和 exact-SHA CI 以 Git/托管平台为准，不将临时验证提交冒充发布版本。
 
 本次源码交付不解除 kc 外部阻塞，不宣布原生 Overlay 出网通过。Underlay 物理、ANI Gateway/IAM、合并 main、PR、镜像发布和部署继续保持各自边界。
+
+## Image MVP
+
+### 2026-10-08 main 合并授权
+
+用户授权完成[后端交接](records/IMAGE-MVP/HANDOFF-20261008.md)并合并 Resource/Governance review 分支到各自 main。Governance 与当前 ModelDev main 已完成普通 merge；Resource 历史公开哈希误报及新检出的 OpenTelemetry 漏洞已修复。Resource `3d15d09` 的 Fedora make verify/audit、Image PG/恢复/并发/race，Governance `2f8f919` 的跨仓真实 HTTP/JWT/AK/权限均 exit0；Governance 最终 CI 全部成功。命令、完整SHA、失败日志及清理记录见交接。最终 main 合并结果以 [Resource #5](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/5)、[Governance #7](https://github.com/zhangzhe-ctrl/ani-governance/pull/7) 为准；仅文档/SBOM追加通过运行源码一致性关联已验版本。产品 Harbor smoke、IMG-08、IMG-09 仍为 blocked，不新增部署或前端授权。
+
+### 2026-09-30 审核修复 R1—R3
+
+本轮 [修复记录](records/IMAGE-MVP/img-review-20260930T0300Z/README.md)；Resource 运行候选 `fa56b55dbbc892bc40586a8303bff54826764e7e`，Governance 运行候选 `e608cba9bf7c5ccfdb3dad41471525ff541c1ad1`。R1、R2、R3 均已通过真实定向 red/green；最终候选 make verify、Image PG/并发/进程恢复/race/隔离与mutation、Governance默认优化build/合同/真实HTTP/JWT/AK/权限/既有回归、旧Network PG/race/mutation均exit0。Governance race使用记录中的Ent包关闭内联例外，不宣称默认优化race通过。26个本轮测试容器按实际ID复查不存在，失败日志和最终运行源码清单均已归档。交付两个review分支后停止，等待用户审核/手动合并；后端 Harbor smoke 因缺产品调用授权 profile 保持 blocked。IMG-08、IMG-09继续用户授权blocked，不接普通容器产品或前端，不宣称整个MVP或产品验收完成。
+
+### 原批次及历史证据
+
+Run `img-20260929T1718Z`; review branch `codex/image-mvp-20260930`. [Baseline and bindings](records/IMAGE-MVP/img-20260929T1718Z/README.md). Local edits/Git/transfer only; all generation and validation Fedora. This section is the only current Image ledger. Network history above retains its original scope. User clarification (2026-09-30): frontend is not selected; retain IMG-09/A30 blocked and do not perform frontend integration now. User also explicitly retains IMG-08 blocked because product test conditions are unavailable; do not advance product integration.
+
+| Task | code | isolated | live | product | Evidence / next action |
+|---|---|---|---|---|---|
+| IMG-00.1 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
+| IMG-00.2 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
+| IMG-00.3 | blocked | not_run | blocked | blocked | frontend selection pending by user direction; consumer/namespace owner unconfirmed |
+| IMG-00.4 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
+| IMG-00.5 | n_a | n_a | blocked | blocked | approved live profile, Harbor version and TLS binding missing |
+| IMG-00.6 | pass | pass | n_a | n_a | Fedora preflight exit 0, pinned tools and 274 document link targets |
+| IMG-01.1 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
+| IMG-01.2 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
+| IMG-01.3 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
+| IMG-01.4 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
+| IMG-01.5 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
+| IMG-01.6 | pass | pass | n_a | n_a | [IMG-01 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-01.md); contracts/pure rules only |
+| IMG-02.1 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
+| IMG-02.2 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
+| IMG-02.3 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
+| IMG-02.4 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
+| IMG-02.5 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
+| IMG-02.6 | pass | pass | n_a | n_a | [IMG-02 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-02.md); exact SHA 7e4069d, true PG + race + mutations + verify |
+| IMG-03.1 | pass | pass | blocked | n_a | [IMG-03 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-03.md); exact SHA c17d64f, race + verify; live profile missing |
+| IMG-03.2 | pass | pass | blocked | n_a | [IMG-03 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-03.md); exact SHA c17d64f, race + verify; live profile missing |
+| IMG-03.3 | pass | pass | blocked | n_a | [IMG-03 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-03.md); exact SHA c17d64f, race + verify; live profile missing |
+| IMG-03.4 | pass | pass | blocked | n_a | [IMG-03 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-03.md); exact SHA c17d64f, race + verify; live profile missing |
+| IMG-03.5 | pass | pass | blocked | n_a | [IMG-03 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-03.md); exact SHA c17d64f, race + verify; live profile missing |
+| IMG-03.6 | pass | pass | blocked | n_a | [IMG-03 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-03.md); exact SHA c17d64f, race + verify; live profile missing |
+| IMG-04.1 | pass | pass | blocked | n_a | [IMG-04 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-04.md); exact SHA 53f6c16, true PG/race/process exits/verify |
+| IMG-04.2 | pass | pass | blocked | n_a | [IMG-04 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-04.md); exact SHA 53f6c16, true PG/race/process exits/verify |
+| IMG-04.3 | pass | pass | blocked | n_a | [IMG-04 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-04.md); exact SHA 53f6c16, true PG/race/process exits/verify |
+| IMG-04.4 | pass | pass | blocked | n_a | [IMG-04 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-04.md); exact SHA 53f6c16, true PG/race/process exits/verify |
+| IMG-04.5 | pass | pass | blocked | n_a | [IMG-04 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-04.md); exact SHA 53f6c16, true PG/race/process exits/verify |
+| IMG-04.6 | pass | pass | blocked | n_a | [IMG-04 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-04.md); exact SHA 53f6c16, true PG/race/process exits/verify |
+| IMG-04.7 | pass | pass | blocked | n_a | [IMG-04 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-04.md); exact SHA 53f6c16, true PG/race/process exits/verify |
+| IMG-05.1 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
+| IMG-05.2 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
+| IMG-05.3 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
+| IMG-05.4 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
+| IMG-05.5 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
+| IMG-05.6 | pass | pass | blocked | n_a | [IMG-05 evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-05.md); exact SHA b0fb48c, true PG/race/mutations/verify |
+| IMG-06.1 | pass | pass | blocked | n_a | [Resource sub-gate](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-resource.md); exact SHA 71aa986, mTLS/race/PG/verify |
+| IMG-06.2 | pass | pass | blocked | n_a | [Resource sub-gate](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-resource.md); exact SHA 71aa986, mTLS/race/PG/verify |
+| IMG-06.3 | pass | pass (bounded compiler) | blocked | blocked | [Governance evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-governance.md); exact d64d6ee; default build/HTTP pass, full race with Ent inlining disabled pass; default-optimization race OOM retained |
+| IMG-06.4 | pass | pass (bounded compiler) | blocked | blocked | [Governance evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-governance.md); exact d64d6ee; default build/HTTP pass, full race with Ent inlining disabled pass; default-optimization race OOM retained |
+| IMG-06.5 | pass | pass (bounded compiler) | blocked | blocked | [Governance evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-governance.md); exact d64d6ee; default build/HTTP pass, full race with Ent inlining disabled pass; default-optimization race OOM retained |
+| IMG-06.6 | pass | pass (bounded compiler) | blocked | blocked | [Governance evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-06-governance.md); exact d64d6ee; default build/HTTP pass, full race with Ent inlining disabled pass; default-optimization race OOM retained |
+| IMG-07.1 | pass | pass | blocked | n_a | [Platform evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-platform.md); exact 2b6a099, PG/race/3 mutations/verify; live profile missing |
+| IMG-07.2 | pass | pass | blocked | n_a | [Platform evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-platform.md); exact 2b6a099, PG/race/3 mutations/verify; live profile missing |
+| IMG-07.3 | pass | pass | blocked | n_a | [Platform evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-platform.md); exact 2b6a099, PG/race/3 mutations/verify; live profile missing |
+| IMG-07.4 | pass | pass | blocked | n_a | [Smoke evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-smoke.md); exact 62ecc67; driver/tests/PG/race/mutations/verify pass; no approved profile |
+| IMG-07.5 | pass | pass | blocked | n_a | [Smoke evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-07-smoke.md); failures/generation/hash/cleanup archived; live not executed |
+| IMG-08.1 | blocked | not_run | blocked | blocked | User explicitly blocks ordinary-container integration: no product test conditions; owner/Create/tenant Namespace binding remains unresolved; no substitute owner/Pod created |
+| IMG-08.2 | blocked | not_run | blocked | blocked | User explicitly blocks ordinary-container integration: no product test conditions; owner/Create/tenant Namespace binding remains unresolved; no substitute owner/Pod created |
+| IMG-08.3 | blocked | not_run | blocked | blocked | User explicitly blocks ordinary-container integration: no product test conditions; owner/Create/tenant Namespace binding remains unresolved; no substitute owner/Pod created |
+| IMG-08.4 | blocked | not_run | blocked | blocked | User explicitly blocks ordinary-container integration: no product test conditions; owner/Create/tenant Namespace binding remains unresolved; no substitute owner/Pod created |
+| IMG-08.5 | blocked | not_run | blocked | blocked | User explicitly blocks ordinary-container integration: no product test conditions; owner/Create/tenant Namespace binding remains unresolved; no substitute owner/Pod created |
+| IMG-08.6 | blocked | not_run | blocked | blocked | User explicitly blocks ordinary-container integration: no product test conditions; owner/Create/tenant Namespace binding remains unresolved; no substitute owner/Pod created |
+| IMG-09.1 | blocked | not_run | blocked | blocked | User retains IMG-09 blocked pending frontend selection; no integration now; preparation 674f2f0 remains local/unpublished |
+| IMG-09.2 | blocked | not_run | blocked | blocked | User retains IMG-09 blocked pending frontend selection; no integration now; preparation 674f2f0 remains local/unpublished |
+| IMG-09.3 | blocked | not_run | blocked | blocked | User retains IMG-09 blocked pending frontend selection; no integration now; preparation 674f2f0 remains local/unpublished |
+| IMG-09.4 | blocked | not_run | blocked | blocked | User retains IMG-09 blocked pending frontend selection; no integration now; preparation 674f2f0 remains local/unpublished |
+| IMG-09.5 | blocked | not_run | blocked | blocked | User retains IMG-09 blocked pending frontend selection; no integration now; preparation 674f2f0 remains local/unpublished |
+| IMG-09.6 | blocked | not_run | blocked | blocked | User retains IMG-09 blocked pending frontend selection; no integration now; preparation 674f2f0 remains local/unpublished |
+| IMG-10.1 | blocked | not_run | blocked | blocked | No approved live profile; user blocks container integration without test conditions; isolated evidence does not satisfy live/product matrix |
+| IMG-10.2 | blocked | not_run | blocked | blocked | No approved live profile; user blocks container integration without test conditions; isolated evidence does not satisfy live/product matrix |
+| IMG-10.3 | blocked | not_run | blocked | blocked | No approved live profile; user blocks container integration without test conditions; isolated evidence does not satisfy live/product matrix |
+| IMG-10.4 | blocked | not_run | blocked | blocked | No approved live profile; user blocks container integration without test conditions; isolated evidence does not satisfy live/product matrix |
+| IMG-10.5 | pass | pass (bounded compiler) | blocked | blocked | [Original Network gates](records/IMAGE-MVP/img-20260929T1718Z/IMG-10-regression.md): 62ecc67 integration/race/6 mutations exit0; Image verify/PG/race/3 mutations pass; Governance default optimized race OOM retained |
+| IMG-10.6 | pass | pass | blocked | blocked | [ID-based cleanup](records/IMAGE-MVP/img-20260929T1718Z/regression/cleanup.json): all isolated Image/Governance/Network fixtures cleaned; no shared live resources created |
+| IMG-11.1 | pass | pass | n_a | n_a | [Source manifest/review evidence](records/IMAGE-MVP/img-20260929T1718Z/IMG-11-review.md): exact code, tree, generated hashes, protected paths and documentation-only later changes verified |
+| IMG-11.2 | pass | pass | n_a | n_a | Sole ledger records actual gates and explicit user-directed IMG-08/09/live blockers; source/document evidence archived |
+| IMG-11.3 | pass | pass | blocked | blocked | Deployment/CLI/smoke/recovery guide and links checked; runtime credential replacement requires actual owner and remains unverified |
+| IMG-11.4 | pass | pass | n_a | n_a | [Bounded handoff](records/IMAGE-MVP/img-20260929T1718Z/HANDOFF.md), source manifest, API/DB contracts and cleanup archived; review branches only |
+| IMG-11.5 | pass | n_a | n_a | n_a | [Checkpoint](records/IMAGE-MVP/img-20260929T1718Z/CHECKPOINT.md); no active heavy gates; remaining product/live/frontend conditions blocked |
+
+IMG-00 n_a: baseline/import tasks have no product/live behavior. Independent backend closeout complete; MVP remains incomplete. IMG-08 product owner/API and IMG-09 frontend remain blocked by user direction; the complete backend/product live profile is still absent.
+
+### 2026-09-30 授权测试 Pod 后的增量状态
+
+用户已允许自行创建测试 Namespace、拉取 Pod。上表 live blockers 指完整后端/产品链路；此前“未创建共享环境资源 / live profile 缺失”的描述不再适用于本次独立技术测试。三节点与 Harbor 绑定及本次技术测试 profile 已确认，完整产品 profile 仍缺少真实 owner/Governance 入口及租户身份。
+
+[三节点真实拉取证据](records/IMAGE-MVP/img-20260929T1718Z/cluster-pod-pull-20260930/README.md)：Fedora 创建两个隔离 Namespace、三个 Private Project、五个受限 Robot；5 个正向 Pod 成功，3 个同节点已有缓存的跨租户 Pod 被 registry 401 拒绝，三类越权 Push 被拒绝。A11/A12/A26/A28/A29 仅获得该技术范围内的证据，完整项目仍 blocked；未替代 IMG-08/A27 的业务 API 接入或 IMG-09/A30。其他 Pod 入口的强制拉取准入仍 not_verified。
+
+IMG-10.6 live 清理在本次受控范围 **pass**：主驱动测试断言通过但首次清理路径错误，exit 1 原样保留；ID/创建时间核对后的清理恢复 exit 0，所有本次 Project/Robot/Namespace 确认不存在，临时凭证及代理已移除。原 isolated 回归证据不变。
+
+Harbor 实际版本 `v2.15.2-a97e7b83`；CA 缺 Key Usage 导致 Python 默认 STRICT 拒绝，curl/skopeo/containerd 正常 TLS 校验下实测通过。未换共享 CA、未关闭 TLS、未修改产品源码。原 `image_smoke.py` 的严格 CA 兼容和匿名版本探测仍待处理，本次没有宣称其通过。

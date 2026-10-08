@@ -1,0 +1,6 @@
+2026-09-30T03:39:10Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+4e91c812179f2384d80071d7a4da22a8440eaa5925c2073dde51084a7bfaff78  /home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/state/resource-contract-fa56b55dbbc892bc40586a8303bff54826764e7e.test
+2026-09-30T03:39:14Z
+exit=0

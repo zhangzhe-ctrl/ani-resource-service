@@ -1,0 +1,36 @@
+2026-09-29T18:26:37Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/2d87049cb8eab14fcc5682c819b494827f5a8345'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 3d83c76 docs(image): import MVP plan and freeze execution bindings
+HEAD 目前位于 2d87049 test(image): cover cross-process command serialization
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/2d87049cb8eab14fcc5682c819b494827f5a8345
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+{
+  "source_sha": "2d87049cb8eab14fcc5682c819b494827f5a8345",
+  "files": [
+    {
+      "path": "internal/data/image/lifecycle_concurrency_integration_test.go",
+      "base_sha256": "772eccd034f42e15214ae8927fa1315063d0db39be7b78cf29b92f43879aceb8",
+      "sha256": "e2240a0655c943c36540580a6d34c2db2fd34c0dc541d50f368d0d8a467ca8d2"
+    },
+    {
+      "path": "internal/data/image/lifecycle_process_integration_test.go",
+      "base_sha256": "658c8eb9e4523bb6a0bcb47abc99ba588b2f8765e13aed0de713f95849bdc748",
+      "sha256": "536156858ce53a670c65112d0b3dee80aa3d6cc7c11eb1827c32e21c863a3d8d"
+    }
+  ]
+}
+2026-09-29T18:26:43Z
+exit=0

@@ -1,0 +1,16 @@
+2026-09-30T03:35:49Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+fixture=3e31002046c913a24f88e939e588e07d9961e814c9ae1069767b5dd616ac59d4 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+Image PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=3e31002046c913a24f88e939e588e07d9961e814c9ae1069767b5dd616ac59d4 loopback_port=32839
+=== RUN   TestDisablePublisherContract
+--- PASS: TestDisablePublisherContract (0.23s)
+=== RUN   TestDisablePublisherContractLegacyCompletion
+--- PASS: TestDisablePublisherContractLegacyCompletion (0.16s)
+PASS
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.400s
+removed Image task PostgreSQL=3e31002046c913a24f88e939e588e07d9961e814c9ae1069767b5dd616ac59d4
+2026-09-30T03:35:53Z
+exit=0

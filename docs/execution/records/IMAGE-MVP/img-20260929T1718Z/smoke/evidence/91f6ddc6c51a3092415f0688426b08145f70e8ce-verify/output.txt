@@ -1,0 +1,43 @@
+2026-09-29T20:54:48Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/91f6ddc6c51a3092415f0688426b08145f70e8ce'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 3d83c76 docs(image): import MVP plan and freeze execution bindings
+HEAD 目前位于 91f6ddc chore(image): import Fedora smoke helper formatting
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/91f6ddc6c51a3092415f0688426b08145f70e8ce
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+test_all_stages_use_public_dto_shapes_and_keep_secret_out_of_events (image_smoke_test.ChoreographyTests.test_all_stages_use_public_dto_shapes_and_keep_secret_out_of_events) ... ok
+test_inconclusive_registry_failure_never_counts_as_isolation (image_smoke_test.ChoreographyTests.test_inconclusive_registry_failure_never_counts_as_isolation) ... ok
+test_private_file_and_json_guards (image_smoke_test.GuardTests.test_private_file_and_json_guards) ... ok
+test_profile_rejects_approval_scope_budget_and_source_drift (image_smoke_test.GuardTests.test_profile_rejects_approval_scope_budget_and_source_drift) ... ERROR
+test_unapproved_main_never_creates_workdir_or_runs_commands (image_smoke_test.GuardTests.test_unapproved_main_never_creates_workdir_or_runs_commands) ... ok
+
+======================================================================
+ERROR: test_profile_rejects_approval_scope_budget_and_source_drift (image_smoke_test.GuardTests.test_profile_rejects_approval_scope_budget_and_source_drift)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/91f6ddc6c51a3092415f0688426b08145f70e8ce/scripts/image_smoke_test.py", line 40, in test_profile_rejects_approval_scope_budget_and_source_drift
+    smoke.validate_profile(profile())
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/91f6ddc6c51a3092415f0688426b08145f70e8ce/scripts/image_smoke.py", line 97, in validate_profile
+    origin(s['governance_url']); origin(c['api_server'])
+           ~^^^^^^^^^^^^^^^^^^
+KeyError: 'governance_url'
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.043s
+
+FAILED (errors=1)
+2026-09-29T20:54:53Z
+exit=1

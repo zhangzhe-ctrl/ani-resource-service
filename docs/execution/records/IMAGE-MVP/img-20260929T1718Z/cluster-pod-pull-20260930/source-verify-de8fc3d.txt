@@ -1,0 +1,51 @@
+Running as unit: run-p923991-i9327109.scope; invocation ID: bbe038ab255f4d41921a4eae88ea254a
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+./scripts/verify-source /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc
+./scripts/verify-boundaries
+boundary fixture rejected: internal/biz/network/nested -> database/sql
+boundary fixture rejected: internal/biz/image/nested -> net/http
+boundary fixture rejected: internal/biz/image/nested -> example.invalid/boundary-fixture/internal/data/image
+boundary fixture rejected: internal/data/image -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/service/image -> example.invalid/boundary-fixture/internal/service/network
+boundary fixture rejected: internal/biz/network/nested -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/service/network -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/data/network -> example.invalid/boundary-fixture/internal/service/network
+boundary fixture rejected: internal/data/network -> example.invalid/boundary-fixture/internal/data/storage
+boundary fixture rejected: internal/service/network -> example.invalid/boundary-fixture/internal/service/storage
+recursive domain and repository ownership boundaries verified
+./scripts/net05a-build-faults.py --network-only
+{"fault_build": "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/de8fc3d4324e171631b9a31a45c62a0ca9a61698/.work/fault-build", "status": "pass"}
+go mod tidy -diff
+go test -count=1 ./...
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/cmd/ani-resource-service	0.016s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	0.005s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network	0.007s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/conf/v1	0.014s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.538s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	0.031s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/server	2.144s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/image	0.006s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network	0.006s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations/image	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/image-smoke-runtime	0.006s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	0.014s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/scripts/vpc-read-probe	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/relay	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/rpc	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider	0.014s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/runtime	0.048s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv	0.008s
+go vet ./...
+go build -trimpath ./...
+go mod verify
+all modules verified
+git diff --check

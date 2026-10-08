@@ -1,0 +1,52 @@
+2026-09-29T21:28:52Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/e3142cf5ea891a7439945ef12de33ff687f8b5d6'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 3d83c76 docs(image): import MVP plan and freeze execution bindings
+HEAD 目前位于 e3142cf docs(image): document review boundaries and credential recovery gaps
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/e3142cf5ea891a7439945ef12de33ff687f8b5d6
+{
+  "result": "pass",
+  "source_sha": "e3142cf5ea891a7439945ef12de33ff687f8b5d6",
+  "tested_code_sha": "62ecc67b839dd1040468323f8c316189a0c30653",
+  "source_tree_sha": "4d70ec2251d5cb88dcad7db17458ccc470e80497",
+  "checked_document_links": 368,
+  "post_test_changes": [
+    "deployments/image/README.md",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/HANDOFF.md",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/IMG-07-smoke.md",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/IMG-09-access-blocker.md",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/bindings.json",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/62ecc67b839dd1040468323f8c316189a0c30653-generated.json",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/SHA256SUMS",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/62ecc67b839dd1040468323f8c316189a0c30653-generate/exit",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/62ecc67b839dd1040468323f8c316189a0c30653-generate/output.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/62ecc67b839dd1040468323f8c316189a0c30653-verify/exit",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/62ecc67b839dd1040468323f8c316189a0c30653-verify/output.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/91f6ddc6c51a3092415f0688426b08145f70e8ce-verify/exit",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/91f6ddc6c51a3092415f0688426b08145f70e8ce-verify/output.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/fb92f8d87642dee4a48ed750c6cc36ed4a520bb9-generate/exit",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/fb92f8d87642dee4a48ed750c6cc36ed4a520bb9-generate/output.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/fb92f8db1b746b3b0612f8dc8f56c44c8fa74d57-generate/exit",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/fb92f8db1b746b3b0612f8dc8f56c44c8fa74d57-generate/output.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/fb92f8d87642dee4a48ed750c6cc36ed4a520bb9-generated.json",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/fixture-inventory.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/resource-round07-smoke.sh",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/supervisor.txt",
+    "docs/execution/status.md",
+    "docs/specs/image-api.md"
+  ],
+  "runtime_contract_matches_governance_dependency": true
+}
+migrations/0001_vpc.sql: 成功
+migrations/0002_subnet.sql: 成功
+migrations/0003_attachment.sql: 成功
+migrations/0004_observation.sql: 成功
+migrations/0005_vpc_egress.sql: 成功
+migrations/0006_vpc_base_connectivity.sql: 成功
+migrations/0007_load_balancers.sql: 成功
+migrations/0008_lb_health_check_port.sql: 成功
+2026-09-29T21:28:55Z
+exit=0

@@ -1,0 +1,38 @@
+import importlib.util,json,time,hashlib
+from pathlib import Path
+root=Path.home()/'ani-image-mvp-runs/pod-pull-20260930T0200Z'
+spec=importlib.util.spec_from_file_location('driver',root/'driver.py')
+d=importlib.util.module_from_spec(spec);spec.loader.exec_module(d)
+original=(d.EVIDENCE/'result.json').read_bytes()
+state=json.loads(original)
+result={'original_result_sha256':hashlib.sha256(original).hexdigest(),'reason':'Harbor repository routes require project name, not numeric project ID','checks':[],'cleanup':[]}
+def save(): (d.EVIDENCE/'cleanup-recovery.json').write_text(json.dumps(result,indent=2)+'\n')
+for r in state['robots']:
+    d.harbor('GET','/api/v2.0/robots/'+str(r['id']),allowed=(404,))
+    result['checks'].append({'kind':'robot','id':r['id'],'absent':True})
+for r in state['kubernetes']:
+    if r['namespace']:continue
+    d.kube('GET','/api/v1/namespaces/'+r['name'],allowed=(404,))
+    result['checks'].append({'kind':'namespace','name':r['name'],'uid':r['uid'],'absent':True})
+save()
+for r in reversed(state['projects']):
+    _,actual=d.harbor('GET','/api/v2.0/projects/'+str(r['id']))
+    assert actual['project_id']==r['id'] and actual['name']==r['name'] and actual['creation_time']==r['creation_time']
+    prefix='/api/v2.0/projects/'+r['name']+'/repositories'
+    _,repos=d.harbor('GET',prefix+'?page_size=100')
+    assert all(x['name']==r['name']+'/fixture' for x in repos)
+    for repo in repos:
+        _,artifacts=d.harbor('GET',prefix+'/fixture/artifacts?page_size=100')
+        assert all(a['digest']==state['image_digest'] for a in artifacts)
+        for a in artifacts:d.harbor('DELETE',prefix+'/fixture/artifacts/'+a['digest'],allowed=(200,))
+        d.harbor('DELETE',prefix+'/fixture',allowed=(200,))
+    d.harbor('DELETE','/api/v2.0/projects/'+str(r['id']),allowed=(200,))
+    d.harbor('GET','/api/v2.0/projects/'+str(r['id']),allowed=(404,))
+    result['cleanup'].append({'kind':'project','id':r['id'],'name':r['name'],'absent':True});save()
+for path in d.PRIVATE.iterdir():
+    assert path.is_file()
+    path.unlink()
+result['private_files_removed']=True
+result['finished_utc']=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime())
+result['result']='pass';save()
+print(json.dumps(result,indent=2))

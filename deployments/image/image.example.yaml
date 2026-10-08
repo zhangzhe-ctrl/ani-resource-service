@@ -1,0 +1,18 @@
+# Append this section to an existing valid Resource configuration.
+# Disabled until the deployment operator supplies real bindings and private files.
+image:
+  enabled: false
+  database_dsn_file: /run/ani-image/private/runtime-dsn
+  installation_id: "<canonical-installation-uuid>"
+  harbor_url: https://registry.example.invalid
+  harbor_ca_file: /run/ani-image/ca/harbor-ca.pem
+  harbor_username: "<backend-management-identity>"
+  harbor_password_file: /run/ani-image/private/harbor-password
+  robot_name_prefix: "<actual-harbor-robot-prefix>"
+  platform_project: "<approved-private-platform-project>"
+  encryption_keys_file: /run/ani-image/private/encryption-keys.json
+  cursor_signing_key_file: /run/ani-image/private/cursor-key
+  request_timeout: 10s
+  publisher_days: 30
+  pull_days: 365
+  allow_never_expires: false

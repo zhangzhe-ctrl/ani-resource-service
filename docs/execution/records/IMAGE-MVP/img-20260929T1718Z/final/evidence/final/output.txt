@@ -1,0 +1,87 @@
+2026-09-29T21:34:02Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/bd038b5a7813e6dd879ae54227955339c26e13ac'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 3d83c76 docs(image): import MVP plan and freeze execution bindings
+HEAD 目前位于 bd038b5 docs(image): archive full Network gates and retain user-directed integration blocks
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/bd038b5a7813e6dd879ae54227955339c26e13ac
+{
+  "result": "pass",
+  "source_sha": "bd038b5a7813e6dd879ae54227955339c26e13ac",
+  "tested_code_sha": "62ecc67b839dd1040468323f8c316189a0c30653",
+  "source_tree_sha": "268c7e526d0f9365534394e5cf2bdc1f7993dbcc",
+  "checked_document_links": 387,
+  "post_test_changes": [
+    "deployments/image/README.md",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/CHECKPOINT.md",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/HANDOFF.md",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/IMG-07-smoke.md",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/IMG-09-access-blocker.md",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/IMG-10-regression.md",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/acceptance-evidence-62ecc67.md",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/bindings.json",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/SHA256SUMS",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/cleanup.json",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/closeout-archive-v2.py",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/closeout-archive.py",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/evidence/IMG-10/62ecc67b839dd1040468323f8c316189a0c30653-network-regression/created-containers.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/evidence/IMG-10/62ecc67b839dd1040468323f8c316189a0c30653-network-regression/exit",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/evidence/IMG-10/62ecc67b839dd1040468323f8c316189a0c30653-network-regression/output.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/evidence/IMG-10/62ecc67b839dd1040468323f8c316189a0c30653-network-regression/sqlc-tool-path.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/evidence/IMG-11/e3142cf5ea891a7439945ef12de33ff687f8b5d6-docs/exit",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/evidence/IMG-11/e3142cf5ea891a7439945ef12de33ff687f8b5d6-docs/output.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/network-sqlc-link.sh",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/resource-final-regression.sh",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/review-docs-check.py",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/review-docs-run.sh",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/regression/supervisor.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/62ecc67b839dd1040468323f8c316189a0c30653-generated.json",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/SHA256SUMS",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/62ecc67b839dd1040468323f8c316189a0c30653-generate/exit",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/62ecc67b839dd1040468323f8c316189a0c30653-generate/output.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/62ecc67b839dd1040468323f8c316189a0c30653-verify/exit",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/62ecc67b839dd1040468323f8c316189a0c30653-verify/output.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/91f6ddc6c51a3092415f0688426b08145f70e8ce-verify/exit",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/91f6ddc6c51a3092415f0688426b08145f70e8ce-verify/output.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/fb92f8d87642dee4a48ed750c6cc36ed4a520bb9-generate/exit",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/fb92f8d87642dee4a48ed750c6cc36ed4a520bb9-generate/output.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/fb92f8db1b746b3b0612f8dc8f56c44c8fa74d57-generate/exit",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/evidence/fb92f8db1b746b3b0612f8dc8f56c44c8fa74d57-generate/output.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/fb92f8d87642dee4a48ed750c6cc36ed4a520bb9-generated.json",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/fixture-inventory.txt",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/resource-round07-smoke.sh",
+    "docs/execution/records/IMAGE-MVP/img-20260929T1718Z/smoke/supervisor.txt",
+    "docs/execution/status.md",
+    "docs/specs/image-api.md"
+  ],
+  "runtime_contract_matches_governance_dependency": true
+}
+migrations/0001_vpc.sql: 成功
+migrations/0002_subnet.sql: 成功
+migrations/0003_attachment.sql: 成功
+migrations/0004_observation.sql: 成功
+migrations/0005_vpc_egress.sql: 成功
+migrations/0006_vpc_base_connectivity.sql: 成功
+migrations/0007_load_balancers.sql: 成功
+migrations/0008_lb_health_check_port.sql: 成功
+致命错误：bad object d1a804f1d35d7294cb7eab48ee3f256d9d2482b5
+Traceback (most recent call last):
+  File "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/final-snapshot.py", line 25, in <module>
+    result['repositories'][label]={'head':expected,'tree':git(repo,'rev-parse',expected+'^{tree}').decode().strip(),'status':'clean','baseline':base,'changed_paths':git(repo,'diff','--name-status',base,expected).decode().splitlines(),'generated_sha256':generated}
+                                                                                                                                                                     ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/final-snapshot.py", line 7, in git
+    def git(repo,*args):return subprocess.check_output(['git','-C',str(repo),*args])
+                               ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/subprocess.py", line 473, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+               **kwargs).stdout
+               ^^^^^^^^^
+  File "/usr/lib64/python3.14/subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['git', '-C', '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/d64d6ee478801795afadb4573ba25f8c2de6b7fc', 'diff', '--name-status', 'd1a804f1d35d7294cb7eab48ee3f256d9d2482b5', 'd64d6ee478801795afadb4573ba25f8c2de6b7fc']' returned non-zero exit status 128.
+2026-09-29T21:34:05Z
+exit=1

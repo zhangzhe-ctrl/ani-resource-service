@@ -1,0 +1,11 @@
+2026-09-29T17:14:21Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource-baseline
+3d83c7618b861f354ca4e34d8e0a9d09cb2bb0b4
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+imported document link targets pass: 274
+2026-09-29T17:14:25Z
+exit=0

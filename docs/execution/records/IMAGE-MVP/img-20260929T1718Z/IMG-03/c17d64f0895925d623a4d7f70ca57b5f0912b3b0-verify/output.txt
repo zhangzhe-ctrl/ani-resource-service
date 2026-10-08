@@ -1,0 +1,72 @@
+2026-09-29T18:09:39Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/c17d64f0895925d623a4d7f70ca57b5f0912b3b0'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 3d83c76 docs(image): import MVP plan and freeze execution bindings
+HEAD 目前位于 c17d64f chore(image): apply Fedora adapter formatting
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/c17d64f0895925d623a4d7f70ca57b5f0912b3b0
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	1.019s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	2.082s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+./scripts/verify-source /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc
+./scripts/verify-boundaries
+boundary fixture rejected: internal/biz/network/nested -> database/sql
+boundary fixture rejected: internal/biz/image/nested -> net/http
+boundary fixture rejected: internal/biz/image/nested -> example.invalid/boundary-fixture/internal/data/image
+boundary fixture rejected: internal/data/image -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/service/image -> example.invalid/boundary-fixture/internal/service/network
+boundary fixture rejected: internal/biz/network/nested -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/service/network -> example.invalid/boundary-fixture/internal/data/network
+boundary fixture rejected: internal/data/network -> example.invalid/boundary-fixture/internal/service/network
+boundary fixture rejected: internal/data/network -> example.invalid/boundary-fixture/internal/data/storage
+boundary fixture rejected: internal/service/network -> example.invalid/boundary-fixture/internal/service/storage
+recursive domain and repository ownership boundaries verified
+./scripts/net05a-build-faults.py --network-only
+{"fault_build": "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/c17d64f0895925d623a4d7f70ca57b5f0912b3b0/.work/fault-build", "status": "pass"}
+go mod tidy -diff
+go test -count=1 ./...
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/cmd/ani-resource-service	0.012s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	0.004s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network	0.008s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/conf/v1	0.011s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.502s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	0.025s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/server	2.122s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network	0.006s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations/image	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	0.012s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/scripts/vpc-read-probe	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/relay	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/rpc	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider	0.010s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/runtime	0.040s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv	0.008s
+go vet ./...
+go build -trimpath ./...
+go mod verify
+all modules verified
+git diff --check
+2026-09-29T18:11:11Z
+exit=0

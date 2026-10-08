@@ -1,0 +1,9 @@
+{
+  "Name": "docker.io/library/busybox",
+  "Digest": "sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e",
+  "Architecture": "amd64",
+  "Os": "linux",
+  "Layers": [
+    "sha256:68fe9bff2ad4ad46da3e58db03faa64eb73c0ff16d546b0c42539eaa9854cb7f"
+  ]
+}

@@ -12,7 +12,6 @@ import (
 	kratosmetrics "github.com/go-kratos/kratos/contrib/otel/v3/metrics"
 	kratostracing "github.com/go-kratos/kratos/contrib/otel/v3/tracing"
 	"github.com/go-kratos/kratos/v3/middleware"
-	"github.com/go-kratos/kratos/v3/middleware/logging"
 	"github.com/go-kratos/kratos/v3/middleware/metadata"
 	"github.com/go-kratos/kratos/v3/middleware/recovery"
 	"github.com/go-kratos/kratos/v3/middleware/validate"
@@ -135,7 +134,7 @@ func (o *Observability) ServerMiddleware(logger *slog.Logger) []middleware.Middl
 		recovery.Recovery(recovery.WithLogger(logger)),
 		metadata.Server(),
 		kratostracing.Server(kratostracing.WithTracerProvider(o.tracerProvider)),
-		logging.Server(logger),
+		requestLogging(logger),
 		kratosmetrics.Server(
 			kratosmetrics.WithRequests(o.requests),
 			kratosmetrics.WithSeconds(o.seconds),

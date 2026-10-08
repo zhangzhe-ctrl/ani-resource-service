@@ -1,0 +1,80 @@
+{
+  "source_sha": "af8f21ed107b94a592fadf64c2fba44b483686f1",
+  "files": [
+    {
+      "path": "cmd/ani-resource-service/governance.go",
+      "base_sha256": "9e7a0f550e864a2e30bc41f1310dcb18eaf58227e05764e46fa06af18d7ac0ba",
+      "sha256": "150cc08374f421de83bb5a1ca6ea0f3b651bcfde8968a859050addb28b4379a1"
+    },
+    {
+      "path": "cmd/ani-resource-service/image.go",
+      "base_sha256": "cb22dee04d039bd30157fff86e00391dcb1de0c3b8c17d474ad663349a221fce",
+      "sha256": "e98524365d03cd9f41508c88fb5ee6430e6e1def045b70b17ba2c564300c58e3"
+    },
+    {
+      "path": "cmd/ani-resource-service/image_test.go",
+      "base_sha256": "451a3243aa53bb2958ed1c4911ddc93382bc722b9aa455b47c0fe3f103a6400f",
+      "sha256": "c3165788fdcb2ca4bcef1e1143ff605d0d16403296907f05074d4528e2f88df7"
+    },
+    {
+      "path": "internal/conf/v1/conf.pb.go",
+      "base_sha256": "710d7c5b443151d13ffbbb4f54e65561a7dd0608ecce9cee2c4bc662cea5528e",
+      "sha256": "1489d3358acad775ce57daededfc7c1ff684a1f371f61e7b02154c4834791c0c"
+    },
+    {
+      "path": "internal/conf/v1/image.go",
+      "base_sha256": "c56092871fa7acfe630a44e4924fb84c0aae4a1a3d42dcfe8aec9de7c01d1c0f",
+      "sha256": "3260e917df7acd0b40de2301918d6ea3a44c2534a2d94c00b2981c58f2abfc70"
+    },
+    {
+      "path": "internal/conf/v1/image_test.go",
+      "base_sha256": "54f26d4773623913b9a980a15018a4d6f8dac069481c08528c967e4820a7ee8a",
+      "sha256": "60e645076c6ddd04fcf471f29c212e5418e2bc63e3323d03e5cef7ee729be68c"
+    },
+    {
+      "path": "internal/server/governance.go",
+      "base_sha256": "345e86728b33d33e4452497032b9ac48129e63891988af64158c480234164f7c",
+      "sha256": "d790f2ad9dd08bef2597244b8b2872f700a6690357332bffaa0fe8e5199c0fb7"
+    },
+    {
+      "path": "internal/server/governance_test.go",
+      "base_sha256": "655141fd8c83a37fb7639948a4c190db388b0628be56a264c049fcfaea26117a",
+      "sha256": "2f9134a007d3451b3969f43f9e59f2e19583138a041938069d61534e4d7812ad"
+    },
+    {
+      "path": "internal/server/image_identity.go",
+      "base_sha256": "d3ba4652561c9daaa423f05c02a1f65bbead17152bc8d4b68fca3385c1b61f33",
+      "sha256": "248ae54f2997366e801534e919e7990591c4ccb0596b84f2a2fd4667594da415"
+    },
+    {
+      "path": "internal/server/image_identity_test.go",
+      "base_sha256": "55f5c5ea7e41eef65f256d74b1abc371d0da51a2fd616fb502aec40f0b8f81e1",
+      "sha256": "11f16b900970fee632adcd0acc1c98f33c7d125284b5cb9582edc4cee4346810"
+    },
+    {
+      "path": "internal/service/image/errors.go",
+      "base_sha256": "19e6a05226c0714581b80ce7439985edf93ef48b2d5c83e543f36bd7d846c3e5",
+      "sha256": "c793c8c5f56b8a3f1233d423c45b6276adf3fc5d7ec89a480ea4f16ff556f0ee"
+    },
+    {
+      "path": "internal/service/image/errors_test.go",
+      "base_sha256": "5fbbd7d95a4acf41d46ea00418cf64bd96d20f73f8510fed43d9c888fd7d7bbe",
+      "sha256": "9ffcb0f49b7421cdeaa992409e02d02ed557f13a06b3410f7b7ea7f196c0f96e"
+    },
+    {
+      "path": "internal/service/image/runtime.go",
+      "base_sha256": "369bf201484677d3674a50e7f594faf0d560e44fa236f14b462b7b60bede2159",
+      "sha256": "347db85a29901c8e7a1267757eb0ba2ff13519f8e8b2bdc8e6c01510efdb0689"
+    },
+    {
+      "path": "internal/service/image/tenant.go",
+      "base_sha256": "7bd2cab3653d3c6d8ed31a12364a8fa1f3f15f02163f94c35e43461b96b048e1",
+      "sha256": "913f6ca8e51571d6800e2f59a83b59c30dfa369a6611189db8f854659c905265"
+    },
+    {
+      "path": "internal/service/image/wire.go",
+      "base_sha256": "400a5f012d97c914a348fe097bec139ccaee4e01b44e1b0bae492bcc41860c85",
+      "sha256": "bd7041ba6af563c19cee7c01b76e808e4cb71f3439db7f07cc7652314b199f93"
+    }
+  ]
+}

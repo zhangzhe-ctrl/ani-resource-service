@@ -1,0 +1,39 @@
+2026-09-30T03:27:24Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/governance/61096fac8661cb9037c0b14794f9b7fd7c0a2b12
+Resource server source_sha=71cae63cb0af01332d38d7a9ef590b9482954ac3
+279c162e0f328b03db0a198fc1636ad26f231b563627180a18a22d4433f00742  /home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/state/resource-contract-71cae63cb0af01332d38d7a9ef590b9482954ac3.test
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 16.10 (Debian 16.10-1.pgdg13+1)
+Redis server v=7.4.6 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=9b9852680eadfdc6
+fixture=2d52721461daa51449b2bbcf015502ac771de301459c5d90b668cb9726abefd8 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+fixture=82d994ac941a7e65f59e4b06b3544b515b5d29a678389fa8b81468c2a661398e memory=134217728 memory_swap=134217728 nanocpus=500000000
+apply isolated migration=migrations/20260921134442_initial.sql
+apply isolated migration=migrations/20260922190000_quota_expand.sql
+apply isolated migration=migrations/20260922190100_quota_constraints.sql
+apply isolated migration=migrations/20260923130000_gpu_sqlc.sql
+apply isolated migration=migrations/20260923130100_gpu_no_rls_catalog.sql
+apply isolated migration=migrations/20260923130200_gpu_sync_ref.sql
+apply isolated migration=migrations/20260923143455_drop_geo_location.sql
+Image Governance joint fixture pg=2d52721461daa51449b2bbcf015502ac771de301459c5d90b668cb9726abefd8 redis=82d994ac941a7e65f59e4b06b3544b515b5d29a678389fa8b81468c2a661398e
+=== RUN   TestImageJointHTTP
+    image_joint_http_test.go:239: real Resource disable contract via authenticated HTTP and mTLS
+    image_joint_http_test.go:242: HTTP POST /api/v1/images/space:enable -> 200
+    image_joint_http_test.go:242: 
+        	Error Trace:	go-wind-admin/app/admin/service/internal/service/image_joint_http_test.go:216
+        	            				go-wind-admin/app/admin/service/internal/service/image_joint_http_test.go:242
+        	            				go-wind-admin/app/admin/service/internal/service/image_joint_http_test.go:246
+        	Error:      	Not equal: 
+        	            	expected: 409
+        	            	actual  : 503
+        	Test:       	TestImageJointHTTP
+        	Messages:   	POST /api/v1/images/publisher-credential:disable
+    image_resource_contract_test.go:41: Resource contract helper pid=968025 exit=0; owned database cleanup complete
+--- FAIL: TestImageJointHTTP (1.14s)
+FAIL
+FAIL	go-wind-admin/app/admin/service/internal/service	1.217s
+FAIL
+removed Image Governance fixture=82d994ac941a7e65f59e4b06b3544b515b5d29a678389fa8b81468c2a661398e
+removed Image Governance fixture=2d52721461daa51449b2bbcf015502ac771de301459c5d90b668cb9726abefd8
+2026-09-30T03:29:11Z
+exit=1

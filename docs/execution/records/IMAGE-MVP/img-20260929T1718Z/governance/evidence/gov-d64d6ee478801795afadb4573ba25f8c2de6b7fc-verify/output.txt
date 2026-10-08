@@ -1,0 +1,42 @@
+2026-09-29T20:00:27Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/d64d6ee478801795afadb4573ba25f8c2de6b7fc'...
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/governance-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+HEAD 目前位于 d64d6ee chore(image): import Fedora canonical path contracts and tests
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/d64d6ee478801795afadb4573ba25f8c2de6b7fc
+go build -trimpath -o tools/bin/gow ./tools/localdeps/gow/cmd/gow
+make: 进入目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/d64d6ee478801795afadb4573ba25f8c2de6b7fc/app/admin/service”
+make -C "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/d64d6ee478801795afadb4573ba25f8c2de6b7fc/" gow
+make[1]: 进入目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/d64d6ee478801795afadb4573ba25f8c2de6b7fc”
+go build -trimpath -o tools/bin/gow ./tools/localdeps/gow/cmd/gow
+make[1]: 离开目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/d64d6ee478801795afadb4573ba25f8c2de6b7fc”
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/d64d6ee478801795afadb4573ba25f8c2de6b7fc/tools/bin/gow ent "admin"
+Generated ent for service admin successfully.
+make: 离开目录“/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/d64d6ee478801795afadb4573ba25f8c2de6b7fc/app/admin/service”
+ok  	go-wind-admin/tests/imagecontract	0.245s
+ok  	go-wind-admin/sql/bootstrap	0.015s
+ok  	go-wind-admin/pkg/middleware/auth	0.023s
+ok  	go-wind-admin/pkg/middleware/logging	0.052s
+ok  	go-wind-admin/pkg/constants	0.008s
+ok  	go-wind-admin/pkg/localdeps/kratos-bootstrap/rpc	0.568s
+127.0.0.1:5432 - accepting connections
+postgres (PostgreSQL) 16.10 (Debian 16.10-1.pgdg13+1)
+Redis server v=7.4.6 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=9b9852680eadfdc6
+fixture=c1f877877f8715968a5aa68b139f8ba828a73982475d84871e909222b3e05a9e memory=805306368 memory_swap=805306368 nanocpus=1000000000
+fixture=cdfd301a82a864f332e360767493e0cdb90565c70e3e8fa392fc5300d40da41c memory=134217728 memory_swap=134217728 nanocpus=500000000
+apply isolated migration=migrations/20260921134442_initial.sql
+apply isolated migration=migrations/20260922190000_quota_expand.sql
+apply isolated migration=migrations/20260922190100_quota_constraints.sql
+apply isolated migration=migrations/20260923130000_gpu_sqlc.sql
+apply isolated migration=migrations/20260923130100_gpu_no_rls_catalog.sql
+apply isolated migration=migrations/20260923130200_gpu_sync_ref.sql
+apply isolated migration=migrations/20260923143455_drop_geo_location.sql
+Image Governance joint fixture pg=c1f877877f8715968a5aa68b139f8ba828a73982475d84871e909222b3e05a9e redis=cdfd301a82a864f332e360767493e0cdb90565c70e3e8fa392fc5300d40da41c
+ok  	go-wind-admin/app/admin/service/internal/data	11.246s
+ok  	go-wind-admin/app/admin/service/internal/service	23.045s
+ok  	go-wind-admin/app/admin/service/internal/server	0.707s
+?   	go-wind-admin/app/admin/service/cmd/server	[no test files]
+removed Image Governance fixture=cdfd301a82a864f332e360767493e0cdb90565c70e3e8fa392fc5300d40da41c
+removed Image Governance fixture=c1f877877f8715968a5aa68b139f8ba828a73982475d84871e909222b3e05a9e
+ok  	go-wind-admin/pkg/middleware/auth	1.031s

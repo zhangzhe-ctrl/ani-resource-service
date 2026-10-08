@@ -1,0 +1,60 @@
+{
+  "format": "image-mvp-live-profile/v1",
+  "approved": false,
+  "approval_reference": null,
+  "run_id": null,
+  "cluster": {
+    "context_name": null,
+    "api_server": null,
+    "ca_sha256": null,
+    "kubeconfig_secret_file": null,
+    "allowed_namespaces": []
+  },
+  "harbor": {
+    "management_url": null,
+    "registry_authority": null,
+    "management_credential_file": null,
+    "ca_file": null,
+    "actual_version": null,
+    "allowed_project_names": [],
+    "allow_existing_platform_write": false
+  },
+  "test_tenants": [
+    {"tenant_id": null, "slug": null, "project_name": null},
+    {"tenant_id": null, "slug": null, "project_name": null}
+  ],
+  "user_credential_files": [],
+  "base_image_digest": null,
+  "resource_budget": {
+    "go_cpu_quota_percent": 200,
+    "go_memory_max": "2300M",
+    "go_swap_max": 0
+  },
+  "cleanup": {
+    "allowed": false,
+    "created_ids_manifest": null,
+    "require_uid_and_owner_match": true,
+    "global_gc_allowed": false
+  },
+  "smoke": {
+    "execution_host": null,
+    "cluster_uid": null,
+    "resource_sha": null,
+    "governance_sha": null,
+    "resource_binary": null,
+    "runtime_binary": null,
+    "runtime_config": null,
+    "operator_config": null,
+    "platform_project": null,
+    "work_directory": null,
+    "governance_url": null,
+    "governance_ca_file": null,
+    "allow_technical_runtime_read": false,
+    "timeout_seconds": 1200,
+    "max_image_bytes": 33554432,
+    "target_platform": {"OS": "linux", "Architecture": "amd64", "Variant": ""},
+    "file_sha256": {},
+    "tool_version_sha256": {"kubectl": null, "skopeo": null}
+  },
+  "notice": "References only; never put tokens, passwords, DSNs or dockerconfigjson in this profile. This unapproved example cannot run."
+}

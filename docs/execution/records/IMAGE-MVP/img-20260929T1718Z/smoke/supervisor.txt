@@ -1,0 +1,14 @@
+run-p871245-i9263290.scope
+9月 30 04:53:58 fedora systemd[2621756]: Started run-p871245-i9263290.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/resource-round07-smoke.sh fb92f8db1b746b3b0612f8dc8f56c44c8fa74d57 generate.
+run-p871304-i9263303.scope
+9月 30 04:54:05 fedora systemd[2621756]: Started run-p871304-i9263303.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/resource-round07-smoke.sh fb92f8d87642dee4a48ed750c6cc36ed4a520bb9 generate.
+9月 30 04:54:11 fedora systemd[2621756]: run-p871304-i9263303.scope: Consumed 6.327s CPU time over 5.996s wall clock time, 257.4M memory peak.
+run-p871766-i9240551.scope
+9月 30 04:54:48 fedora systemd[2621756]: Started run-p871766-i9240551.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/resource-round07-smoke.sh 91f6ddc6c51a3092415f0688426b08145f70e8ce verify.
+9月 30 04:54:53 fedora systemd[2621756]: run-p871766-i9240551.scope: Consumed 4.977s CPU time over 4.761s wall clock time, 255.1M memory peak.
+run-p872124-i9252527.scope
+9月 30 04:55:46 fedora systemd[2621756]: Started run-p872124-i9252527.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/resource-round07-smoke.sh 62ecc67b839dd1040468323f8c316189a0c30653 generate.
+9月 30 04:55:54 fedora systemd[2621756]: run-p872124-i9252527.scope: Consumed 7.121s CPU time over 8.060s wall clock time, 273.8M memory peak.
+run-p872439-i9263425.scope
+9月 30 04:56:14 fedora systemd[2621756]: Started run-p872439-i9263425.scope - [systemd-run] /usr/bin/bash /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/state/resource-round07-smoke.sh 62ecc67b839dd1040468323f8c316189a0c30653 verify.
+9月 30 04:59:14 fedora systemd[2621756]: run-p872439-i9263425.scope: Consumed 3min 38.257s CPU time over 3min 423ms wall clock time, 771.6M memory peak.

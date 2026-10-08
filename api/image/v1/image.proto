@@ -1,0 +1,340 @@
+// Design contract v1.0. Generate and validate on Fedora before treating as implementation.
+syntax = "proto3";
+package image.v1;
+option go_package = "github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1;imagev1";
+import "google/protobuf/timestamp.proto";
+
+// Registered only on the existing authenticated Governance entry.
+service TenantImageService {
+  rpc EnsureImageSpace(EnsureImageSpaceRequest) returns (EnsureImageSpaceResponse);
+  rpc GetImageSpace(GetImageSpaceRequest) returns (GetImageSpaceResponse);
+  rpc GetPublisherCredential(GetPublisherCredentialRequest) returns (GetPublisherCredentialResponse);
+  rpc IssuePublisherCredential(IssuePublisherCredentialRequest) returns (IssuePublisherCredentialResponse);
+  rpc ResetPublisherCredential(ResetPublisherCredentialRequest) returns (ResetPublisherCredentialResponse);
+  rpc DisablePublisherCredential(DisablePublisherCredentialRequest) returns (DisablePublisherCredentialResponse);
+  rpc RegisterImage(RegisterImageRequest) returns (RegisterImageResponse);
+  rpc GetImage(GetImageRequest) returns (GetImageResponse);
+  rpc ListImages(ListImagesRequest) returns (ListImagesResponse);
+  rpc UpdateImage(UpdateImageRequest) returns (UpdateImageResponse);
+  rpc UnregisterImage(UnregisterImageRequest) returns (UnregisterImageResponse);
+}
+
+enum ImageScope {
+  IMAGE_SCOPE_UNSPECIFIED = 0;
+  IMAGE_SCOPE_TENANT = 1;
+  IMAGE_SCOPE_PLATFORM = 2;
+}
+enum ImagePurpose {
+  IMAGE_PURPOSE_UNSPECIFIED = 0;
+  IMAGE_PURPOSE_CONTAINER = 1;
+  IMAGE_PURPOSE_DEVELOPMENT = 2;
+  IMAGE_PURPOSE_INFERENCE = 3;
+  IMAGE_PURPOSE_FINETUNING = 4;
+  IMAGE_PURPOSE_TRAINING = 5;
+}
+enum AcceleratorKind {
+  ACCELERATOR_KIND_UNSPECIFIED = 0;
+  ACCELERATOR_KIND_NONE = 1;
+  ACCELERATOR_KIND_NVIDIA = 2;
+  ACCELERATOR_KIND_AMD = 3;
+  ACCELERATOR_KIND_ASCEND = 4;
+  ACCELERATOR_KIND_OTHER = 5;
+}
+
+message ImagePlatform {
+
+  string os = 1;
+
+  string architecture = 2;
+
+  string variant = 3;
+
+}
+
+message ImageSpace {
+
+  string space_id = 1;
+
+  string tenant_id = 2;
+
+  string project_name = 3;
+
+  string registry_authority = 4;
+
+  string state = 5;
+
+  string reason = 6;
+
+  int64 version = 7;
+
+  int64 pull_credential_generation = 8;
+
+  google.protobuf.Timestamp created_at = 9;
+
+  google.protobuf.Timestamp updated_at = 10;
+
+}
+
+message PublisherCredential {
+
+  string tenant_id = 1;
+
+  string space_id = 2;
+
+  int64 generation = 3;
+
+  string username = 4;
+
+  string state = 5;
+
+  int64 version = 6;
+
+  google.protobuf.Timestamp expires_at = 7;
+
+  google.protobuf.Timestamp updated_at = 8;
+
+}
+
+message ImageRegistration {
+
+  string image_id = 1;
+
+  string tenant_id = 2;
+
+  ImageScope scope = 3;
+
+  string space_id = 4;
+
+  string display_name = 5;
+
+  string description = 6;
+
+  string repository = 7;
+
+  string source_reference = 8;
+
+  string digest = 9;
+
+  string resolved_reference = 10;
+
+  repeated ImagePlatform platforms = 11;
+
+  repeated ImagePurpose purposes = 12;
+
+  AcceleratorKind accelerator = 13;
+
+  int64 version = 14;
+
+  google.protobuf.Timestamp created_at = 15;
+
+  google.protobuf.Timestamp updated_at = 16;
+
+  google.protobuf.Timestamp unregistered_at = 17;
+
+}
+
+message EnsureImageSpaceRequest {
+
+  string tenant_id = 1;
+
+  string slug = 2;
+
+  string idempotency_key = 3;
+
+}
+
+message EnsureImageSpaceResponse {
+
+  ImageSpace space = 1;
+
+}
+
+message GetImageSpaceRequest {
+
+  string tenant_id = 1;
+
+}
+
+message GetImageSpaceResponse {
+
+  ImageSpace space = 1;
+
+}
+
+message GetPublisherCredentialRequest {
+
+  string tenant_id = 1;
+
+}
+
+message GetPublisherCredentialResponse {
+
+  PublisherCredential credential = 1;
+
+}
+
+message IssuePublisherCredentialRequest {
+
+  string tenant_id = 1;
+
+  string idempotency_key = 2;
+
+  int64 expected_version = 3;
+
+}
+
+message IssuePublisherCredentialResponse {
+
+  PublisherCredential credential = 1;
+
+  string secret = 2;
+
+  google.protobuf.Timestamp replay_until = 3;
+
+}
+
+message ResetPublisherCredentialRequest {
+
+  string tenant_id = 1;
+
+  string idempotency_key = 2;
+
+  int64 expected_version = 3;
+
+}
+
+message ResetPublisherCredentialResponse {
+
+  PublisherCredential credential = 1;
+
+  string secret = 2;
+
+  google.protobuf.Timestamp replay_until = 3;
+
+}
+
+message DisablePublisherCredentialRequest {
+
+  string tenant_id = 1;
+
+  int64 expected_version = 2;
+
+  string idempotency_key = 3;
+
+}
+
+message DisablePublisherCredentialResponse {
+
+  PublisherCredential credential = 1;
+
+}
+
+message RegisterImageRequest {
+
+  string tenant_id = 1;
+
+  string image_reference = 2;
+
+  string display_name = 3;
+
+  string description = 4;
+
+  repeated ImagePurpose purposes = 5;
+
+  AcceleratorKind accelerator = 6;
+
+  string idempotency_key = 7;
+
+}
+
+message RegisterImageResponse {
+
+  ImageRegistration image = 1;
+
+}
+
+message GetImageRequest {
+
+  string tenant_id = 1;
+
+  ImageScope scope = 2;
+
+  string image_id = 3;
+
+}
+
+message GetImageResponse {
+
+  ImageRegistration image = 1;
+
+}
+
+message ListImagesRequest {
+
+  string tenant_id = 1;
+
+  ImageScope scope = 2;
+
+  string search = 3;
+
+  repeated ImagePurpose purposes = 4;
+
+  AcceleratorKind accelerator = 5;
+
+  int32 limit = 6;
+
+  string cursor = 7;
+
+}
+
+message ListImagesResponse {
+
+  repeated ImageRegistration items = 1;
+
+  string next_cursor = 2;
+
+}
+
+message UpdateImageRequest {
+
+  string tenant_id = 1;
+
+  string image_id = 2;
+
+  string display_name = 3;
+
+  string description = 4;
+
+  repeated ImagePurpose purposes = 5;
+
+  AcceleratorKind accelerator = 6;
+
+  int64 expected_version = 7;
+
+  string idempotency_key = 8;
+
+}
+
+message UpdateImageResponse {
+
+  ImageRegistration image = 1;
+
+}
+
+message UnregisterImageRequest {
+
+  string tenant_id = 1;
+
+  string image_id = 2;
+
+  int64 expected_version = 3;
+
+  string idempotency_key = 4;
+
+}
+
+message UnregisterImageResponse {
+
+  ImageRegistration image = 1;
+
+}

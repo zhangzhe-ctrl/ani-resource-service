@@ -1,0 +1,71 @@
+2026-09-29T18:08:26Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/7bfb74e87154fb36668d2fee8a2b827bce9f6e28'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 3d83c76 docs(image): import MVP plan and freeze execution bindings
+HEAD 目前位于 7bfb74e feat(image): add bounded Harbor and authenticated secret adapters
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/7bfb74e87154fb36668d2fee8a2b827bce9f6e28
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+{
+  "source_sha": "7bfb74e87154fb36668d2fee8a2b827bce9f6e28",
+  "files": [
+    {
+      "path": "internal/biz/image/robot_permissions.go",
+      "base_sha256": "7dca34990555c67376f4a37643197521143bf654d3f7f17850b38de434fbc51c",
+      "sha256": "005161091b6a7b556fca3c9cdae26c3e3b073954ecf65a2e3faa1c54b9198e1e"
+    },
+    {
+      "path": "internal/biz/image/robot_permissions_test.go",
+      "base_sha256": "c3958424c2c841b10a98f2e963510f5f4c982831a79431ceba1eee5c64e31c3c",
+      "sha256": "73110b3d4927860fa3c197cff7e320edbea79bb4c8e98989e083483b35c5a083"
+    },
+    {
+      "path": "internal/data/image/harbor.go",
+      "base_sha256": "062dab311f883a3cd6bbd755c1b4aaa8c0120c0107fb10b69fbab80a60bcc5aa",
+      "sha256": "d95d9359a925240e8ee554995b78c33ee4042b643cc49dacd1e97b9a070727df"
+    },
+    {
+      "path": "internal/data/image/harbor_artifact.go",
+      "base_sha256": "046b3ea2fefba397e2e834b9556749ca9b82c65805344e355bf678ab53abdf79",
+      "sha256": "259cce5207ff7f7180eeebc19e4ff475693429612ec4505677c4db7691ad9d87"
+    },
+    {
+      "path": "internal/data/image/harbor_project.go",
+      "base_sha256": "ce454b3c7ccb84825d068a14df2c62a086e50f3afbbc98605d4ab1fcbb89ad86",
+      "sha256": "0df3fe4079f1e7c4017d4fbd0bebde9761afb8f7cba2ecc0b3f01e3220666f26"
+    },
+    {
+      "path": "internal/data/image/harbor_robot.go",
+      "base_sha256": "f2e25692f0b6512b350c17fdd1a792d07d4016c828c2949b45ea28e0c7c42459",
+      "sha256": "374974f3c4e85b873c9dc9f71a6eb9a7cf033e2092b98c70e30e58c67b4641fc"
+    },
+    {
+      "path": "internal/data/image/harbor_test.go",
+      "base_sha256": "7388ad430381495dcf95b3191869435147ece1b9e90e8f28622e08ea09ab5e1f",
+      "sha256": "a73d48e03c649350e86c495c1900fe7056b293cd0173b14b9293d0152b1d1937"
+    },
+    {
+      "path": "internal/data/image/secret_cipher.go",
+      "base_sha256": "fe909d51eb401883b83975e6c00fd3e739a27391e034a95603b2531e65eafced",
+      "sha256": "b4cd5893b435b7bde1d278b10836907753cfcc5170a69cf60759a238ad4fdc39"
+    },
+    {
+      "path": "internal/data/image/secret_cipher_test.go",
+      "base_sha256": "3dad70738648d2516aee79fa57c89382f29ef3d06b6fc1aecab5a12f71df7a2c",
+      "sha256": "c9ebaf67c90be9c45d6b558fd5e4977fa93ac7a696d62969758062307d1e2278"
+    }
+  ]
+}
+2026-09-29T18:08:31Z
+exit=0

@@ -1,0 +1,15 @@
+{
+  "source_sha": "9e53631752885917e3cae8fb2ba5b287eefa3605",
+  "files": [
+    {
+      "path": "internal/data/image/lifecycle_process_integration_test.go",
+      "base_sha256": "f311c6036a259a5d216324d5d6e8a7a1c4bb894ed7b579a0a364ae76cbf23dda",
+      "sha256": "5141616025e92e37d9864fce93f40d0add9616d070adff361b4c936d39300c77"
+    },
+    {
+      "path": "internal/data/image/lifecycle_stale_integration_test.go",
+      "base_sha256": "4d2d4bf1ec7c1ccfe5804f2634db51d6c3ceda5d632de3e8c2205c94f6a086a1",
+      "sha256": "b729df64e5fa24d6b9bf33928785c1fced896275e7c1a274a7cf826639535540"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "original_result_sha256": "8265934ceb7e2eab3240d9acb573d8b8452cdd16b3fbb4fb3b39a3cc97951594",
+  "reason": "Harbor repository routes require project name, not numeric project ID",
+  "checks": [
+    {
+      "kind": "robot",
+      "id": 4,
+      "absent": true
+    },
+    {
+      "kind": "robot",
+      "id": 5,
+      "absent": true
+    },
+    {
+      "kind": "robot",
+      "id": 6,
+      "absent": true
+    },
+    {
+      "kind": "robot",
+      "id": 7,
+      "absent": true
+    },
+    {
+      "kind": "robot",
+      "id": 8,
+      "absent": true
+    },
+    {
+      "kind": "namespace",
+      "name": "imgp-0930-0200-a",
+      "uid": "f00ef77b-75a9-4b99-9eac-7731c0976218",
+      "absent": true
+    },
+    {
+      "kind": "namespace",
+      "name": "imgp-0930-0200-b",
+      "uid": "e2f4c700-2a9f-435a-91ef-93f6d5b9d5ac",
+      "absent": true
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "project",
+      "id": 5,
+      "name": "imgp-0930-0200-platform",
+      "absent": true
+    },
+    {
+      "kind": "project",
+      "id": 4,
+      "name": "t-imgp-0930-0200-b",
+      "absent": true
+    },
+    {
+      "kind": "project",
+      "id": 3,
+      "name": "t-imgp-0930-0200-a",
+      "absent": true
+    }
+  ],
+  "private_files_removed": true,
+  "finished_utc": "2026-09-30T02:10:41Z",
+  "result": "pass"
+}

@@ -1,0 +1,55 @@
+{
+  "source_sha": "70d89ef71857c13485a551d8d7ab8174e7f2badc",
+  "files": [
+    {
+      "path": "internal/data/image/sqlcgen/commands.sql.go",
+      "base_sha256": null,
+      "sha256": "c2b035a8c67a656c94b73059c8149fb26ef8b10952d076ec6e8c658503427b91"
+    },
+    {
+      "path": "internal/data/image/sqlcgen/credentials.sql.go",
+      "base_sha256": null,
+      "sha256": "a63404fdae865eea13fafeafdb04a40337918baa26359fc5e3321e53ca7fae00"
+    },
+    {
+      "path": "internal/data/image/sqlcgen/db.go",
+      "base_sha256": null,
+      "sha256": "c40f70c9870c43ddc88f743ec63627bc9af2d57fab48fdb0c055981d090b0cf8"
+    },
+    {
+      "path": "internal/data/image/sqlcgen/models.go",
+      "base_sha256": null,
+      "sha256": "eb4ab151359fa3f52e708232568d57b2b32f4c959e5e2486650c29f9f503ab79"
+    },
+    {
+      "path": "internal/data/image/sqlcgen/registrations.sql.go",
+      "base_sha256": null,
+      "sha256": "e94765877d38f47215410376eeedf19f784237353357f69898df05871c80736e"
+    },
+    {
+      "path": "internal/data/image/sqlcgen/spaces.sql.go",
+      "base_sha256": null,
+      "sha256": "cac35a523e869ea61e5eefc455b763130105f3d2e36b6c9d1bb9733bdd0e29da"
+    },
+    {
+      "path": "cmd/ani-resource-service/image_migrate.go",
+      "base_sha256": "3f32d951e88f0431174e97d333000dfc7077e8672cfcdc2ac01705553615162a",
+      "sha256": "1de487a998e1c07adf62ef6f3c0ac9f7f038e3159bd0799c84e43bbb430e7e44"
+    },
+    {
+      "path": "cmd/ani-resource-service/main.go",
+      "base_sha256": "de374a82a4e50ef56efb91455d827753564e84f60003349730bf7e8c4c2324c5",
+      "sha256": "18a2a11c7519134ed59a363637149a96b37877a70d150f5bd0608f82680832a7"
+    },
+    {
+      "path": "internal/data/image/migrate.go",
+      "base_sha256": "45e5358eb98576dd0598ca999e15c3624bb484b503a0c121b6cd79016afa76d6",
+      "sha256": "170cabf8e55646759d6839eee75bd4967f9fdd067a81308b18c03c04784c7961"
+    },
+    {
+      "path": "internal/data/image/postgres.go",
+      "base_sha256": "ceea50e4d733dae4edd88035fa929312c45dc27d31a47cb0a5ddcf4f6c6052b8",
+      "sha256": "70ed970177a0268fe4451b6fc62477b0456bb17f98669dfdf993886ff143eec8"
+    }
+  ]
+}

@@ -1,0 +1,596 @@
+{
+  "plan_version": "1.0",
+  "kind": "static-plan-not-progress",
+  "batches": [
+    {
+      "batch": "IMG-00",
+      "title": "基线、接入点与 Fedora 执行边界",
+      "depends_on": [],
+      "person_days": {
+        "low": 0.5,
+        "high": 0.75
+      },
+      "tasks": [
+        {
+          "id": "IMG-00.1",
+          "title": "读取并冻结源码",
+          "implementation": "Resource/Governance AGENTS、START-HERE、ADR2/6、remote-execution、go.mod；本批不修改业务方法",
+          "acceptance": "source-lock.json记录两仓完整SHA、干净状态、分支、工具版本；差异不能重置用户代码"
+        },
+        {
+          "id": "IMG-00.2",
+          "title": "定位真实接入点",
+          "implementation": "Resource config Validate/main/governance；Governance HTTP注册、DI、permission/module seeds",
+          "acceptance": "bindings.json列每个真实文件和方法；新增目标与已存在方法分开"
+        },
+        {
+          "id": "IMG-00.3",
+          "title": "绑定普通容器和前端",
+          "implementation": "搜索已允许的非ANI仓库及当前工作区；找实际Create/PodTemplate/tenant namespace/前端route",
+          "acceptance": "记录repo+SHA+路径+方法；找不到标明blocked:consumer或blocked:frontend，不造服务、不访问ANI"
+        },
+        {
+          "id": "IMG-00.4",
+          "title": "探测远端和限制",
+          "implementation": "ssh fedora；读取当前重锁/真实HOME；确认Go1.26.7、磁盘、内存、容器工具和已有PG runner",
+          "acceptance": "所有探测重命令在Fedora；确认互斥重锁、隔离run root、资源配额和日志路径"
+        },
+        {
+          "id": "IMG-00.5",
+          "title": "核对Harbor与授权",
+          "implementation": "固定管理URL/registry authority/TLS、实际Harbor version/OpenAPI、management权限和安全策略",
+          "acceptance": "没有Harbor或写授权只阻塞真实探测；保留离线单测实施，不能擅自安装/升级或降安全策略"
+        },
+        {
+          "id": "IMG-00.6",
+          "title": "导入计划与建立账本",
+          "implementation": "只导入本包明确新增文档；向现有docs/execution/status.md追加Image区块",
+          "acceptance": "不覆盖README/AGENTS/历史状态；填写live profile明确cluster fingerprint与run-owned资源范围"
+        }
+      ]
+    },
+    {
+      "batch": "IMG-01",
+      "title": "契约、领域类型与纯规则",
+      "depends_on": [
+        "IMG-00"
+      ],
+      "person_days": {
+        "low": 0.5,
+        "high": 0.75
+      },
+      "tasks": [
+        {
+          "id": "IMG-01.1",
+          "title": "落入Resource Proto",
+          "implementation": "api/image/v1/image.proto、runtime.proto；TenantImageService 11方法与Runtime 2方法",
+          "acceptance": "Buf在Fedora校验；确认与实际buf module root的import路径匹配，不手写pb.go"
+        },
+        {
+          "id": "IMG-01.2",
+          "title": "落入公开DTO与HTTP协议",
+          "implementation": "Governance catalog/image.proto、admin/i_image.proto、buf.image.gen.yaml",
+          "acceptance": "公开DTO无tenant/namespace/admin字段；内部pull材料不进入公共OpenAPI"
+        },
+        {
+          "id": "IMG-01.3",
+          "title": "领域对象与窄端口",
+          "implementation": "biz/image/types.go、ports.go；Space、CredentialInfo、Registration、Command、RuntimeImages",
+          "acceptance": "biz无grpc/kratos/http/pgx/k8s依赖；按现有package biz风格"
+        },
+        {
+          "id": "IMG-01.4",
+          "title": "纯验证器",
+          "implementation": "ParseTenant/ParseSlug/ParseImageID/ParseImageReference/NormalizeMetadata",
+          "acceptance": "TestValidationMatrix覆盖零UUID、外部host、编码斜线、越级project、空tag、超长、非法枚举"
+        },
+        {
+          "id": "IMG-01.5",
+          "title": "Caller与错误",
+          "implementation": "WithCaller/RequireTenant/RequireRuntime/RequirePlatform；Fail/ReasonOf",
+          "acceptance": "TestCallerFailClosed证明无身份/错误身份拒绝，平台不存在empty-tenant旁路"
+        },
+        {
+          "id": "IMG-01.6",
+          "title": "远端生成回传",
+          "implementation": "Fedora make generate/定向Gov生成；gofmt只在Fedora；回传生成差异",
+          "acceptance": "本地检查基线hash并正常commit/push；新SHA再远端生成无差异，契约报告明确尚无业务实现"
+        }
+      ]
+    },
+    {
+      "batch": "IMG-02",
+      "title": "Image schema、迁移与显式租户数据层",
+      "depends_on": [
+        "IMG-01"
+      ],
+      "person_days": {
+        "low": 1,
+        "high": 1.5
+      },
+      "tasks": [
+        {
+          "id": "IMG-02.1",
+          "title": "独立迁移输入",
+          "implementation": "migrations/image/001_image.sql、embed.go；image.schema_version",
+          "acceptance": "真PG可首建/重复校验；旧migrations/*.sql的bytes/checksum完全不变"
+        },
+        {
+          "id": "IMG-02.2",
+          "title": "迁移入口和权限",
+          "implementation": "ApplyImageMigrations/CheckReady；-image-migrate互斥分支",
+          "acceptance": "owner执行DDL、runtime拒绝DDL/SET owner；-migrate仍只Network；Image禁用不要求schema"
+        },
+        {
+          "id": "IMG-02.3",
+          "title": "SQLC查询",
+          "implementation": "spaces/credentials/registrations/commands.sql；sqlc.yaml新entry",
+          "acceptance": "SQL有显式tenant与scope；生成数据包不 import Network sqlcgen"
+        },
+        {
+          "id": "IMG-02.4",
+          "title": "事务和状态写",
+          "implementation": "ReserveTenantSpace、ApplyTenantRegistration、ApplyTenantMetadata、CompleteCommand",
+          "acceptance": "登记与command结果同事务；FK/CAS/唯一性失败正确映射，不吞错误后返回成功"
+        },
+        {
+          "id": "IMG-02.5",
+          "title": "独立真DB测试runner",
+          "implementation": "scripts/image-integration、make image-integration；角色/DSN文件和临时库",
+          "acceptance": "只在Fedora本run PG；禁止所有必测case因缺配置skip；不改共享DB"
+        },
+        {
+          "id": "IMG-02.6",
+          "title": "隔离变异与回归",
+          "implementation": "TestTenantCompositeFK/TestPlatformFK/TestRuntimeRole/TestCAS；image tenant mutation fixture",
+          "acceptance": "故意去tenant谓词/FK在隔离副本导致测试失败；恢复hash；原make integration/tenant-mutations不被削弱"
+        }
+      ]
+    },
+    {
+      "batch": "IMG-03",
+      "title": "Harbor 与 Secret 适配器",
+      "depends_on": [
+        "IMG-01",
+        "IMG-02"
+      ],
+      "person_days": {
+        "low": 1,
+        "high": 1.5
+      },
+      "tasks": [
+        {
+          "id": "IMG-03.1",
+          "title": "固定上游客户端",
+          "implementation": "NewHarbor/doJSON/mapHarborError",
+          "acceptance": "httptest覆盖TLS失败、跨host redirect拒绝、超时、响应上限、403/404/409/5xx与脱敏"
+        },
+        {
+          "id": "IMG-03.2",
+          "title": "Project适配",
+          "implementation": "GetProjectByID/FindProjectByName/CreatePrivateProject",
+          "acceptance": "实版OpenAPI锁定metadata.public字符串、Location ID；不用虚构ownership自定义字段"
+        },
+        {
+          "id": "IMG-03.3",
+          "title": "Robot适配",
+          "implementation": "FindOwnedRobot/CreateRobot/GetRobot/SetRobotSecret/SetRobotDisabled",
+          "acceptance": "确认RefreshSec实际HTTP method/path；指定Secret成功不依赖回显；找同名必须验证ownership描述和权限"
+        },
+        {
+          "id": "IMG-03.4",
+          "title": "权限构造",
+          "implementation": "ValidateRobotPermissions；固定publisher/pull项目权限模板",
+          "acceptance": "断言无system权限、无CoverAll、无delete；publisherPush必须带Pull，返回用户名不硬编码前缀"
+        },
+        {
+          "id": "IMG-03.5",
+          "title": "制品解析",
+          "implementation": "ResolveArtifact/GetArtifactByDigest/ReadRunnablePlatforms",
+          "acceptance": "tag解析后再次按digest读取；manifest/index正例；chart/附件/深度/超大/平台未知反例；不下载layers"
+        },
+        {
+          "id": "IMG-03.6",
+          "title": "加密与日志保护",
+          "implementation": "NewAESGCMKeyring/Seal/Open；typed secret envelopes",
+          "acceptance": "TestCipherWrongAAD/Tamper/KeyMissing；Secret哨兵不出现于日志、错误、command.result/candidate"
+        }
+      ]
+    },
+    {
+      "batch": "IMG-04",
+      "title": "空间、凭证与失败恢复",
+      "depends_on": [
+        "IMG-02",
+        "IMG-03"
+      ],
+      "person_days": {
+        "low": 2,
+        "high": 2.5
+      },
+      "tasks": [
+        {
+          "id": "IMG-04.1",
+          "title": "空间幂等入口",
+          "implementation": "Spaces.EnsureImageSpace/GetImageSpace/resumeEnable",
+          "acceptance": "同租户同slug重复成功、不同slug冲突；并发slug只有一个owner；Project/Pull均ready才available"
+        },
+        {
+          "id": "IMG-04.2",
+          "title": "空间级有限串行化",
+          "implementation": "WithSpaceWriteLock；command唯一外部写约束",
+          "acceptance": "两个进程同时推进同command不重复签发；HTTP不在长PG事务；连接断开/超时不复用污染连接"
+        },
+        {
+          "id": "IMG-04.3",
+          "title": "运行凭证初始化",
+          "implementation": "ensurePullCredential/prepareCandidate/applyCandidate/activateCandidate",
+          "acceptance": "只读两Project；cipher保存成功后才ready；运行Secret不出现在Enable响应"
+        },
+        {
+          "id": "IMG-04.4",
+          "title": "发布签发与重置",
+          "implementation": "IssuePublisherCredential/ResetPublisherCredential/replayDelivery",
+          "acceptance": "新Robot代次、旧代次停用、版本CAS；同键同actor10分钟重放；不同actor/旧代次/过期不得拿Secret"
+        },
+        {
+          "id": "IMG-04.5",
+          "title": "元数据与停用",
+          "implementation": "GetPublisherCredential/DisablePublisherCredential",
+          "acceptance": "GET不含Secret；未签发返回not_issued；停用幂等；不声称立刻撤销已发Token"
+        },
+        {
+          "id": "IMG-04.6",
+          "title": "故障注入恢复",
+          "implementation": "TestResumeAfterProjectBind/TestResumeAfterRobotCreate/TestResumeAfterSecretSet/TestStaleGeneration",
+          "acceptance": "在每一持久化/Harbor边界注入超时和进程退出，恢复同key；未知同名Project明确blocked而非错误认领"
+        },
+        {
+          "id": "IMG-04.7",
+          "title": "受控恢复与过期清理",
+          "implementation": "Platform.RecoverProjectBinding/InspectSpace；PurgeExpiredDeliverySecrets",
+          "acceptance": "只能operator+明确ID+归属核验；正常租户不需要管理员逐个操作；清理不删除其他command或镜像"
+        }
+      ]
+    },
+    {
+      "batch": "IMG-05",
+      "title": "登记目录与固定 Digest 使用",
+      "depends_on": [
+        "IMG-02",
+        "IMG-03"
+      ],
+      "person_days": {
+        "low": 1,
+        "high": 1.5
+      },
+      "tasks": [
+        {
+          "id": "IMG-05.1",
+          "title": "登记事务",
+          "implementation": "Catalog.RegisterImage + ApplyTenantRegistration",
+          "acceptance": "先归属检查再Harbor查询；结果Digest不可变；同key重放不重新跟Tag"
+        },
+        {
+          "id": "IMG-05.2",
+          "title": "查询详情",
+          "implementation": "GetImage；FindTenantRegistration/FindPlatformRegistration",
+          "acceptance": "跨tenant404、platform只读；能显示自己的取消记录但不能用于Resolve"
+        },
+        {
+          "id": "IMG-05.3",
+          "title": "分页筛选",
+          "implementation": "ListImages/NewCursorCodec/EncodeCursor/DecodeCursor",
+          "acceptance": "filters在LIMIT前；两页匹配无漏项；跨tenant/scope/filters的cursor拒绝；search转义"
+        },
+        {
+          "id": "IMG-05.4",
+          "title": "元数据修改",
+          "implementation": "UpdateImage + version CAS",
+          "acceptance": "只允许四类元数据；请求不能改digest/owner；用途不等于适配认证"
+        },
+        {
+          "id": "IMG-05.5",
+          "title": "取消登记",
+          "implementation": "UnregisterImage；软取消和幂等",
+          "acceptance": "不调用HarborDELETE；历史任务意图不变；同内容重新登记产生新image_id"
+        },
+        {
+          "id": "IMG-05.6",
+          "title": "运行解析",
+          "implementation": "Runtime.ResolveImageForWorkload",
+          "acceptance": "按digest验证当前存在和target platform；拒绝取消/他tenant；503不得抹除记录"
+        }
+      ]
+    },
+    {
+      "batch": "IMG-06",
+      "title": "Resource 安全入口与 Governance 适配",
+      "depends_on": [
+        "IMG-01",
+        "IMG-04",
+        "IMG-05"
+      ],
+      "person_days": {
+        "low": 1.5,
+        "high": 2
+      },
+      "tasks": [
+        {
+          "id": "IMG-06.1",
+          "title": "薄gRPC service",
+          "implementation": "TenantService 11 RPC；wireSpace/wireRegistration/wireCredential/rpcError",
+          "acceptance": "仅协议转换，错误Image ErrorInfo与API文档一致，无业务SQL/Harbor调用"
+        },
+        {
+          "id": "IMG-06.2",
+          "title": "Resource入口接线",
+          "implementation": "Bootstrap.image=3、配置Validate、runGovernance、image_identity bridge",
+          "acceptance": "精确白名单；可信metadata与请求tenant一致；full/vpc-read入口不暴露Image；保留legacy SAN"
+        },
+        {
+          "id": "IMG-06.3",
+          "title": "Governance下游client",
+          "implementation": "NewImageClient/ImageConfigFromEnv/trustedImageCall、11方法",
+          "acceptance": "mTLS复用已定服务器身份但不改Network配置；NewOutgoingContext重建；依赖固定已推送Resource SHA"
+        },
+        {
+          "id": "IMG-06.4",
+          "title": "BFF与响应校验",
+          "implementation": "NewImageService/trustedImageOperator/validateImageReply/mapImageError",
+          "acceptance": "复用ResourceTenantResolver；uint32→UUID；返回归属不符failclosed，不转发内部tenant/Secret"
+        },
+        {
+          "id": "IMG-06.5",
+          "title": "模块/权限/脱敏",
+          "implementation": "IMAGE=14实际冲突检查；image_policy、注册/DI、定向生成/OpenAPI",
+          "acceptance": "默认只读与发布管理员区分；凭证body日志排除、no-store；公共身份头不能覆盖认证上下文"
+        },
+        {
+          "id": "IMG-06.6",
+          "title": "真实HTTP与mTLS反例",
+          "implementation": "image_joint_http_test、image_identity_test",
+          "acceptance": "JWT/AK允许路径、无权限、错误SAN、重复tenant头、body伪造、错误下游响应；Secret接口不在公共schema"
+        }
+      ]
+    },
+    {
+      "batch": "IMG-07",
+      "title": "平台维护命令与 API 技术闭环",
+      "depends_on": [
+        "IMG-04",
+        "IMG-05",
+        "IMG-06"
+      ],
+      "person_days": {
+        "low": 0.5,
+        "high": 0.75
+      },
+      "tasks": [
+        {
+          "id": "IMG-07.1",
+          "title": "受控管理模式",
+          "implementation": "-image-admin互斥解析；Platform.InitializePlatform/RegisterPlatformImage等",
+          "acceptance": "只用operator运行配置；不开放平台HTTP/RPC写入口；未知action失败"
+        },
+        {
+          "id": "IMG-07.2",
+          "title": "平台镜像发布",
+          "implementation": "issue-platform-publisher + 0600输出；平台维护登记/更新/取消",
+          "acceptance": "发布仅platform；不以admin配置给普通用户；不操作未授权现有platform"
+        },
+        {
+          "id": "IMG-07.3",
+          "title": "测试部署配置",
+          "implementation": "deployments/image/配置说明/Secret引用、management入口隔离",
+          "acceptance": "不提交明文Secret；image关闭回归；不强制更换现有密码/全局网关"
+        },
+        {
+          "id": "IMG-07.4",
+          "title": "真实Harbor探针",
+          "implementation": "scripts/image-smoke 的init/push/register/resolve阶段",
+          "acceptance": "两个run-owned空间自动创建；客户端直接Push；根Digest与登记一致；A凭证访问B失败"
+        },
+        {
+          "id": "IMG-07.5",
+          "title": "故障证据与状态",
+          "implementation": "sourceSHA、run-owned IDs、脱敏输出、退出码",
+          "acceptance": "环境缺失标记live blocked；可完成脚本和离线测试但不得记真实闭环通过"
+        }
+      ]
+    },
+    {
+      "batch": "IMG-08",
+      "title": "一种普通容器创建方接入",
+      "depends_on": [
+        "IMG-05",
+        "IMG-06"
+      ],
+      "person_days": {
+        "low": 1,
+        "high": 1.5
+      },
+      "tasks": [
+        {
+          "id": "IMG-08.1",
+          "title": "确认接入分支",
+          "implementation": "检查IMG-00绑定owner repo/SHA/Create方法/tenant环境查询",
+          "acceptance": "没找到明确标blocked；不新造Compute、不把KServe接口硬套为普通容器"
+        },
+        {
+          "id": "IMG-08.2",
+          "title": "受信运行端口",
+          "implementation": "同进程RuntimeImages或NewImageRuntimeServer/ImageRuntimeUnary + client",
+          "acceptance": "只选择真实部署需要的一条；独立服务用固定证书身份；secretRPC绝不进Gov公共白名单"
+        },
+        {
+          "id": "IMG-08.3",
+          "title": "Secret准备",
+          "implementation": "PrepareTenantImagePullSecret + GetTenantPullMaterial",
+          "acceptance": "同namespace、owner label、generation、缺失修复；禁止任意namespace和节点admin兜底"
+        },
+        {
+          "id": "IMG-08.4",
+          "title": "镜像意图",
+          "implementation": "ResolveRegisteredImage/PersistResolvedImageIntent/ApplyRegisteredImage",
+          "acceptance": "创建意图固定Digest；原业务幂等重试沿用意图；字段不能被用户raw镜像覆盖"
+        },
+        {
+          "id": "IMG-08.5",
+          "title": "Pod模板与边界",
+          "implementation": "现有创建方PodTemplate/serviceaccount/namespace路径",
+          "acceptance": "imagePullSecrets+Always；init/sidecar若拉私有平台镜像也授权到位；不修改无关调度/网络/配额"
+        },
+        {
+          "id": "IMG-08.6",
+          "title": "owner集成测试",
+          "implementation": "TestImageSelectionOwnership/TestSecretOwnership/TestRetryUsesDigest",
+          "acceptance": "真实产品API创建的容器使用登记镜像；未跑live先只记code/isolated pass，不记产品接入通过"
+        }
+      ]
+    },
+    {
+      "batch": "IMG-09",
+      "title": "最小前端一页闭环",
+      "depends_on": [
+        "IMG-06"
+      ],
+      "person_days": {
+        "low": 1.5,
+        "high": 2
+      },
+      "tasks": [
+        {
+          "id": "IMG-09.1",
+          "title": "绑定现有前端",
+          "implementation": "IMG-00确认的非ANI repo、route、组件库、API生成入口",
+          "acceptance": "未知路径不编造；未授权仓库不写；不能另起Vue/React项目"
+        },
+        {
+          "id": "IMG-09.2",
+          "title": "类型化API接入",
+          "implementation": "新增image API client和类型，由实际OpenAPI生成约定接线",
+          "acceptance": "统一认证/错误/分页；没有tenant输入框和存储Secret的全局store"
+        },
+        {
+          "id": "IMG-09.3",
+          "title": "目录与过滤",
+          "implementation": "平台/租户两页签，名称/用途/加速器筛选，cursor翻页",
+          "acceptance": "只显示已登记内容；空/加载/依赖失败不同展示；筛选改变清cursor"
+        },
+        {
+          "id": "IMG-09.4",
+          "title": "启用与凭证弹窗",
+          "implementation": "enable空间、签发/重置/停用、Docker指引",
+          "acceptance": "权限控制；稳定幂等键用于重试；Secret仅当前弹窗、离开销毁、不持久化"
+        },
+        {
+          "id": "IMG-09.5",
+          "title": "登记与维护",
+          "implementation": "register、metadata edit、unregister确认",
+          "acceptance": "明确取消不是删除镜像；tag更新不自动替换；非法ref前后端均拒绝"
+        },
+        {
+          "id": "IMG-09.6",
+          "title": "创建容器选择",
+          "implementation": "在IMG-08真实创建页传image_id/scope，不传admin或rawSecret",
+          "acceptance": "缺owner时本任务blocked，不新造创建页面；浏览器实际走完整选择运行流程"
+        }
+      ]
+    },
+    {
+      "batch": "IMG-10",
+      "title": "联合验收、隔离反例与最终回归",
+      "depends_on": [
+        "IMG-07",
+        "IMG-08",
+        "IMG-09"
+      ],
+      "person_days": {
+        "low": 1,
+        "high": 1.5
+      },
+      "tasks": [
+        {
+          "id": "IMG-10.1",
+          "title": "冻结live输入",
+          "implementation": "source-lock、镜像与cluster指纹、两测试tenant/user、namespace、CA、run-owned allowlist",
+          "acceptance": "没有live批准不得写共享集群；凭证走文件；记录实际API/节点而不是只截图"
+        },
+        {
+          "id": "IMG-10.2",
+          "title": "正向产品链路",
+          "implementation": "ANI enable→issue→Docker push→register→真实container create",
+          "acceptance": "业务API+Pod spec固定Digest+容器唯一输出标记；平台镜像两个租户可用"
+        },
+        {
+          "id": "IMG-10.3",
+          "title": "越权与缓存测试",
+          "implementation": "按image-acceptance矩阵执行A/B、发布/只读、共享节点缓存负例",
+          "acceptance": "API与Registry两层拒绝；不可只测404页面；直接Pod入口的准入前置有证据"
+        },
+        {
+          "id": "IMG-10.4",
+          "title": "重试/撤销/Tag变更",
+          "implementation": "并发幂等、响应丢失、凭证停用、Tag重推、取消登记",
+          "acceptance": "旧业务意图不变；停用按Token生命周期测试；原登记取消不影响已创建任务"
+        },
+        {
+          "id": "IMG-10.5",
+          "title": "全量门禁",
+          "implementation": "Fedora make verify/integration/race/tenant-mutations + image门禁；两仓对应测试",
+          "acceptance": "必须真实exit0；没有关闭旧门禁；Network迁移checksum、TLS/旧RPC回归一致"
+        },
+        {
+          "id": "IMG-10.6",
+          "title": "收集和清理",
+          "implementation": "脱敏manifest、命令及exitcode、日志、run-owned ID/UID；限域cleanup",
+          "acceptance": "清理核验创建ID/UID和ownership；不跑全局GC、不删除共享project/namespace/volume；剩余项写报告"
+        }
+      ]
+    },
+    {
+      "batch": "IMG-11",
+      "title": "交付与自动推进收尾",
+      "depends_on": [
+        "IMG-10"
+      ],
+      "person_days": {
+        "low": 0.5,
+        "high": 0.75
+      },
+      "tasks": [
+        {
+          "id": "IMG-11.1",
+          "title": "最终源码证据",
+          "implementation": "两/多仓最终SHA、生成物hash、测试所验SHA、diff范围",
+          "acceptance": "文档后续commit与已验代码树相同须说明，否则重新验证；不得复用旧候选证据"
+        },
+        {
+          "id": "IMG-11.2",
+          "title": "更新唯一状态",
+          "implementation": "docs/execution/status.md Image区块 + records链接",
+          "acceptance": "code/isolated/live/product分别标注；存在blocked/not_run不得写全部完成"
+        },
+        {
+          "id": "IMG-11.3",
+          "title": "交付运行手册",
+          "implementation": "配置、首次platform初始化、凭证到期处理、恢复与有限清理",
+          "acceptance": "运行凭证更换需同步唯一namespace Secret；没有自动轮换不写已支持"
+        },
+        {
+          "id": "IMG-11.4",
+          "title": "准备审阅清单",
+          "implementation": "提交分组、API/DDL变更、已知限制、剩余run资源",
+          "acceptance": "仅推review分支；不merge/rebase/amend/force-push主分支，不擅自正式发布"
+        },
+        {
+          "id": "IMG-11.5",
+          "title": "停止或明确续跑点",
+          "implementation": "最终总结/阻塞项/下一未完成任务",
+          "acceptance": "提示词只能在执行Agent会话中推进；上下文/权限中断写checkpoint，不声称后台持续运行"
+        }
+      ]
+    }
+  ]
+}

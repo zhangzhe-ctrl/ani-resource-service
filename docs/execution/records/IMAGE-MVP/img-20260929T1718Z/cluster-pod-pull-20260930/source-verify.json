@@ -1,0 +1,7 @@
+{
+  "source_sha": "de8fc3d4324e171631b9a31a45c62a0ca9a61698",
+  "command": "make verify TOOLS_DIR=/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools",
+  "host": "fedora",
+  "exit_code": 0,
+  "log_sha256": "74173d7f8f3185460980afbc5ef6bbe00063232c989abd14bec92f11d5ae437e"
+}

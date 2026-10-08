@@ -1,0 +1,51 @@
+2026-09-29T17:50:08Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/8caa25c38efafee2967e5c2e7a4555af1cafa912'...
+完成。
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/resource-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+之前的 HEAD 位置是 3d83c76 docs(image): import MVP plan and freeze execution bindings
+HEAD 目前位于 8caa25c feat(image): persist atomic catalog commands and add real database gates
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/resource/8caa25c38efafee2967e5c2e7a4555af1cafa912
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf --version)" = "1.60.0"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/bufbuild/buf@v1.60.0"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf lint
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf build
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf generate --template buf.gen.yaml
+test "$(/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc version)" = "v1.31.1"
+test "$(go version -m /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc | awk '$1 == "mod" {print $2 "@" $3; exit}')" = "github.com/sqlc-dev/sqlc@v1.31.1"
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc generate
+go generate ./...
+find . -type f -name '*.go' -not -path './.git/*' -not -path './.tools/*' -not -path './.work/*' -not -path './.tmp/*' -print0 | xargs -0 --no-run-if-empty gofmt -w
+{
+  "source_sha": "8caa25c38efafee2967e5c2e7a4555af1cafa912",
+  "files": [
+    {
+      "path": "internal/data/image/catalog.go",
+      "base_sha256": "069914a4c8ebd77823f2e92dd1b35f3beb459a802badcc465f73a88b9bf8a237",
+      "sha256": "e64bb9c1f6f54c03d7844821fe6517502264697365f9d1918868abd4e36594e7"
+    },
+    {
+      "path": "internal/data/image/commands.go",
+      "base_sha256": "0b939d6602fded87493c6edc776368edeb229f859da47360933dfdd40887ea1a",
+      "sha256": "aa72360da4a982dfd4565029bedc01b56f0befb0c2fa0f0156bad266646ecd49"
+    },
+    {
+      "path": "internal/data/image/credentials.go",
+      "base_sha256": "d7edc92579f02c9f0420a210844fcbc9e9fc566a19a08321d7cfdfede5648d69",
+      "sha256": "d086c5c945b5ec889d9bafcffb610818de7691c087532dbad0ecf25ab4ba6c77"
+    },
+    {
+      "path": "internal/data/image/postgres_integration_test.go",
+      "base_sha256": "558e1b86c8cf1cf9ee2a141ba6c958d1b8ad4730a58fbd9e186c9bf80aced8e7",
+      "sha256": "0e4fc9f464c12e159dcebe7049108f92ca97e5341537778a269b846815117764"
+    },
+    {
+      "path": "internal/data/image/spaces.go",
+      "base_sha256": "c7bc0f64ee761a8e9787125156f76d8ddec8f5ea0de0b92defd0fabffb650b64",
+      "sha256": "65a015c2dbf70c448bec7ca915ffa81fc4b5e9c92e1cfddb574e6e69d783de2c"
+    }
+  ]
+}
+2026-09-29T17:50:14Z
+exit=0

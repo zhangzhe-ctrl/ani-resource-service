@@ -1,0 +1,49 @@
+2026-09-29T17:27:25Z
+fedora
+正克隆到 '/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/79aaac180bced7d523db7584d567988bf594d8a6'...
+来自 /home/chabking/ani-image-mvp-runs/img-20260929T1718Z/inputs/governance-current.bundle
+ * branch            HEAD       -> FETCH_HEAD
+HEAD 目前位于 79aaac1 build(image): add isolated pinned contract generation and surface check
+/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/repo/governance/79aaac180bced7d523db7584d567988bf594d8a6
+go: downloading google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.6.0
+go: downloading google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.6.0
+go: downloading google.golang.org/grpc v1.6.0
+go: downloading google.golang.org/grpc v1.6.0
+go: downloading github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2 v2.0.0-20251205160234-b9fab9a5a5ab
+go: downloading github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2 v2.0.0-20251205160234-b9fab9a5a5ab
+go: downloading google.golang.org/protobuf v1.33.0
+go: downloading google.golang.org/protobuf v1.33.0
+go: downloading google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd
+go: downloading google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd
+{
+  "source_sha": "79aaac180bced7d523db7584d567988bf594d8a6",
+  "files": [
+    {
+      "path": "api/gen/go/admin/service/v1/i_image.pb.go",
+      "base_sha256": null,
+      "sha256": "7991b8d1f75f4c509278f1092c19bf094661aae8f61ebc37ade35bf21d22f846"
+    },
+    {
+      "path": "api/gen/go/admin/service/v1/i_image_grpc.pb.go",
+      "base_sha256": null,
+      "sha256": "d67d13cf3a6c853a30483508e539834b273802f6d20a22663334f864241e24a0"
+    },
+    {
+      "path": "api/gen/go/admin/service/v1/i_image_http.pb.go",
+      "base_sha256": null,
+      "sha256": "2ad8c2b81ae18fb454434b97eb35d90cbe8c3eabae479d86b3d21927e0c2c871"
+    },
+    {
+      "path": "api/gen/go/catalog/service/v1/image.pb.go",
+      "base_sha256": null,
+      "sha256": "f91290326ed785184fcc36bf617373d0f54e93c4415c461f9d7dbf0806124ff8"
+    },
+    {
+      "path": "tests/imagecontract/contract_test.go",
+      "base_sha256": "727db4c1000a528b88f392fdc6f7d71ce5cf14fbfb2ae6cba597c34943d19374",
+      "sha256": "4e9805a0229102c19bed97afe9b4c88b1622d80a32b3e3fdda665822d8b5e9df"
+    }
+  ]
+}
+2026-09-29T17:27:49Z
+exit=0

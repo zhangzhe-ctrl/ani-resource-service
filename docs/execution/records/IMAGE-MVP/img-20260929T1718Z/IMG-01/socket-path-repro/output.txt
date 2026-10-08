@@ -1,0 +1,15 @@
+2026-09-29T17:29:14Z
+fedora
+3d83c7618b861f354ca4e34d8e0a9d09cb2bb0b4
+--- FAIL: TestSocketRequiresPrivateDirectoryAndPreservesExistingPath (0.00s)
+    main_test.go:70: cannot create isolated socket
+FAIL
+FAIL	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	0.009s
+FAIL
+baseline-long-tmp-exit=1
+short_task_tmp=/home/chabking/.im-1718
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	0.009s
+109ddcc8916fbee2ca5fdcf77e0f38c8cbef30b2
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	0.008s
+2026-09-29T17:29:23Z
+exit=0

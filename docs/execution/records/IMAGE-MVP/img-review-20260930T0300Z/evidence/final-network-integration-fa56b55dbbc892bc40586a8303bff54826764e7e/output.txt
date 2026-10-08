@@ -1,0 +1,35 @@
+2026-09-30T03:50:17Z
+fedora
+/home/chabking/ani-image-mvp-runs/img-review-20260930T0300Z/repo/resource/fa56b55dbbc892bc40586a8303bff54826764e7e
+./scripts/integration -timeout 20m ./...
+owned_fixture=4ea34dc1baa416bafcf55b530ade13d2831aea6cea4878437dc48910ea3988f3 memory=805306368 memory_swap=805306368 nanocpus=1000000000
+127.0.0.1:5432 - accepting connections
+PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=4ea34dc1baa416bafcf55b530ade13d2831aea6cea4878437dc48910ea3988f3
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/cmd/ani-resource-service	8.265s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image	0.005s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network	0.008s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/conf/v1	0.016s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image	0.527s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/image/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	647.120s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/server	2.210s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/image	0.007s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network	0.007s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/migrations/image	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/image-smoke-runtime	0.009s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/scripts/lb-api	0.014s
+?   	github.com/zhangzhe-ctrl/ani-resource-service/scripts/vpc-read-probe	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/relay	[no test files]
+?   	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05/rpc	[no test files]
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider	0.011s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/runtime	0.102s
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv	0.079s
+removed task container=4ea34dc1baa416bafcf55b530ade13d2831aea6cea4878437dc48910ea3988f3
+confirmed fixture absent=4ea34dc1baa416bafcf55b530ade13d2831aea6cea4878437dc48910ea3988f3
+2026-09-30T04:01:19Z
+exit=0

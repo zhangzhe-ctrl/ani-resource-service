@@ -1,0 +1,449 @@
+{
+  "run": "imgp-0930-0200",
+  "started_utc": "2026-09-30T02:08:44Z",
+  "projects": [
+    {
+      "id": 3,
+      "name": "t-imgp-0930-0200-a",
+      "creation_time": "2026-09-30T02:08:45.651Z"
+    },
+    {
+      "id": 4,
+      "name": "t-imgp-0930-0200-b",
+      "creation_time": "2026-09-30T02:08:46.550Z"
+    },
+    {
+      "id": 5,
+      "name": "imgp-0930-0200-platform",
+      "creation_time": "2026-09-30T02:08:47.423Z"
+    }
+  ],
+  "robots": [
+    {
+      "id": 4,
+      "name": "robot$imgp-0930-0200-pub-a",
+      "description": "ani-image:v1:technical-pod:imgp-0930-0200:pub-a",
+      "permissions": [
+        {
+          "kind": "project",
+          "namespace": "t-imgp-0930-0200-a",
+          "access": [
+            {
+              "resource": "repository",
+              "action": "pull",
+              "effect": "allow"
+            },
+            {
+              "resource": "repository",
+              "action": "push",
+              "effect": "allow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "robot$imgp-0930-0200-pub-b",
+      "description": "ani-image:v1:technical-pod:imgp-0930-0200:pub-b",
+      "permissions": [
+        {
+          "kind": "project",
+          "namespace": "t-imgp-0930-0200-b",
+          "access": [
+            {
+              "resource": "repository",
+              "action": "pull",
+              "effect": "allow"
+            },
+            {
+              "resource": "repository",
+              "action": "push",
+              "effect": "allow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "robot$imgp-0930-0200-pub-platform",
+      "description": "ani-image:v1:technical-pod:imgp-0930-0200:pub-platform",
+      "permissions": [
+        {
+          "kind": "project",
+          "namespace": "imgp-0930-0200-platform",
+          "access": [
+            {
+              "resource": "repository",
+              "action": "pull",
+              "effect": "allow"
+            },
+            {
+              "resource": "repository",
+              "action": "push",
+              "effect": "allow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "robot$imgp-0930-0200-pull-a",
+      "description": "ani-image:v1:technical-pod:imgp-0930-0200:pull-a",
+      "permissions": [
+        {
+          "kind": "project",
+          "namespace": "t-imgp-0930-0200-a",
+          "access": [
+            {
+              "resource": "repository",
+              "action": "pull",
+              "effect": "allow"
+            }
+          ]
+        },
+        {
+          "kind": "project",
+          "namespace": "imgp-0930-0200-platform",
+          "access": [
+            {
+              "resource": "repository",
+              "action": "pull",
+              "effect": "allow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "robot$imgp-0930-0200-pull-b",
+      "description": "ani-image:v1:technical-pod:imgp-0930-0200:pull-b",
+      "permissions": [
+        {
+          "kind": "project",
+          "namespace": "t-imgp-0930-0200-b",
+          "access": [
+            {
+              "resource": "repository",
+              "action": "pull",
+              "effect": "allow"
+            }
+          ]
+        },
+        {
+          "kind": "project",
+          "namespace": "imgp-0930-0200-platform",
+          "access": [
+            {
+              "resource": "repository",
+              "action": "pull",
+              "effect": "allow"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "kubernetes": [
+    {
+      "namespace": null,
+      "plural": "namespaces",
+      "name": "imgp-0930-0200-a",
+      "uid": "f00ef77b-75a9-4b99-9eac-7731c0976218"
+    },
+    {
+      "namespace": "imgp-0930-0200-a",
+      "plural": "resourcequotas",
+      "name": "test-budget",
+      "uid": "73624af4-c783-473f-8b28-b41fd5184c5e"
+    },
+    {
+      "namespace": "imgp-0930-0200-a",
+      "plural": "secrets",
+      "name": "image-pull",
+      "uid": "ee86e63b-457e-440d-9f52-38bc9d7e5ef9"
+    },
+    {
+      "namespace": null,
+      "plural": "namespaces",
+      "name": "imgp-0930-0200-b",
+      "uid": "e2f4c700-2a9f-435a-91ef-93f6d5b9d5ac"
+    },
+    {
+      "namespace": "imgp-0930-0200-b",
+      "plural": "resourcequotas",
+      "name": "test-budget",
+      "uid": "eb685cac-5383-4504-8322-1ec888ebae90"
+    },
+    {
+      "namespace": "imgp-0930-0200-b",
+      "plural": "secrets",
+      "name": "image-pull",
+      "uid": "be184cc7-d42b-4b37-aa20-4990b60138f8"
+    },
+    {
+      "namespace": "imgp-0930-0200-a",
+      "plural": "pods",
+      "name": "own-a-ani-01",
+      "uid": "4a67ac04-b440-4999-beb6-6fb0fc3296f6"
+    },
+    {
+      "namespace": "imgp-0930-0200-a",
+      "plural": "pods",
+      "name": "own-a-ani-02",
+      "uid": "773a1ee4-06b9-4bdd-b954-23b9d872497f"
+    },
+    {
+      "namespace": "imgp-0930-0200-a",
+      "plural": "pods",
+      "name": "own-a-ani-03",
+      "uid": "0b8acf9a-04fe-4b16-95f6-c5d792003f50"
+    },
+    {
+      "namespace": "imgp-0930-0200-b",
+      "plural": "pods",
+      "name": "own-b",
+      "uid": "f5db3b9a-c9e5-4cc6-836f-e6480e338770"
+    },
+    {
+      "namespace": "imgp-0930-0200-b",
+      "plural": "pods",
+      "name": "shared-platform",
+      "uid": "2c7885d2-9d00-4466-a8cf-e27541e708f2"
+    },
+    {
+      "namespace": "imgp-0930-0200-b",
+      "plural": "pods",
+      "name": "cross-a-ani-01",
+      "uid": "8df28a06-7afd-4a2a-ac54-266d4ce8a540"
+    },
+    {
+      "namespace": "imgp-0930-0200-b",
+      "plural": "pods",
+      "name": "cross-a-ani-02",
+      "uid": "2d1ea7a6-7cdc-4d32-9edb-682b0879af5f"
+    },
+    {
+      "namespace": "imgp-0930-0200-b",
+      "plural": "pods",
+      "name": "cross-a-ani-03",
+      "uid": "b8fe2260-de77-41d7-bece-95eb88a86ae4"
+    }
+  ],
+  "checks": [
+    {
+      "name": "digest-a",
+      "pass_": true
+    },
+    {
+      "name": "digest-b",
+      "pass_": true
+    },
+    {
+      "name": "digest-platform",
+      "pass_": true
+    },
+    {
+      "name": "pull-cannot-push",
+      "pass_": true,
+      "exit_code": 1
+    },
+    {
+      "name": "publisher-cannot-write-b",
+      "pass_": true,
+      "exit_code": 1
+    },
+    {
+      "name": "publisher-cannot-write-platform",
+      "pass_": true,
+      "exit_code": 1
+    },
+    {
+      "name": "pull-own-a-ani-01",
+      "pass_": true,
+      "uid": "4a67ac04-b440-4999-beb6-6fb0fc3296f6",
+      "node": "ani-01",
+      "image": "172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4",
+      "image_pull_policy": "Always",
+      "image_id": "172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4"
+    },
+    {
+      "name": "pull-own-a-ani-02",
+      "pass_": true,
+      "uid": "773a1ee4-06b9-4bdd-b954-23b9d872497f",
+      "node": "ani-02",
+      "image": "172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4",
+      "image_pull_policy": "Always",
+      "image_id": "172.16.101.10:30003/imgp-0930-0200-platform/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4"
+    },
+    {
+      "name": "pull-own-a-ani-03",
+      "pass_": true,
+      "uid": "0b8acf9a-04fe-4b16-95f6-c5d792003f50",
+      "node": "ani-03",
+      "image": "172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4",
+      "image_pull_policy": "Always",
+      "image_id": "172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4"
+    },
+    {
+      "name": "pull-own-b",
+      "pass_": true,
+      "uid": "f5db3b9a-c9e5-4cc6-836f-e6480e338770",
+      "node": "ani-01",
+      "image": "172.16.101.10:30003/t-imgp-0930-0200-b/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4",
+      "image_pull_policy": "Always",
+      "image_id": "172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4"
+    },
+    {
+      "name": "pull-shared-platform",
+      "pass_": true,
+      "uid": "2c7885d2-9d00-4466-a8cf-e27541e708f2",
+      "node": "ani-02",
+      "image": "172.16.101.10:30003/imgp-0930-0200-platform/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4",
+      "image_pull_policy": "Always",
+      "image_id": "172.16.101.10:30003/imgp-0930-0200-platform/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4"
+    },
+    {
+      "name": "cached-cross-tenant-ani-01",
+      "pass_": true,
+      "uid": "8df28a06-7afd-4a2a-ac54-266d4ce8a540",
+      "node": "ani-01",
+      "waiting": {
+        "reason": "ImagePullBackOff",
+        "message": "Back-off pulling image \"172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4\": ErrImagePull: failed to pull and unpack image \"172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4\": failed to resolve reference \"172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4\": unexpected status from HEAD request to https://172.16.101.10:30003/v2/t-imgp-0930-0200-a/fixture/manifests/sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4: 401 Unauthorized"
+      },
+      "image": "172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4"
+    },
+    {
+      "name": "cached-cross-tenant-ani-02",
+      "pass_": true,
+      "uid": "2d1ea7a6-7cdc-4d32-9edb-682b0879af5f",
+      "node": "ani-02",
+      "waiting": {
+        "reason": "ImagePullBackOff",
+        "message": "Back-off pulling image \"172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4\": ErrImagePull: failed to pull and unpack image \"172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4\": failed to resolve reference \"172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4\": unexpected status from HEAD request to https://172.16.101.10:30003/v2/t-imgp-0930-0200-a/fixture/manifests/sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4: 401 Unauthorized"
+      },
+      "image": "172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4"
+    },
+    {
+      "name": "cached-cross-tenant-ani-03",
+      "pass_": true,
+      "uid": "b8fe2260-de77-41d7-bece-95eb88a86ae4",
+      "node": "ani-03",
+      "waiting": {
+        "reason": "ImagePullBackOff",
+        "message": "Back-off pulling image \"172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4\": ErrImagePull: failed to pull and unpack image \"172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4\": failed to resolve reference \"172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4\": unexpected status from HEAD request to https://172.16.101.10:30003/v2/t-imgp-0930-0200-a/fixture/manifests/sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4: 401 Unauthorized"
+      },
+      "image": "172.16.101.10:30003/t-imgp-0930-0200-a/fixture@sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "pods",
+      "uid": "b8fe2260-de77-41d7-bece-95eb88a86ae4",
+      "delete": "accepted"
+    },
+    {
+      "kind": "pods",
+      "uid": "2d1ea7a6-7cdc-4d32-9edb-682b0879af5f",
+      "delete": "accepted"
+    },
+    {
+      "kind": "pods",
+      "uid": "8df28a06-7afd-4a2a-ac54-266d4ce8a540",
+      "delete": "accepted"
+    },
+    {
+      "kind": "pods",
+      "uid": "2c7885d2-9d00-4466-a8cf-e27541e708f2",
+      "delete": "accepted"
+    },
+    {
+      "kind": "pods",
+      "uid": "f5db3b9a-c9e5-4cc6-836f-e6480e338770",
+      "delete": "accepted"
+    },
+    {
+      "kind": "pods",
+      "uid": "0b8acf9a-04fe-4b16-95f6-c5d792003f50",
+      "delete": "accepted"
+    },
+    {
+      "kind": "pods",
+      "uid": "773a1ee4-06b9-4bdd-b954-23b9d872497f",
+      "delete": "accepted"
+    },
+    {
+      "kind": "pods",
+      "uid": "4a67ac04-b440-4999-beb6-6fb0fc3296f6",
+      "delete": "accepted"
+    },
+    {
+      "kind": "secrets",
+      "uid": "be184cc7-d42b-4b37-aa20-4990b60138f8",
+      "delete": "accepted"
+    },
+    {
+      "kind": "resourcequotas",
+      "uid": "eb685cac-5383-4504-8322-1ec888ebae90",
+      "delete": "accepted"
+    },
+    {
+      "kind": "namespaces",
+      "uid": "e2f4c700-2a9f-435a-91ef-93f6d5b9d5ac",
+      "delete": "accepted"
+    },
+    {
+      "kind": "secrets",
+      "uid": "ee86e63b-457e-440d-9f52-38bc9d7e5ef9",
+      "delete": "accepted"
+    },
+    {
+      "kind": "resourcequotas",
+      "uid": "73624af4-c783-473f-8b28-b41fd5184c5e",
+      "delete": "accepted"
+    },
+    {
+      "kind": "namespaces",
+      "uid": "f00ef77b-75a9-4b99-9eac-7731c0976218",
+      "delete": "accepted"
+    },
+    {
+      "kind": "robot",
+      "id": 8,
+      "absent": true
+    },
+    {
+      "kind": "robot",
+      "id": 7,
+      "absent": true
+    },
+    {
+      "kind": "robot",
+      "id": 6,
+      "absent": true
+    },
+    {
+      "kind": "robot",
+      "id": 5,
+      "absent": true
+    },
+    {
+      "kind": "robot",
+      "id": 4,
+      "absent": true
+    }
+  ],
+  "image_digest": "sha256:66a6306db78bf2dbf3487f293aa8d6990d8e506fdffab9cc43fe422becf886e4",
+  "image_config_digest": "sha256:30ecbe1509090b38ef3260f3609d64d8261230464eaa4d235901db496e9647fb",
+  "result": "pass_technical_scope_only",
+  "cleanup_errors": [
+    "project 5: Harbor GET /api/v2.0/projects/5/repositories?page_size=100: 404",
+    "project 4: Harbor GET /api/v2.0/projects/4/repositories?page_size=100: 404",
+    "project 3: Harbor GET /api/v2.0/projects/3/repositories?page_size=100: 404"
+  ],
+  "finished_utc": "2026-09-30T02:09:42Z"
+}

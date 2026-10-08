@@ -1,0 +1,46 @@
+[
+  {
+    "command": [
+      "go",
+      "version"
+    ],
+    "output": "go version go1.26.7-X:nodwarf5 linux/amd64"
+  },
+  {
+    "command": [
+      "uname",
+      "-r"
+    ],
+    "output": "7.1.10-200.fc44.x86_64"
+  },
+  {
+    "command": [
+      "python3",
+      "--version"
+    ],
+    "output": "Python 3.14.7"
+  },
+  {
+    "command": [
+      "docker",
+      "version",
+      "--format",
+      "{{.Client.Version}}"
+    ],
+    "output": "29.7.2"
+  },
+  {
+    "command": [
+      "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/buf",
+      "--version"
+    ],
+    "output": "1.60.0"
+  },
+  {
+    "command": [
+      "/home/chabking/ani-image-mvp-runs/img-20260929T1718Z/cache/tools/sqlc",
+      "version"
+    ],
+    "output": "v1.31.1"
+  }
+]

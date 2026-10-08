@@ -1,0 +1,36 @@
+// Internal-only contract. NEVER expose through public HTTP or tenant allowlist.
+syntax = "proto3";
+package image.v1;
+option go_package = "github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1;imagev1";
+import "image/v1/image.proto";
+import "google/protobuf/timestamp.proto";
+
+service ImageRuntimeService {
+  rpc ResolveImageForWorkload(ResolveImageForWorkloadRequest) returns (ResolveImageForWorkloadResponse);
+  rpc GetTenantPullMaterial(GetTenantPullMaterialRequest) returns (GetTenantPullMaterialResponse);
+}
+message ResolveImageForWorkloadRequest {
+  string tenant_id = 1;
+  ImageScope scope = 2;
+  string image_id = 3;
+  ImagePlatform target_platform = 4;
+}
+message ResolveImageForWorkloadResponse {
+  string tenant_id = 1; // requesting tenant, including platform-image use
+  string image_id = 2;
+  ImageScope scope = 3;
+  string resolved_reference = 4;
+  string digest = 5;
+  int64 image_version = 6;
+  ImagePlatform selected_platform = 7;
+}
+message GetTenantPullMaterialRequest { string tenant_id = 1; }
+message GetTenantPullMaterialResponse {
+  string tenant_id = 1;
+  string space_id = 2;
+  string registry_authority = 3;
+  string username = 4;
+  string secret = 5; // Sensitive: no logs/traces/public response/cache.
+  int64 generation = 6;
+  google.protobuf.Timestamp expires_at = 7; // absent only for explicitly never-expiring identity
+}

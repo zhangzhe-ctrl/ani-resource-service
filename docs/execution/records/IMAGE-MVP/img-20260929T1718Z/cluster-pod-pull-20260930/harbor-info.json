@@ -1,0 +1,5 @@
+{
+  "harbor_version": "v2.15.2-a97e7b83",
+  "registry_url": "172.16.101.10:30003",
+  "auth_mode": "db_auth"
+}
