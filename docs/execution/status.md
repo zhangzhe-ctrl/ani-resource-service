@@ -281,7 +281,7 @@ NET-05 验收完成，按用户后续授权发布 Network main，ANI 成果继�
 
 ### 2026-10-08 main 合并授权
 
-用户授权完成[后端交接](records/IMAGE-MVP/HANDOFF-20261008.md)并合并 Resource/Governance review 分支到各自 main。正在处理 Governance 与当前 ModelDev main 的合并冲突，以及 Resource 旧 CI 的 secrets 门禁失败；未将旧 SHA 验证冒充合并后通过。产品 Harbor smoke、IMG-08、IMG-09 仍为 blocked，不新增部署或前端授权。
+用户授权完成[后端交接](records/IMAGE-MVP/HANDOFF-20261008.md)并合并 Resource/Governance review 分支到各自 main。Governance 与当前 ModelDev main 已完成普通 merge；Resource 历史公开哈希误报及新检出的 OpenTelemetry 漏洞已修复。Resource `3d15d09` 的 Fedora make verify/audit、Image PG/恢复/并发/race，Governance `2f8f919` 的跨仓真实 HTTP/JWT/AK/权限均 exit0；Governance 最终 CI 全部成功。命令、完整SHA、失败日志及清理记录见交接。最终 main 合并结果以 [Resource #5](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/5)、[Governance #7](https://github.com/zhangzhe-ctrl/ani-governance/pull/7) 为准；仅文档/SBOM追加通过运行源码一致性关联已验版本。产品 Harbor smoke、IMG-08、IMG-09 仍为 blocked，不新增部署或前端授权。
 
 ### 2026-09-30 审核修复 R1—R3
 
