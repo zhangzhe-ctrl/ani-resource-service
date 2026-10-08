@@ -279,6 +279,10 @@ NET-05 验收完成，按用户后续授权发布 Network main，ANI 成果继�
 
 ## Image MVP
 
+### 2026-10-08 main 合并授权
+
+用户授权完成[后端交接](records/IMAGE-MVP/HANDOFF-20261008.md)并合并 Resource/Governance review 分支到各自 main。正在处理 Governance 与当前 ModelDev main 的合并冲突，以及 Resource 旧 CI 的 secrets 门禁失败；未将旧 SHA 验证冒充合并后通过。产品 Harbor smoke、IMG-08、IMG-09 仍为 blocked，不新增部署或前端授权。
+
 ### 2026-09-30 审核修复 R1—R3
 
 本轮 [修复记录](records/IMAGE-MVP/img-review-20260930T0300Z/README.md)；Resource 运行候选 `fa56b55dbbc892bc40586a8303bff54826764e7e`，Governance 运行候选 `e608cba9bf7c5ccfdb3dad41471525ff541c1ad1`。R1、R2、R3 均已通过真实定向 red/green；最终候选 make verify、Image PG/并发/进程恢复/race/隔离与mutation、Governance默认优化build/合同/真实HTTP/JWT/AK/权限/既有回归、旧Network PG/race/mutation均exit0。Governance race使用记录中的Ent包关闭内联例外，不宣称默认优化race通过。26个本轮测试容器按实际ID复查不存在，失败日志和最终运行源码清单均已归档。交付两个review分支后停止，等待用户审核/手动合并；后端 Harbor smoke 因缺产品调用授权 profile 保持 blocked。IMG-08、IMG-09继续用户授权blocked，不接普通容器产品或前端，不宣称整个MVP或产品验收完成。
