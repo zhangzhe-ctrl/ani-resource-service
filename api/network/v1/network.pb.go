@@ -1195,6 +1195,7 @@ type ListVPCsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*VPC                 `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	Total         int64                  `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1241,6 +1242,13 @@ func (x *ListVPCsResponse) GetNextCursor() string {
 		return x.NextCursor
 	}
 	return ""
+}
+
+func (x *ListVPCsResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 type DeleteVPCRequest struct {
@@ -1927,6 +1935,7 @@ type ListSubnetsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*Subnet              `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	Total         int64                  `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1973,6 +1982,13 @@ func (x *ListSubnetsResponse) GetNextCursor() string {
 		return x.NextCursor
 	}
 	return ""
+}
+
+func (x *ListSubnetsResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 type DeleteSubnetRequest struct {
@@ -3239,11 +3255,12 @@ const file_network_v1_network_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12/\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x19.network.v1.ResourceStateR\x05state\x12\x14\n" +
 	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06cursor\x18\x05 \x01(\tR\x06cursor\"Z\n" +
+	"\x06cursor\x18\x05 \x01(\tR\x06cursor\"p\n" +
 	"\x10ListVPCsResponse\x12%\n" +
 	"\x05items\x18\x01 \x03(\v2\x0f.network.v1.VPCR\x05items\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\"F\n" +
+	"nextCursor\x12\x14\n" +
+	"\x05total\x18\x03 \x01(\x03R\x05total\"F\n" +
 	"\x10DeleteVPCRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x15\n" +
 	"\x06vpc_id\x18\x02 \x01(\tR\x05vpcId\"6\n" +
@@ -3299,11 +3316,12 @@ const file_network_v1_network_proto_rawDesc = "" +
 	"\x05state\x18\x03 \x01(\x0e2\x19.network.v1.ResourceStateR\x05state\x12\x14\n" +
 	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12\x16\n" +
 	"\x06cursor\x18\x05 \x01(\tR\x06cursor\x12\x15\n" +
-	"\x06vpc_id\x18\x06 \x01(\tR\x05vpcId\"`\n" +
+	"\x06vpc_id\x18\x06 \x01(\tR\x05vpcId\"v\n" +
 	"\x13ListSubnetsResponse\x12(\n" +
 	"\x05items\x18\x01 \x03(\v2\x12.network.v1.SubnetR\x05items\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\"O\n" +
+	"nextCursor\x12\x14\n" +
+	"\x05total\x18\x03 \x01(\x03R\x05total\"O\n" +
 	"\x13DeleteSubnetRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
 	"\tsubnet_id\x18\x02 \x01(\tR\bsubnetId\"B\n" +

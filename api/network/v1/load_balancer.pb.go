@@ -1404,6 +1404,7 @@ type ListLoadBalancersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*LoadBalancer        `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	Total         int64                  `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1450,6 +1451,13 @@ func (x *ListLoadBalancersResponse) GetNextCursor() string {
 		return x.NextCursor
 	}
 	return ""
+}
+
+func (x *ListLoadBalancersResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 // Full replacement of mutable fields only: name, description, backend set and
@@ -1931,11 +1939,12 @@ const file_network_v1_load_balancer_proto_rawDesc = "" +
 	"\bexposure\x18\x05 \x01(\x0e2 .network.v1.LoadBalancerExposureR\bexposure\x12/\n" +
 	"\x05state\x18\x06 \x01(\x0e2\x19.network.v1.ResourceStateR\x05state\x12\x14\n" +
 	"\x05limit\x18\a \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06cursor\x18\b \x01(\tR\x06cursor\"l\n" +
+	"\x06cursor\x18\b \x01(\tR\x06cursor\"\x82\x01\n" +
 	"\x19ListLoadBalancersResponse\x12.\n" +
 	"\x05items\x18\x01 \x03(\v2\x18.network.v1.LoadBalancerR\x05items\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\"\x83\x03\n" +
+	"nextCursor\x12\x14\n" +
+	"\x05total\x18\x03 \x01(\x03R\x05total\"\x83\x03\n" +
 	"\x19UpdateLoadBalancerRequest\x12(\n" +
 	"\x10target_tenant_id\x18\x01 \x01(\tR\x0etargetTenantId\x12(\n" +
 	"\x10load_balancer_id\x18\x02 \x01(\tR\x0eloadBalancerId\x12)\n" +

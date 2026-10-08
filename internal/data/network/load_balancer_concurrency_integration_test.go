@@ -157,7 +157,7 @@ func TestLBNewRelationsRejectCrossTenantSQLAndAPI(t *testing.T) {
 	if _, err = f.lbs.GetOperation(ctx, "", r.Operation.ID); biz.ReasonOf(err) != biz.ResourceNotFound {
 		t.Fatal(err)
 	}
-	list, _, err := f.lbs.List(ctx, biz.ListLoadBalancers{ListVPCs: biz.ListVPCs{Limit: 20}})
+	list, _, _, err := f.lbs.List(ctx, biz.ListLoadBalancers{ListVPCs: biz.ListVPCs{Limit: 20}})
 	if err != nil || len(list) != 0 {
 		t.Fatal("tenant list leaked", list, err)
 	}

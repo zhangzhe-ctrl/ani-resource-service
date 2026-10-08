@@ -75,6 +75,7 @@ type PageKey struct {
 	ImageID   string
 }
 type RegistrationPage struct {
+	Total      int64
 	Items      []Registration
 	NextCursor string
 }

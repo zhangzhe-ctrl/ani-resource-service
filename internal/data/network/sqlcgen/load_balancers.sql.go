@@ -215,6 +215,38 @@ func (q *Queries) ClaimEIPForLB(ctx context.Context, arg ClaimEIPForLBParams) (i
 	return result.RowsAffected(), nil
 }
 
+const countLBs = `-- name: CountLBs :one
+SELECT count(*) FROM network_load_balancers l WHERE tenant_id=$1 AND last_operation_id IS NOT NULL
+AND ($2::text='' OR name=$2)
+AND ($3::text='' OR vpc_id=$3)
+AND ($4::text='' OR subnet_id=$4)
+AND ($5::text='' OR exposure=$5)
+AND (($6::text='' AND state<>'deleted') OR state=$6)
+`
+
+type CountLBsParams struct {
+	TenantID       string
+	NameFilter     string
+	VpcFilter      string
+	SubnetFilter   string
+	ExposureFilter string
+	StateFilter    string
+}
+
+func (q *Queries) CountLBs(ctx context.Context, arg CountLBsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countLBs,
+		arg.TenantID,
+		arg.NameFilter,
+		arg.VpcFilter,
+		arg.SubnetFilter,
+		arg.ExposureFilter,
+		arg.StateFilter,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getLBCapability = `-- name: GetLBCapability :one
 SELECT cluster_id, ready, reason, observed_at, fingerprint, provider_images FROM network_lb_capabilities WHERE cluster_id=$1
 `

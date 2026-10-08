@@ -789,6 +789,7 @@ type ListEIPsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*EIP                 `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	Total         int64                  `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -835,6 +836,13 @@ func (x *ListEIPsResponse) GetNextCursor() string {
 		return x.NextCursor
 	}
 	return ""
+}
+
+func (x *ListEIPsResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 type DeleteEIPRequest struct {
@@ -2698,6 +2706,7 @@ type ListNodeInterfacesResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Items                []*NodeInterface       `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	InventoryFingerprint string                 `protobuf:"bytes,2,opt,name=inventory_fingerprint,json=inventoryFingerprint,proto3" json:"inventory_fingerprint,omitempty"`
+	Total                int64                  `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -2744,6 +2753,13 @@ func (x *ListNodeInterfacesResponse) GetInventoryFingerprint() string {
 		return x.InventoryFingerprint
 	}
 	return ""
+}
+
+func (x *ListNodeInterfacesResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 type AdoptNetworkDeviceRequest struct {
@@ -3226,6 +3242,7 @@ type ListVlanNetworksResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*PlatformResource    `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	Total         int64                  `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3272,6 +3289,13 @@ func (x *ListVlanNetworksResponse) GetNextCursor() string {
 		return x.NextCursor
 	}
 	return ""
+}
+
+func (x *ListVlanNetworksResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 type DeleteVlanNetworkRequest struct {
@@ -3626,6 +3650,7 @@ type ListEgressGatewaysResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*PlatformResource    `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	Total         int64                  `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3672,6 +3697,13 @@ func (x *ListEgressGatewaysResponse) GetNextCursor() string {
 		return x.NextCursor
 	}
 	return ""
+}
+
+func (x *ListEgressGatewaysResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 type DeleteEgressGatewayRequest struct {
@@ -4082,6 +4114,7 @@ type ListPublicAddressPoolsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*PlatformResource    `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	Total         int64                  `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4128,6 +4161,13 @@ func (x *ListPublicAddressPoolsResponse) GetNextCursor() string {
 		return x.NextCursor
 	}
 	return ""
+}
+
+func (x *ListPublicAddressPoolsResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 type DeletePublicAddressPoolRequest struct {
@@ -4861,6 +4901,7 @@ type ListIntranetAddressPoolsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*PlatformResource    `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	Total         int64                  `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4907,6 +4948,13 @@ func (x *ListIntranetAddressPoolsResponse) GetNextCursor() string {
 		return x.NextCursor
 	}
 	return ""
+}
+
+func (x *ListIntranetAddressPoolsResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 type DeleteIntranetAddressPoolRequest struct {
@@ -5686,11 +5734,12 @@ const file_network_v1_egress_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12/\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x19.network.v1.ResourceStateR\x05state\x12\x14\n" +
 	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06cursor\x18\x05 \x01(\tR\x06cursor\"Z\n" +
+	"\x06cursor\x18\x05 \x01(\tR\x06cursor\"p\n" +
 	"\x10ListEIPsResponse\x12%\n" +
 	"\x05items\x18\x01 \x03(\v2\x0f.network.v1.EIPR\x05items\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\"S\n" +
+	"nextCursor\x12\x14\n" +
+	"\x05total\x18\x03 \x01(\x03R\x05total\"S\n" +
 	"\x10DeleteEIPRequest\x12(\n" +
 	"\x10target_tenant_id\x18\x01 \x01(\tR\x0etargetTenantId\x12\x15\n" +
 	"\x06eip_id\x18\x02 \x01(\tR\x05eipId\"6\n" +
@@ -5858,10 +5907,11 @@ const file_network_v1_egress_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"8\n" +
 	"\x19ListNodeInterfacesRequest\x12\x1b\n" +
-	"\tnode_name\x18\x01 \x01(\tR\bnodeName\"\x82\x01\n" +
+	"\tnode_name\x18\x01 \x01(\tR\bnodeName\"\x98\x01\n" +
 	"\x1aListNodeInterfacesResponse\x12/\n" +
 	"\x05items\x18\x01 \x03(\v2\x19.network.v1.NodeInterfaceR\x05items\x123\n" +
-	"\x15inventory_fingerprint\x18\x02 \x01(\tR\x14inventoryFingerprint\"\xae\x01\n" +
+	"\x15inventory_fingerprint\x18\x02 \x01(\tR\x14inventoryFingerprint\x12\x14\n" +
+	"\x05total\x18\x03 \x01(\x03R\x05total\"\xae\x01\n" +
 	"\x19AdoptNetworkDeviceRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
 	"\vdevice_name\x18\x02 \x01(\tR\n" +
@@ -5890,11 +5940,12 @@ const file_network_v1_egress_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12/\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x19.network.v1.ResourceStateR\x05state\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06cursor\x18\x04 \x01(\tR\x06cursor\"o\n" +
+	"\x06cursor\x18\x04 \x01(\tR\x06cursor\"\x85\x01\n" +
 	"\x18ListVlanNetworksResponse\x122\n" +
 	"\x05items\x18\x01 \x03(\v2\x1c.network.v1.PlatformResourceR\x05items\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\"B\n" +
+	"nextCursor\x12\x14\n" +
+	"\x05total\x18\x03 \x01(\x03R\x05total\"B\n" +
 	"\x18DeleteVlanNetworkRequest\x12&\n" +
 	"\x0fvlan_network_id\x18\x01 \x01(\tR\rvlanNetworkId\"U\n" +
 	"\x19DeleteVlanNetworkResponse\x128\n" +
@@ -5914,11 +5965,12 @@ const file_network_v1_egress_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12/\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x19.network.v1.ResourceStateR\x05state\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06cursor\x18\x04 \x01(\tR\x06cursor\"q\n" +
+	"\x06cursor\x18\x04 \x01(\tR\x06cursor\"\x87\x01\n" +
 	"\x1aListEgressGatewaysResponse\x122\n" +
 	"\x05items\x18\x01 \x03(\v2\x1c.network.v1.PlatformResourceR\x05items\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\";\n" +
+	"nextCursor\x12\x14\n" +
+	"\x05total\x18\x03 \x01(\x03R\x05total\";\n" +
 	"\x1aDeleteEgressGatewayRequest\x12\x1d\n" +
 	"\n" +
 	"gateway_id\x18\x01 \x01(\tR\tgatewayId\"W\n" +
@@ -5947,11 +5999,12 @@ const file_network_v1_egress_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12/\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x19.network.v1.ResourceStateR\x05state\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06cursor\x18\x04 \x01(\tR\x06cursor\"u\n" +
+	"\x06cursor\x18\x04 \x01(\tR\x06cursor\"\x8b\x01\n" +
 	"\x1eListPublicAddressPoolsResponse\x122\n" +
 	"\x05items\x18\x01 \x03(\v2\x1c.network.v1.PlatformResourceR\x05items\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\"9\n" +
+	"nextCursor\x12\x14\n" +
+	"\x05total\x18\x03 \x01(\x03R\x05total\"9\n" +
 	"\x1eDeletePublicAddressPoolRequest\x12\x17\n" +
 	"\apool_id\x18\x01 \x01(\tR\x06poolId\"[\n" +
 	"\x1fDeletePublicAddressPoolResponse\x128\n" +
@@ -5996,11 +6049,12 @@ const file_network_v1_egress_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12/\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x19.network.v1.ResourceStateR\x05state\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06cursor\x18\x04 \x01(\tR\x06cursor\"w\n" +
+	"\x06cursor\x18\x04 \x01(\tR\x06cursor\"\x8d\x01\n" +
 	" ListIntranetAddressPoolsResponse\x122\n" +
 	"\x05items\x18\x01 \x03(\v2\x1c.network.v1.PlatformResourceR\x05items\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\";\n" +
+	"nextCursor\x12\x14\n" +
+	"\x05total\x18\x03 \x01(\x03R\x05total\";\n" +
 	" DeleteIntranetAddressPoolRequest\x12\x17\n" +
 	"\apool_id\x18\x01 \x01(\tR\x06poolId\"]\n" +
 	"!DeleteIntranetAddressPoolResponse\x128\n" +

@@ -25,6 +25,7 @@ type spaceWriteConnection struct {
 type imageConnection interface {
 	sqlcgen.DBTX
 	Begin(context.Context) (pgx.Tx, error)
+	BeginTx(context.Context, pgx.TxOptions) (pgx.Tx, error)
 }
 
 func (p *Postgres) connection(ctx context.Context) imageConnection {

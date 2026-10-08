@@ -53,11 +53,11 @@ func TestIntranetPlatformScopesDefaultsAllocationAndIndependentCapabilities(t *t
 	if _, err := f.e.GetPlatform(f.ctx, "public_pool", first.ID); err == nil {
 		t.Fatal("public GET exposed intranet pool")
 	}
-	rows, _, err := f.e.ListPlatform(f.ctx, "public_pool", biz.ListVPCs{})
+	rows, _, _, err := f.e.ListPlatform(f.ctx, "public_pool", biz.ListVPCs{})
 	if err != nil || len(rows) != 1 || rows[0].ID != f.pool.ID {
 		t.Fatal("public list scope", rows, err)
 	}
-	rows, _, err = f.e.ListPlatform(f.ctx, "intranet_pool", biz.ListVPCs{})
+	rows, _, _, err = f.e.ListPlatform(f.ctx, "intranet_pool", biz.ListVPCs{})
 	if err != nil || len(rows) != 1 || rows[0].ID != first.ID {
 		t.Fatal("intranet list scope", rows, err)
 	}

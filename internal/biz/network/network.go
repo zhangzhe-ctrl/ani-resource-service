@@ -76,12 +76,12 @@ type CreateVPC struct {
 type NetworkRepository interface {
 	AcceptSubnet(context.Context, SubnetIntent, Attribution, time.Duration) (Subnet, error)
 	GetSubnet(context.Context, string, string) (Subnet, error)
-	ListSubnets(context.Context, string, SubnetFilter) ([]Subnet, error)
+	ListSubnets(context.Context, string, SubnetFilter) ([]Subnet, int64, error)
 	DeleteSubnet(context.Context, string, string) (Subnet, error)
 	AcceptVPC(context.Context, VPCIntent, Attribution) (VPC, error)
 	GetVPC(context.Context, string, string) (VPC, error)
 	GetOperation(context.Context, string, string) (Operation, error)
-	ListVPCs(context.Context, string, VPCFilter) ([]VPC, error)
+	ListVPCs(context.Context, string, VPCFilter) ([]VPC, int64, error)
 	DeleteVPC(context.Context, string, string) (VPC, error)
 }
 

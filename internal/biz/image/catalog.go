@@ -144,10 +144,11 @@ func (c *Catalog) ListImages(ctx context.Context, in ListImages) (RegistrationPa
 		return RegistrationPage{}, err
 	}
 	var rows []Registration
+	var total int64
 	if in.Scope == TenantImages {
-		rows, err = c.repo.PageTenantRegistrations(ctx, in.TenantID, in.Filter, after)
+		rows, total, err = c.repo.PageTenantRegistrations(ctx, in.TenantID, in.Filter, after)
 	} else {
-		rows, err = c.repo.PagePlatformRegistrations(ctx, in.Filter, after)
+		rows, total, err = c.repo.PagePlatformRegistrations(ctx, in.Filter, after)
 	}
 	if err != nil {
 		return RegistrationPage{}, err
@@ -157,7 +158,7 @@ func (c *Catalog) ListImages(ctx context.Context, in ListImages) (RegistrationPa
 			return RegistrationPage{}, err
 		}
 	}
-	page := RegistrationPage{Items: rows}
+	page := RegistrationPage{Items: rows, Total: total}
 	if len(rows) > in.Filter.Limit {
 		page.Items = rows[:in.Filter.Limit]
 		last := page.Items[len(page.Items)-1]

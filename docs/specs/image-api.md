@@ -68,7 +68,7 @@ display_name 1～100 Unicode字符；description 0～2000字符；purposes 1～5
 
 必须提供 scope；Get 给 image_id；List 给 search(<=100字符)、purposes(匹配任一所选用途)、accelerator(undeclared/空不筛)、limit(默认20，1～100)、cursor(<=4096字节)。默认只列有效登记。Get 可返回自己已取消登记的记录，便于显示历史状态；Resolve 必须拒绝取消登记。
 
-search 只匹配 display_name/repository，不开放任意 SQL/JSON filter。同scope排序 `created_at DESC,image_id DESC`，基于签名 keyset cursor；cursor绑定tenant、scope、所有筛选、limit，不能跨租户/筛选重用。不返回“全库真实存储量/仓库总数”之类未实现指标。Image API 空列表不代表 Harbor 仓库为空。
+search 只匹配 display_name/repository，不开放任意 SQL/JSON filter。同scope排序 `created_at DESC,image_id DESC`，基于签名 keyset cursor；cursor绑定tenant、scope、所有筛选、limit，不能跨租户/筛选重用。不返回“全库真实存储量/仓库总数”之类未实现指标。Image API 空列表不代表 Harbor 仓库为空。列表返回 `items,next_cursor,total`；`total` 是当前 scope、租户、search/purposes/accelerator 条件下未取消登记的镜像登记条数，不应用 cursor/limit。总数、本页登记和镜像空间来自同一只读数据库快照；跨页允许总数随登记变化。
 
 ### UpdateImage
 

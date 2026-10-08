@@ -201,6 +201,51 @@ func (q *Queries) CountGatewayPools(ctx context.Context, arg CountGatewayPoolsPa
 	return column_1, err
 }
 
+const countIntranetPools = `-- name: CountIntranetPools :one
+SELECT count(*) FROM network_platform_resources r JOIN network_public_pools p ON p.cluster_id=r.cluster_id AND p.resource_id=r.resource_id WHERE r.cluster_id=$1 AND p.scope='intranet'
+ AND ($2::text='' OR r.name=$2)
+ AND (($3::text='' AND r.state<>'deleted') OR r.state=$3)
+`
+
+type CountIntranetPoolsParams struct {
+	ClusterID   string
+	NameFilter  string
+	StateFilter string
+}
+
+func (q *Queries) CountIntranetPools(ctx context.Context, arg CountIntranetPoolsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countIntranetPools, arg.ClusterID, arg.NameFilter, arg.StateFilter)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countPlatform = `-- name: CountPlatform :one
+SELECT count(*) FROM network_platform_resources r WHERE r.cluster_id=$1 AND r.kind=$2
+ AND (r.kind<>'public_pool' OR EXISTS (SELECT 1 FROM network_public_pools pool WHERE pool.cluster_id=r.cluster_id AND pool.resource_id=r.resource_id AND pool.scope='public'))
+ AND ($3::text='' OR r.name=$3)
+ AND (($4::text='' AND r.state<>'deleted') OR r.state=$4)
+`
+
+type CountPlatformParams struct {
+	ClusterID   string
+	Kind        string
+	NameFilter  string
+	StateFilter string
+}
+
+func (q *Queries) CountPlatform(ctx context.Context, arg CountPlatformParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countPlatform,
+		arg.ClusterID,
+		arg.Kind,
+		arg.NameFilter,
+		arg.StateFilter,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countPoolEIPs = `-- name: CountPoolEIPs :one
 SELECT count(*)::bigint FROM network_eips WHERE cluster_id=$1 AND pool_id=$2 AND state<>'deleted'
 `

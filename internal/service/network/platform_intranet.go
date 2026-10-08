@@ -26,11 +26,11 @@ func (s *PlatformNetworkService) ListIntranetAddressPools(ctx context.Context, r
 	if !ok {
 		return nil, rpcError(biz.Fail(biz.InvalidArgument, "invalid state filter"))
 	}
-	rows, cursor, err := s.egress.ListPlatform(ctx, "intranet_pool", biz.ListVPCs{Name: r.GetName(), State: string(state), Limit: int(r.GetLimit()), Cursor: r.GetCursor()})
+	rows, cursor, total, err := s.egress.ListPlatform(ctx, "intranet_pool", biz.ListVPCs{Name: r.GetName(), State: string(state), Limit: int(r.GetLimit()), Cursor: r.GetCursor()})
 	if err != nil {
 		return nil, rpcError(err)
 	}
-	result := &networkv1.ListIntranetAddressPoolsResponse{NextCursor: cursor}
+	result := &networkv1.ListIntranetAddressPoolsResponse{NextCursor: cursor, Total: total}
 	for _, v := range rows {
 		result.Items = append(result.Items, wirePlatform(v))
 	}

@@ -95,7 +95,7 @@ func (s *TenantService) ListImages(ctx context.Context, r *imagev1.ListImagesReq
 	if err != nil {
 		return nil, rpcError(err)
 	}
-	out := &imagev1.ListImagesResponse{NextCursor: v.NextCursor, Items: make([]*imagev1.ImageRegistration, 0, len(v.Items))}
+	out := &imagev1.ListImagesResponse{Total: v.Total, NextCursor: v.NextCursor, Items: make([]*imagev1.ImageRegistration, 0, len(v.Items))}
 	for _, item := range v.Items {
 		out.Items = append(out.Items, wireRegistration(item))
 	}

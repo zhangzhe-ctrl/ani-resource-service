@@ -153,7 +153,7 @@ message ListVPCsRequest {
   int32 limit = 4;
   string cursor = 5;
 }
-message ListVPCsResponse { repeated VPC items = 1; string next_cursor = 2; }
+message ListVPCsResponse { repeated VPC items = 1; string next_cursor = 2; int64 total = 3; }
 message DeleteVPCRequest { string tenant_id = 1; string vpc_id = 2; }
 message DeleteVPCResponse { VPC vpc = 1; }
 message GetOperationRequest { string tenant_id = 1; string operation_id = 2; }
@@ -198,7 +198,7 @@ message ListSubnetsRequest {
  string cursor = 5;
  string vpc_id = 6;
 }
-message ListSubnetsResponse { repeated Subnet items = 1; string next_cursor = 2; }
+message ListSubnetsResponse { repeated Subnet items = 1; string next_cursor = 2; int64 total = 3; }
 message DeleteSubnetRequest { string tenant_id = 1; string subnet_id = 2; }
 message DeleteSubnetResponse { Subnet subnet = 1; }
 

@@ -56,46 +56,68 @@ func pagePosition(key *biz.PageKey) (bool, time.Time, string) {
 	}
 	return true, key.CreatedAt, key.ImageID
 }
-func (p *Postgres) PageTenantRegistrations(ctx context.Context, tenant string, f biz.Filter, key *biz.PageKey) ([]biz.Registration, error) {
+func (p *Postgres) PageTenantRegistrations(ctx context.Context, tenant string, f biz.Filter, key *biz.PageKey) ([]biz.Registration, int64, error) {
 	if _, err := biz.ParseTenant(tenant); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	f, err := biz.NormalizeFilter(f)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	has, after, id := pagePosition(key)
-	rows, err := sqlcgen.New(p.connection(ctx)).ListTenantRegistrations(ctx, sqlcgen.ListTenantRegistrationsParams{TenantID: &tenant, SearchText: f.Search, SearchPattern: searchPattern(f.Search), Purposes: f.Purposes, Accelerator: f.Accelerator, HasCursor: has, AfterCreatedAt: after, AfterImageID: id, FetchLimit: int32(f.Limit + 1)})
+	tx, err := p.connection(ctx).BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, 0, databaseError(err)
+	}
+	defer tx.Rollback(ctx)
+	q := sqlcgen.New(tx)
+	has, after, id := pagePosition(key)
+	total, err := q.CountTenantRegistrations(ctx, sqlcgen.CountTenantRegistrationsParams{TenantID: &tenant, SearchText: f.Search, SearchPattern: searchPattern(f.Search), Purposes: f.Purposes, Accelerator: f.Accelerator})
+	if err != nil {
+		return nil, 0, databaseError(err)
+	}
+	rows, err := q.ListTenantRegistrations(ctx, sqlcgen.ListTenantRegistrationsParams{TenantID: &tenant, SearchText: f.Search, SearchPattern: searchPattern(f.Search), Purposes: f.Purposes, Accelerator: f.Accelerator, HasCursor: has, AfterCreatedAt: after, AfterImageID: id, FetchLimit: int32(f.Limit + 1)})
+	if err != nil {
+		return nil, 0, databaseError(err)
 	}
 	if len(rows) == 0 {
-		return []biz.Registration{}, nil
+		return []biz.Registration{}, total, nil
 	}
-	s, err := p.FindTenantSpace(ctx, tenant)
+	stored, err := q.GetTenantSpace(ctx, sqlcgen.GetTenantSpaceParams{TenantID: &tenant})
 	if err != nil {
-		return nil, err
+		return nil, 0, databaseError(err)
 	}
-	return registrations(rows, s)
+	values, err := registrations(rows, fromSpace(stored))
+	return values, total, err
 }
-func (p *Postgres) PagePlatformRegistrations(ctx context.Context, f biz.Filter, key *biz.PageKey) ([]biz.Registration, error) {
+func (p *Postgres) PagePlatformRegistrations(ctx context.Context, f biz.Filter, key *biz.PageKey) ([]biz.Registration, int64, error) {
 	f, err := biz.NormalizeFilter(f)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	has, after, id := pagePosition(key)
-	rows, err := sqlcgen.New(p.connection(ctx)).ListPlatformRegistrations(ctx, sqlcgen.ListPlatformRegistrationsParams{SearchText: f.Search, SearchPattern: searchPattern(f.Search), Purposes: f.Purposes, Accelerator: f.Accelerator, HasCursor: has, AfterCreatedAt: after, AfterImageID: id, FetchLimit: int32(f.Limit + 1)})
+	tx, err := p.connection(ctx).BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
-		return nil, databaseError(err)
+		return nil, 0, databaseError(err)
+	}
+	defer tx.Rollback(ctx)
+	q := sqlcgen.New(tx)
+	has, after, id := pagePosition(key)
+	total, err := q.CountPlatformRegistrations(ctx, sqlcgen.CountPlatformRegistrationsParams{SearchText: f.Search, SearchPattern: searchPattern(f.Search), Purposes: f.Purposes, Accelerator: f.Accelerator})
+	if err != nil {
+		return nil, 0, databaseError(err)
+	}
+	rows, err := q.ListPlatformRegistrations(ctx, sqlcgen.ListPlatformRegistrationsParams{SearchText: f.Search, SearchPattern: searchPattern(f.Search), Purposes: f.Purposes, Accelerator: f.Accelerator, HasCursor: has, AfterCreatedAt: after, AfterImageID: id, FetchLimit: int32(f.Limit + 1)})
+	if err != nil {
+		return nil, 0, databaseError(err)
 	}
 	if len(rows) == 0 {
-		return []biz.Registration{}, nil
+		return []biz.Registration{}, total, nil
 	}
-	s, err := p.FindPlatformSpace(ctx)
+	stored, err := q.GetPlatformSpace(ctx)
 	if err != nil {
-		return nil, err
+		return nil, 0, databaseError(err)
 	}
-	return registrations(rows, s)
+	values, err := registrations(rows, fromSpace(stored))
+	return values, total, err
 }
 func registrations(rows []sqlcgen.ImageRegistration, s biz.Space) ([]biz.Registration, error) {
 	out := make([]biz.Registration, 0, len(rows))

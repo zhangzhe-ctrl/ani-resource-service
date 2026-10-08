@@ -52,3 +52,9 @@ WHERE tenant_id=sqlc.arg(tenant_id) AND subnet_id=sqlc.arg(subnet_id) AND versio
 -- name: AdmitSubnetDeletion :one
 UPDATE network_subnets SET state='deleting',reason='',last_operation_id=sqlc.arg(operation_id),version=version+1,updated_at=clock_timestamp()
 WHERE tenant_id=sqlc.arg(tenant_id) AND subnet_id=sqlc.arg(subnet_id) AND version=sqlc.arg(version) RETURNING *;
+
+-- name: CountListedSubnets :one
+SELECT count(*) FROM network_subnets WHERE tenant_id=sqlc.arg(tenant_id)
+ AND (sqlc.arg(vpc_filter)::text='' OR vpc_id=sqlc.arg(vpc_filter))
+ AND (sqlc.arg(name_filter)::text='' OR name=sqlc.arg(name_filter))
+ AND ((sqlc.arg(state_filter)::text='' AND state<>'deleted') OR state=sqlc.arg(state_filter));

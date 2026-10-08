@@ -61,3 +61,21 @@ UPDATE image.registrations SET unregistered_at=clock_timestamp(),updated_at=cloc
 WHERE owner_scope='platform' AND tenant_id IS NULL AND image_id=sqlc.arg(image_id)
  AND unregistered_at IS NULL AND version=sqlc.arg(expected_version)
 RETURNING *;
+
+-- name: CountTenantRegistrations :one
+SELECT count(*) FROM image.registrations
+WHERE owner_scope='tenant' AND tenant_id=sqlc.arg(tenant_id) AND unregistered_at IS NULL
+ AND (sqlc.arg(search_text)::text='' OR display_name ILIKE sqlc.arg(search_pattern)::text ESCAPE E'\\'
+  OR repository ILIKE sqlc.arg(search_pattern)::text ESCAPE E'\\')
+ AND (cardinality(sqlc.arg(purposes)::text[])=0 OR purposes && sqlc.arg(purposes)::text[])
+ AND (sqlc.arg(accelerator)::text='' OR accelerator=sqlc.arg(accelerator))
+;
+
+-- name: CountPlatformRegistrations :one
+SELECT count(*) FROM image.registrations
+WHERE owner_scope='platform' AND tenant_id IS NULL AND unregistered_at IS NULL
+ AND (sqlc.arg(search_text)::text='' OR display_name ILIKE sqlc.arg(search_pattern)::text ESCAPE E'\\'
+  OR repository ILIKE sqlc.arg(search_pattern)::text ESCAPE E'\\')
+ AND (cardinality(sqlc.arg(purposes)::text[])=0 OR purposes && sqlc.arg(purposes)::text[])
+ AND (sqlc.arg(accelerator)::text='' OR accelerator=sqlc.arg(accelerator))
+;

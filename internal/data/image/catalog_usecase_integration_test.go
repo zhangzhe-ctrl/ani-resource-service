@@ -180,17 +180,24 @@ func TestCatalogUseCasesAndRuntimeIsolation(t *testing.T) {
 	}
 	list := biz.ListImages{TenantID: tenant, Scope: biz.TenantImages, Filter: biz.Filter{Search: "100%", Purposes: []string{"container"}, Limit: 2}}
 	page, err := catalog.ListImages(ctx, list)
-	if err != nil || len(page.Items) != 2 || page.NextCursor == "" {
+	if err != nil || len(page.Items) != 2 || page.NextCursor == "" || page.Total != 3 {
 		t.Fatal("page1", err)
 	}
 	list.Cursor = page.NextCursor
 	page2, err := catalog.ListImages(ctx, list)
-	if err != nil || len(page2.Items) != 1 || page2.NextCursor != "" {
+	if err != nil || len(page2.Items) != 1 || page2.NextCursor != "" || page2.Total != 3 {
 		t.Fatal("page2", err)
 	}
 	for _, v := range page.Items {
 		if v.ID == page2.Items[0].ID {
 			t.Fatal("duplicate page item")
+		}
+	}
+
+	for _, filter := range []biz.Filter{{Search: "absent", Limit: 1}, {Purposes: []string{"training"}, Limit: 1}, {Accelerator: "nvidia", Limit: 1}} {
+		missing, err := catalog.ListImages(ctx, biz.ListImages{TenantID: tenant, Scope: biz.TenantImages, Filter: filter})
+		if err != nil || missing.Total != 0 || len(missing.Items) != 0 {
+			t.Fatal("filtered total", missing, err)
 		}
 	}
 	list.TenantID = other
@@ -210,6 +217,14 @@ func TestCatalogUseCasesAndRuntimeIsolation(t *testing.T) {
 	}
 	if _, err = catalog.GetImage(otherCtx, biz.ReadImage{TenantID: other, Scope: biz.PlatformImages, ImageID: platformID}); err != nil {
 		t.Fatal("platform read before tenant enable", err)
+	}
+	platformPage, err := catalog.ListImages(otherCtx, biz.ListImages{TenantID: other, Scope: biz.PlatformImages, Filter: biz.Filter{Limit: 1}})
+	if err != nil || platformPage.Total != 1 || len(platformPage.Items) != 1 {
+		t.Fatal("platform total", platformPage, err)
+	}
+	emptyPage, err := catalog.ListImages(otherCtx, biz.ListImages{TenantID: other, Scope: biz.TenantImages, Filter: biz.Filter{Limit: 1}})
+	if err != nil || emptyPage.Total != 0 || len(emptyPage.Items) != 0 {
+		t.Fatal("tenant total isolation", emptyPage, err)
 	}
 	update.ImageID = platformID
 	update.IdempotencyKey = "platform-denied"

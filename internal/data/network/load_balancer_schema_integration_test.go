@@ -84,8 +84,8 @@ func TestLBSchemaFrom0006PreservesAllOldColumnsAndDormantReservations(t *testing
 	if _, err = lbs.Get(auth, "", lbID); biz.ReasonOf(err) != biz.ResourceNotFound {
 		t.Fatal("dormant U01 identity adopted as product", err)
 	}
-	items, _, err := lbs.List(auth, biz.ListLoadBalancers{ListVPCs: biz.ListVPCs{Limit: 20}})
-	if err != nil || len(items) != 0 {
+	items, _, total, err := lbs.List(auth, biz.ListLoadBalancers{ListVPCs: biz.ListVPCs{Limit: 20}})
+	if err != nil || len(items) != 0 || total != 0 {
 		t.Fatal("dormant U01 identity listed", items, err)
 	}
 	var occupied, tasks int

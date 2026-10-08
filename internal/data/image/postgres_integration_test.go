@@ -209,15 +209,15 @@ func TestCatalogCASAndPagination(t *testing.T) {
 		}
 	}
 	filter := biz.Filter{Search: "match%", Purposes: []string{"training"}, Limit: 1}
-	first, err := f.Repo.PageTenantRegistrations(ctx, a, filter, nil)
+	first, _, err := f.Repo.PageTenantRegistrations(ctx, a, filter, nil)
 	if err != nil || len(first) != 2 {
 		t.Fatal("filters must apply before limit+1", len(first), err)
 	}
-	next, err := f.Repo.PageTenantRegistrations(ctx, a, filter, &biz.PageKey{CreatedAt: first[0].CreatedAt, ImageID: first[0].ID})
+	next, _, err := f.Repo.PageTenantRegistrations(ctx, a, filter, &biz.PageKey{CreatedAt: first[0].CreatedAt, ImageID: first[0].ID})
 	if err != nil || len(next) != 2 || next[0].ID == first[0].ID {
 		t.Fatal("page continuation failed", err)
 	}
-	empty, err := f.Repo.PageTenantRegistrations(ctx, uuid.NewString(), filter, nil)
+	empty, _, err := f.Repo.PageTenantRegistrations(ctx, uuid.NewString(), filter, nil)
 	if err != nil || len(empty) != 0 {
 		t.Fatal("cross tenant page", err)
 	}

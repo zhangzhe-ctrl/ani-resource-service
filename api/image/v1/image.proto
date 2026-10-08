@@ -293,6 +293,8 @@ message ListImagesResponse {
 
   string next_cursor = 2;
 
+  int64 total = 3;
+
 }
 
 message UpdateImageRequest {

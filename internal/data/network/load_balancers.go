@@ -74,26 +74,30 @@ func (p *Postgres) GetLoadBalancer(ctx context.Context, tenant, id string) (biz.
 	}
 	return loadLB(ctx, q, row)
 }
-func (p *Postgres) ListLoadBalancers(ctx context.Context, tenant string, f biz.LoadBalancerFilter) ([]biz.LoadBalancer, error) {
+func (p *Postgres) ListLoadBalancers(ctx context.Context, tenant string, f biz.LoadBalancerFilter) ([]biz.LoadBalancer, int64, error) {
 	tx, err := p.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
-		return nil, databaseFailure(err)
+		return nil, 0, databaseFailure(err)
 	}
 	defer tx.Rollback(ctx)
 	q := p.queries.WithTx(tx)
+	total, err := q.CountLBs(ctx, sqlcgen.CountLBsParams{TenantID: tenant, NameFilter: f.Name, VpcFilter: f.VPCID, SubnetFilter: f.SubnetID, ExposureFilter: f.Exposure, StateFilter: f.State})
+	if err != nil {
+		return nil, 0, databaseFailure(err)
+	}
 	rows, err := q.ListLBs(ctx, sqlcgen.ListLBsParams{TenantID: tenant, NameFilter: f.Name, VpcFilter: f.VPCID, SubnetFilter: f.SubnetID, ExposureFilter: f.Exposure, StateFilter: f.State, AfterID: f.AfterID, AfterCreatedAt: f.AfterCreatedAt, MaxResults: f.Limit})
 	if err != nil {
-		return nil, databaseFailure(err)
+		return nil, 0, databaseFailure(err)
 	}
 	out := make([]biz.LoadBalancer, 0, len(rows))
 	for _, row := range rows {
 		v, err := loadLB(ctx, q, row)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		out = append(out, v)
 	}
-	return out, nil
+	return out, total, nil
 }
 func (p *Postgres) GetLoadBalancerOperation(ctx context.Context, tenant, id string) (biz.Operation, error) {
 	op, err := p.queries.GetOperation(ctx, sqlcgen.GetOperationParams{TenantID: tenant, OperationID: id})

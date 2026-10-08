@@ -129,3 +129,11 @@ AND (sqlc.arg(deleted)::boolean OR (r.subnet_id<>sqlc.arg(entry_subnet)::text
  WHERE m.tenant_id=r.tenant_id AND m.lb_id=r.lb_id AND m.subnet_id=r.subnet_id AND cm.config_version=sqlc.arg(desired_version))
  AND NOT EXISTS(SELECT 1 FROM network_lb_members m JOIN network_lb_components c ON c.tenant_id=m.tenant_id AND c.lb_id=m.lb_id AND c.member_id=m.member_id
  WHERE m.tenant_id=r.tenant_id AND m.lb_id=r.lb_id AND m.subnet_id=r.subnet_id AND c.deleted_at IS NULL)));
+
+-- name: CountLBs :one
+SELECT count(*) FROM network_load_balancers l WHERE tenant_id=sqlc.arg(tenant_id) AND last_operation_id IS NOT NULL
+AND (sqlc.arg(name_filter)::text='' OR name=sqlc.arg(name_filter))
+AND (sqlc.arg(vpc_filter)::text='' OR vpc_id=sqlc.arg(vpc_filter))
+AND (sqlc.arg(subnet_filter)::text='' OR subnet_id=sqlc.arg(subnet_filter))
+AND (sqlc.arg(exposure_filter)::text='' OR exposure=sqlc.arg(exposure_filter))
+AND ((sqlc.arg(state_filter)::text='' AND state<>'deleted') OR state=sqlc.arg(state_filter));

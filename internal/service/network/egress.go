@@ -145,11 +145,11 @@ func (s *TenantEgressService) ListEIPs(ctx context.Context, r *networkv1.ListEIP
 	if !ok {
 		return nil, rpcError(biz.Fail(biz.InvalidArgument, "invalid state filter"))
 	}
-	values, cursor, err := s.egress.ListEIPs(ctx, biz.ListVPCs{TenantID: r.GetTargetTenantId(), Name: r.GetName(), State: string(state), Limit: int(r.GetLimit()), Cursor: r.GetCursor()})
+	values, cursor, total, err := s.egress.ListEIPs(ctx, biz.ListVPCs{TenantID: r.GetTargetTenantId(), Name: r.GetName(), State: string(state), Limit: int(r.GetLimit()), Cursor: r.GetCursor()})
 	if err != nil {
 		return nil, rpcError(err)
 	}
-	reply := &networkv1.ListEIPsResponse{NextCursor: cursor}
+	reply := &networkv1.ListEIPsResponse{NextCursor: cursor, Total: total}
 	for _, v := range values {
 		reply.Items = append(reply.Items, wireEIP(v))
 	}
@@ -160,7 +160,7 @@ func (s *PlatformNetworkService) ListNodeInterfaces(ctx context.Context, r *netw
 	if err != nil {
 		return nil, rpcError(err)
 	}
-	reply := &networkv1.ListNodeInterfacesResponse{InventoryFingerprint: v.Fingerprint}
+	reply := &networkv1.ListNodeInterfacesResponse{InventoryFingerprint: v.Fingerprint, Total: int64(len(v.Items))}
 	for _, n := range v.Items {
 		reply.Items = append(reply.Items, wireNode(n))
 	}
@@ -227,11 +227,11 @@ func (s *PlatformNetworkService) ListVlanNetworks(ctx context.Context, r *networ
 	if !ok {
 		return nil, rpcError(biz.Fail(biz.InvalidArgument, "invalid state filter"))
 	}
-	values, cursor, err := s.egress.ListPlatform(ctx, "vlan", biz.ListVPCs{Name: r.GetName(), State: string(state), Limit: int(r.GetLimit()), Cursor: r.GetCursor()})
+	values, cursor, total, err := s.egress.ListPlatform(ctx, "vlan", biz.ListVPCs{Name: r.GetName(), State: string(state), Limit: int(r.GetLimit()), Cursor: r.GetCursor()})
 	if err != nil {
 		return nil, rpcError(err)
 	}
-	reply := &networkv1.ListVlanNetworksResponse{NextCursor: cursor}
+	reply := &networkv1.ListVlanNetworksResponse{NextCursor: cursor, Total: total}
 	for _, v := range values {
 		reply.Items = append(reply.Items, wirePlatform(v))
 	}
@@ -256,11 +256,11 @@ func (s *PlatformNetworkService) ListEgressGateways(ctx context.Context, r *netw
 	if !ok {
 		return nil, rpcError(biz.Fail(biz.InvalidArgument, "invalid state filter"))
 	}
-	values, cursor, err := s.egress.ListPlatform(ctx, "egress_gateway", biz.ListVPCs{Name: r.GetName(), State: string(state), Limit: int(r.GetLimit()), Cursor: r.GetCursor()})
+	values, cursor, total, err := s.egress.ListPlatform(ctx, "egress_gateway", biz.ListVPCs{Name: r.GetName(), State: string(state), Limit: int(r.GetLimit()), Cursor: r.GetCursor()})
 	if err != nil {
 		return nil, rpcError(err)
 	}
-	reply := &networkv1.ListEgressGatewaysResponse{NextCursor: cursor}
+	reply := &networkv1.ListEgressGatewaysResponse{NextCursor: cursor, Total: total}
 	for _, v := range values {
 		reply.Items = append(reply.Items, wirePlatform(v))
 	}
@@ -285,11 +285,11 @@ func (s *PlatformNetworkService) ListPublicAddressPools(ctx context.Context, r *
 	if !ok {
 		return nil, rpcError(biz.Fail(biz.InvalidArgument, "invalid state filter"))
 	}
-	values, cursor, err := s.egress.ListPlatform(ctx, "public_pool", biz.ListVPCs{Name: r.GetName(), State: string(state), Limit: int(r.GetLimit()), Cursor: r.GetCursor()})
+	values, cursor, total, err := s.egress.ListPlatform(ctx, "public_pool", biz.ListVPCs{Name: r.GetName(), State: string(state), Limit: int(r.GetLimit()), Cursor: r.GetCursor()})
 	if err != nil {
 		return nil, rpcError(err)
 	}
-	reply := &networkv1.ListPublicAddressPoolsResponse{NextCursor: cursor}
+	reply := &networkv1.ListPublicAddressPoolsResponse{NextCursor: cursor, Total: total}
 	for _, v := range values {
 		reply.Items = append(reply.Items, wirePlatform(v))
 	}

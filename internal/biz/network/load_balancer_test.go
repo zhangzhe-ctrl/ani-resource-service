@@ -22,8 +22,8 @@ func (r *lbRepositoryTest) AcceptLoadBalancer(_ context.Context, i LoadBalancerI
 func (r *lbRepositoryTest) GetLoadBalancer(_ context.Context, _, _ string) (LoadBalancer, error) {
 	return r.rows[0], nil
 }
-func (r *lbRepositoryTest) ListLoadBalancers(_ context.Context, _ string, _ LoadBalancerFilter) ([]LoadBalancer, error) {
-	return slices.Clone(r.rows), nil
+func (r *lbRepositoryTest) ListLoadBalancers(_ context.Context, _ string, _ LoadBalancerFilter) ([]LoadBalancer, int64, error) {
+	return slices.Clone(r.rows), int64(len(r.rows)), nil
 }
 func (r *lbRepositoryTest) GetLoadBalancerOperation(_ context.Context, _, _ string) (Operation, error) {
 	return r.op, nil
@@ -141,18 +141,18 @@ func TestLBQueryFreshnessAndCursorScope(t *testing.T) {
 		t.Fatalf("query mixed evidence/version: %+v", v)
 	}
 	q := ListLoadBalancers{ListVPCs: ListVPCs{Limit: 1}, Exposure: "private"}
-	rows, cursor, err := l.List(ctx, q)
+	rows, cursor, _, err := l.List(ctx, q)
 	if err != nil || len(rows) != 1 || cursor == "" {
 		t.Fatalf("page: %v %q %v", rows, cursor, err)
 	}
 	q.Cursor = cursor
 	q.Exposure = "public"
-	if _, _, err = l.List(ctx, q); ReasonOf(err) != InvalidCursor {
+	if _, _, _, err = l.List(ctx, q); ReasonOf(err) != InvalidCursor {
 		t.Fatalf("cross-exposure cursor: %v", err)
 	}
 	q.Exposure = "private"
 	q.SubnetID = "subnet_" + strings.Repeat("2", 32)
-	if _, _, err = l.List(ctx, q); ReasonOf(err) != InvalidCursor {
+	if _, _, _, err = l.List(ctx, q); ReasonOf(err) != InvalidCursor {
 		t.Fatalf("cross-subnet cursor: %v", err)
 	}
 	if repo.rows[0].Backends[0].State != "available" {

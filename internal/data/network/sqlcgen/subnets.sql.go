@@ -113,6 +113,32 @@ func (q *Queries) CountBlockingSubnets(ctx context.Context, arg CountBlockingSub
 	return column_1, err
 }
 
+const countListedSubnets = `-- name: CountListedSubnets :one
+SELECT count(*) FROM network_subnets WHERE tenant_id=$1
+ AND ($2::text='' OR vpc_id=$2)
+ AND ($3::text='' OR name=$3)
+ AND (($4::text='' AND state<>'deleted') OR state=$4)
+`
+
+type CountListedSubnetsParams struct {
+	TenantID    string
+	VpcFilter   string
+	NameFilter  string
+	StateFilter string
+}
+
+func (q *Queries) CountListedSubnets(ctx context.Context, arg CountListedSubnetsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countListedSubnets,
+		arg.TenantID,
+		arg.VpcFilter,
+		arg.NameFilter,
+		arg.StateFilter,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countSubnets = `-- name: CountSubnets :one
 SELECT count(*)::bigint FROM network_subnets WHERE tenant_id=$1 AND vpc_id=$2 AND state<>'deleted'
 `

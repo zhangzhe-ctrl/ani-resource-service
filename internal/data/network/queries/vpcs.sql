@@ -55,3 +55,9 @@ ON CONFLICT (tenant_id,cluster_id) DO NOTHING;
 
 -- name: GetTenantNamespace :one
 SELECT namespace FROM network_tenant_namespaces WHERE tenant_id=$1 AND cluster_id=$2;
+
+-- name: CountVPCs :one
+SELECT count(*) FROM network_vpcs v
+WHERE v.tenant_id = sqlc.arg(tenant_id)
+ AND (sqlc.arg(name_filter)::text = '' OR v.name = sqlc.arg(name_filter))
+ AND ((sqlc.arg(state_filter)::text = '' AND v.state <> 'deleted') OR v.state = sqlc.arg(state_filter));

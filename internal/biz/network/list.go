@@ -18,6 +18,7 @@ type ListVPCs struct {
 }
 
 type VPCPage struct {
+	Total      int64
 	Items      []VPC
 	NextCursor string
 }
@@ -57,11 +58,11 @@ func (n *Network) ListVPCs(ctx context.Context, request ListVPCs) (VPCPage, erro
 		}
 		filter.AfterCreatedAt, filter.AfterID = cursor.CreatedAt, cursor.ID
 	}
-	rows, err := n.repository.ListVPCs(ctx, tenant, filter)
+	rows, total, err := n.repository.ListVPCs(ctx, tenant, filter)
 	if err != nil {
 		return VPCPage{}, err
 	}
-	page := VPCPage{Items: make([]VPC, 0, request.Limit)}
+	page := VPCPage{Total: total, Items: make([]VPC, 0, request.Limit)}
 	for index, value := range rows {
 		if index == request.Limit {
 			last := rows[index-1]

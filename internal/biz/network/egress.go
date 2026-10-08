@@ -216,14 +216,14 @@ func egressFingerprint(v any) string {
 type EgressRepository interface {
 	AcceptEIP(context.Context, EgressIntent, Attribution, time.Duration) (EIP, error)
 	GetEIP(context.Context, string, string) (EIP, error)
-	ListEIPs(context.Context, string, VPCFilter) ([]EIP, error)
+	ListEIPs(context.Context, string, VPCFilter) ([]EIP, int64, error)
 	DeleteEIP(context.Context, string, string, Attribution) (EIP, error)
 	AcceptSnat(context.Context, EgressIntent, Attribution, time.Duration) (VPCSnatBinding, error)
 	GetSnat(context.Context, string, string, bool) (VPCSnatBinding, error)
 	DeleteSnat(context.Context, string, string, Attribution) (VPCSnatBinding, error)
 	AcceptPlatform(context.Context, PlatformIntent, Attribution, time.Duration) (PlatformResource, error)
 	GetPlatform(context.Context, string, string) (PlatformResource, error)
-	ListPlatform(context.Context, string, VPCFilter) ([]PlatformResource, error)
+	ListPlatform(context.Context, string, VPCFilter) ([]PlatformResource, int64, error)
 	DeletePlatform(context.Context, string, string, Attribution) (PlatformResource, error)
 	GetPlatformOperation(context.Context, string) (Operation, error)
 }
@@ -393,18 +393,18 @@ func (e *Egress) listFilter(tenant, kind string, r ListVPCs) (VPCFilter, error) 
 func (e *Egress) nextCursor(tenant, kind string, f VPCFilter, v EgressMetadata) string {
 	return e.cursor.encodeCursor(vpcCursor{Version: 1, Kind: kind, TenantID: tenant, Name: f.Name, State: f.State, ID: v.ID, CreatedAt: v.CreatedAt})
 }
-func (e *Egress) ListEIPs(ctx context.Context, r ListVPCs) ([]EIP, string, error) {
+func (e *Egress) ListEIPs(ctx context.Context, r ListVPCs) ([]EIP, string, int64, error) {
 	tenant, _, err := e.authorization.Tenant(ctx, r.TenantID)
 	if err != nil {
-		return nil, "", err
+		return nil, "", 0, err
 	}
 	f, err := e.listFilter(tenant, "eip", r)
 	if err != nil {
-		return nil, "", err
+		return nil, "", 0, err
 	}
-	rows, err := e.repository.ListEIPs(ctx, tenant, f)
+	rows, total, err := e.repository.ListEIPs(ctx, tenant, f)
 	if err != nil {
-		return nil, "", err
+		return nil, "", 0, err
 	}
 	next := ""
 	if len(rows) == int(f.Limit) {
@@ -414,7 +414,7 @@ func (e *Egress) ListEIPs(ctx context.Context, r ListVPCs) ([]EIP, string, error
 	for j := range rows {
 		rows[j] = e.eip(rows[j])
 	}
-	return rows, next, nil
+	return rows, next, total, nil
 }
 
 func (e *Egress) ListNodeInterfaces(ctx context.Context, node string) (InterfaceInventory, error) {
@@ -504,20 +504,20 @@ func (e *Egress) GetPlatform(ctx context.Context, kind, id string) (PlatformReso
 	v, err := e.repository.GetPlatform(ctx, kind, id)
 	return e.platform(v), err
 }
-func (e *Egress) ListPlatform(ctx context.Context, kind string, r ListVPCs) ([]PlatformResource, string, error) {
+func (e *Egress) ListPlatform(ctx context.Context, kind string, r ListVPCs) ([]PlatformResource, string, int64, error) {
 	if _, err := e.authorization.Platform(ctx); err != nil {
-		return nil, "", err
+		return nil, "", 0, err
 	}
 	if platformPrefix(kind) == "invalid" {
-		return nil, "", Fail(InvalidArgument, "invalid platform kind")
+		return nil, "", 0, Fail(InvalidArgument, "invalid platform kind")
 	}
 	f, err := e.listFilter("", kind, r)
 	if err != nil {
-		return nil, "", err
+		return nil, "", 0, err
 	}
-	rows, err := e.repository.ListPlatform(ctx, kind, f)
+	rows, total, err := e.repository.ListPlatform(ctx, kind, f)
 	if err != nil {
-		return nil, "", err
+		return nil, "", 0, err
 	}
 	next := ""
 	if len(rows) == int(f.Limit) {
@@ -527,7 +527,7 @@ func (e *Egress) ListPlatform(ctx context.Context, kind string, r ListVPCs) ([]P
 	for j := range rows {
 		rows[j] = e.platform(rows[j])
 	}
-	return rows, next, nil
+	return rows, next, total, nil
 }
 func (e *Egress) DeletePlatform(ctx context.Context, kind, id string) (PlatformResource, error) {
 	a, err := e.authorization.Platform(ctx)

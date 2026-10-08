@@ -135,11 +135,11 @@ func (s *TenantLoadBalancerService) ListLoadBalancers(ctx context.Context, r *ne
 	if !ok && r.GetState() != networkv1.ResourceState_RESOURCE_STATE_UNSPECIFIED {
 		return nil, rpcError(biz.Fail(biz.InvalidArgument, "invalid resource state"))
 	}
-	rows, next, err := s.lbs.List(ctx, biz.ListLoadBalancers{ListVPCs: biz.ListVPCs{TenantID: r.GetTargetTenantId(), Name: r.GetName(), State: string(state), Limit: int(r.GetLimit()), Cursor: r.GetCursor()}, VPCID: r.GetVpcId(), SubnetID: r.GetSubnetId(), Exposure: exposure})
+	rows, next, total, err := s.lbs.List(ctx, biz.ListLoadBalancers{ListVPCs: biz.ListVPCs{TenantID: r.GetTargetTenantId(), Name: r.GetName(), State: string(state), Limit: int(r.GetLimit()), Cursor: r.GetCursor()}, VPCID: r.GetVpcId(), SubnetID: r.GetSubnetId(), Exposure: exposure})
 	if err != nil {
 		return nil, rpcError(err)
 	}
-	out := &networkv1.ListLoadBalancersResponse{NextCursor: next, Items: make([]*networkv1.LoadBalancer, 0, len(rows))}
+	out := &networkv1.ListLoadBalancersResponse{Total: total, NextCursor: next, Items: make([]*networkv1.LoadBalancer, 0, len(rows))}
 	for _, v := range rows {
 		out.Items = append(out.Items, wireLoadBalancer(v))
 	}

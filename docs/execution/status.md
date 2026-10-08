@@ -376,3 +376,7 @@ IMG-00 n_a: baseline/import tasks have no product/live behavior. Independent bac
 IMG-10.6 live 清理在本次受控范围 **pass**：主驱动测试断言通过但首次清理路径错误，exit 1 原样保留；ID/创建时间核对后的清理恢复 exit 0，所有本次 Project/Robot/Namespace 确认不存在，临时凭证及代理已移除。原 isolated 回归证据不变。
 
 Harbor 实际版本 `v2.15.2-a97e7b83`；CA 缺 Key Usage 导致 Python 默认 STRICT 拒绝，curl/skopeo/containerd 正常 TLS 校验下实测通过。未换共享 CA、未关闭 TLS、未修改产品源码。原 `image_smoke.py` 的严格 CA 兼容和匿名版本探测仍待处理，本次没有宣称其通过。
+
+## 列表总数（2026-10-08）
+
+从远端最新 Resource main `8089a78` 和 Governance main `9e4c5c7` 在独占工作区补齐 Resource 全部 10 个列表及 Governance 对应 3 个列表的 `total`。真实 PG 分页/筛选/隔离及受信 HTTP → mTLS → Resource → PG 空列表链路为 pass；Resource `make verify` 为 pass。当前未发布或部署；Governance 发布时仍需锁定包含 total 的 Resource 版本。来源、命令、结果和边界见 [LIST-TOTAL-20261008](records/LIST-TOTAL-20261008/README.md)。

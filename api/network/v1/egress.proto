@@ -113,7 +113,7 @@ message CreateEIPResponse { EIP eip = 1; }
 message GetEIPRequest { string target_tenant_id = 1; string eip_id = 2; }
 message GetEIPResponse { EIP eip = 1; }
 message ListEIPsRequest { string target_tenant_id = 1; string name = 2; ResourceState state = 3; int32 limit = 4; string cursor = 5; }
-message ListEIPsResponse { repeated EIP items = 1; string next_cursor = 2; }
+message ListEIPsResponse { repeated EIP items = 1; string next_cursor = 2; int64 total = 3; }
 message DeleteEIPRequest { string target_tenant_id = 1; string eip_id = 2; }
 message DeleteEIPResponse { EIP eip = 1; }
 message BindVPCSnatRequest { string target_tenant_id = 1; string vpc_id = 2; string eip_id = 3; string idempotency_key = 4; }
@@ -224,7 +224,7 @@ message PublicPoolVerification {
   google.protobuf.Timestamp expires_at = 7;
 }
 message ListNodeInterfacesRequest { string node_name = 1; }
-message ListNodeInterfacesResponse { repeated NodeInterface items = 1; string inventory_fingerprint = 2; }
+message ListNodeInterfacesResponse { repeated NodeInterface items = 1; string inventory_fingerprint = 2; int64 total = 3; }
 message AdoptNetworkDeviceRequest { string name = 1; string device_name = 2; string inventory_fingerprint = 3; string idempotency_key = 4; }
 message AdoptNetworkDeviceResponse { PlatformResource resource = 1; }
 message GetNetworkDeviceRequest { string device_id = 1; }
@@ -234,7 +234,7 @@ message CreateVlanNetworkResponse { PlatformResource resource = 1; }
 message GetVlanNetworkRequest { string vlan_network_id = 1; }
 message GetVlanNetworkResponse { PlatformResource resource = 1; }
 message ListVlanNetworksRequest { string name = 1; ResourceState state = 2; int32 limit = 3; string cursor = 4; }
-message ListVlanNetworksResponse { repeated PlatformResource items = 1; string next_cursor = 2; }
+message ListVlanNetworksResponse { repeated PlatformResource items = 1; string next_cursor = 2; int64 total = 3; }
 message DeleteVlanNetworkRequest { string vlan_network_id = 1; }
 message DeleteVlanNetworkResponse { PlatformResource resource = 1; }
 message CreateEgressGatewayRequest { string name = 1; string description = 2; string idempotency_key = 3; }
@@ -242,7 +242,7 @@ message CreateEgressGatewayResponse { PlatformResource resource = 1; }
 message GetEgressGatewayRequest { string gateway_id = 1; }
 message GetEgressGatewayResponse { PlatformResource resource = 1; }
 message ListEgressGatewaysRequest { string name = 1; ResourceState state = 2; int32 limit = 3; string cursor = 4; }
-message ListEgressGatewaysResponse { repeated PlatformResource items = 1; string next_cursor = 2; }
+message ListEgressGatewaysResponse { repeated PlatformResource items = 1; string next_cursor = 2; int64 total = 3; }
 message DeleteEgressGatewayRequest { string gateway_id = 1; }
 message DeleteEgressGatewayResponse { PlatformResource resource = 1; }
 message CreatePublicAddressPoolRequest {
@@ -254,7 +254,7 @@ message CreatePublicAddressPoolResponse { PlatformResource resource = 1; }
 message GetPublicAddressPoolRequest { string pool_id = 1; }
 message GetPublicAddressPoolResponse { PlatformResource resource = 1; }
 message ListPublicAddressPoolsRequest { string name = 1; ResourceState state = 2; int32 limit = 3; string cursor = 4; }
-message ListPublicAddressPoolsResponse { repeated PlatformResource items = 1; string next_cursor = 2; }
+message ListPublicAddressPoolsResponse { repeated PlatformResource items = 1; string next_cursor = 2; int64 total = 3; }
 message DeletePublicAddressPoolRequest { string pool_id = 1; }
 message DeletePublicAddressPoolResponse { PlatformResource resource = 1; }
 message RecordPublicPoolVerificationRequest { string pool_id = 1; int64 expected_version = 2; PublicPoolVerification verification = 3; string idempotency_key = 4; }
@@ -276,7 +276,7 @@ message CreateIntranetAddressPoolResponse { PlatformResource resource = 1; }
 message GetIntranetAddressPoolRequest { string pool_id = 1; }
 message GetIntranetAddressPoolResponse { PlatformResource resource = 1; }
 message ListIntranetAddressPoolsRequest { string name = 1; ResourceState state = 2; int32 limit = 3; string cursor = 4; }
-message ListIntranetAddressPoolsResponse { repeated PlatformResource items = 1; string next_cursor = 2; }
+message ListIntranetAddressPoolsResponse { repeated PlatformResource items = 1; string next_cursor = 2; int64 total = 3; }
 message DeleteIntranetAddressPoolRequest { string pool_id = 1; }
 message DeleteIntranetAddressPoolResponse { PlatformResource resource = 1; }
 message RecordIntranetPoolVerificationRequest { string pool_id = 1; int64 expected_version = 2; IntranetPoolVerification verification = 3; string idempotency_key = 4; }

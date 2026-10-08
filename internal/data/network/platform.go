@@ -109,31 +109,40 @@ func (p *Postgres) GetPlatform(ctx context.Context, kind, id string) (biz.Platfo
 	}
 	return v, err
 }
-func (p *Postgres) ListPlatform(ctx context.Context, kind string, f biz.VPCFilter) ([]biz.PlatformResource, error) {
+func (p *Postgres) ListPlatform(ctx context.Context, kind string, f biz.VPCFilter) ([]biz.PlatformResource, int64, error) {
 	tx, err := p.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
-		return nil, databaseFailure(err)
+		return nil, 0, databaseFailure(err)
 	}
 	defer tx.Rollback(ctx)
 	q := p.queries.WithTx(tx)
 	var rows []sqlcgen.NetworkPlatformResource
+	var total int64
 	if kind == "intranet_pool" {
+		total, err = q.CountIntranetPools(ctx, sqlcgen.CountIntranetPoolsParams{ClusterID: p.placement.ClusterID, NameFilter: f.Name, StateFilter: f.State})
+		if err != nil {
+			return nil, 0, databaseFailure(err)
+		}
 		rows, err = q.ListIntranetPools(ctx, sqlcgen.ListIntranetPoolsParams{ClusterID: p.placement.ClusterID, NameFilter: f.Name, StateFilter: f.State, AfterID: f.AfterID, AfterCreatedAt: f.AfterCreatedAt, MaxResults: f.Limit})
 	} else {
+		total, err = q.CountPlatform(ctx, sqlcgen.CountPlatformParams{ClusterID: p.placement.ClusterID, Kind: kind, NameFilter: f.Name, StateFilter: f.State})
+		if err != nil {
+			return nil, 0, databaseFailure(err)
+		}
 		rows, err = q.ListPlatform(ctx, sqlcgen.ListPlatformParams{ClusterID: p.placement.ClusterID, Kind: kind, NameFilter: f.Name, StateFilter: f.State, AfterID: f.AfterID, AfterCreatedAt: f.AfterCreatedAt, MaxResults: f.Limit})
 	}
 	if err != nil {
-		return nil, databaseFailure(err)
+		return nil, 0, databaseFailure(err)
 	}
 	values := make([]biz.PlatformResource, 0, len(rows))
 	for _, r := range rows {
 		v, err := platformSnapshot(ctx, q, r)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		values = append(values, v)
 	}
-	return values, nil
+	return values, total, nil
 }
 func (p *Postgres) GetPlatformOperation(ctx context.Context, id string) (biz.Operation, error) {
 	r, err := p.queries.GetPlatformOperation(ctx, sqlcgen.GetPlatformOperationParams{ClusterID: p.placement.ClusterID, OperationID: id})

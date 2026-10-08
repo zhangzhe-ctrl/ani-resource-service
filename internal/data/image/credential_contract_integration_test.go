@@ -92,7 +92,15 @@ func startImageContractServer(t *testing.T) (*fixture, *registryFixture, imageCo
 		t.Fatal(err)
 	}
 	srv := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)), grpc.UnaryInterceptor(server.GovernanceUnary()))
-	imagev1.RegisterTenantImageServiceServer(srv, imageservice.NewTenantService(lifecycle(t, f.Repo, registry, ring, cfg, nil), nil))
+	codec, err := biz.NewCursorCodec([]byte("0123456789abcdef0123456789abcdef"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := biz.NewCatalog(f.Repo, f.Repo, f.Repo, registry, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	imagev1.RegisterTenantImageServiceServer(srv, imageservice.NewTenantService(lifecycle(t, f.Repo, registry, ring, cfg, nil), catalog))
 	go func() { _ = srv.Serve(listener) }()
 	t.Cleanup(srv.Stop)
 	return f, registry, imageContractEndpoint{listener.Addr().String(), caPath, cp, kp}

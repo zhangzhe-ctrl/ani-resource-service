@@ -276,6 +276,25 @@ func (q *Queries) ClaimEIPForSnat(ctx context.Context, arg ClaimEIPForSnatParams
 	return result.RowsAffected(), nil
 }
 
+const countEIPs = `-- name: CountEIPs :one
+SELECT count(*) FROM network_eips e WHERE e.tenant_id=$1 AND e.scope='public' AND e.managed_by='tenant'
+ AND ($2::text='' OR e.name=$2)
+ AND (($3::text='' AND e.state<>'deleted') OR e.state=$3)
+`
+
+type CountEIPsParams struct {
+	TenantID    string
+	NameFilter  string
+	StateFilter string
+}
+
+func (q *Queries) CountEIPs(ctx context.Context, arg CountEIPsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countEIPs, arg.TenantID, arg.NameFilter, arg.StateFilter)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const dueResourceCandidates = `-- name: DueResourceCandidates :many
 SELECT r.tenant_id,coalesce(r.vpc_id,r.subnet_id,r.eip_id,r.snat_id,r.lb_id)::text AS resource_id,b.resource_kind,
  coalesce(r.vpc_id,s.vpc_id,sn.vpc_id,e.system_owner_vpc,lb.vpc_id,'')::text AS parent_vpc_id,coalesce(r.eip_id,sn.eip_id,'')::text AS parent_eip_id,

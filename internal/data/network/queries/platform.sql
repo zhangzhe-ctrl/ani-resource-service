@@ -203,3 +203,14 @@ WHERE r.cluster_id=sqlc.arg(cluster_id) AND p.scope='intranet'
  AND ((sqlc.arg(state_filter)::text='' AND r.state<>'deleted') OR r.state=sqlc.arg(state_filter))
  AND (sqlc.arg(after_id)::text='' OR (r.created_at,r.resource_id)<(sqlc.arg(after_created_at)::timestamptz,sqlc.arg(after_id)::text))
 ORDER BY r.created_at DESC,r.resource_id DESC LIMIT sqlc.arg(max_results)::integer;
+
+-- name: CountPlatform :one
+SELECT count(*) FROM network_platform_resources r WHERE r.cluster_id=sqlc.arg(cluster_id) AND r.kind=sqlc.arg(kind)
+ AND (r.kind<>'public_pool' OR EXISTS (SELECT 1 FROM network_public_pools pool WHERE pool.cluster_id=r.cluster_id AND pool.resource_id=r.resource_id AND pool.scope='public'))
+ AND (sqlc.arg(name_filter)::text='' OR r.name=sqlc.arg(name_filter))
+ AND ((sqlc.arg(state_filter)::text='' AND r.state<>'deleted') OR r.state=sqlc.arg(state_filter));
+
+-- name: CountIntranetPools :one
+SELECT count(*) FROM network_platform_resources r JOIN network_public_pools p ON p.cluster_id=r.cluster_id AND p.resource_id=r.resource_id WHERE r.cluster_id=sqlc.arg(cluster_id) AND p.scope='intranet'
+ AND (sqlc.arg(name_filter)::text='' OR r.name=sqlc.arg(name_filter))
+ AND ((sqlc.arg(state_filter)::text='' AND r.state<>'deleted') OR r.state=sqlc.arg(state_filter));

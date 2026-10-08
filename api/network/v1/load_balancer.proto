@@ -184,7 +184,7 @@ message ListLoadBalancersRequest {
   int32 limit = 7;
   string cursor = 8;
 }
-message ListLoadBalancersResponse { repeated LoadBalancer items = 1; string next_cursor = 2; }
+message ListLoadBalancersResponse { repeated LoadBalancer items = 1; string next_cursor = 2; int64 total = 3; }
 
 // Full replacement of mutable fields only: name, description, backend set and
 // supported health check parameters. Immutable placement/exposure/EIP/VIP/flavor/

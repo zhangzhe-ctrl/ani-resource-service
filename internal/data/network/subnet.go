@@ -117,16 +117,26 @@ func (p *Postgres) GetSubnet(ctx context.Context, tenant, id string) (biz.Subnet
 	row, err := p.queries.GetSubnet(ctx, sqlcgen.GetSubnetParams{TenantID: tenant, SubnetID: id})
 	return subnet(row), databaseFailure(err)
 }
-func (p *Postgres) ListSubnets(ctx context.Context, tenant string, f biz.SubnetFilter) ([]biz.Subnet, error) {
-	rows, err := p.queries.ListSubnets(ctx, sqlcgen.ListSubnetsParams{TenantID: tenant, VpcFilter: f.VPCID, NameFilter: f.Name, StateFilter: f.State, AfterID: f.AfterID, AfterCreatedAt: f.AfterCreatedAt, MaxResults: f.Limit})
+func (p *Postgres) ListSubnets(ctx context.Context, tenant string, f biz.SubnetFilter) ([]biz.Subnet, int64, error) {
+	tx, err := p.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
-		return nil, databaseFailure(err)
+		return nil, 0, databaseFailure(err)
+	}
+	defer tx.Rollback(ctx)
+	q := p.queries.WithTx(tx)
+	total, err := q.CountListedSubnets(ctx, sqlcgen.CountListedSubnetsParams{TenantID: tenant, VpcFilter: f.VPCID, NameFilter: f.Name, StateFilter: f.State})
+	if err != nil {
+		return nil, 0, databaseFailure(err)
+	}
+	rows, err := q.ListSubnets(ctx, sqlcgen.ListSubnetsParams{TenantID: tenant, VpcFilter: f.VPCID, NameFilter: f.Name, StateFilter: f.State, AfterID: f.AfterID, AfterCreatedAt: f.AfterCreatedAt, MaxResults: f.Limit})
+	if err != nil {
+		return nil, 0, databaseFailure(err)
 	}
 	values := make([]biz.Subnet, 0, len(rows))
 	for _, row := range rows {
 		values = append(values, subnet(row))
 	}
-	return values, nil
+	return values, total, nil
 }
 func (p *Postgres) DeleteSubnet(ctx context.Context, tenant, id string) (biz.Subnet, error) {
 	tx, err := p.pool.Begin(ctx)

@@ -177,10 +177,20 @@ func (p *Postgres) GetEIP(ctx context.Context, tenant, id string) (biz.EIP, erro
 	v.BindingTarget = eipBindingTarget(r.BindingTargetKind, r.BindingTargetID, r.BindingState)
 	return v, databaseFailure(err)
 }
-func (p *Postgres) ListEIPs(ctx context.Context, tenant string, f biz.VPCFilter) ([]biz.EIP, error) {
-	rows, err := p.queries.ListEIPs(ctx, sqlcgen.ListEIPsParams{TenantID: tenant, NameFilter: f.Name, StateFilter: f.State, AfterID: f.AfterID, AfterCreatedAt: f.AfterCreatedAt, MaxResults: f.Limit})
+func (p *Postgres) ListEIPs(ctx context.Context, tenant string, f biz.VPCFilter) ([]biz.EIP, int64, error) {
+	tx, err := p.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
-		return nil, databaseFailure(err)
+		return nil, 0, databaseFailure(err)
+	}
+	defer tx.Rollback(ctx)
+	q := p.queries.WithTx(tx)
+	total, err := q.CountEIPs(ctx, sqlcgen.CountEIPsParams{TenantID: tenant, NameFilter: f.Name, StateFilter: f.State})
+	if err != nil {
+		return nil, 0, databaseFailure(err)
+	}
+	rows, err := q.ListEIPs(ctx, sqlcgen.ListEIPsParams{TenantID: tenant, NameFilter: f.Name, StateFilter: f.State, AfterID: f.AfterID, AfterCreatedAt: f.AfterCreatedAt, MaxResults: f.Limit})
+	if err != nil {
+		return nil, 0, databaseFailure(err)
 	}
 	values := make([]biz.EIP, 0, len(rows))
 	for _, r := range rows {
@@ -190,7 +200,7 @@ func (p *Postgres) ListEIPs(ctx context.Context, tenant string, f biz.VPCFilter)
 		v.BindingTarget = eipBindingTarget(r.BindingTargetKind, r.BindingTargetID, r.BindingState)
 		values = append(values, v)
 	}
-	return values, nil
+	return values, total, nil
 }
 func (p *Postgres) GetSnat(ctx context.Context, tenant, id string, byVPC bool) (biz.VPCSnatBinding, error) {
 	r, err := p.queries.GetSnat(ctx, sqlcgen.GetSnatParams{TenantID: tenant, ID: id, ByVpc: byVPC})

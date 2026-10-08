@@ -10,6 +10,64 @@ import (
 	"time"
 )
 
+const countPlatformRegistrations = `-- name: CountPlatformRegistrations :one
+SELECT count(*) FROM image.registrations
+WHERE owner_scope='platform' AND tenant_id IS NULL AND unregistered_at IS NULL
+ AND ($1::text='' OR display_name ILIKE $2::text ESCAPE E'\\'
+  OR repository ILIKE $2::text ESCAPE E'\\')
+ AND (cardinality($3::text[])=0 OR purposes && $3::text[])
+ AND ($4::text='' OR accelerator=$4)
+`
+
+type CountPlatformRegistrationsParams struct {
+	SearchText    string
+	SearchPattern string
+	Purposes      []string
+	Accelerator   string
+}
+
+func (q *Queries) CountPlatformRegistrations(ctx context.Context, arg CountPlatformRegistrationsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countPlatformRegistrations,
+		arg.SearchText,
+		arg.SearchPattern,
+		arg.Purposes,
+		arg.Accelerator,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countTenantRegistrations = `-- name: CountTenantRegistrations :one
+SELECT count(*) FROM image.registrations
+WHERE owner_scope='tenant' AND tenant_id=$1 AND unregistered_at IS NULL
+ AND ($2::text='' OR display_name ILIKE $3::text ESCAPE E'\\'
+  OR repository ILIKE $3::text ESCAPE E'\\')
+ AND (cardinality($4::text[])=0 OR purposes && $4::text[])
+ AND ($5::text='' OR accelerator=$5)
+`
+
+type CountTenantRegistrationsParams struct {
+	TenantID      *string
+	SearchText    string
+	SearchPattern string
+	Purposes      []string
+	Accelerator   string
+}
+
+func (q *Queries) CountTenantRegistrations(ctx context.Context, arg CountTenantRegistrationsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countTenantRegistrations,
+		arg.TenantID,
+		arg.SearchText,
+		arg.SearchPattern,
+		arg.Purposes,
+		arg.Accelerator,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getPlatformRegistration = `-- name: GetPlatformRegistration :one
 SELECT image_id, space_id, owner_scope, tenant_id, display_name, description, repository, source_reference, digest, media_type, platforms, purposes, accelerator, version, created_by, updated_by, created_at, updated_at, unregistered_at FROM image.registrations
 WHERE owner_scope='platform' AND tenant_id IS NULL AND image_id=$1

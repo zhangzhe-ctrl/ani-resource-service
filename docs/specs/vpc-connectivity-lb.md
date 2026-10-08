@@ -236,3 +236,7 @@ Network 定义并生成契约，ANI Gateway以可信租户上下文调用；不�
 | U-V12 | API/Console正确区分配置完成与流量健康；缺少证据显示unknown，三类型表单校验正确 |
 
 Network构建/真实PG/恢复/契约/观察门禁在ubuntu执行；环境和源码manifest固定，按包限制资源。真实数据面在合格kc/Envoy版本与明确拓扑下，经产品API创建资源后验证；故障只作用本run对象，保留既有手工现场，测试清理走产品生命周期。生产发布、迁移执行和真实上游配置不是编写方案的隐含授权。
+
+## 列表总数
+
+负载均衡列表返回 `items,next_cursor,total`。`total` 统计当前租户、name/state/vpc/subnet/exposure 筛选下已受理的产品资源，不包含尚未受理的占位记录，不应用 cursor/limit；总数与本页数据来自同一只读数据库快照。跨页不承诺总数固定。

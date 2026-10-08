@@ -10,6 +10,26 @@ import (
 	"time"
 )
 
+const countVPCs = `-- name: CountVPCs :one
+SELECT count(*) FROM network_vpcs v
+WHERE v.tenant_id = $1
+ AND ($2::text = '' OR v.name = $2)
+ AND (($3::text = '' AND v.state <> 'deleted') OR v.state = $3)
+`
+
+type CountVPCsParams struct {
+	TenantID    string
+	NameFilter  string
+	StateFilter string
+}
+
+func (q *Queries) CountVPCs(ctx context.Context, arg CountVPCsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countVPCs, arg.TenantID, arg.NameFilter, arg.StateFilter)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const databaseTime = `-- name: DatabaseTime :one
 SELECT clock_timestamp()::timestamptz AS now
 `

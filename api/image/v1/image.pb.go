@@ -1597,6 +1597,7 @@ type ListImagesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*ImageRegistration   `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	Total         int64                  `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1643,6 +1644,13 @@ func (x *ListImagesResponse) GetNextCursor() string {
 		return x.NextCursor
 	}
 	return ""
+}
+
+func (x *ListImagesResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 type UpdateImageRequest struct {
@@ -2028,11 +2036,12 @@ const file_image_v1_image_proto_rawDesc = "" +
 	"\bpurposes\x18\x04 \x03(\x0e2\x16.image.v1.ImagePurposeR\bpurposes\x12;\n" +
 	"\vaccelerator\x18\x05 \x01(\x0e2\x19.image.v1.AcceleratorKindR\vaccelerator\x12\x14\n" +
 	"\x05limit\x18\x06 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06cursor\x18\a \x01(\tR\x06cursor\"h\n" +
+	"\x06cursor\x18\a \x01(\tR\x06cursor\"~\n" +
 	"\x12ListImagesResponse\x121\n" +
 	"\x05items\x18\x01 \x03(\v2\x1b.image.v1.ImageRegistrationR\x05items\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\"\xd6\x02\n" +
+	"nextCursor\x12\x14\n" +
+	"\x05total\x18\x03 \x01(\x03R\x05total\"\xd6\x02\n" +
 	"\x12UpdateImageRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x19\n" +
 	"\bimage_id\x18\x02 \x01(\tR\aimageId\x12!\n" +

@@ -22,8 +22,8 @@ type SpaceRepository interface {
 type CatalogRepository interface {
 	FindTenantRegistration(context.Context, string, string) (Registration, error)
 	FindPlatformRegistration(context.Context, string) (Registration, error)
-	PageTenantRegistrations(context.Context, string, Filter, *PageKey) ([]Registration, error)
-	PagePlatformRegistrations(context.Context, Filter, *PageKey) ([]Registration, error)
+	PageTenantRegistrations(context.Context, string, Filter, *PageKey) ([]Registration, int64, error)
+	PagePlatformRegistrations(context.Context, Filter, *PageKey) ([]Registration, int64, error)
 	ApplyTenantRegistration(context.Context, Command, Registration) (Registration, error)
 	ApplyTenantMetadata(context.Context, Command, UpdateImage) (Registration, error)
 	ApplyTenantUnregister(context.Context, Command, UnregisterImage) (Registration, error)

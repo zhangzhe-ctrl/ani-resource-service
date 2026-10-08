@@ -32,7 +32,7 @@ func (s *NetworkService) ListSubnets(ctx context.Context, r *networkv1.ListSubne
 	if err != nil {
 		return nil, rpcError(err)
 	}
-	result := &networkv1.ListSubnetsResponse{NextCursor: value.NextCursor, Items: make([]*networkv1.Subnet, 0, len(value.Items))}
+	result := &networkv1.ListSubnetsResponse{Total: value.Total, NextCursor: value.NextCursor, Items: make([]*networkv1.Subnet, 0, len(value.Items))}
 	for _, v := range value.Items {
 		result.Items = append(result.Items, wireSubnet(v))
 	}

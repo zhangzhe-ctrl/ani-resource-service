@@ -190,7 +190,7 @@ Underlay 等待 Subnet `Valid/Initialized/Ready=True`，并要求 `underlayState
 
 管理员代办采用 `/api/v1/admin/tenants/{tenant_id}/networks/...` 对应上述资源路径，并包括现有 VPC/Subnet 初始化动作；经管理员授权后重用相同 RPC/use case，不建第二份租户状态机。普通租户公开 body 继续不接受任意 tenant_id。平台基础设施 API 本身不要求租户身份。
 
-创建 EIP/绑定返回 `201` 受理快照；新启停或解绑/释放返回 `202` 受理结果，operation 表明异步进度，未发生新操作的同意图重放返回原受理快照。EIP/绑定均有稳定 opaque ID，建议分别以 `eip_` / `snat_` 加 UUID 派生；列表分页和墓碑按既有规格。新增 operation/resource kind 为 EIP、VPC SNAT 绑定及其实际变更，生成契约需显式扩展，不能把它们伪装成 CreateVPC。
+创建 EIP/绑定返回 `201` 受理快照；新启停或解绑/释放返回 `202` 受理结果，operation 表明异步进度，未发生新操作的同意图重放返回原受理快照。EIP/绑定均有稳定 opaque ID，建议分别以 `eip_` / `snat_` 加 UUID 派生；列表分页和墓碑按既有规格。EIP、VLAN 网络、出口网关、公网及内网地址池列表返回 `items,next_cursor,total`；`total` 复用相同租户或集群、种类、可见性和筛选条件，不应用 cursor/limit，与本页数据来自同一只读数据库快照。节点网卡列表不分页，`total` 为节点筛选后的清单条数。新增 operation/resource kind 为 EIP、VPC SNAT 绑定及其实际变更，生成契约需显式扩展，不能把它们伪装成 CreateVPC。
 
 响应增量：
 

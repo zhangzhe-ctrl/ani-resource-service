@@ -128,6 +128,7 @@ type SubnetFilter struct {
 	VPCID string
 }
 type SubnetPage struct {
+	Total      int64
 	Items      []Subnet
 	NextCursor string
 }
@@ -152,12 +153,12 @@ func (n *Network) ListSubnets(ctx context.Context, r ListSubnets) (SubnetPage, e
 		}
 		filter.AfterCreatedAt, filter.AfterID = c.CreatedAt, c.ID
 	}
-	rows, err := n.repository.ListSubnets(ctx, tenant, filter)
+	rows, total, err := n.repository.ListSubnets(ctx, tenant, filter)
 	if err != nil {
 		return SubnetPage{}, err
 	}
 	limit := int(filter.Limit) - 1
-	page := SubnetPage{Items: make([]Subnet, 0, limit)}
+	page := SubnetPage{Total: total, Items: make([]Subnet, 0, limit)}
 	for i, value := range rows {
 		if i == limit {
 			last := rows[i-1]

@@ -258,13 +258,23 @@ func (p *Postgres) GetOperation(ctx context.Context, tenant, id string) (biz.Ope
 	return operation(row), nil
 }
 
-func (p *Postgres) ListVPCs(ctx context.Context, tenant string, filter biz.VPCFilter) ([]biz.VPC, error) {
-	rows, err := p.queries.ListVPCs(ctx, sqlcgen.ListVPCsParams{
+func (p *Postgres) ListVPCs(ctx context.Context, tenant string, filter biz.VPCFilter) ([]biz.VPC, int64, error) {
+	tx, err := p.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return nil, 0, databaseFailure(err)
+	}
+	defer tx.Rollback(ctx)
+	q := p.queries.WithTx(tx)
+	total, err := q.CountVPCs(ctx, sqlcgen.CountVPCsParams{TenantID: tenant, NameFilter: filter.Name, StateFilter: filter.State})
+	if err != nil {
+		return nil, 0, databaseFailure(err)
+	}
+	rows, err := q.ListVPCs(ctx, sqlcgen.ListVPCsParams{
 		TenantID: tenant, NameFilter: filter.Name, StateFilter: filter.State,
 		AfterID: filter.AfterID, AfterCreatedAt: filter.AfterCreatedAt, MaxResults: filter.Limit,
 	})
 	if err != nil {
-		return nil, databaseFailure(err)
+		return nil, 0, databaseFailure(err)
 	}
 	result := make([]biz.VPC, 0, len(rows))
 	for _, row := range rows {
@@ -273,7 +283,7 @@ func (p *Postgres) ListVPCs(ctx context.Context, tenant string, filter biz.VPCFi
 		value.BaseConnectivity = &biz.BaseConnectivity{State: row.BaseState, Reason: biz.Reason(row.BaseReason), ObservedAt: row.BaseObservedAt}
 		result = append(result, value)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func vpc(row sqlcgen.NetworkVpc) biz.VPC {

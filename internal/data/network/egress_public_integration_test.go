@@ -111,8 +111,8 @@ func TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity(t *tes
 		t.Fatal("by-VPC lookup exposed intranet", err)
 	}
 	eip := f.eip(t, "public-visible")
-	rows, _, err := f.e.ListEIPs(f.ctx, biz.ListVPCs{Limit: 100})
-	if err != nil || len(rows) != 1 || rows[0].ID != eip.ID {
+	rows, _, total, err := f.e.ListEIPs(f.ctx, biz.ListVPCs{Limit: 100})
+	if err != nil || total != 1 || len(rows) != 1 || rows[0].ID != eip.ID {
 		t.Fatal("Public list contains system resource", rows, err)
 	}
 	bound, err := f.e.BindVPCSnat(f.ctx, biz.EgressIntent{VPCID: vpc.ID, EIPID: eip.ID, IdempotencyKey: "public-bind"})
@@ -204,7 +204,7 @@ func TestEIPUnifiedClaimProjectionForReservedAndBoundLB(t *testing.T) {
 		if err != nil || got.BindingID != "" || got.BindingState != state || got.BindingTarget == nil || got.BindingTarget.Kind != "load_balancer" || got.BindingTarget.ID != lbID || got.BindingTarget.State != state {
 			t.Fatal("LB EIP claim projected incorrectly", got, err)
 		}
-		listed, _, err := f.e.ListEIPs(f.ctx, biz.ListVPCs{Limit: 100})
+		listed, _, _, err := f.e.ListEIPs(f.ctx, biz.ListVPCs{Limit: 100})
 		if err != nil || len(listed) != 1 || listed[0].BindingTarget == nil || listed[0].BindingState != state || listed[0].BindingID != "" {
 			t.Fatal("list lost LB claim", listed, err)
 		}

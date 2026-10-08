@@ -102,7 +102,7 @@ type ListLoadBalancers struct {
 type LoadBalancerRepository interface {
 	AcceptLoadBalancer(context.Context, LoadBalancerIntent, Attribution, time.Duration) (LoadBalancerResult, error)
 	GetLoadBalancer(context.Context, string, string) (LoadBalancer, error)
-	ListLoadBalancers(context.Context, string, LoadBalancerFilter) ([]LoadBalancer, error)
+	ListLoadBalancers(context.Context, string, LoadBalancerFilter) ([]LoadBalancer, int64, error)
 	DeleteLoadBalancer(context.Context, string, string, Attribution) (LoadBalancerResult, error)
 	GetLoadBalancerOperation(context.Context, string, string) (Operation, error)
 }
@@ -306,29 +306,29 @@ func (l *LoadBalancers) GetOperation(ctx context.Context, tenant, id string) (Op
 	}
 	return op, err
 }
-func (l *LoadBalancers) List(ctx context.Context, r ListLoadBalancers) ([]LoadBalancer, string, error) {
+func (l *LoadBalancers) List(ctx context.Context, r ListLoadBalancers) ([]LoadBalancer, string, int64, error) {
 	tenant, _, err := l.authorization.Tenant(ctx, r.TenantID)
 	if err != nil {
-		return nil, "", err
+		return nil, "", 0, err
 	}
 	f, err := normalizeList(r.Name, r.State, r.Limit)
 	if err != nil {
-		return nil, "", err
+		return nil, "", 0, err
 	}
 	if (r.VPCID != "" && !validVPCID(r.VPCID)) || (r.SubnetID != "" && !validSubnetID(r.SubnetID)) || (r.Exposure != "" && r.Exposure != "private" && r.Exposure != "public" && r.Exposure != "public_private") {
-		return nil, "", Fail(InvalidArgument, "invalid load balancer filter")
+		return nil, "", 0, Fail(InvalidArgument, "invalid load balancer filter")
 	}
 	kind := "load_balancer:" + egressFingerprint([]string{r.VPCID, r.SubnetID, r.Exposure})
 	if r.Cursor != "" {
 		c, err := l.cursor.decodeCursor(r.Cursor)
 		if err != nil || c.Version != 1 || c.Kind != kind || c.TenantID != tenant || c.Name != f.Name || c.State != f.State || !validEgressID(c.ID, "lb") || c.CreatedAt.IsZero() {
-			return nil, "", Fail(InvalidCursor, "cursor does not match query")
+			return nil, "", 0, Fail(InvalidCursor, "cursor does not match query")
 		}
 		f.AfterID, f.AfterCreatedAt = c.ID, c.CreatedAt
 	}
-	rows, err := l.repository.ListLoadBalancers(ctx, tenant, LoadBalancerFilter{VPCFilter: f, VPCID: r.VPCID, SubnetID: r.SubnetID, Exposure: r.Exposure})
+	rows, total, err := l.repository.ListLoadBalancers(ctx, tenant, LoadBalancerFilter{VPCFilter: f, VPCID: r.VPCID, SubnetID: r.SubnetID, Exposure: r.Exposure})
 	if err != nil {
-		return nil, "", err
+		return nil, "", 0, err
 	}
 	next := ""
 	if len(rows) == int(f.Limit) {
@@ -339,5 +339,5 @@ func (l *LoadBalancers) List(ctx context.Context, r ListLoadBalancers) ([]LoadBa
 	for j := range rows {
 		rows[j] = l.observation(rows[j])
 	}
-	return rows, next, nil
+	return rows, next, total, nil
 }

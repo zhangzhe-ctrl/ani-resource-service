@@ -119,7 +119,7 @@ Operation 字段：`id,tenant_id,kind,resource_type,resource_id,state,reason,cre
 kind 首片为 `create_vpc,delete_vpc,create_subnet,delete_subnet`；内部接入事务有独立 Attachment 状态，不伪装成中央 AsyncTask。
 
 列表默认 `limit=20`，范围 1–100；`name` 是规范化后区分大小写的精确匹配，`state` 为单值，非法值 400。
-按 `(created_at DESC,id DESC)` 做 keyset 分页；返回 `items,next_cursor`，不承诺旧 `total` 字段。
+按 `(created_at DESC,id DESC)` 做 keyset 分页；返回 `items,next_cursor,total`。`total` 是当前租户和筛选条件下的匹配总条数，不应用 cursor 或 limit；总数和本页数据来自同一只读数据库快照。
 默认排除 deleted；显式 `state=deleted` 可查墓碑。GET 保留 deleted 资源，直到另行设计保留/清理策略。
 cursor 是服务生成的带完整性校验的 opaque 值，绑定租户、资源种类、筛选条件和上页边界；跨租户/改筛选/损坏均 400，不改变租户授权。
 分页不是跨多个请求的数据库快照；并发插入的新资源从新一轮列表读取。
@@ -153,7 +153,7 @@ Gateway 延续 ANI 统一错误 envelope，将上述稳定 reason 放入对应�
 ### 4.4 与旧契约的显式差异
 
 保留路径、产品 ID 前缀、name/cidr/gateway、创建 201、资源查询形式；新增 operation 查询和可恢复异步语义。
-破坏性差异：CIDR 必填、严格输入规范化、移除 zone/dev_profile/available_ip_count/列表 total、永久保留首片幂等键、删除 202、`pending` 改 `provisioning` 并新增 degraded。
+破坏性差异：CIDR 必填、严格输入规范化、移除 zone/dev_profile/available_ip_count、永久保留首片幂等键、删除 202、`pending` 改 `provisioning` 并新增 degraded。
 Subnet description、可靠分页、subnet_count 是明确实现项。未知/已移除的请求字段返回 400，不通过接受并忽略来兼容旧客户端。
 Console 需更新生成类型与状态展示；对进行中的资源/operation 定时查询（建议 2 秒起、上限 10 秒退避），终态停止，恢复页面时重新查询。
 POST 的幂等键在一次逻辑提交及网络重试中保持稳定；新意图才生成新键。

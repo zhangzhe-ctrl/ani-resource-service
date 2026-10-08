@@ -129,3 +129,8 @@ SELECT * FROM network_eips WHERE tenant_id=$1 AND eip_id=$2;
 
 -- name: GetSnatInternal :one
 SELECT * FROM network_snat_bindings WHERE tenant_id=$1 AND snat_id=$2;
+
+-- name: CountEIPs :one
+SELECT count(*) FROM network_eips e WHERE e.tenant_id=sqlc.arg(tenant_id) AND e.scope='public' AND e.managed_by='tenant'
+ AND (sqlc.arg(name_filter)::text='' OR e.name=sqlc.arg(name_filter))
+ AND ((sqlc.arg(state_filter)::text='' AND e.state<>'deleted') OR e.state=sqlc.arg(state_filter));
