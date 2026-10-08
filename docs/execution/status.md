@@ -379,4 +379,4 @@ Harbor 实际版本 `v2.15.2-a97e7b83`；CA 缺 Key Usage 导致 Python 默认 S
 
 ## 列表总数（2026-10-08）
 
-从远端最新 Resource main `8089a78` 和 Governance main `9e4c5c7` 在独占工作区补齐 Resource 全部 10 个列表及 Governance 对应 3 个列表的 `total`。真实 PG 分页/筛选/隔离及受信 HTTP → mTLS → Resource → PG 空列表链路为 pass；Resource `make verify` 为 pass。当前未发布或部署；Governance 发布时仍需锁定包含 total 的 Resource 版本。来源、命令、结果和边界见 [LIST-TOTAL-20261008](records/LIST-TOTAL-20261008/README.md)。
+从远端最新 Resource main `8089a78` 和 Governance main `9e4c5c7` 在独占工作区补齐 Resource 全部 10 个列表及 Governance 对应 3 个列表的 `total`。真实 PG 分页/筛选/隔离及受信 HTTP → mTLS → Resource → PG 空列表链路为 pass；Resource `make verify` 为 pass。本段记录发布前验证；发布顺序为 Resource main → Governance 锁定已发布 Resource 版本 → Governance main，正式版本以远端 Git 和 Governance go.mod 为准。部署仍为 not_verified。来源、命令、结果和边界见 [LIST-TOTAL-20261008](records/LIST-TOTAL-20261008/README.md)。

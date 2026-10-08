@@ -64,6 +64,6 @@ HTTP 验证同时包含协议边界的非零 `total="37"`、空列表 `total="0"
 
 ## 验证限制与恢复信息
 
-Governance 联编使用任务私有 `go.work` 选择本次 Resource 源码，未把 replace/go.work 写入任何正式仓库。其 go.mod 仍锁定此前公开的 Resource 版本；发布时必须先发布包含 total 的 Resource 版本，再更新 Governance 的依赖版本。发布后的独立模块构建、提交、推送和部署均为 `not_verified`。
+Governance 联编使用任务私有 `go.work` 选择本次 Resource 源码，未把 replace/go.work 写入任何正式仓库。其 go.mod 仍锁定此前公开的 Resource 版本；发布时必须先发布包含 total 的 Resource 版本，再更新 Governance 的依赖版本。以上是发布前验证快照。用户随后授权按 Resource main → Governance 依赖更新 → Governance main 顺序发布；后续独立模块验证和发布记录维护在 Governance 的接口集成登记中。部署仍为 `not_verified`。
 
 最初 Governance 全包测试因未准备无关 Asynq Redis 环境而 fail；未删除或放宽该测试，后续只执行本次 Network/Image 定向范围。收尾源码门禁的执行目录曾纳入运行中的 TMPDIR/清单，Unix socket 测试还受过长 TMPDIR 影响；修正为短的任务私有 HOME TMPDIR，日志/清单放在排除的 `.work/` 目录，未修改验证器或 LB 业务代码。

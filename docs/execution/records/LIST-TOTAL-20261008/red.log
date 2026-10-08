@@ -1,0 +1,10 @@
+127.0.0.1:5432 - accepting connections
+PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=07a17c3a58568939fb2dd073c92cf06436d078bf2d7658680a6b2c23eab48aa9
+go: downloading go.opentelemetry.io/otel/sdk/metric v1.45.0
+=== RUN   TestVPCListTotalAcrossPagesAndFilters
+    list_totals_integration_test.go:43: network.v1.ListVPCsResponse is missing total
+--- FAIL: TestVPCListTotalAcrossPagesAndFilters (0.36s)
+FAIL
+FAIL	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	0.374s
+FAIL
+removed task container=07a17c3a58568939fb2dd073c92cf06436d078bf2d7658680a6b2c23eab48aa9

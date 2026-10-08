@@ -1,0 +1,29 @@
+127.0.0.1:5432 - accepting connections
+PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=365f1111123b14590d7274d05c95b0cfc6a2503d7de4677e36ae3ecd21b46a52
+=== RUN   TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity
+=== RUN   TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity/get-system-eip
+=== RUN   TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity/delete-system-eip
+=== RUN   TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity/bind-system-eip
+=== RUN   TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity/get-system-snat
+=== RUN   TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity/toggle-system-snat
+=== RUN   TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity/delete-system-snat
+--- PASS: TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity (0.56s)
+    --- PASS: TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity/get-system-eip (0.00s)
+    --- PASS: TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity/delete-system-eip (0.00s)
+    --- PASS: TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity/bind-system-eip (0.00s)
+    --- PASS: TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity/get-system-snat (0.00s)
+    --- PASS: TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity/toggle-system-snat (0.00s)
+    --- PASS: TestPublicTenantInterfacesHideSystemResourcesAndPreserveBaseIdentity/delete-system-snat (0.00s)
+=== RUN   TestVPCListTotalAcrossPagesAndFilters
+--- PASS: TestVPCListTotalAcrossPagesAndFilters (0.34s)
+=== RUN   TestSubnetListTotalAcrossPagesAndParents
+--- PASS: TestSubnetListTotalAcrossPagesAndParents (0.39s)
+=== RUN   TestEgressListTotalsAndInventoryAuthorization
+--- PASS: TestEgressListTotalsAndInventoryAuthorization (0.47s)
+=== RUN   TestLoadBalancerListTotalAcrossPagesAndFilters
+--- PASS: TestLoadBalancerListTotalAcrossPagesAndFilters (0.96s)
+=== RUN   TestLBSchemaFrom0006PreservesAllOldColumnsAndDormantReservations
+--- PASS: TestLBSchemaFrom0006PreservesAllOldColumnsAndDormantReservations (0.47s)
+PASS
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	3.200s
+removed task container=365f1111123b14590d7274d05c95b0cfc6a2503d7de4677e36ae3ecd21b46a52

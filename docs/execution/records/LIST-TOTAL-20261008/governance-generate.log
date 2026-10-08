@@ -1,0 +1,49 @@
+go build -trimpath -o tools/bin/gow ./tools/localdeps/gow/cmd/gow
+bash scripts/build-redact-plugin.sh
+tools/bin/gow api
+using buf 1.60.0
+preflight: tool buf                    github.com/bufbuild/buf/cmd/buf@v1.60.0 at /home/ubuntu/go/bin/buf
+preflight: pinned plugin google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 provided by module google.golang.org/protobuf@v1.36.11
+preflight: pinned plugin google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.0 provided by module google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.0
+preflight: pinned plugin github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20251205160234-b9fab9a5a5ab provided by module github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20251205160234-b9fab9a5a5ab
+preflight: pinned plugin github.com/google/gnostic/cmd/protoc-gen-openapi@v0.7.1 provided by module github.com/google/gnostic@v0.7.1
+preflight: pinned plugin google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 provided by module google.golang.org/protobuf@v1.36.11
+preflight: pinned plugin google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.0 provided by module google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.0
+preflight: pinned plugin github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20251205160234-b9fab9a5a5ab provided by module github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20251205160234-b9fab9a5a5ab
+preflight: pinned plugin github.com/envoyproxy/protoc-gen-validate@v1.3.3 provided by module github.com/envoyproxy/protoc-gen-validate@v1.3.3
+preflight: pinned plugin google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 provided by module google.golang.org/protobuf@v1.36.11
+preflight: tool protoc-gen-go          google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 at /home/ubuntu/go/bin/protoc-gen-go
+preflight: tool protoc-gen-go-grpc     google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.2 at /home/ubuntu/go/bin/protoc-gen-go-grpc
+preflight: tool protoc-gen-go-http     github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20260404020628-f149714c1d54 at /home/ubuntu/go/bin/protoc-gen-go-http
+preflight: tool protoc-gen-go-errors   github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/v2@v2.0.0-20260404020628-f149714c1d54 at /home/ubuntu/go/bin/protoc-gen-go-errors
+preflight: building protoc-gen-go-redact from the current pkg/localdeps sources
+preflight: plugin protoc-gen-go-redact   go-wind-admin/pkg/localdeps/go-wind-toolkit/protoc-gen-go-redact sha256 7f8b29a12b20b0da
+preflight: pinned plugin google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 provided by module google.golang.org/protobuf@v1.36.11
+preflight: pinned plugin google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.0 provided by module google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.0
+preflight: pinned plugin github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20251205160234-b9fab9a5a5ab provided by module github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20251205160234-b9fab9a5a5ab
+preflight: pinned plugin google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 provided by module google.golang.org/protobuf@v1.36.11
+preflight: pinned plugin google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 provided by module google.golang.org/protobuf@v1.36.11
+preflight: pinned plugin google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.0 provided by module google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.0
+preflight: pinned plugin github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20251205160234-b9fab9a5a5ab provided by module github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20251205160234-b9fab9a5a5ab
+preflight: pinned plugin github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/v2@v2.0.0-20260404020628-f149714c1d54 provided by module github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/v2@v2.0.0-20260404020628-f149714c1d54
+preflight: pinned plugin google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 provided by module google.golang.org/protobuf@v1.36.11
+preflight: tool protoc-gen-validate    github.com/envoyproxy/protoc-gen-validate@v1.3.3 at /home/ubuntu/go/bin/protoc-gen-validate
+preflight: 10 templates, all plugins, inputs and outputs resolved
+generating into staging copy /home/ubuntu/workspace/ani-network-service-runs/list-totals-20261008/governance/tmp/gow-api-stage-276306720 (10 templates, 5 managed output roots)
+Using template file: /home/ubuntu/workspace/ani-network-service-runs/list-totals-20261008/governance/api/buf.accelerator.gen.yaml
+Using template file: /home/ubuntu/workspace/ani-network-service-runs/list-totals-20261008/governance/api/buf.admin.openapi.gen.yaml
+Using template file: /home/ubuntu/workspace/ani-network-service-runs/list-totals-20261008/governance/api/buf.aksk.gen.yaml
+Using template file: /home/ubuntu/workspace/ani-network-service-runs/list-totals-20261008/governance/api/buf.bootstrap.conf.gen.yaml
+Using template file: /home/ubuntu/workspace/ani-network-service-runs/list-totals-20261008/governance/api/buf.gen.yaml
+[31mWARN[m: POST /admin/v1/modeldev/executions/{execution_id}:stop does not declare a body.
+Using template file: /home/ubuntu/workspace/ani-network-service-runs/list-totals-20261008/governance/api/buf.network.gen.yaml
+Using template file: /home/ubuntu/workspace/ani-network-service-runs/list-totals-20261008/governance/api/buf.pagination.gen.yaml
+Using template file: /home/ubuntu/workspace/ani-network-service-runs/list-totals-20261008/governance/api/buf.quota.gen.yaml
+Using template file: /home/ubuntu/workspace/ani-network-service-runs/list-totals-20261008/governance/api/buf.redact.gen.yaml
+Using template file: /home/ubuntu/workspace/ani-network-service-runs/list-totals-20261008/governance/api/buf.validate.gen.yaml
+post-processed the OpenAPI document with scripts/finalize-aksk-openapi.py
+staged generation ok: 4 to write, 30 unchanged hand-written kept, 402 staged files under 5 managed roots [api/gen/go:352 app/admin/service/cmd/server/assets:3 pkg/localdeps/go-crud/api/gen/go:1 pkg/localdeps/go-wind-toolkit/protoc-gen-go-redact:29 pkg/localdeps/kratos-bootstrap/api/gen/go:17]
+  updated: api/gen/go/catalog/service/v1/image.pb.go
+  updated: api/gen/go/catalog/service/v1/vpc.pb.go
+  updated: api/gen/go/catalog/service/v1/vpc.pb.validate.go
+  updated: app/admin/service/cmd/server/assets/openapi.yaml
