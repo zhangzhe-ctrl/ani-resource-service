@@ -16,6 +16,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -36,6 +37,23 @@ import (
 // Only the registry is a fixture. The lifecycle, migrations, restricted PG role,
 // transport adapter, workload TLS policy and identity interceptor are production.
 type imageContractEndpoint struct{ Address, CAFile, CertFile, KeyFile string }
+
+type imageContractRegistry struct{ *registryFixture }
+
+func (r *imageContractRegistry) ResolveArtifact(ctx context.Context, project, repository, reference string) (biz.Artifact, error) {
+	if _, err := r.FindProjectByName(ctx, project); err != nil {
+		return biz.Artifact{}, err
+	}
+	return biz.Artifact{Digest: "sha256:" + strings.Repeat("a", 64), MediaType: "application/vnd.oci.image.manifest.v1+json", Platforms: []biz.ImagePlatform{{OS: "linux", Architecture: "amd64"}}}, nil
+}
+
+func (r *imageContractRegistry) GetArtifactByDigest(ctx context.Context, project, repository, digest string) (biz.Artifact, error) {
+	artifact, err := r.ResolveArtifact(ctx, project, repository, digest)
+	if err == nil && digest != artifact.Digest {
+		return biz.Artifact{}, biz.Fail(biz.ImageNotFound, "fixture digest missing")
+	}
+	return artifact, err
+}
 
 func startImageContractServer(t *testing.T) (*fixture, *registryFixture, imageContractEndpoint) {
 	t.Helper()
@@ -96,7 +114,10 @@ func startImageContractServer(t *testing.T) (*fixture, *registryFixture, imageCo
 	if err != nil {
 		t.Fatal(err)
 	}
-	catalog, err := biz.NewCatalog(f.Repo, f.Repo, f.Repo, registry, codec)
+	// The registry boundary supplies one ordinary OCI artifact; registration,
+	// ownership, idempotency and persistence still run through the real Catalog.
+	artifacts := &imageContractRegistry{registryFixture: registry}
+	catalog, err := biz.NewCatalog(f.Repo, f.Repo, f.Repo, artifacts, codec)
 	if err != nil {
 		t.Fatal(err)
 	}

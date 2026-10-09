@@ -1,6 +1,12 @@
 # Network 执行状态
 
-更新日期：2026-09-22。本文件是唯一当前进度入口；[规格](../specs/vpc-subnet.md)描述目标，[计划](../plans/vpc-subnet.md)描述工作包。
+更新日期：2026-10-09。本文件是唯一当前进度入口；[规格](../specs/vpc-subnet.md)描述目标，[计划](../plans/vpc-subnet.md)描述工作包。
+
+## 2026-10-09：Governance 租户 Network 接入补齐
+
+本轮基线为 Resource `60702b2bcfe441b8ef86991b95274d0da34773ea`、Governance `315389d274acfc4237a87b9b4c98c23320f91b4c`；在任务独占 worktree 实施，验收快照时尚未提交或发布；用户随后授权交付两仓远端 `main`，最终发布 SHA 以 Git 提交及交付回执为准。Resource 的 24 个租户 RPC 与内部合同保持，新增真实业务/PG/worker/mTLS 联调夹具；KC、Envoy、实例 owner 与 Image registry 仅在外部边界使用受控替身。Governance 补齐 13 个入口、24 个 JWT/AK 签名入口和单对象 HTTP 响应，完整接口、权限与实际验收统一登记在 [Governance 接口登记](https://github.com/zhangzhe-ctrl/ani-governance/blob/25a171cc676e8dc5f2a614da08f64c0dc5daff06/docs/interface-integration-register.md#2026-10-09租户-network-补齐与响应合同)。
+
+本轮源码与隔离联合验收完成，`pass`：24 个 Network 方法 JWT/AK、三条业务主链、必要负向场景、十个直接写响应及 Image 原有 11 个 AK 接口已验证；最终 Resource `make verify`、Governance 正式检查与两次完整生成一致性均通过。产品接口/用例先清理活动租户及平台供给资源，再清理测试基础设施；实际资源、主机、源码快照、命令与退出码只在上述唯一登记留证。本仓仅有测试夹具改动，未修改业务状态机或公开内部 RPC。真实 KC/Envoy/Harbor、数据面与生产验收 `not_verified`；远端 CI 在实际验证前为 `not_verified`，未部署。范围外 ModelDev 全包回归失败及固定基线对照单独保留，不将本轮 PASS 扩展为全仓回归全部通过。
 
 ## 2026-09-22：Resource 改名与 Network 模块整理
 

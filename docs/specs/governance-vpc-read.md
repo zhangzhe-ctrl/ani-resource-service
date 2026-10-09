@@ -23,3 +23,5 @@ Resource 改名后的组合入口位于 `cmd/ani-resource-service/vpc_read.go`�
 ## Governance 对外详情格式
 
 Governance 的 `GET /api/v1/networks/vpcs/{vpc_id}` 直接返回公开 VPC 对象（`id/name/cidr/state/...`），不增加 `vpc` 外层字段。网络操作、EIP、VPC SNAT 详情同样直接返回对应公开对象。Resource 的内部 gRPC 请求、响应消息和租户隔离合同保留；HTTP JSON 展开由 Governance 的 HTTP 绑定完成，不在 Resource 增设浏览器 HTTP 入口。列表的 `items/next_cursor/total` 及带额外业务字段的响应保留。
+
+2026-10-09 的完整租户 Network BFF 接入与单对象写响应由 [Governance 接口登记](https://github.com/zhangzhe-ctrl/ani-governance/blob/25a171cc676e8dc5f2a614da08f64c0dc5daff06/docs/interface-integration-register.md#2026-10-09租户-network-补齐与响应合同)统一定义，包括 Subnet、SNAT、LB 及 24 个 JWT/AK 入口；LB 的资源与 operation 组合保留。该接入使用已有受信完整 Governance 入口，不改变本文 `vpc-read` 模式只允许 GetVPC 的限制。
