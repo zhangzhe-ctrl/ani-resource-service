@@ -22,11 +22,11 @@
       }
     ],
     "component": {
-      "bom-ref": "pkg:golang/github.com/zhangzhe-ctrl/ani-resource-service@v0.0.0-20000101000000-56021fa073d8?type=module",
+      "bom-ref": "pkg:golang/github.com/zhangzhe-ctrl/ani-resource-service@v0.0.0-20000101000000-bd56484b7b92?type=module",
       "type": "application",
       "name": "github.com/zhangzhe-ctrl/ani-resource-service",
-      "version": "v0.0.0-20000101000000-56021fa073d8",
-      "purl": "pkg:golang/github.com/zhangzhe-ctrl/ani-resource-service@v0.0.0-20000101000000-56021fa073d8?goarch=amd64&goos=linux&type=module",
+      "version": "v0.0.0-20000101000000-bd56484b7b92",
+      "purl": "pkg:golang/github.com/zhangzhe-ctrl/ani-resource-service@v0.0.0-20000101000000-bd56484b7b92?goarch=amd64&goos=linux&type=module",
       "externalReferences": [
         {
           "url": "https://github.com/zhangzhe-ctrl/ani-resource-service",
@@ -1605,7 +1605,7 @@
   ],
   "dependencies": [
     {
-      "ref": "pkg:golang/github.com/zhangzhe-ctrl/ani-resource-service@v0.0.0-20000101000000-56021fa073d8?type=module",
+      "ref": "pkg:golang/github.com/zhangzhe-ctrl/ani-resource-service@v0.0.0-20000101000000-bd56484b7b92?type=module",
       "dependsOn": [
         "pkg:golang/github.com/go-kratos/kratos/contrib/otel/v3@v3.0.0-20260515082355-1ddb58e407c5?type=module",
         "pkg:golang/github.com/go-kratos/kratos/v3@v3.0.0?type=module",
