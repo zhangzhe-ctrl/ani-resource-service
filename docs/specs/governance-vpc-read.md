@@ -19,3 +19,7 @@ GetVPC 继续使用原业务校验和带 tenant + vpc ID 谓词的 SQL（包括 
 本模式只返回持久业务事实和原有 observation_stale。实验 fixture 标记 available 只用于响应映射，不证明真实 KC VPC 可达。创建/删除、资源 reconciliation、子网/附件接口和数据面验证不属于本片。本批状态和证据见 [执行状态](../execution/status.md)；历史提交的验收不作为本批新版证据。
 
 Resource 改名后的组合入口位于 `cmd/ani-resource-service/vpc_read.go`，Network 适配器位于 `internal/{biz,data,service}/network`。既有 `ANI_NETWORK_*` 环境变量、`network.v1` RPC、server SAN `ani-network-service` 与 client SAN `ani-governance` 保留，用于兼容既有部署和证书；不随 Go module 改名替换。
+
+## Governance 对外详情格式
+
+Governance 的 `GET /api/v1/networks/vpcs/{vpc_id}` 直接返回公开 VPC 对象（`id/name/cidr/state/...`），不增加 `vpc` 外层字段。网络操作、EIP、VPC SNAT 详情同样直接返回对应公开对象。Resource 的内部 gRPC 请求、响应消息和租户隔离合同保留；HTTP JSON 展开由 Governance 的 HTTP 绑定完成，不在 Resource 增设浏览器 HTTP 入口。列表的 `items/next_cursor/total` 及带额外业务字段的响应保留。

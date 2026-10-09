@@ -380,3 +380,7 @@ Harbor 实际版本 `v2.15.2-a97e7b83`；CA 缺 Key Usage 导致 Python 默认 S
 ## 列表总数（2026-10-08）
 
 从远端最新 Resource main `8089a78` 和 Governance main `9e4c5c7` 在独占工作区补齐 Resource 全部 10 个列表及 Governance 对应 3 个列表的 `total`。真实 PG 分页/筛选/隔离及受信 HTTP → mTLS → Resource → PG 空列表链路为 pass；Resource `make verify` 为 pass。本段记录发布前验证；发布顺序为 Resource main → Governance 锁定已发布 Resource 版本 → Governance main，正式版本以远端 Git 和 Governance go.mod 为准。部署仍为 not_verified。来源、命令、结果和边界见 [LIST-TOTAL-20261008](records/LIST-TOTAL-20261008/README.md)。
+
+## 详情响应格式（2026-10-09）
+
+基于 Resource main `73c4170`、Governance main `134686f` 自查对外 JSON 详情：Governance 的 9 个单对象详情统一展开，Resource 同步 [VPC/网络查询规格](../specs/governance-vpc-read.md#governance-对外详情格式) 和 [Image API 规格](../specs/image-api.md)。Resource 仅提供内部 gRPC，消息/字段编号、租户谓词及权限保持既有合同；业务代码没有变化。实际 HTTP、生成和编译结果在 Governance 的接口集成登记 `DETAIL-FORMAT-01` 维护。部署及目标环境验收仍为 not_verified。

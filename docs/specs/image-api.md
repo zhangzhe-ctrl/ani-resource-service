@@ -44,6 +44,8 @@ Project POST 的完整确定拒绝响应（Harbor 400/401/403）保留原业务�
 
 ### GetImageSpace / GetPublisherCredential
 
+Governance 的两个 GET 详情分别直接返回 ImageSpace、PublisherCredential 的公开字段，不包裹 `space` 或 `credential`。内部 Resource gRPC 响应保留。
+
 无用户可指定身份。前者未启用返回 SPACE_NOT_FOUND。后者空间存在但未签发时返回 `state=not_issued, generation=0, version=0, username=""`，不隐式签发；已签发返回元数据，**永不带 secret**。
 
 ### Issue / Reset / Disable
@@ -65,6 +67,8 @@ display_name 1～100 Unicode字符；description 0～2000字符；purposes 1～5
 返回 ImageRegistration：id形如 `img_`+32小写hex，固定 repository/source_reference/digest/resolved_reference，平台数组、用途声明和元数据。有效同一空间同repo同digest重复登记返回 IMAGE_ALREADY_REGISTERED；不会悄悄修改已有登记的说明。
 
 ### GetImage / ListImages
+
+Governance 的 GET 镜像登记详情直接返回 ImageRegistration 的公开字段，不包裹 `image`；列表和签发/重置的多字段响应保留原结构。
 
 必须提供 scope；Get 给 image_id；List 给 search(<=100字符)、purposes(匹配任一所选用途)、accelerator(undeclared/空不筛)、limit(默认20，1～100)、cursor(<=4096字节)。默认只列有效登记。Get 可返回自己已取消登记的记录，便于显示历史状态；Resolve 必须拒绝取消登记。
 
