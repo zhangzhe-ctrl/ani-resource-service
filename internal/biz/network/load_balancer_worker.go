@@ -8,9 +8,10 @@ import (
 // Components are steps of one LB task, fenced by its existing lease and
 // resource version. They are never separately scheduled resources.
 type LoadBalancerComponent struct {
-	ID, Kind, MemberID, Name, Identity, PendingAction string
-	CreateDispatched, Deleted                         bool
-	TargetVersion, AppliedVersion                     int64
+	ID, Kind, MemberID, ListenerID, Name, Identity, PendingAction string
+	ListenerName                                                  string
+	CreateDispatched, Deleted                                     bool
+	TargetVersion, AppliedVersion                                 int64
 }
 type LoadBalancerMemberIdentity struct {
 	LoadBalancerBackend
@@ -86,9 +87,9 @@ func (w *Worker) stepLoadBalancer(ctx context.Context, work Work) error {
 		}
 		// A changed/missing backend must first be removed from the Route.
 		// This safety update also runs during ordinary continuous observation.
-		order := []string{"backend", "gateway", "policy", "route"}
+		order := []string{"retired_route", "retired_policy", "backend", "gateway", "policy", "route"}
 		if !allEligible {
-			order = []string{"route", "backend", "gateway", "policy"}
+			order = []string{"retired_route", "retired_policy", "route", "backend", "gateway", "policy"}
 		}
 		if deleting {
 			order = []string{"route", "policy", "gateway", "backend"}
@@ -110,7 +111,12 @@ func (w *Worker) stepLoadBalancer(ctx context.Context, work Work) error {
 				break
 			}
 			for _, c := range work.Resource.LoadBalancer.Components {
-				if c.Kind != kind {
+				retiredListener := (c.Kind == "route" || c.Kind == "policy") && !lbDesiredListener(work, c.ListenerID)
+				selectedKind := c.Kind
+				if retiredListener && !deleting {
+					selectedKind = "retired_" + c.Kind
+				}
+				if selectedKind != kind {
 					continue
 				}
 				v, exists := lbComponentObservation(o, c.ID)
@@ -122,9 +128,9 @@ func (w *Worker) stepLoadBalancer(ctx context.Context, work Work) error {
 					allReady, p.Reason = false, ProviderOwnership
 					break
 				}
-				retired := c.Kind == "backend" && !lbDesiredMember(work, c.MemberID)
+				retired := c.Deleted || retiredListener || (c.Kind == "backend" && !lbDesiredMember(work, c.MemberID))
 				remove := deleting || retired
-				if retired && !deleting && !lbRouteCurrent(work, o) {
+				if retired && c.Kind == "backend" && !deleting && (!lbRouteCurrent(work, o) || !o.GeneratedReady) {
 					allReady = false
 					continue
 				}
@@ -162,7 +168,7 @@ func (w *Worker) stepLoadBalancer(ctx context.Context, work Work) error {
 					action = "create"
 				} else if !v.Matches {
 					allReady = false
-					if c.Kind == "gateway" || c.Kind == "backend" {
+					if c.Kind == "backend" {
 						p.Reason = ProviderOwnership
 						break
 					}
@@ -285,10 +291,23 @@ func lbDesiredMember(w Work, id string) bool {
 	return false
 }
 func lbRouteCurrent(w Work, o LoadBalancerObservation) bool {
+	found := false
 	for _, c := range w.Resource.LoadBalancer.Components {
-		if c.Kind == "route" {
+		if c.Kind == "route" && !c.Deleted && lbDesiredListener(w, c.ListenerID) {
+			found = true
 			v, ok := lbComponentObservation(o, c.ID)
-			return ok && v.Exists && v.Matches && v.Ready
+			if !ok || !v.Exists || !v.Matches || !v.Ready {
+				return false
+			}
+		}
+	}
+	return found
+}
+
+func lbDesiredListener(w Work, id string) bool {
+	for _, l := range EffectiveLoadBalancerListeners(w.Resource.LoadBalancer.LoadBalancer) {
+		if l.ID == id || (id == "" && len(w.Resource.LoadBalancer.LoadBalancer.Listeners) == 0) {
+			return true
 		}
 	}
 	return false

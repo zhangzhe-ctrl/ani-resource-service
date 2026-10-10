@@ -5,7 +5,7 @@ SELECT * FROM network_load_balancers WHERE tenant_id=$1 AND lb_id=$2 FOR UPDATE;
 -- name: GetLBConfiguration :one
 SELECT * FROM network_lb_configurations WHERE tenant_id=$1 AND lb_id=$2 AND config_version=$3;
 -- name: GetLBListener :one
-SELECT * FROM network_lb_listeners WHERE tenant_id=$1 AND lb_id=$2;
+SELECT * FROM network_lb_listeners WHERE tenant_id=$1 AND lb_id=$2 ORDER BY name LIMIT 1;
 -- name: GetLBMember :one
 SELECT * FROM network_lb_members WHERE tenant_id=$1 AND lb_id=$2 AND member_id=$3;
 -- name: ListLBMembers :many
@@ -22,10 +22,10 @@ AND ((sqlc.arg(state_filter)::text='' AND state<>'deleted') OR state=sqlc.arg(st
 AND (sqlc.arg(after_id)::text='' OR (created_at,lb_id)<(sqlc.arg(after_created_at)::timestamptz,sqlc.arg(after_id)::text))
 ORDER BY created_at DESC,lb_id DESC LIMIT sqlc.arg(max_results)::integer;
 -- name: InsertLB :one
-INSERT INTO network_load_balancers(tenant_id,lb_id,cluster_id,namespace,vpc_id,subnet_id,exposure,public_eip_id,private_ip,state,name,description,created_at,updated_at,last_operation_id)
-VALUES(sqlc.arg(tenant_id),sqlc.arg(lb_id),sqlc.arg(cluster_id),sqlc.arg(namespace),sqlc.arg(vpc_id),sqlc.arg(subnet_id),sqlc.arg(exposure),NULLIF(sqlc.arg(public_eip_id)::text,''),NULLIF(sqlc.arg(private_ip)::text,''),'provisioning',sqlc.arg(name),sqlc.arg(description),sqlc.arg(created_at),sqlc.arg(created_at),sqlc.arg(operation_id)) RETURNING *;
+INSERT INTO network_load_balancers(tenant_id,lb_id,cluster_id,namespace,vpc_id,subnet_id,exposure,flavor,public_eip_id,private_ip,state,name,description,created_at,updated_at,last_operation_id)
+VALUES(sqlc.arg(tenant_id),sqlc.arg(lb_id),sqlc.arg(cluster_id),sqlc.arg(namespace),sqlc.arg(vpc_id),sqlc.arg(subnet_id),sqlc.arg(exposure),sqlc.arg(flavor),NULLIF(sqlc.arg(public_eip_id)::text,''),NULLIF(sqlc.arg(private_ip)::text,''),'provisioning',sqlc.arg(name),sqlc.arg(description),sqlc.arg(created_at),sqlc.arg(created_at),sqlc.arg(operation_id)) RETURNING *;
 -- name: InsertLBListener :exec
-INSERT INTO network_lb_listeners(tenant_id,cluster_id,namespace,lb_id,listener_id,port) VALUES($1,$2,$3,$4,$5,$6);
+INSERT INTO network_lb_listeners(tenant_id,cluster_id,namespace,lb_id,listener_id,port,name) VALUES($1,$2,$3,$4,$5,$6,$7);
 -- name: InsertLBConfiguration :exec
 INSERT INTO network_lb_configurations(tenant_id,cluster_id,namespace,lb_id,config_version,name,description,interval_seconds,timeout_seconds,unhealthy_threshold,healthy_threshold,health_check_port)
 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);
@@ -48,8 +48,8 @@ VALUES($1,$2,$3,$4,'load_balancer',$5,$6) ON CONFLICT DO NOTHING;
 INSERT INTO network_lb_vip_intents(tenant_id,cluster_id,namespace,vpc_id,subnet_id,lb_id,address)
 VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT DO NOTHING;
 -- name: InsertLBComponent :exec
-INSERT INTO network_lb_components(tenant_id,cluster_id,namespace,lb_id,component_id,kind,member_id,provider_name)
-VALUES($1,$2,$3,$4,$5,$6,sqlc.narg(member_id),$7);
+INSERT INTO network_lb_components(tenant_id,cluster_id,namespace,lb_id,component_id,kind,member_id,listener_id,provider_name)
+VALUES($1,$2,$3,$4,$5,$6,sqlc.narg(member_id),sqlc.narg(listener_id),$7);
 -- name: InsertLBIdempotency :exec
 INSERT INTO network_idempotency(tenant_id,operation_kind,idempotency_key,fingerprint,fingerprint_version,lb_id,operation_id,response,created_at)
 VALUES($1,$2,$3,$4,1,$5,$6,$7,$8);

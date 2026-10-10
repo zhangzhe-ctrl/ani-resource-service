@@ -55,13 +55,21 @@ func hydrateLBWork(ctx context.Context, q *sqlcgen.Queries, work *biz.ResourceWo
 		return err
 	}
 	s := &biz.LoadBalancerWork{LoadBalancer: v, VIPOccupiedRevision: r.VipOccupiedRevision, VIPAbsenceRevision: r.VipAbsenceRevision}
-	s.Components = append(s.Components, biz.LoadBalancerComponent{ID: b.BindingID, Kind: "gateway", Name: b.ProviderName, Identity: b.ProviderUid, PendingAction: b.PendingAction, CreateDispatched: b.CreateDispatched, TargetVersion: 1})
+	s.Components = append(s.Components, biz.LoadBalancerComponent{ID: b.BindingID, Kind: "gateway", Name: b.ProviderName, Identity: b.ProviderUid, PendingAction: b.PendingAction, CreateDispatched: b.CreateDispatched, TargetVersion: v.DesiredVersion})
 	cs, err := q.ListLBComponents(ctx, sqlcgen.ListLBComponentsParams{TenantID: r.TenantID, LbID: r.LbID})
 	if err != nil {
 		return err
 	}
+	registry, err := q.ListLBListenerRegistry(ctx, sqlcgen.ListLBListenerRegistryParams{TenantID: r.TenantID, LbID: r.LbID})
+	if err != nil {
+		return err
+	}
+	listenerNames := map[string]string{}
+	for _, l := range registry {
+		listenerNames[l.ListenerID] = l.Name
+	}
 	for _, c := range cs {
-		s.Components = append(s.Components, biz.LoadBalancerComponent{ID: c.ComponentID, Kind: c.Kind, MemberID: textValue(c.MemberID), Name: c.ProviderName, Identity: c.ProviderUid, PendingAction: c.PendingAction, CreateDispatched: c.CreateDispatched, TargetVersion: c.TargetVersion, AppliedVersion: c.AppliedVersion, Deleted: c.DeletedAt != nil})
+		s.Components = append(s.Components, biz.LoadBalancerComponent{ID: c.ComponentID, Kind: c.Kind, MemberID: textValue(c.MemberID), ListenerID: textValue(c.ListenerID), ListenerName: listenerNames[textValue(c.ListenerID)], Name: c.ProviderName, Identity: c.ProviderUid, PendingAction: c.PendingAction, CreateDispatched: c.CreateDispatched, TargetVersion: c.TargetVersion, AppliedVersion: c.AppliedVersion, Deleted: c.DeletedAt != nil})
 	}
 	ms, err := q.ListLBMemberIdentities(ctx, sqlcgen.ListLBMemberIdentitiesParams{TenantID: r.TenantID, LbID: r.LbID})
 	if err != nil {

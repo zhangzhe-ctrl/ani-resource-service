@@ -26,6 +26,35 @@ func TestLBHealthPortWire(t *testing.T) {
 	}
 }
 
+func TestLBListenerSetWire(t *testing.T) {
+	portA, portB, healthA, healthB := uint32(80), uint32(8081), uint32(8080), uint32(9090)
+	input, err := lbListenersInput(&networkv1.LoadBalancerListenerSet{Items: []*networkv1.LoadBalancerListenerInput{
+		{Id: "a", Name: "first", Port: &portA, Backends: []*networkv1.LoadBalancerBackendInput{{Address: "10.42.2.2", Port: healthA}}, HealthCheck: &networkv1.LoadBalancerHealthCheck{Port: &healthA}},
+		{Id: "b", Name: "second", Port: &portB, Backends: []*networkv1.LoadBalancerBackendInput{{Address: "10.42.2.3", Port: healthB}}, HealthCheck: &networkv1.LoadBalancerHealthCheck{Port: &healthB}},
+	}})
+	if err != nil || len(input) != 2 || *input[0].Health.Port != healthA || *input[1].Health.Port != healthB || input[0].Backends[0].Address == input[1].Backends[0].Address {
+		t.Fatal("listener wire lost independent configuration", input, err)
+	}
+	output := wireLoadBalancer(biz.LoadBalancer{Listeners: []biz.LoadBalancerListener{
+		{ID: "a", Name: "first", Port: portA, Health: biz.LoadBalancerHealth{Port: healthA}, Backends: []biz.LoadBalancerBackend{{Address: "10.42.2.2", Port: healthA}}},
+		{ID: "b", Name: "second", Port: portB, Health: biz.LoadBalancerHealth{Port: healthB}, Backends: []biz.LoadBalancerBackend{{Address: "10.42.2.3", Port: healthB}}},
+	}})
+	if len(output.Listeners) != 2 || output.Listeners[0].GetHealthCheck().GetPort() != healthA || output.Listeners[1].GetHealthCheck().GetPort() != healthB || output.Listeners[1].GetName() != "second" {
+		t.Fatal("listener response lost health or identity", output)
+	}
+	omitted, err := lbListenersInput(nil)
+	if err != nil || omitted != nil {
+		t.Fatal("omitted collection changed", err)
+	}
+	empty, err := lbListenersInput(&networkv1.LoadBalancerListenerSet{})
+	if err != nil || empty == nil || len(empty) != 0 {
+		t.Fatal("empty collection presence lost", err)
+	}
+	if _, err = lbListenersInput(&networkv1.LoadBalancerListenerSet{Items: []*networkv1.LoadBalancerListenerInput{nil}}); biz.ReasonOf(err) != biz.InvalidArgument {
+		t.Fatal("nil listener accepted", err)
+	}
+}
+
 func TestLBWireNeverInfersHealthFromConfiguration(t *testing.T) {
 	v := biz.LoadBalancer{ConfigurationState: "configured", DataPlaneState: "healthy", DesiredVersion: 3, AppliedVersion: 2}
 	r := wireLoadBalancer(v)

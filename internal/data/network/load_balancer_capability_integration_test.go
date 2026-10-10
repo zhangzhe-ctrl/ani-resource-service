@@ -29,13 +29,15 @@ func seedLBInstallation(api *controlled.Server) data.LoadBalancerInstallation {
 		api.Change(resource, obj, false)
 		bundle[resource+"/"+ns+"/"+name] = map[string]any{"uid": obj["metadata"].(map[string]any)["uid"], "content": spec}
 	}
-	for _, suffix := range []string{"", "-noeip"} {
-		put("gatewayclasses", "gateway.networking.k8s.io/v1", "GatewayClass", "", "lb-small"+suffix, map[string]any{"controllerName": "gateway.envoyproxy.io/gatewayclass-controller", "parametersRef": map[string]any{"group": "gateway.envoyproxy.io", "kind": "EnvoyProxy", "name": "envoy-proxy-small" + suffix, "namespace": "envoy-gateway-system"}}, map[string]any{"conditions": lbTestConditions(float64(1), "Accepted")})
-		typ := "LoadBalancer"
-		if suffix != "" {
-			typ = "ClusterIP"
+	for _, flavor := range biz.LoadBalancerFlavors() {
+		for _, suffix := range []string{"", "-noeip"} {
+			put("gatewayclasses", "gateway.networking.k8s.io/v1", "GatewayClass", "", "lb-"+flavor.Name+suffix, map[string]any{"controllerName": "gateway.envoyproxy.io/gatewayclass-controller", "parametersRef": map[string]any{"group": "gateway.envoyproxy.io", "kind": "EnvoyProxy", "name": "envoy-proxy-" + flavor.Name + suffix, "namespace": "envoy-gateway-system"}}, map[string]any{"conditions": lbTestConditions(float64(1), "Accepted")})
+			typ := "LoadBalancer"
+			if suffix != "" {
+				typ = "ClusterIP"
+			}
+			put("envoyproxies", "gateway.envoyproxy.io/v1alpha1", "EnvoyProxy", "envoy-gateway-system", "envoy-proxy-"+flavor.Name+suffix, map[string]any{"preserveRouteOrder": true, "provider": map[string]any{"type": "Kubernetes", "kubernetes": map[string]any{"envoyService": map[string]any{"type": typ}, "envoyDeployment": map[string]any{"replicas": float64(flavor.Replicas), "container": map[string]any{"image": expected.EnvoyImageID, "resources": map[string]any{"requests": map[string]any{"cpu": flavor.RequestCPU, "memory": flavor.RequestMemory}, "limits": map[string]any{"cpu": flavor.LimitCPU, "memory": flavor.LimitMemory}}}, "patch": map[string]any{"type": "StrategicMerge", "value": map[string]any{"spec": map[string]any{"template": map[string]any{"spec": map[string]any{"containers": []any{map[string]any{"name": "shutdown-manager", "image": expected.ShutdownImageID}}}}}}}}}}}, map[string]any{})
 		}
-		put("envoyproxies", "gateway.envoyproxy.io/v1alpha1", "EnvoyProxy", "envoy-gateway-system", "envoy-proxy-small"+suffix, map[string]any{"preserveRouteOrder": true, "provider": map[string]any{"type": "Kubernetes", "kubernetes": map[string]any{"envoyService": map[string]any{"type": typ}, "envoyDeployment": map[string]any{"replicas": float64(2), "container": map[string]any{"image": expected.EnvoyImageID, "resources": map[string]any{"requests": map[string]any{"cpu": "1", "memory": "1Gi"}}}, "patch": map[string]any{"type": "StrategicMerge", "value": map[string]any{"spec": map[string]any{"template": map[string]any{"spec": map[string]any{"containers": []any{map[string]any{"name": "shutdown-manager", "image": expected.ShutdownImageID}}}}}}}}}}}, map[string]any{})
 	}
 	put("configmaps", "v1", "ConfigMap", "envoy-gateway-system", "envoy-gateway-config", map[string]any{"envoy-gateway.yaml": "apiVersion: gateway.envoyproxy.io/v1alpha1\nkind: EnvoyGateway\nextensionApis:\n  enableBackend: true\n  enableEnvoyPatchPolicy: true\ngateway:\n  controllerName: gateway.envoyproxy.io/gatewayclass-controller\nprovider:\n  type: Kubernetes\n  kubernetes:\n    deploy:\n      type: GatewayNamespace\n"}, map[string]any{})
 	for _, name := range []string{"gateways.gateway.networking.k8s.io", "httproutes.gateway.networking.k8s.io", "backends.gateway.envoyproxy.io", "backendtrafficpolicies.gateway.envoyproxy.io"} {
@@ -268,9 +270,11 @@ func TestLBCapabilityImportedRuntimeImagesAndInstallDefaults(t *testing.T) {
 				}
 				bundle[resource+"/"+ns+"/"+name] = map[string]any{"uid": obj["metadata"].(map[string]any)["uid"], "content": content}
 			}
-			for _, suffix := range []string{"", "-noeip"} {
-				add("gatewayclasses", "", "lb-small"+suffix)
-				add("envoyproxies", "envoy-gateway-system", "envoy-proxy-small"+suffix)
+			for _, flavor := range biz.LoadBalancerFlavors() {
+				for _, suffix := range []string{"", "-noeip"} {
+					add("gatewayclasses", "", "lb-"+flavor.Name+suffix)
+					add("envoyproxies", "envoy-gateway-system", "envoy-proxy-"+flavor.Name+suffix)
+				}
 			}
 			add("configmaps", "envoy-gateway-system", "envoy-gateway-config")
 			for _, name := range []string{"gateways.gateway.networking.k8s.io", "httproutes.gateway.networking.k8s.io", "backends.gateway.envoyproxy.io", "backendtrafficpolicies.gateway.envoyproxy.io"} {

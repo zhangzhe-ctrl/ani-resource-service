@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,11 +73,11 @@ func lbInstallationBundle(v *auditView) map[string]any {
 		}
 		bundle[gvr.Resource+"/"+ns+"/"+name] = map[string]any{"uid": string(obj.GetUID()), "content": content}
 	}
-	for _, name := range []string{"lb-small", "lb-small-noeip"} {
-		add(lbGatewayClasses, "", name)
-	}
-	for _, name := range []string{"envoy-proxy-small", "envoy-proxy-small-noeip"} {
-		add(lbEnvoyProxies, "envoy-gateway-system", name)
+	for _, flavor := range biz.LoadBalancerFlavors() {
+		for _, suffix := range []string{"", "-noeip"} {
+			add(lbGatewayClasses, "", "lb-"+flavor.Name+suffix)
+			add(lbEnvoyProxies, "envoy-gateway-system", "envoy-proxy-"+flavor.Name+suffix)
+		}
 	}
 	add(kcConfigMaps, "envoy-gateway-system", "envoy-gateway-config")
 	for _, name := range []string{"gateways.gateway.networking.k8s.io", "httproutes.gateway.networking.k8s.io", "backends.gateway.envoyproxy.io", "backendtrafficpolicies.gateway.envoyproxy.io"} {
@@ -107,31 +108,33 @@ func (p *KCProvider) inspectLBCapability(ctx context.Context, v *auditView) (boo
 	if !crBool(s, "extensionApis", "enableBackend") || !crBool(s, "extensionApis", "enableEnvoyPatchPolicy") || crString(s, "provider", "type") != "Kubernetes" || crString(s, "provider", "kubernetes", "deploy", "type") != "GatewayNamespace" || crString(s, "gateway", "controllerName") != lbController {
 		return false, fingerprint, nil
 	}
-	for _, suffix := range []string{"", "-noeip"} {
-		class := lbViewObject(v, lbGatewayClasses, "", "lb-small"+suffix)
-		proxy := lbViewObject(v, lbEnvoyProxies, "envoy-gateway-system", "envoy-proxy-small"+suffix)
-		if class == nil || proxy == nil || class.GetDeletionTimestamp() != nil || proxy.GetDeletionTimestamp() != nil {
-			return false, fingerprint, nil
-		}
-		conditions, _, _ := unstructured.NestedSlice(class.Object, "status", "conditions")
-		if !lbConditions(conditions, class.GetGeneration(), "Accepted") || crString(class, "spec", "controllerName") != lbController || crString(class, "spec", "parametersRef", "group") != lbEnvoyProxies.Group || crString(class, "spec", "parametersRef", "kind") != "EnvoyProxy" || crString(class, "spec", "parametersRef", "namespace") != "envoy-gateway-system" || crString(class, "spec", "parametersRef", "name") != proxy.GetName() {
-			return false, fingerprint, nil
-		}
-		typeName := "LoadBalancer"
-		if suffix != "" {
-			typeName = "ClusterIP"
-		}
-		serviceType := crString(proxy, "spec", "provider", "kubernetes", "envoyService", "type")
-		// The supplied EnvoyProxy CRD defaults an omitted Service type to
-		// LoadBalancer, including installations omitting envoyService entirely.
-		if serviceType == "" && !hasField(proxy, "spec", "provider", "kubernetes", "envoyService", "type") {
-			serviceType = "LoadBalancer"
-		}
-		if serviceType != typeName || crInt(proxy, "spec", "provider", "kubernetes", "envoyDeployment", "replicas") != 2 || !lbQuantityEquals(proxy, "1", "spec", "provider", "kubernetes", "envoyDeployment", "container", "resources", "requests", "cpu") || !lbQuantityEquals(proxy, "1Gi", "spec", "provider", "kubernetes", "envoyDeployment", "container", "resources", "requests", "memory") {
-			return false, fingerprint, nil
-		}
-		if !crBool(proxy, "spec", "preserveRouteOrder") || crString(proxy, "spec", "provider", "type") != "Kubernetes" {
-			return false, fingerprint, nil
+	for _, flavor := range biz.LoadBalancerFlavors() {
+		for _, suffix := range []string{"", "-noeip"} {
+			class := lbViewObject(v, lbGatewayClasses, "", "lb-"+flavor.Name+suffix)
+			proxy := lbViewObject(v, lbEnvoyProxies, "envoy-gateway-system", "envoy-proxy-"+flavor.Name+suffix)
+			if class == nil || proxy == nil || class.GetDeletionTimestamp() != nil || proxy.GetDeletionTimestamp() != nil {
+				return false, fingerprint, nil
+			}
+			conditions, _, _ := unstructured.NestedSlice(class.Object, "status", "conditions")
+			if !lbConditions(conditions, class.GetGeneration(), "Accepted") || crString(class, "spec", "controllerName") != lbController || crString(class, "spec", "parametersRef", "group") != lbEnvoyProxies.Group || crString(class, "spec", "parametersRef", "kind") != "EnvoyProxy" || crString(class, "spec", "parametersRef", "namespace") != "envoy-gateway-system" || crString(class, "spec", "parametersRef", "name") != proxy.GetName() {
+				return false, fingerprint, nil
+			}
+			typeName := "LoadBalancer"
+			if suffix != "" {
+				typeName = "ClusterIP"
+			}
+			serviceType := crString(proxy, "spec", "provider", "kubernetes", "envoyService", "type")
+			// The supplied EnvoyProxy CRD defaults an omitted Service type to
+			// LoadBalancer, including installations omitting envoyService entirely.
+			if serviceType == "" && !hasField(proxy, "spec", "provider", "kubernetes", "envoyService", "type") {
+				serviceType = "LoadBalancer"
+			}
+			if serviceType != typeName || crInt(proxy, "spec", "provider", "kubernetes", "envoyDeployment", "replicas") != flavor.Replicas || !lbQuantityEquals(proxy, flavor.RequestCPU, "spec", "provider", "kubernetes", "envoyDeployment", "container", "resources", "requests", "cpu") || !lbQuantityEquals(proxy, flavor.RequestMemory, "spec", "provider", "kubernetes", "envoyDeployment", "container", "resources", "requests", "memory") || !lbQuantityEquals(proxy, flavor.LimitCPU, "spec", "provider", "kubernetes", "envoyDeployment", "container", "resources", "limits", "cpu") || !lbQuantityEquals(proxy, flavor.LimitMemory, "spec", "provider", "kubernetes", "envoyDeployment", "container", "resources", "limits", "memory") {
+				return false, fingerprint, nil
+			}
+			if !crBool(proxy, "spec", "preserveRouteOrder") || crString(proxy, "spec", "provider", "type") != "Kubernetes" {
+				return false, fingerprint, nil
+			}
 		}
 	}
 	for _, name := range []string{"gateways.gateway.networking.k8s.io", "httproutes.gateway.networking.k8s.io", "backends.gateway.envoyproxy.io", "backendtrafficpolicies.gateway.envoyproxy.io"} {
@@ -165,25 +168,27 @@ func (p *KCProvider) inspectLBCapability(ctx context.Context, v *auditView) (boo
 	// A digest-pinned installation can bootstrap its first Envoy instance.
 	// Mutable image references require an existing running owner chain below.
 	pinnedProxyImages := true
-	for _, suffix := range []string{"", "-noeip"} {
-		proxy := lbViewObject(v, lbEnvoyProxies, "envoy-gateway-system", "envoy-proxy-small"+suffix)
-		if proxy == nil {
-			pinnedProxyImages = false
-			continue
-		}
-		image := crString(proxy, "spec", "provider", "kubernetes", "envoyDeployment", "container", "image")
-		containers, _, _ := unstructured.NestedSlice(proxy.Object, "spec", "provider", "kubernetes", "envoyDeployment", "patch", "value", "spec", "template", "spec", "containers")
-		shutdown := ""
-		for _, raw := range containers {
-			c, _ := raw.(map[string]any)
-			if c["name"] == "shutdown-manager" {
-				shutdown, _ = c["image"].(string)
+	for _, flavor := range biz.LoadBalancerFlavors() {
+		for _, suffix := range []string{"", "-noeip"} {
+			proxy := lbViewObject(v, lbEnvoyProxies, "envoy-gateway-system", "envoy-proxy-"+flavor.Name+suffix)
+			if proxy == nil {
+				pinnedProxyImages = false
+				continue
 			}
+			image := crString(proxy, "spec", "provider", "kubernetes", "envoyDeployment", "container", "image")
+			containers, _, _ := unstructured.NestedSlice(proxy.Object, "spec", "provider", "kubernetes", "envoyDeployment", "patch", "value", "spec", "template", "spec", "containers")
+			shutdown := ""
+			for _, raw := range containers {
+				c, _ := raw.(map[string]any)
+				if c["name"] == "shutdown-manager" {
+					shutdown, _ = c["image"].(string)
+				}
+			}
+			// A bare runtime image ID may be an OCI configuration digest, not a
+			// pullable manifest digest. It requires the live owner chain below.
+			envoyDigest, shutdownDigest := lbImageDigest(expected.EnvoyImageID), lbImageDigest(expected.ShutdownImageID)
+			pinnedProxyImages = pinnedProxyImages && envoyDigest != "" && shutdownDigest != "" && strings.HasSuffix(image, "@sha256:"+envoyDigest) && strings.HasSuffix(shutdown, "@sha256:"+shutdownDigest)
 		}
-		// A bare runtime image ID may be an OCI configuration digest, not a
-		// pullable manifest digest. It requires the live owner chain below.
-		envoyDigest, shutdownDigest := lbImageDigest(expected.EnvoyImageID), lbImageDigest(expected.ShutdownImageID)
-		pinnedProxyImages = pinnedProxyImages && envoyDigest != "" && shutdownDigest != "" && strings.HasSuffix(image, "@sha256:"+envoyDigest) && strings.HasSuffix(shutdown, "@sha256:"+shutdownDigest)
 	}
 	if pinnedProxyImages {
 		seen[expected.EnvoyImageID] = true

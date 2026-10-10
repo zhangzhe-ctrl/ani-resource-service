@@ -214,3 +214,7 @@ SELECT count(*) FROM network_platform_resources r WHERE r.cluster_id=sqlc.arg(cl
 SELECT count(*) FROM network_platform_resources r JOIN network_public_pools p ON p.cluster_id=r.cluster_id AND p.resource_id=r.resource_id WHERE r.cluster_id=sqlc.arg(cluster_id) AND p.scope='intranet'
  AND (sqlc.arg(name_filter)::text='' OR r.name=sqlc.arg(name_filter))
  AND ((sqlc.arg(state_filter)::text='' AND r.state<>'deleted') OR r.state=sqlc.arg(state_filter));
+
+-- name: PlatformPoolVPCOverlaps :one
+SELECT count(*)::bigint FROM network_vpcs v JOIN network_provider_bindings b ON b.tenant_id=v.tenant_id AND b.vpc_id=v.vpc_id AND b.resource_kind='vpc'
+WHERE b.cluster_id=$1 AND v.state<>'deleted' AND v.cidr::cidr && sqlc.arg(cidr)::cidr;

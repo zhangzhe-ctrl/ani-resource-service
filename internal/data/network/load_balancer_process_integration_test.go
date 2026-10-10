@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"sigs.k8s.io/yaml"
 )
 
@@ -173,7 +174,7 @@ func TestLBServiceProcessesRecoverUnknownMutationsWithTwoWorkers(t *testing.T) {
 		name, method, kind string
 		late               bool
 		terminate          bool
-	}{{"backend_POST_response_lost", "POST", "backends", false, false}, {"gateway_POST_late_success", "POST", "gateways", true, false}, {"policy_POST_response_lost", "POST", "backendtrafficpolicies", false, false}, {"route_UPDATE_response_lost", "PATCH", "httproutes", false, false}, {"gateway_DELETE_response_lost", "DELETE", "gateways", false, false}, {"delete_during_unknown_gateway_POST", "POST", "gateways", true, true}} {
+	}{{"backend_POST_response_lost", "POST", "backends", false, false}, {"gateway_POST_late_success", "POST", "gateways", true, false}, {"policy_POST_response_lost", "POST", "backendtrafficpolicies", false, false}, {"route_UPDATE_response_lost", "PATCH", "httproutes", false, false}, {"gateway_UPDATE_response_lost", "PATCH", "gateways", false, false}, {"gateway_DELETE_response_lost", "DELETE", "gateways", false, false}, {"delete_during_unknown_gateway_POST", "POST", "gateways", true, true}} {
 		t.Run(tc.name, func(t *testing.T) {
 			fault := newBaseProcessFault(tc.method, tc.kind, tc.late)
 			controller := &lbControllerFixture{}
@@ -221,7 +222,14 @@ func TestLBServiceProcessesRecoverUnknownMutationsWithTwoWorkers(t *testing.T) {
 				fault.armed.Store(true)
 				if tc.method == "PATCH" {
 					zero := uint32(0)
-					_, err = client.UpdateLoadBalancer(context.Background(), &networkv1.UpdateLoadBalancerRequest{HealthCheck: health, LoadBalancerId: id, ExpectedVersion: lb.Version, Name: "updated", IdempotencyKey: "update", Backends: []*networkv1.LoadBalancerBackendInput{{Id: lb.Backends[0].ID, SubnetId: lb.Backends[0].SubnetID, Address: lb.Backends[0].Address, Port: lb.Backends[0].Port, Weight: &zero}}})
+					update := &networkv1.UpdateLoadBalancerRequest{HealthCheck: health, LoadBalancerId: id, ExpectedVersion: lb.Version, Name: "updated", IdempotencyKey: "update", Backends: []*networkv1.LoadBalancerBackendInput{{Id: lb.Backends[0].ID, SubnetId: lb.Backends[0].SubnetID, Address: lb.Backends[0].Address, Port: lb.Backends[0].Port, Weight: &zero}}}
+					if tc.kind == "gateways" {
+						changedPort := uint32(8081)
+						b := lb.Backends[0]
+						retained := &networkv1.LoadBalancerBackendInput{Id: b.ID, SubnetId: b.SubnetID, Address: b.Address, Port: b.Port, Weight: &b.Weight}
+						update = &networkv1.UpdateLoadBalancerRequest{LoadBalancerId: id, ExpectedVersion: lb.Version, IdempotencyKey: "update", UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"listeners"}}, Data: &networkv1.LoadBalancerMutableData{Listeners: &networkv1.LoadBalancerListenerSet{Items: []*networkv1.LoadBalancerListenerInput{{Id: lb.Listeners[0].ID, Name: lb.Listeners[0].Name, Port: &changedPort, Backends: []*networkv1.LoadBalancerBackendInput{retained}, HealthCheck: health}}}}}
+					}
+					_, err = client.UpdateLoadBalancer(context.Background(), update)
 				} else {
 					_, err = client.DeleteLoadBalancer(context.Background(), &networkv1.DeleteLoadBalancerRequest{LoadBalancerId: id})
 				}

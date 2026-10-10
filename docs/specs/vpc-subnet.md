@@ -75,6 +75,12 @@ Network 不复制 Membership/Tenant Access，不创建平行 Tenant，也不向 
 | `idempotency_key` | 创建必填，1–128 个 ASCII 可打印非空白字符；按原值区分大小写，不与 request/correlation ID 混用 |
 
 VPC CIDR 是租户的地址规划范围。Subnet CIDR 必须属于同租户父 VPC；同 VPC 中所有尚未 `deleted` 的子网不得重叠。
+2026-10-10 后端合同：新 VPC 首次受理由 Resource 启动 YAML `network.vpc_cidr_presets` 精确限制。管理员配置少量规范 RFC1918 网段；非法、非规范或重复项使配置校验失败，空配置返回空候选并拒绝新受理。修改配置后重启/滚动 Resource 生效；不新增热更新、管理表或写接口。两个 Resource 运行入口注入同一策略，Governance 只转发读取结果。
+
+租户经 `GET /api/v1/networks/vpc-cidr-presets` 读取当前无冲突的 `cidrs`；CreateVPC 保留 `cidr` 字段，首次受理再次验证相同白名单。冲突事实包括 KCN 默认子网、完整 ServiceCIDR、各节点新鲜 NodeFacts 中的物理/管理网段、PodCIDR、平台 System/Public/Intranet 子网与尚未释放的 ANI 地址池。`intranetNetworks` 聚合路由不作为已分配地址范围。必需事实缺失或过期时返回依赖不可用，服务启动不要求在线读取集群。
+
+受理与平台池写入共用 cluster 锁，Provider 首次创建前再检查平台事实和池冲突；外部 Kubernetes 变更与 PostgreSQL 不具有原子提交保证。白名单只约束首次 VPC 受理，旧已受理同意图的幂等重放仍返回原快照，Subnet CIDR 校验不应用这份白名单。最终部署预设必须据实际环境冻结，仓库示例为空，测试 CIDR 不作为部署值。
+
 不同 VPC 可以重复使用相同 CIDR。网关地址由 Network 确定后交 Provider 预留；具体工作负载 IP 分配始终由 kc IPAM 负责。
 首次受理创建 Subnet 要求父 VPC `available` 且观测未过期。首次受理接入要求 VPC 与 Subnet 都满足此条件。
 已受理请求重放按第 4.3 / 7.1 节先识别持久记录，不重新应用这些动态准入条件。

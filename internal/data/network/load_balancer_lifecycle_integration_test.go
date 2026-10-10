@@ -154,7 +154,12 @@ func (c *lbControllerFixture) http(w http.ResponseWriter, r *http.Request, api *
 	case "backends":
 		obj["status"] = map[string]any{"conditions": lbTestConditions(g, "Accepted")}
 	case "gateways":
-		obj["status"] = map[string]any{"conditions": lbTestConditions(g, "Accepted", "Programmed"), "listeners": []any{map[string]any{"name": "http", "conditions": lbTestConditions(g, "Accepted", "Programmed", "ResolvedRefs")}}}
+		statusListeners := []any{}
+		for _, raw := range spec["listeners"].([]any) {
+			listener := raw.(map[string]any)
+			statusListeners = append(statusListeners, map[string]any{"name": listener["name"], "conditions": lbTestConditions(g, "Accepted", "Programmed", "ResolvedRefs")})
+		}
+		obj["status"] = map[string]any{"conditions": lbTestConditions(g, "Accepted", "Programmed"), "listeners": statusListeners}
 	case "httproutes":
 		obj["status"] = map[string]any{"parents": []any{map[string]any{"parentRef": spec["parentRefs"].([]any)[0], "controllerName": "gateway.envoyproxy.io/gatewayclass-controller", "conditions": lbTestConditions(g, "Accepted", "ResolvedRefs")}}}
 	case "backendtrafficpolicies":
@@ -211,8 +216,22 @@ func (c *lbControllerFixture) generated(api *controlled.Server, gateway map[stri
 	// A Gateway removed before its Service exists has no allocation to release.
 	// In particular its deletion does not manufacture a new Subnet revision.
 	spec := gateway["spec"].(map[string]any)
+	flavor, ok := biz.FindLoadBalancerFlavor(strings.TrimSuffix(strings.TrimPrefix(spec["gatewayClassName"].(string), "lb-"), "-noeip"))
+	if !ok {
+		panic("unsupported fixture flavor")
+	}
 	a := spec["infrastructure"].(map[string]any)["annotations"].(map[string]any)
-	port := spec["listeners"].([]any)[0].(map[string]any)["port"]
+	servicePorts, slicePorts := []any{}, []any{}
+	for _, raw := range spec["listeners"].([]any) {
+		listener := raw.(map[string]any)
+		port := listener["port"]
+		target := port.(float64)
+		if target < 1024 {
+			target += 10000
+		}
+		servicePorts = append(servicePorts, map[string]any{"name": listener["name"], "port": port, "targetPort": target, "protocol": "TCP"})
+		slicePorts = append(slicePorts, map[string]any{"name": listener["name"], "port": target, "protocol": "TCP"})
+	}
 	owner := func(kind, name, id string) []any {
 		version := "apps/v1"
 		if kind == "Gateway" {
@@ -247,16 +266,16 @@ func (c *lbControllerFixture) generated(api *controlled.Server, gateway map[stri
 		return obj
 	}
 	typ := "LoadBalancer"
-	if spec["gatewayClassName"] == "lb-small-noeip" {
+	if strings.HasSuffix(spec["gatewayClassName"].(string), "-noeip") {
 		typ = "ClusterIP"
 	}
-	svc := makeObject("services", "Service", name, owner("Gateway", name, uid), map[string]any{"type": typ, "ports": []any{map[string]any{"port": port, "targetPort": port, "protocol": "TCP"}}}, map[string]any{"conditions": lbTestConditions(float64(0), "KcnValid", "KcnReady")})
+	svc := makeObject("services", "Service", name, owner("Gateway", name, uid), map[string]any{"type": typ, "ports": servicePorts}, map[string]any{"conditions": lbTestConditions(float64(0), "KcnValid", "KcnReady")})
 	if !deleted {
 		svc["metadata"].(map[string]any)["annotations"] = a
 		delete(svc["metadata"].(map[string]any), "generation")
 		api.Change("services", svc, false)
 	}
-	dep := makeObject("deployments", "Deployment", name, owner("Gateway", name, uid), map[string]any{"replicas": float64(2), "template": map[string]any{"spec": map[string]any{"containers": []any{map[string]any{"name": "envoy", "resources": map[string]any{"requests": map[string]any{"cpu": "1", "memory": "1Gi"}, "limits": map[string]any{"cpu": "2", "memory": "2Gi"}}}}}}}, map[string]any{"observedGeneration": float64(1), "updatedReplicas": float64(2), "availableReplicas": float64(2)})
+	dep := makeObject("deployments", "Deployment", name, owner("Gateway", name, uid), map[string]any{"replicas": float64(flavor.Replicas), "template": map[string]any{"spec": map[string]any{"containers": []any{map[string]any{"name": "envoy", "resources": map[string]any{"requests": map[string]any{"cpu": flavor.RequestCPU, "memory": flavor.RequestMemory}, "limits": map[string]any{"cpu": flavor.LimitCPU, "memory": flavor.LimitMemory}}}}}}}, map[string]any{"observedGeneration": float64(1), "updatedReplicas": float64(flavor.Replicas), "availableReplicas": float64(flavor.Replicas)})
 	depUID := ""
 	if dep != nil {
 		depUID = dep["metadata"].(map[string]any)["uid"].(string)
@@ -267,7 +286,7 @@ func (c *lbControllerFixture) generated(api *controlled.Server, gateway map[stri
 		rsUID = rs["metadata"].(map[string]any)["uid"].(string)
 	}
 	endpoints := []any{}
-	for i := 0; i < 2; i++ {
+	for i := 0; i < int(flavor.Replicas); i++ {
 		pod := makeObject("pods", "Pod", fmt.Sprintf("%s-proxy-%d", name, i), owner("ReplicaSet", name+"-rs", rsUID), map[string]any{}, map[string]any{"phase": "Running", "podIP": fmt.Sprintf("10.42.1.%d", i+2), "conditions": []any{map[string]any{"type": "Ready", "status": "True"}}})
 		if pod != nil {
 			pm := pod["metadata"].(map[string]any)
@@ -283,7 +302,7 @@ func (c *lbControllerFixture) generated(api *controlled.Server, gateway map[stri
 		delete(slice, "spec")
 		delete(slice, "status")
 		slice["addressType"] = "IPv4"
-		slice["ports"] = []any{map[string]any{"port": port, "protocol": "TCP"}}
+		slice["ports"] = slicePorts
 		slice["endpoints"] = endpoints
 		slice["metadata"].(map[string]any)["labels"] = map[string]any{"kubernetes.io/service-name": name}
 		api.Change("endpointslices", slice, false)
@@ -369,12 +388,14 @@ func lbState(t *testing.T, f *lbAdmissionFixture, id string, state biz.ResourceS
 	return lb
 }
 func TestLBActualAdapterThreeExposuresUpdateAndDelete(t *testing.T) {
-	for _, exposure := range []string{"private", "public", "public_private"} {
-		t.Run(exposure, func(t *testing.T) {
+	for _, scenario := range []struct{ exposure, flavor string }{{"private", "small"}, {"private", "medium"}, {"private", "large"}, {"public", "small"}, {"public_private", "small"}} {
+		t.Run(scenario.exposure+"/"+scenario.flavor, func(t *testing.T) {
+			exposure := scenario.exposure
 			controller := &lbControllerFixture{}
 			f := newLBAdmissionFixture(t, controller.http)
 			request := f.request
 			request.Exposure = exposure
+			request.Flavor = scenario.flavor
 			var eip biz.EIP
 			if exposure != "private" {
 				eip = f.f.eip(t, "lb-entry-eip")
@@ -388,6 +409,10 @@ func TestLBActualAdapterThreeExposuresUpdateAndDelete(t *testing.T) {
 				t.Fatal(err)
 			}
 			lb := lbState(t, f, r.LoadBalancer.ID, biz.Available)
+			var persistedFlavor string
+			if err = f.f.owner.QueryRow(f.f.ctx, `SELECT flavor FROM network_load_balancers WHERE tenant_id=$1 AND lb_id=$2`, f.f.tenant, lb.ID).Scan(&persistedFlavor); err != nil || persistedFlavor != scenario.flavor || lb.Flavor != scenario.flavor {
+				t.Fatal("selected flavor was not persisted", persistedFlavor, lb.Flavor, err)
+			}
 			if lb.ConfigurationState != "configured" || lb.AppliedVersion != 1 || lb.DataPlaneState != "unknown" || lb.DataPlaneObservedAt != nil {
 				t.Fatal("configuration was confused with health", lb)
 			}

@@ -31,6 +31,7 @@ func newBaseKCFixture(t *testing.T, intercept func(http.ResponseWriter, *http.Re
 	if _, err := f.owner.Exec(f.ctx, `INSERT INTO network_connectivity_rollout(cluster_id,new_vpcs_enabled) SELECT cluster_id,true FROM network_public_pools WHERE resource_id=$1`, pool.ID); err != nil {
 		t.Fatal(err)
 	}
+	configureVPCPresetFixture(t, f, api, kube)
 	return f, api, db, kube
 }
 func createBaseVPC(t *testing.T, f *egressFixture, key string) biz.VPC {

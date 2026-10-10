@@ -3,6 +3,7 @@ package network.v1;
 option go_package = "github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1;networkv1";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
 import "network/v1/network.proto";
 
 // NET-U00 contract reservation. NET-VPC-BASE-01 does not register this service,
@@ -55,17 +56,24 @@ enum LoadBalancerDataPlaneState {
   LOAD_BALANCER_DATA_PLANE_STATE_UNHEALTHY = 3;
 }
 
-// One HTTP listener and one default Prefix("/") route. The route is fixed, not
-// user-supplied policy. Absence defaults to HTTP on 8080; an explicit port is
-// 1..65535. Once accepted, protocol and port are immutable in this release.
+// Each HTTP listener uses the default Prefix("/") route. The legacy singular
+// field defaults to HTTP/8080. The listener set permits port/backend/health
+// changes, with stable retained IDs and names and unique listener ports.
 message LoadBalancerListenerInput {
   LoadBalancerListenerProtocol protocol = 1;
   optional uint32 port = 2;
+  string id = 3;
+  string name = 4;
+  repeated LoadBalancerBackendInput backends = 5;
+  LoadBalancerHealthCheck health_check = 6;
 }
 message LoadBalancerListener {
   string id = 1;
   LoadBalancerListenerProtocol protocol = 2;
   uint32 port = 3;
+  string name = 4;
+  repeated LoadBalancerBackendMember backends = 5;
+  LoadBalancerHealthCheck health_check = 6;
 }
 // The backend must resolve to a current, allocated business address in this VPC
 // using Attachment plus Provider identity facts. CIDR membership alone is not
@@ -144,10 +152,11 @@ message LoadBalancer {
   // Timestamp of actual data-plane health evidence, independent of configured
   // resources. Absent when unknown; stale evidence forces data_plane_state=unknown.
   google.protobuf.Timestamp data_plane_observed_at = 29;
+  repeated LoadBalancerListener listeners = 30;
 }
 
-// Creation validates a nonempty backend set, one supported HTTP listener and
-// flavor=small. Private/public_private require a usable private_ip in subnet_id;
+// Creation validates each HTTP listener and its backend/health configuration.
+// Flavor is small (the default), medium or large. Private/public_private require a usable private_ip in subnet_id;
 // public forbids private_ip. Public/public_private require an allocated, unclaimed
 // Public EIP; private forbids public_eip_id. All three require fresh base readiness.
 // Accepted intent atomically reserves parents, VIP/EIP and stable child identities.
@@ -167,6 +176,7 @@ message CreateLoadBalancerRequest {
   repeated LoadBalancerBackendInput backends = 11;
   LoadBalancerHealthCheck health_check = 12;
   string idempotency_key = 13;
+  LoadBalancerListenerSet listeners = 14;
 }
 // Mutations return accepted resource/operation snapshots. Acceptance is not
 // asynchronous configuration completion. GetLoadBalancerOperation polls the
@@ -188,7 +198,7 @@ message ListLoadBalancersResponse { repeated LoadBalancer items = 1; string next
 
 // Full replacement of mutable fields only: name, description, backend set and
 // supported health check parameters. Immutable placement/exposure/EIP/VIP/flavor/
-// listener fields are absent. expected_version is the resource version returned
+// placement fields are absent. expected_version is the resource version returned
 // by GET. Accepted updates retain the old applied_version until verified.
 // Idempotent replay is checked before version conflict; concurrent operations on
 // one LB are mutually exclusive and deletion closes admission to new updates.
@@ -201,6 +211,9 @@ message UpdateLoadBalancerRequest {
   string description = 6;
   repeated LoadBalancerBackendInput backends = 7;
   LoadBalancerHealthCheck health_check = 8;
+  LoadBalancerListenerSet listeners = 9;
+  google.protobuf.FieldMask update_mask = 10;
+  LoadBalancerMutableData data = 11;
 }
 message UpdateLoadBalancerResponse { LoadBalancer load_balancer = 1; Operation operation = 2; }
 // Delete is idempotent by tenant/resource identity, including while deleting or
@@ -214,3 +227,7 @@ message DeleteLoadBalancerResponse { LoadBalancer load_balancer = 1; Operation o
 // Cross-tenant or non-LB IDs return NOT_FOUND, never an operation from another API.
 message GetLoadBalancerOperationRequest { string target_tenant_id = 1; string operation_id = 2; }
 message GetLoadBalancerOperationResponse { Operation operation = 1; }
+
+// Presence distinguishes omission from an explicitly empty replacement.
+message LoadBalancerListenerSet { repeated LoadBalancerListenerInput items = 1; }
+message LoadBalancerMutableData { string name = 1; string description = 2; LoadBalancerListenerSet listeners = 3; }

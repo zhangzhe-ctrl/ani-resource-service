@@ -214,6 +214,21 @@ func (p *KCProvider) ensure(ctx context.Context, target biz.ProviderTarget) (biz
 	if target.KnownIdentity != "" || binding.ProviderUid != "" {
 		return biz.ProviderObservation{}, &biz.ProviderError{Kind: biz.ProviderConflict}
 	}
+	if binding.ResourceKind == "vpc" {
+		tx, err := p.repository.pool.Begin(ctx)
+		if err != nil {
+			return biz.ProviderObservation{}, readFailure(err)
+		}
+		defer tx.Rollback(ctx)
+		q := p.repository.queries.WithTx(tx)
+		if err = q.LockPlatformCluster(ctx, sqlcgen.LockPlatformClusterParams{ClusterID: binding.ClusterID}); err != nil {
+			return biz.ProviderObservation{}, readFailure(err)
+		}
+		// Accepted requests survive later whitelist changes; conflict facts are rechecked immediately before first POST.
+		if err = p.repository.validateVPCPlatformCIDR(ctx, q, target.CIDR); err != nil {
+			return biz.ProviderObservation{}, &biz.ProviderError{Kind: biz.ProviderTemporary, Cause: err}
+		}
+	}
 	object := &unstructured.Unstructured{Object: map[string]any{
 		"apiVersion": "networking.kubercloud.com/v1", "kind": "VPC",
 		"metadata": map[string]any{"name": binding.ProviderName, "namespace": binding.Namespace, "labels": map[string]any{

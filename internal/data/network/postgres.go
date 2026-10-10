@@ -28,6 +28,8 @@ type Placement struct {
 }
 
 type Postgres struct {
+	vpcCIDRPresets       *biz.VPCCIDRPresets
+	platformCIDRFacts    biz.PlatformCIDRFacts
 	baseFreshness        time.Duration
 	workTurn             atomic.Uint64
 	egressInfrastructure biz.EgressInfrastructure
@@ -139,6 +141,15 @@ func (p *Postgres) AcceptVPC(ctx context.Context, intent biz.VPCIntent, attribut
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return biz.VPC{}, databaseFailure(err)
+	}
+	if !p.vpcCIDRPresets.Allows(intent.CIDR) {
+		return biz.VPC{}, biz.Fail(biz.InvalidArgument, "CIDR must match a configured VPC preset")
+	}
+	if err = q.LockPlatformCluster(ctx, sqlcgen.LockPlatformClusterParams{ClusterID: p.placement.ClusterID}); err != nil {
+		return biz.VPC{}, databaseFailure(err)
+	}
+	if err = p.validateVPCPlatformCIDR(ctx, q, intent.CIDR); err != nil {
+		return biz.VPC{}, err
 	}
 	now, err := q.DatabaseTime(ctx)
 	if err != nil {

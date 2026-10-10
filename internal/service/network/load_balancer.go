@@ -84,9 +84,43 @@ func wireLoadBalancer(v biz.LoadBalancer) *networkv1.LoadBalancer {
 	for _, b := range v.Backends {
 		r.Backends = append(r.Backends, &networkv1.LoadBalancerBackendMember{Id: b.ID, SubnetId: b.SubnetID, Address: b.Address, Port: b.Port, Weight: b.Weight, AttachmentId: b.AttachmentID, State: b.State, Reason: string(b.Reason), ObservedAt: optionalTime(b.ObservedAt), ObservationStale: b.ObservationStale})
 	}
+	for _, l := range biz.EffectiveLoadBalancerListeners(v) {
+		r.Listeners = append(r.Listeners, wireLBListener(l))
+	}
 	return r
 }
+func lbListenersInput(set *networkv1.LoadBalancerListenerSet) ([]biz.LoadBalancerListenerInput, error) {
+	if set == nil {
+		return nil, nil
+	}
+	items := make([]biz.LoadBalancerListenerInput, 0, len(set.Items))
+	for _, l := range set.Items {
+		if l == nil || (l.Protocol != networkv1.LoadBalancerListenerProtocol_LOAD_BALANCER_LISTENER_PROTOCOL_UNSPECIFIED && l.Protocol != networkv1.LoadBalancerListenerProtocol_LOAD_BALANCER_LISTENER_PROTOCOL_HTTP) {
+			return nil, biz.Fail(biz.InvalidArgument, "invalid HTTP listener")
+		}
+		mutable, err := lbMutable("listener", "", l.Backends, l.HealthCheck)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, biz.LoadBalancerListenerInput{ID: l.Id, Name: l.Name, Protocol: "HTTP", Port: l.Port, Backends: mutable.Backends, Health: mutable.Health})
+	}
+	return items, nil
+}
+func wireLBListener(l biz.LoadBalancerListener) *networkv1.LoadBalancerListener {
+	h := l.Health
+	v := &networkv1.LoadBalancerListener{Id: l.ID, Name: l.Name, Protocol: networkv1.LoadBalancerListenerProtocol_LOAD_BALANCER_LISTENER_PROTOCOL_HTTP, Port: l.Port, HealthCheck: &networkv1.LoadBalancerHealthCheck{Protocol: networkv1.LoadBalancerHealthCheckProtocol_LOAD_BALANCER_HEALTH_CHECK_PROTOCOL_TCP, IntervalSeconds: &h.IntervalSeconds, TimeoutSeconds: &h.TimeoutSeconds, UnhealthyThreshold: &h.UnhealthyThreshold, HealthyThreshold: &h.HealthyThreshold}}
+	if h.Port != 0 {
+		v.HealthCheck.Port = &h.Port
+	}
+	for _, b := range l.Backends {
+		v.Backends = append(v.Backends, &networkv1.LoadBalancerBackendMember{Id: b.ID, SubnetId: b.SubnetID, Address: b.Address, Port: b.Port, Weight: b.Weight, AttachmentId: b.AttachmentID, State: b.State, Reason: string(b.Reason), ObservedAt: optionalTime(b.ObservedAt), ObservationStale: b.ObservationStale})
+	}
+	return v
+}
 func (s *TenantLoadBalancerService) CreateLoadBalancer(ctx context.Context, r *networkv1.CreateLoadBalancerRequest) (*networkv1.CreateLoadBalancerResponse, error) {
+	if r == nil {
+		return nil, rpcError(biz.Fail(biz.InvalidArgument, "request required"))
+	}
 	exposure, err := lbExposure(r.GetExposure())
 	if err != nil {
 		return nil, rpcError(err)
@@ -95,8 +129,15 @@ func (s *TenantLoadBalancerService) CreateLoadBalancer(ctx context.Context, r *n
 	if err != nil {
 		return nil, rpcError(err)
 	}
+	mutable.Listeners, err = lbListenersInput(r.Listeners)
+	if err != nil {
+		return nil, rpcError(err)
+	}
 	i := biz.CreateLoadBalancer{LoadBalancerMutableInput: mutable, TenantID: r.GetTargetTenantId(), VPCID: r.GetVpcId(), SubnetID: r.GetSubnetId(), Exposure: exposure, Flavor: r.GetFlavor(), PublicEIPID: r.GetPublicEipId(), PrivateIP: r.GetPrivateIp(), IdempotencyKey: r.GetIdempotencyKey()}
 	if v := r.GetListener(); v != nil {
+		if r.Listeners != nil || v.Id != "" || v.Name != "" || len(v.Backends) > 0 || v.HealthCheck != nil {
+			return nil, rpcError(biz.Fail(biz.InvalidArgument, "legacy listener cannot contain collection fields or coexist with listeners"))
+		}
 		if v.Protocol != networkv1.LoadBalancerListenerProtocol_LOAD_BALANCER_LISTENER_PROTOCOL_UNSPECIFIED && v.Protocol != networkv1.LoadBalancerListenerProtocol_LOAD_BALANCER_LISTENER_PROTOCOL_HTTP {
 			return nil, rpcError(biz.Fail(biz.InvalidArgument, "invalid listener protocol"))
 		}
@@ -109,10 +150,25 @@ func (s *TenantLoadBalancerService) CreateLoadBalancer(ctx context.Context, r *n
 	return &networkv1.CreateLoadBalancerResponse{LoadBalancer: wireLoadBalancer(v.LoadBalancer), Operation: wireOperation(v.Operation)}, nil
 }
 func (s *TenantLoadBalancerService) UpdateLoadBalancer(ctx context.Context, r *networkv1.UpdateLoadBalancerRequest) (*networkv1.UpdateLoadBalancerResponse, error) {
+	if r == nil {
+		return nil, rpcError(biz.Fail(biz.InvalidArgument, "request required"))
+	}
 	i, err := lbMutable(r.GetName(), r.GetDescription(), r.GetBackends(), r.GetHealthCheck())
 	if err != nil {
 		return nil, rpcError(err)
 	}
+	set := r.Listeners
+	if r.Data != nil {
+		if r.Name != "" || r.Description != "" || len(r.Backends) > 0 || r.HealthCheck != nil || r.Listeners != nil {
+			return nil, rpcError(biz.Fail(biz.InvalidArgument, "data cannot coexist with legacy update fields"))
+		}
+		i.Name, i.Description, set = r.Data.Name, r.Data.Description, r.Data.Listeners
+	}
+	i.Listeners, err = lbListenersInput(set)
+	if err != nil {
+		return nil, rpcError(err)
+	}
+	i.UpdateMask = r.GetUpdateMask().GetPaths()
 	v, err := s.lbs.Update(ctx, biz.UpdateLoadBalancer{LoadBalancerMutableInput: i, TenantID: r.GetTargetTenantId(), ID: r.GetLoadBalancerId(), ExpectedVersion: r.GetExpectedVersion(), IdempotencyKey: r.GetIdempotencyKey()})
 	if err != nil {
 		return nil, rpcError(err)

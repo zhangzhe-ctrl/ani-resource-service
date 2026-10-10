@@ -1,6 +1,6 @@
 # VPC 基础内网、公网出站与租户 LB 统一方案
 
-日期：2026-09-14。状态：设计提案；用户已确认的约束见 [ADR-0005](../adr/0005-separate-vpc-connectivity-and-exclusive-eip-bindings.md)。本文定义目标行为，实施任务见[执行计划](../plans/vpc-connectivity-lb.md)，当前进度只看[执行状态](../execution/status.md)。代码、数据库、现有集群没有因本提案发生变更。
+初始日期：2026-09-14；后端合同更新：2026-10-10。状态：实现范围与实际验收分别见执行状态；用户已确认的约束见 [ADR-0005](../adr/0005-separate-vpc-connectivity-and-exclusive-eip-bindings.md)。本文定义目标行为，实施任务见[执行计划](../plans/vpc-connectivity-lb.md)，当前进度只看[执行状态](../execution/status.md)。历史实施结果保留各自时点；本次固定三规格、多监听器和 VPC 预设只改后端，未修改前端或共享平台预置。
 
 ## 1. 固定输入和变化范围
 
@@ -8,7 +8,7 @@ Network 实施基础为 `d8835a22d905e358b7f60756d3113baa97d7c762`（既有 EIP/
 
 本方案覆盖：平台基础网络准备、已有 VPC 创建/删除/观察的调整、既有 Public EIP/SNAT 的调整、三种类型租户 LB 的新生命周期，以及 API/界面接入任务。Network 保持唯一网络产品写入者；ANI Gateway/Console 只调用契约和展示结果；实例 owner 仍创建 Pod/VM；kc 与 Envoy Gateway 各自负责其数据面资源。
 
-第一批 LB 交付范围为 IPv4、单集群、三种入口类型、一个 HTTP 监听器（默认 8080，可指定合法端口）、同 VPC 的 IP 后端、权重、RoundRobin 和 TCP 主动健康检查。这是基于已实测能力的交付拆分提案，不将附件全部协议宣称已实现。HTTPS/证书、TCP/UDP、多监听器/复杂路由、会话保持/限流、在线切换 LB 类型、HA/容量和 Underlay 物理验收放到后续单独任务，不预埋不必要的通用策略系统。
+本批 LB 交付范围为 IPv4、单集群、三种入口类型、1～64 个独立 HTTP 监听器、固定 small/medium/large、同 VPC 的 IP 后端、权重、RoundRobin 和 TCP 主动健康检查。旧单监听器默认 8080 输入继续兼容。HTTPS/证书、TCP/UDP、复杂路由、会话保持/限流、在线切换 LB 类型/规格、HA/容量和 Underlay 物理验收仍属后续单独任务，不预埋不必要的通用策略系统。
 
 已有 VPC/Subnet/Attachment 的未冲突规则、Public EIP 的独立申请/保留/释放语义、平台 Public 网络模式和证据要求继续适用。本文替代旧方案中“每 VPC 总共一个 SNAT”“VPC Ready 即整个创建完成”“任何 SNAT 都直接阻塞 VPC 删除”“EIP 只能用于 SNAT”的相关限制。
 
@@ -56,7 +56,7 @@ Intranet Pool 映射为平台 namespace 的 `Subnet(type: Intranet)`，显式识
 
 平台暴露三个独立能力摘要：`base_connectivity_ready`、`public_address_ready`、`load_balancer_ready`。前者失败影响新 VPC 基础连接，Public 失败不阻止纯私网场景；LB 组件未就绪不应阻止没有 LB 的 VPC 创建。既有能力的健康、证据时效、新分配开关分别记录，不合并成一个含糊的“网络正常”开关。
 
-LB 初始化严格消费附件 `install/` 配置：GatewayNamespace、Backend API、所需 RBAC/TokenReview、GatewayClass/EnvoyProxy 映射和固定镜像来源。规格由平台目录映射，租户传 `flavor`，不能传任意 GatewayClass、镜像、patch、Kubernetes annotation。small 为首批实测规格；medium/large 开放须完成对应资源和运行核验，dynamic 不开放。
+LB 初始化严格消费附件 `install/` 配置：GatewayNamespace、Backend API、所需 RBAC/TokenReview、GatewayClass/EnvoyProxy 映射和固定镜像来源。规格由平台目录映射，租户传 `flavor`，不能传任意 GatewayClass、镜像、patch、Kubernetes annotation。固定规格映射见下表，运行核对按对应型号的副本与资源执行；缺失的 Class/EnvoyProxy 不由 Resource 补装，dynamic 不开放。
 
 ## 4. 租户 VPC 流程调整
 
@@ -114,18 +114,19 @@ CreateVPC 的租户输入保持名称/CIDR/描述/幂等键，不让用户选择
 
 ### 6.1 资源和租户输入
 
-LB 归属于一个租户/VPC/Subnet，包含一个 HTTP Listener、一个默认 `/` 前缀转发规则及其 Backend Members、健康检查配置。一期不开放任意 Provider YAML。建议创建输入：
+LB 归属于一个租户/VPC/Subnet，包含 1～64 个 HTTP Listener，每个监听器拥有稳定 ID/name、端口、默认 `/` 前缀规则、独立 Backend Members 和健康检查配置。一期不开放任意 Provider YAML。建议创建输入：
 
 | 字段 | 规则 |
 |---|---|
 | name、description、idempotency_key | 沿用现有校验与持久重放规则 |
 | vpc_id、subnet_id | 同 tenant/cluster/namespace，Subnet 属于 VPC，基础内网连接就绪 |
 | exposure | `private` / `public` / `public_private`，创建后一期不可改 |
-| flavor | 平台已开放规格；首批 small，不能直接传 Class 名 |
+| flavor | 固定 small/medium/large；空值兼容 small，未知值拒绝，不能直接传 Class 名 |
 | public_eip_id | public/public_private 必填，private 禁止；已分配且未占用的本租户 Public EIP |
 | private_ip | private/public_private 必填，属于所选 Subnet 且非网关/保留地址；public 禁止 |
-| listener | HTTP，port 默认为 8080，范围 1–65535；单实例一个监听器 |
-| backends | 非空；成员含 subnet_id、IPv4、port、weight，须验证归属本 VPC 的已分配业务地址，禁止直接指定平台/节点/跨租户地址 |
+| listeners | `{items:[...]}`；1～64 个 HTTP 监听器，name 遵守安装 CRD 的 253 字符 DNS 名称限制，name/port 不重复，端口范围 1–65535 |
+| listener | 旧单监听器输入仍兼容，规范化为 `http`；不得与 listeners 同时提供 |
+| backends | 每监听器非空；成员含 subnet_id、IPv4、port、weight，须验证归属本 VPC 的已分配业务地址，禁止直接指定平台/节点/跨租户地址；顶层字段仅用于旧输入 |
 | health_check | 创建/更新必须显式提供 port（1–65535），与全部后端成员服务端口相同；与前端 listener.port 独立。首批 TCP，默认 interval=5s、timeout=3s、unhealthy=3、healthy=1；RoundRobin 和 panicThreshold=0 为明确默认 |
 
 Backend 地址的归属校验结合已持久化 Attachment 与 Provider VNicIP/UID 事实，不仅用 CIDR 判断业务归属。Network 不创建或删除业务 Pod/VM；实例 owner 返回的接入信息用于地址确认。后端删除/地址变化触发成员退化与配置更新，固定 IP 成员不会静默转发到复用同一 IP 的另一身份。需要未纳管静态后端时另行定义管理员准入，不默认为任意 IP 放行。
@@ -142,9 +143,17 @@ Backend 地址的归属校验结合已持久化 Attachment 与 Provider VNicIP/U
 | public | lb-small | disable | Public EIP CR短名 | LoadBalancer |
 | public_private | lb-small | 指定 VIP | Public EIP CR短名 | LoadBalancer |
 
+固定规格、安装能力检查与数据面观察共用同一份常量：
+
+| flavor | 副本 | 每副本 requests | 每副本 limits | public/public_private Class | private Class |
+| --- | ---: | --- | --- | --- | --- |
+| small | 2 | 1 CPU / 1Gi | 2 CPU / 2Gi | lb-small | lb-small-noeip |
+| medium | 4 | 2 CPU / 2Gi | 4 CPU / 4Gi | lb-medium | lb-medium-noeip |
+| large | 6 | 4 CPU / 4Gi | 8 CPU / 8Gi | lb-large | lb-large-noeip |
+
 Gateway `spec.infrastructure.annotations` 的 `lb_vpc`/`subnet` 使用 namespace/name。Gateway、HTTPRoute、Backend、BackendTrafficPolicy 放在固定租户 namespace；GatewayNamespace 模式由 Envoy Gateway 在同 namespace 生成 Service/Deployment/Pod。Network 只写自己拥有的 Gateway/Route/Backend/Policy，不直接成为生成 Service/Deployment 的第二个 spec 写入者。
 
-2026-09-17 用户明确健康检查端口由用户传入，并与后端服务端口一致。当前单一 LB 策略要求所有后端使用相同服务端口；不同端口集合返回 INVALID_ARGUMENT。健康端口随配置版本持久化并在查询中返回，Provider 显式生成 `healthCheck.active.overrides.port`。迁移前旧配置以内部值 0 保留 endpoint 默认检查行为，查询不返回该占位值；创建/更新不允许缺失或 0。
+2026-09-17 用户明确健康检查端口由用户传入，并与后端服务端口一致。同一监听器要求其全部后端使用与健康端口相同的服务端口；不同监听器可以使用不同后端服务端口。健康端口随配置版本持久化并在查询中返回，Provider 显式生成 `healthCheck.active.overrides.port`。迁移前旧配置以内部值 0 保留 endpoint 默认检查行为，查询不返回该占位值；创建/更新不允许缺失或 0。
 
 HTTPRoute 按 Listener 绑定 Gateway 并引用本 LB 的 Backend Members；每条 Route 的 BackendTrafficPolicy 独立指向正确对象，包含明确算法及检查参数。自有 CR 的名称/UID入持久映射；生成 Service/Deployment 的归属通过 Gateway UID/owner链和预期名称核对，观察结果保存后用于 EIP 绑定验证。未经证明的同名 Service 不是合法目标。
 
@@ -162,7 +171,11 @@ LB 配置完成需：自有 CR 身份与期望一致，Gateway Accepted/Programm
 
 ### 6.4 更新与删除
 
-一期允许更新名称/描述、后端成员/权重、受支持的健康检查字段；使用 expected_version + 幂等键，保存 desired/applied 配置版本和同一 LB 的互斥操作。VPC、Subnet、exposure、Public EIP、VIP、flavor、监听协议/端口先保持不可变，需要改变时创建新 LB再由用户切换。更新部分完成/响应未知不得抹掉旧 applied 状态，退化和失败原因可查询。
+本批允许更新名称/描述、增删监听器、修改监听端口和各监听器的后端/健康检查；沿用 expected_version + 幂等键、desired/applied 配置版本和同一 LB 的 lease。新更新使用 `{data:{...},update_mask:...}`；监听器集合遗漏时保持原值，提供时整体替换，空集合拒绝。保留的监听器 ID/name 稳定；VPC、Subnet、exposure、Public EIP、VIP、flavor 和 HTTP 协议保持不可变。更新部分完成/响应未知不得抹掉旧 applied 状态，退化和失败原因可查询。
+
+监听器变更使用 Gateway UID/resourceVersion CAS，只允许 listener 集合和对应版本标记变化；Class、placement、VIP/EIP 等不可变条件继续核对。新增先准备后端，再更新 Gateway、Route/Policy 并确认观察。移除先撤转发和 Route/Policy，确认 Gateway/Service 对应端口已撤除后，才能释放不再被任何监听器引用的 Backend 和子网占用。不能删除整个 Gateway 来删除一个监听器。
+
+全部目标监听器、Route/Policy 和完整 Service/EndpointSlice 端口集合均确认后才推进 applied_version。Service 的 targetPort 可以不同于监听端口，按实际 Envoy Pod 端口解析并核对 EndpointSlice。单个后端身份失效仅撤除引用它的监听器转发；部分应用保持旧 applied_version。追加迁移 0009/0010 保留旧 listener/component ID、CR 名称/UID、旧 fingerprint 和受理回执，关系继续使用 tenant/placement 复合外键。
 
 删除受理后封闭新更新，先撤除 Route/Policy，再删除 Gateway并观察其生成 Service/Deployment/Pod/EndpointSlice 释放，最后清理自有 Backend。仅在实际 Service消失、Public EIP解绑、VIP kc预留释放已确认后，释放 EIP claim、VIP意图和父资源占用并标记 deleted。Public EIP 保留供租户继续使用；基础 Intranet SNAT和业务后端都保留。
 
@@ -181,7 +194,7 @@ LB 配置完成需：自有 CR 身份与期望一致，Gateway Accepted/Programm
 | SNAT binding | purpose=intranet/public，唯一 `(tenant_id,vpc_id,purpose)`（未deleted）；EIP scope与purpose匹配，保留启停/占用 |
 | EIP claim | 全部 SNAT/LB 共用；未释放 `(tenant_id,eip_id)` 唯一，target_kind与snat_id/lb_id严格一一对应；已存在Public绑定迁移为claim |
 | VPC 基础连接 | 固定子资源ID、池版本、依赖步骤、desired/applied状态、version、reason、观察时效与终止意图 |
-| LB、Listener、Backend Member、配置版本 | tenant/vpc/subnet归属、稳定身份、期望配置和applied版本；单Listener限制；不把任意YAML当权威产品记录 |
+| LB、Listener、Backend Member、配置版本 | tenant/vpc/subnet归属、稳定身份、期望配置和applied版本；版本化 Listener 集合及独立成员关系；不把任意YAML当权威产品记录 |
 | VIP意图与父占用 | `(tenant_id,cluster_id,vpc_id,address)` 未释放唯一；Subnet/VPC删除与受理使用共同锁/占用判断；kc依然负责最终地址分配 |
 
 所有租户关系继续显式 tenant_id、租户限定查询与保持 tenant/cluster/namespace 的复合 FK。EIP claim 不能仅保存无法建立外键的自由字符串 target；可用可空 typedFK 加 num_nonnulls=1、target_kind校验。平台配置不用伪造租户。

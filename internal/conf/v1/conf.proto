@@ -47,6 +47,8 @@ message Network {
   // The isolated acceptance instance only. Runtime recovery stays enabled
   // for accepted LB tasks even when this RPC admission switch is closed.
   LoadBalancer load_balancer = 9;
+  // Restart applies changes. Empty rejects first acceptance of new VPCs.
+  repeated string vpc_cidr_presets = 10;
 }
 
 message LoadBalancer {

@@ -1128,6 +1128,23 @@ func (q *Queries) ObservationPlatformResources(ctx context.Context, arg Observat
 	return items, nil
 }
 
+const platformPoolVPCOverlaps = `-- name: PlatformPoolVPCOverlaps :one
+SELECT count(*)::bigint FROM network_vpcs v JOIN network_provider_bindings b ON b.tenant_id=v.tenant_id AND b.vpc_id=v.vpc_id AND b.resource_kind='vpc'
+WHERE b.cluster_id=$1 AND v.state<>'deleted' AND v.cidr::cidr && $2::cidr
+`
+
+type PlatformPoolVPCOverlapsParams struct {
+	ClusterID string
+	Cidr      netip.Prefix
+}
+
+func (q *Queries) PlatformPoolVPCOverlaps(ctx context.Context, arg PlatformPoolVPCOverlapsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, platformPoolVPCOverlaps, arg.ClusterID, arg.Cidr)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const publicPoolOverlaps = `-- name: PublicPoolOverlaps :one
 SELECT count(*)::bigint FROM network_public_pools p JOIN network_platform_resources r ON r.cluster_id=p.cluster_id AND r.resource_id=p.resource_id
 WHERE p.cluster_id=$1 AND r.state<>'deleted' AND p.cidr::cidr && $2::cidr

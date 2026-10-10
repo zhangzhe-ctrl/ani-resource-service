@@ -71,6 +71,9 @@ func (p *KCProvider) resolveLB(ctx context.Context, w biz.Work) (lbResolved, err
 	if w.Resource.LoadBalancer == nil {
 		return r, &biz.ProviderError{Kind: biz.ProviderConflict}
 	}
+	if _, ok := biz.FindLoadBalancerFlavor(w.Resource.LoadBalancer.LoadBalancer.Flavor); !ok {
+		return r, &biz.ProviderError{Kind: biz.ProviderConflict}
+	}
 	var err error
 	r.binding, err = p.binding(ctx, biz.ProviderTarget{Kind: "load_balancer", TenantID: w.Resource.TenantID, ResourceID: w.Resource.ID, BindingID: w.BindingID, KnownIdentity: w.KnownIdentity})
 	if err != nil {
@@ -125,20 +128,24 @@ func lbDesiredObject(r lbResolved, c biz.LoadBalancerComponent, o biz.LoadBalanc
 	version := l.DesiredVersion
 	switch c.Kind {
 	case "gateway":
-		version = 1
-		class := "lb-small"
+		flavor, ok := biz.FindLoadBalancerFlavor(l.Flavor)
+		if !ok {
+			return nil
+		}
+		class := flavor.GatewayClass(l.Exposure)
 		vip := l.PrivateIP
 		if vip == "" {
 			vip = "disable"
-		}
-		if l.Exposure == "private" {
-			class = "lb-small-noeip"
 		}
 		a := map[string]any{"networking.kubercloud.com/lb_vpc": r.vpc.Namespace + "/" + r.vpc.ProviderName, "networking.kubercloud.com/subnet": r.subnet.Namespace + "/" + r.subnet.ProviderName, "networking.kubercloud.com/lb_vip_address": vip}
 		if l.PublicEIPID != "" {
 			a["networking.kubercloud.com/lb_eips"] = r.eip.ProviderName
 		}
-		spec = map[string]any{"gatewayClassName": class, "infrastructure": map[string]any{"annotations": a}, "listeners": []any{map[string]any{"name": "http", "protocol": "HTTP", "port": int64(l.Listener.Port), "allowedRoutes": map[string]any{"namespaces": map[string]any{"from": "Same"}}}}}
+		listeners := []any{}
+		for _, listener := range biz.EffectiveLoadBalancerListeners(l) {
+			listeners = append(listeners, map[string]any{"name": listener.Name, "protocol": "HTTP", "port": int64(listener.Port), "allowedRoutes": map[string]any{"namespaces": map[string]any{"from": "Same"}}})
+		}
+		spec = map[string]any{"gatewayClassName": class, "infrastructure": map[string]any{"annotations": a}, "listeners": listeners}
 	case "backend":
 		version = 1
 		for _, m := range r.work.Resource.LoadBalancer.Members {
@@ -147,8 +154,9 @@ func lbDesiredObject(r lbResolved, c biz.LoadBalancerComponent, o biz.LoadBalanc
 			}
 		}
 	case "route":
+		listener := lbComponentListener(r.work, c)
 		refs := []any{}
-		for _, m := range l.Backends {
+		for _, m := range listener.Backends {
 			if lbMemberEligible(o, m.ID) {
 				for _, backend := range r.work.Resource.LoadBalancer.Components {
 					if backend.Kind == "backend" && backend.MemberID == m.ID {
@@ -163,10 +171,10 @@ func lbDesiredObject(r lbResolved, c biz.LoadBalancerComponent, o biz.LoadBalanc
 		if len(refs) > 0 {
 			rule["backendRefs"] = refs
 		}
-		spec = map[string]any{"parentRefs": []any{map[string]any{"group": lbGateways.Group, "kind": "Gateway", "name": r.binding.ProviderName, "sectionName": "http"}}, "rules": []any{rule}}
+		spec = map[string]any{"parentRefs": []any{map[string]any{"group": lbGateways.Group, "kind": "Gateway", "name": r.binding.ProviderName, "sectionName": listener.Name}}, "rules": []any{rule}}
 	case "policy":
-		h := l.Health
-		spec = map[string]any{"targetRefs": []any{map[string]any{"group": lbRoutes.Group, "kind": "HTTPRoute", "name": lbComponentName(r.work, "route")}}, "loadBalancer": map[string]any{"type": "RoundRobin"}, "healthCheck": map[string]any{"panicThreshold": int64(0), "active": map[string]any{"type": "TCP", "interval": fmt.Sprintf("%ds", h.IntervalSeconds), "timeout": fmt.Sprintf("%ds", h.TimeoutSeconds), "unhealthyThreshold": int64(h.UnhealthyThreshold), "healthyThreshold": int64(h.HealthyThreshold), "tcp": map[string]any{}}}}
+		h := lbComponentListener(r.work, c).Health
+		spec = map[string]any{"targetRefs": []any{map[string]any{"group": lbRoutes.Group, "kind": "HTTPRoute", "name": lbListenerRouteName(r.work, c.ListenerID)}}, "loadBalancer": map[string]any{"type": "RoundRobin"}, "healthCheck": map[string]any{"panicThreshold": int64(0), "active": map[string]any{"type": "TCP", "interval": fmt.Sprintf("%ds", h.IntervalSeconds), "timeout": fmt.Sprintf("%ds", h.TimeoutSeconds), "unhealthyThreshold": int64(h.UnhealthyThreshold), "healthyThreshold": int64(h.HealthyThreshold), "tcp": map[string]any{}}}}
 		if h.Port != 0 {
 			spec["healthCheck"].(map[string]any)["active"].(map[string]any)["overrides"] = map[string]any{"port": int64(h.Port)}
 		}
@@ -205,12 +213,26 @@ func lbObjectReady(obj *unstructured.Unstructured, c biz.LoadBalancerComponent, 
 			return lbConditions(conditions, obj.GetGeneration(), "Accepted")
 		}
 		listeners, _, _ := unstructured.NestedSlice(obj.Object, "status", "listeners")
-		if len(listeners) != 1 {
+		wanted, _, _ := unstructured.NestedSlice(obj.Object, "spec", "listeners")
+		if len(listeners) != len(wanted) || len(wanted) == 0 {
 			return false
 		}
-		l, _ := listeners[0].(map[string]any)
-		lc, _, _ := unstructured.NestedSlice(l, "conditions")
-		return lbConditions(conditions, obj.GetGeneration(), "Accepted", "Programmed") && l["name"] == "http" && lbConditions(lc, obj.GetGeneration(), "Accepted", "Programmed", "ResolvedRefs")
+		names := map[string]bool{}
+		for _, raw := range wanted {
+			l, _ := raw.(map[string]any)
+			name, _ := l["name"].(string)
+			names[name] = true
+		}
+		for _, raw := range listeners {
+			l, _ := raw.(map[string]any)
+			name, _ := l["name"].(string)
+			lc, _, _ := unstructured.NestedSlice(l, "conditions")
+			if !names[name] || !lbConditions(lc, obj.GetGeneration(), "Accepted", "Programmed", "ResolvedRefs") {
+				return false
+			}
+			delete(names, name)
+		}
+		return len(names) == 0 && lbConditions(conditions, obj.GetGeneration(), "Accepted", "Programmed")
 	}
 	field, refField := "parents", "parentRef"
 	if c.Kind == "policy" {
@@ -230,6 +252,9 @@ func lbObjectReady(obj *unstructured.Unstructured, c biz.LoadBalancerComponent, 
 		if ref["name"] != gateway || ns != namespace || ref["kind"] != "Gateway" || ref["group"] != lbGateways.Group {
 			continue
 		}
+		if c.Kind == "route" && c.ListenerName != "" && ref["sectionName"] != c.ListenerName {
+			continue
+		}
 		conditions, _, _ := unstructured.NestedSlice(e, "conditions")
 		if c.Kind == "policy" {
 			return lbConditions(conditions, obj.GetGeneration(), "Accepted")
@@ -246,6 +271,15 @@ func lbInspect(obj, desired *unstructured.Unstructured, c biz.LoadBalancerCompon
 	l := obj.GetLabels()
 	if obj.GetName() != c.Name || obj.GetNamespace() != r.binding.Namespace || obj.GetUID() == "" || obj.GetResourceVersion() == "" || obj.GetAPIVersion() != desired.GetAPIVersion() || obj.GetKind() != desired.GetKind() || l[ownerLabel] != "ani-network-service" || l[tenantLabel] != r.work.Resource.TenantID || l[resourceLabel] != r.work.Resource.ID || l[bindingLabel] != c.ID || (c.Identity != "" && c.Identity != string(obj.GetUID())) {
 		return v, &biz.ProviderError{Kind: biz.ProviderConflict}
+	}
+	if c.Kind == "gateway" {
+		actual, _, _ := unstructured.NestedMap(obj.Object, "spec")
+		expected, _, _ := unstructured.NestedMap(desired.Object, "spec")
+		delete(actual, "listeners")
+		delete(expected, "listeners")
+		if contentHash(actual) != contentHash(expected) {
+			return v, &biz.ProviderError{Kind: biz.ProviderConflict}
+		}
 	}
 	v.Exists, v.Identity, v.Deleting = true, string(obj.GetUID()), obj.GetDeletionTimestamp() != nil
 	v.Matches = contentHash(obj.Object["spec"]) == contentHash(desired.Object["spec"]) && obj.GetAnnotations()[lbVersionAnnotation] == desired.GetAnnotations()[lbVersionAnnotation]
@@ -500,7 +534,7 @@ func (p *KCProvider) MutateLoadBalancer(ctx context.Context, w biz.Work, c biz.L
 			v.Deleting = true
 			return v, nil
 		}
-		if action != "update" || (c.Kind != "route" && c.Kind != "policy") {
+		if action != "update" || (c.Kind != "route" && c.Kind != "policy" && c.Kind != "gateway") {
 			return v, &biz.ProviderError{Kind: biz.ProviderConflict}
 		}
 		annotations := obj.GetAnnotations()
@@ -545,4 +579,21 @@ func lbIPInRange(address, ranges string) (bool, bool) {
 		contains = contains || (ip.Compare(a) >= 0 && ip.Compare(b) <= 0)
 	}
 	return contains, true
+}
+
+func lbComponentListener(w biz.Work, c biz.LoadBalancerComponent) biz.LoadBalancerListener {
+	for _, l := range biz.EffectiveLoadBalancerListeners(w.Resource.LoadBalancer.LoadBalancer) {
+		if l.ID == c.ListenerID || c.ListenerID == "" {
+			return l
+		}
+	}
+	return biz.LoadBalancerListener{ID: c.ListenerID, Name: c.ListenerName, Protocol: "HTTP"}
+}
+func lbListenerRouteName(w biz.Work, id string) string {
+	for _, c := range w.Resource.LoadBalancer.Components {
+		if c.Kind == "route" && c.ListenerID == id && !c.Deleted {
+			return c.Name
+		}
+	}
+	return ""
 }

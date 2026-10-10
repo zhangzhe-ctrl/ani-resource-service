@@ -209,6 +209,7 @@ type NetworkLbComponent struct {
 	AppliedVersion       int64
 	AppliedConfigVersion pgtype.Int8
 	DeletedAt            *time.Time
+	ListenerID           *string
 }
 
 type NetworkLbConfiguration struct {
@@ -224,6 +225,22 @@ type NetworkLbConfiguration struct {
 	UnhealthyThreshold int64
 	HealthyThreshold   int64
 	CreatedAt          time.Time
+	HealthCheckPort    int32
+}
+
+type NetworkLbConfigurationListener struct {
+	TenantID           string
+	ClusterID          string
+	Namespace          string
+	LbID               string
+	ConfigVersion      int64
+	ListenerID         string
+	Protocol           string
+	Port               int32
+	IntervalSeconds    int64
+	TimeoutSeconds     int64
+	UnhealthyThreshold int64
+	HealthyThreshold   int64
 	HealthCheckPort    int32
 }
 
@@ -258,6 +275,16 @@ type NetworkLbListener struct {
 	ListenerID string
 	Protocol   string
 	Port       int32
+	Name       string
+}
+
+type NetworkLbListenerMember struct {
+	TenantID      string
+	LbID          string
+	ConfigVersion int64
+	ListenerID    string
+	MemberID      string
+	Weight        int32
 }
 
 type NetworkLbMember struct {

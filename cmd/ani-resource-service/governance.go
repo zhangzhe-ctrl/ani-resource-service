@@ -55,6 +55,9 @@ func runGovernance(bc *conf.Bootstrap, logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+	if err = repository.ConfigureVPCCIDRPresets(bc.Network.VpcCidrPresets, provider); err != nil {
+		return err
+	}
 	w := bc.Network.Worker
 	policy := biz.WorkerPolicy{Lease: w.Lease.AsDuration(), RequestTimeout: w.RequestTimeout.AsDuration(), ObserveEvery: w.ObserveEvery.AsDuration(), StaleAfter: w.StaleAfter.AsDuration(), RetryMin: w.RetryMin.AsDuration(), RetryMax: w.RetryMax.AsDuration()}
 	repository.UseBaseConnectivityFreshness(policy.StaleAfter)

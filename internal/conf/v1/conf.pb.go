@@ -255,9 +255,11 @@ type Network struct {
 	Observation              *Observation `protobuf:"bytes,8,opt,name=observation,proto3" json:"observation,omitempty"`
 	// The isolated acceptance instance only. Runtime recovery stays enabled
 	// for accepted LB tasks even when this RPC admission switch is closed.
-	LoadBalancer  *LoadBalancer `protobuf:"bytes,9,opt,name=load_balancer,json=loadBalancer,proto3" json:"load_balancer,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	LoadBalancer *LoadBalancer `protobuf:"bytes,9,opt,name=load_balancer,json=loadBalancer,proto3" json:"load_balancer,omitempty"`
+	// Restart applies changes. Empty rejects first acceptance of new VPCs.
+	VpcCidrPresets []string `protobuf:"bytes,10,rep,name=vpc_cidr_presets,json=vpcCidrPresets,proto3" json:"vpc_cidr_presets,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Network) Reset() {
@@ -349,6 +351,13 @@ func (x *Network) GetObservation() *Observation {
 func (x *Network) GetLoadBalancer() *LoadBalancer {
 	if x != nil {
 		return x.LoadBalancer
+	}
+	return nil
+}
+
+func (x *Network) GetVpcCidrPresets() []string {
+	if x != nil {
+		return x.VpcCidrPresets
 	}
 	return nil
 }
@@ -835,7 +844,7 @@ const file_conf_v1_conf_proto_rawDesc = "" +
 	"\x0frequest_timeout\x18\f \x01(\v2\x19.google.protobuf.DurationR\x0erequestTimeout\x12%\n" +
 	"\x0epublisher_days\x18\r \x01(\x03R\rpublisherDays\x12\x1b\n" +
 	"\tpull_days\x18\x0e \x01(\x03R\bpullDays\x12.\n" +
-	"\x13allow_never_expires\x18\x0f \x01(\bR\x11allowNeverExpires\"\x9f\x03\n" +
+	"\x13allow_never_expires\x18\x0f \x01(\bR\x11allowNeverExpires\"\xc9\x03\n" +
 	"\aNetwork\x12!\n" +
 	"\fdatabase_dsn\x18\x01 \x01(\tR\vdatabaseDsn\x12\x1e\n" +
 	"\n" +
@@ -848,7 +857,9 @@ const file_conf_v1_conf_proto_rawDesc = "" +
 	"\x06worker\x18\x06 \x01(\v2\x0f.conf.v1.WorkerR\x06worker\x12<\n" +
 	"\x1ainstance_consumer_endpoint\x18\a \x01(\tR\x18instanceConsumerEndpoint\x126\n" +
 	"\vobservation\x18\b \x01(\v2\x14.conf.v1.ObservationR\vobservation\x12:\n" +
-	"\rload_balancer\x18\t \x01(\v2\x15.conf.v1.LoadBalancerR\floadBalancer\"\x9b\x02\n" +
+	"\rload_balancer\x18\t \x01(\v2\x15.conf.v1.LoadBalancerR\floadBalancer\x12(\n" +
+	"\x10vpc_cidr_presets\x18\n" +
+	" \x03(\tR\x0evpcCidrPresets\"\x9b\x02\n" +
 	"\fLoadBalancer\x12.\n" +
 	"\x13enable_isolated_api\x18\x01 \x01(\bR\x11enableIsolatedApi\x129\n" +
 	"\x18installation_fingerprint\x18\x02 \x01(\tR\x17installationFingerprint\x12.\n" +

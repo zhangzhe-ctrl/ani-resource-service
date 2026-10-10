@@ -19,19 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	NetworkService_CreateVPC_FullMethodName         = "/network.v1.NetworkService/CreateVPC"
-	NetworkService_GetVPC_FullMethodName            = "/network.v1.NetworkService/GetVPC"
-	NetworkService_ListVPCs_FullMethodName          = "/network.v1.NetworkService/ListVPCs"
-	NetworkService_DeleteVPC_FullMethodName         = "/network.v1.NetworkService/DeleteVPC"
-	NetworkService_CreateSubnet_FullMethodName      = "/network.v1.NetworkService/CreateSubnet"
-	NetworkService_GetSubnet_FullMethodName         = "/network.v1.NetworkService/GetSubnet"
-	NetworkService_ListSubnets_FullMethodName       = "/network.v1.NetworkService/ListSubnets"
-	NetworkService_DeleteSubnet_FullMethodName      = "/network.v1.NetworkService/DeleteSubnet"
-	NetworkService_GetOperation_FullMethodName      = "/network.v1.NetworkService/GetOperation"
-	NetworkService_PrepareAttachment_FullMethodName = "/network.v1.NetworkService/PrepareAttachment"
-	NetworkService_GetAttachment_FullMethodName     = "/network.v1.NetworkService/GetAttachment"
-	NetworkService_ConfirmAttachment_FullMethodName = "/network.v1.NetworkService/ConfirmAttachment"
-	NetworkService_ReleaseAttachment_FullMethodName = "/network.v1.NetworkService/ReleaseAttachment"
+	NetworkService_ListVPCCIDRPresets_FullMethodName = "/network.v1.NetworkService/ListVPCCIDRPresets"
+	NetworkService_CreateVPC_FullMethodName          = "/network.v1.NetworkService/CreateVPC"
+	NetworkService_GetVPC_FullMethodName             = "/network.v1.NetworkService/GetVPC"
+	NetworkService_ListVPCs_FullMethodName           = "/network.v1.NetworkService/ListVPCs"
+	NetworkService_DeleteVPC_FullMethodName          = "/network.v1.NetworkService/DeleteVPC"
+	NetworkService_CreateSubnet_FullMethodName       = "/network.v1.NetworkService/CreateSubnet"
+	NetworkService_GetSubnet_FullMethodName          = "/network.v1.NetworkService/GetSubnet"
+	NetworkService_ListSubnets_FullMethodName        = "/network.v1.NetworkService/ListSubnets"
+	NetworkService_DeleteSubnet_FullMethodName       = "/network.v1.NetworkService/DeleteSubnet"
+	NetworkService_GetOperation_FullMethodName       = "/network.v1.NetworkService/GetOperation"
+	NetworkService_PrepareAttachment_FullMethodName  = "/network.v1.NetworkService/PrepareAttachment"
+	NetworkService_GetAttachment_FullMethodName      = "/network.v1.NetworkService/GetAttachment"
+	NetworkService_ConfirmAttachment_FullMethodName  = "/network.v1.NetworkService/ConfirmAttachment"
+	NetworkService_ReleaseAttachment_FullMethodName  = "/network.v1.NetworkService/ReleaseAttachment"
 )
 
 // NetworkServiceClient is the client API for NetworkService service.
@@ -41,6 +42,7 @@ const (
 // NetworkService owns tenant network intent, operations and queries. Caller
 // authentication is deferred; tenant_id is mandatory caller-supplied scope.
 type NetworkServiceClient interface {
+	ListVPCCIDRPresets(ctx context.Context, in *ListVPCCIDRPresetsRequest, opts ...grpc.CallOption) (*ListVPCCIDRPresetsResponse, error)
 	CreateVPC(ctx context.Context, in *CreateVPCRequest, opts ...grpc.CallOption) (*CreateVPCResponse, error)
 	GetVPC(ctx context.Context, in *GetVPCRequest, opts ...grpc.CallOption) (*GetVPCResponse, error)
 	ListVPCs(ctx context.Context, in *ListVPCsRequest, opts ...grpc.CallOption) (*ListVPCsResponse, error)
@@ -62,6 +64,16 @@ type networkServiceClient struct {
 
 func NewNetworkServiceClient(cc grpc.ClientConnInterface) NetworkServiceClient {
 	return &networkServiceClient{cc}
+}
+
+func (c *networkServiceClient) ListVPCCIDRPresets(ctx context.Context, in *ListVPCCIDRPresetsRequest, opts ...grpc.CallOption) (*ListVPCCIDRPresetsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListVPCCIDRPresetsResponse)
+	err := c.cc.Invoke(ctx, NetworkService_ListVPCCIDRPresets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *networkServiceClient) CreateVPC(ctx context.Context, in *CreateVPCRequest, opts ...grpc.CallOption) (*CreateVPCResponse, error) {
@@ -201,6 +213,7 @@ func (c *networkServiceClient) ReleaseAttachment(ctx context.Context, in *Releas
 // NetworkService owns tenant network intent, operations and queries. Caller
 // authentication is deferred; tenant_id is mandatory caller-supplied scope.
 type NetworkServiceServer interface {
+	ListVPCCIDRPresets(context.Context, *ListVPCCIDRPresetsRequest) (*ListVPCCIDRPresetsResponse, error)
 	CreateVPC(context.Context, *CreateVPCRequest) (*CreateVPCResponse, error)
 	GetVPC(context.Context, *GetVPCRequest) (*GetVPCResponse, error)
 	ListVPCs(context.Context, *ListVPCsRequest) (*ListVPCsResponse, error)
@@ -224,6 +237,9 @@ type NetworkServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedNetworkServiceServer struct{}
 
+func (UnimplementedNetworkServiceServer) ListVPCCIDRPresets(context.Context, *ListVPCCIDRPresetsRequest) (*ListVPCCIDRPresetsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListVPCCIDRPresets not implemented")
+}
 func (UnimplementedNetworkServiceServer) CreateVPC(context.Context, *CreateVPCRequest) (*CreateVPCResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateVPC not implemented")
 }
@@ -282,6 +298,24 @@ func RegisterNetworkServiceServer(s grpc.ServiceRegistrar, srv NetworkServiceSer
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&NetworkService_ServiceDesc, srv)
+}
+
+func _NetworkService_ListVPCCIDRPresets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListVPCCIDRPresetsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NetworkServiceServer).ListVPCCIDRPresets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NetworkService_ListVPCCIDRPresets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NetworkServiceServer).ListVPCCIDRPresets(ctx, req.(*ListVPCCIDRPresetsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _NetworkService_CreateVPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -525,6 +559,10 @@ var NetworkService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "network.v1.NetworkService",
 	HandlerType: (*NetworkServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListVPCCIDRPresets",
+			Handler:    _NetworkService_ListVPCCIDRPresets_Handler,
+		},
 		{
 			MethodName: "CreateVPC",
 			Handler:    _NetworkService_CreateVPC_Handler,

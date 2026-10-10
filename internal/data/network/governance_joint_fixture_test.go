@@ -55,6 +55,7 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 		}
 		return controller.http(w, r, api)
 	})
+	addLBBackend(t, f, f.backendSubnet, "lb-second", "10.42.2.3")
 	// Replace the admission helper's U05 capability record with actual observation
 	// of the external fixture before any Governance request can reach Resource.
 	if _, err := f.f.owner.Exec(f.f.ctx, "DELETE FROM network_lb_capabilities WHERE cluster_id='test-cluster'"); err != nil {
@@ -144,7 +145,7 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 			}
 		}
 	}()
-	info := map[string]string{"Address": listener.Addr().String(), "CAFile": ca, "CertFile": clientCert, "KeyFile": clientKey, "RuntimeDSN": f.runtimeDSN, "TenantID": f.f.tenant, "ParentVPC": f.vpc.ID, "EntrySubnet": f.subnet.ID, "BackendSubnet": f.backendSubnet.ID, "BackendAddress": "10.42.2.2"}
+	info := map[string]string{"Address": listener.Addr().String(), "CAFile": ca, "CertFile": clientCert, "KeyFile": clientKey, "RuntimeDSN": f.runtimeDSN, "TenantID": f.f.tenant, "ParentVPC": f.vpc.ID, "EntrySubnet": f.subnet.ID, "BackendSubnet": f.backendSubnet.ID, "BackendAddress": "10.42.2.2", "SecondBackendAddress": "10.42.2.3"}
 	raw, err := json.Marshal(info)
 	if err != nil {
 		t.Fatal(err)
@@ -163,30 +164,34 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 	// The HTTP suite deletes its tenant resources first. Internal instance-owner
 	// fixture resources follow the production Attachment release protocol.
 	attachments := biz.NewAttachments(f.f.p, time.Minute)
-	var attachmentID string
-	if err = f.f.owner.QueryRow(f.f.ctx, "SELECT attachment_id FROM network_attachments WHERE tenant_id=$1 AND instance_id='lb-backend'", f.f.tenant).Scan(&attachmentID); err != nil {
-		t.Fatal(err)
-	}
-	a, err := attachments.Get(f.f.ctx, f.f.tenant, attachmentID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	finalization := uuid.NewString()
-	if _, err = attachments.Release(f.f.ctx, biz.ReleaseAttachment{TenantID: f.f.tenant, AttachmentID: a.ID, ExpectedVersion: a.Version, FinalizationID: finalization}); err != nil {
-		t.Fatal(err)
-	}
-	// External owner/Kubernetes supplies absence, then real attachment worker
-	// records release. No Resource state is manually marked successful.
-	for _, k := range []struct{ kind, name string }{{"pods", "lb-backend"}, {"vnics", "lb-backend-nic"}, {"vnicips", "lb-backend-ip"}} {
-		if obj := f.api.Object(k.kind, a.Namespace, k.name); obj != nil {
-			f.api.Change(k.kind, obj, true)
+	closed := lbFinalizedOwners{}
+	ids := []string{}
+	for _, name := range []string{"lb-backend", "lb-second"} {
+		var attachmentID string
+		if err = f.f.owner.QueryRow(f.f.ctx, "SELECT attachment_id FROM network_attachments WHERE tenant_id=$1 AND instance_id=$2", f.f.tenant, name).Scan(&attachmentID); err != nil {
+			t.Fatal(err)
 		}
+		a, err := attachments.Get(f.f.ctx, f.f.tenant, attachmentID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		finalization := uuid.NewString()
+		if _, err = attachments.Release(f.f.ctx, biz.ReleaseAttachment{TenantID: f.f.tenant, AttachmentID: a.ID, ExpectedVersion: a.Version, FinalizationID: finalization}); err != nil {
+			t.Fatal(err)
+		}
+		for _, k := range []struct{ kind, name string }{{"pods", name}, {"vnics", name + "-nic"}, {"vnicips", name + "-ip"}} {
+			if obj := f.api.Object(k.kind, a.Namespace, k.name); obj != nil {
+				f.api.Change(k.kind, obj, true)
+			}
+		}
+		value := consumerFor(a, "closed", finalization)
+		closedAt := time.Now()
+		value.ClosedAt = &closedAt
+		value.PodUIDs = []string{a.PodUID}
+		closed[a.ID] = value
+		ids = append(ids, a.ID)
 	}
-	consumer := &attachmentConsumer{value: consumerFor(a, "closed", finalization)}
-	closedAt := time.Now()
-	consumer.value.ClosedAt = &closedAt
-	consumer.value.PodUIDs = []string{a.PodUID}
-	aw, err := biz.NewAttachmentWorker(f.f.p, provider, consumer, uuid.NewString(), policy)
+	aw, err := biz.NewAttachmentWorker(f.f.p, provider, closed, uuid.NewString(), policy)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,8 +199,13 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 		if _, err := aw.Step(f.f.ctx); err != nil {
 			t.Fatal(err)
 		}
-		v, err := attachments.Get(f.f.ctx, f.f.tenant, a.ID)
-		return err == nil && v.State == biz.Released
+		for _, id := range ids {
+			v, err := attachments.Get(f.f.ctx, f.f.tenant, id)
+			if err != nil || v.State != biz.Released {
+				return false
+			}
+		}
+		return true
 	})
 	for _, s := range []biz.Subnet{f.subnet, f.backendSubnet} {
 		if _, err = f.f.n.DeleteSubnet(f.f.ctx, f.f.tenant, s.ID); err != nil {

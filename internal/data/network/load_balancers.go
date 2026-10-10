@@ -38,6 +38,9 @@ func loadLB(ctx context.Context, q *sqlcgen.Queries, row sqlcgen.NetworkLoadBala
 		m := item.NetworkLbMember
 		v.Backends = append(v.Backends, biz.LoadBalancerBackend{ID: m.MemberID, SubnetID: m.SubnetID, Address: m.Address, Port: uint32(m.Port), Weight: uint32(item.Weight), AttachmentID: m.AttachmentID, State: m.State, Reason: biz.Reason(m.Reason), ObservedAt: m.ObservedAt})
 	}
+	if err = loadLBListeners(ctx, q, row, &v); err != nil {
+		return v, err
+	}
 	if row.PublicEipID != nil {
 		e, err := q.GetEIPInternal(ctx, sqlcgen.GetEIPInternalParams{TenantID: row.TenantID, EipID: *row.PublicEipID})
 		if err != nil {
@@ -186,6 +189,7 @@ func lockLBSubnets(ctx context.Context, q *sqlcgen.Queries, tenant, vpc string, 
 	return out, nil
 }
 func (p *Postgres) AcceptLoadBalancer(ctx context.Context, i biz.LoadBalancerIntent, a biz.Attribution, freshness time.Duration) (biz.LoadBalancerResult, error) {
+	acceptedFingerprint := i.Fingerprint()
 	tx, err := p.pool.Begin(ctx)
 	if err != nil {
 		return biz.LoadBalancerResult{}, databaseFailure(err)
@@ -211,6 +215,13 @@ func (p *Postgres) AcceptLoadBalancer(ctx context.Context, i biz.LoadBalancerInt
 	parent, err := q.LockVPC(ctx, sqlcgen.LockVPCParams{TenantID: i.TenantID, VpcID: vpcID})
 	if err != nil {
 		return biz.LoadBalancerResult{}, databaseFailure(err)
+	}
+	var priorListeners *sqlcgen.NetworkLoadBalancer
+	if !creating {
+		priorListeners = &prior
+	}
+	if err = prepareLBListeners(ctx, q, &i, priorListeners); err != nil {
+		return biz.LoadBalancerResult{}, err
 	}
 	ids := []string{subnetID}
 	for _, b := range i.Backends {
@@ -379,7 +390,7 @@ func (p *Postgres) AcceptLoadBalancer(ctx context.Context, i biz.LoadBalancerInt
 	opID := uuid.NewString()
 	var row sqlcgen.NetworkLoadBalancer
 	if creating {
-		row, err = q.InsertLB(ctx, sqlcgen.InsertLBParams{TenantID: i.TenantID, LbID: newEgressID("lb"), ClusterID: pb.ClusterID, Namespace: pb.Namespace, VpcID: vpcID, SubnetID: subnetID, Exposure: i.Exposure, PublicEipID: eipID, PrivateIp: i.PrivateIP, Name: i.Name, Description: i.Description, CreatedAt: now, OperationID: &opID})
+		row, err = q.InsertLB(ctx, sqlcgen.InsertLBParams{TenantID: i.TenantID, LbID: newEgressID("lb"), ClusterID: pb.ClusterID, Namespace: pb.Namespace, VpcID: vpcID, SubnetID: subnetID, Exposure: i.Exposure, Flavor: i.Flavor, PublicEipID: eipID, PrivateIp: i.PrivateIP, Name: i.Name, Description: i.Description, CreatedAt: now, OperationID: &opID})
 	} else {
 		row, err = q.UpdateLBIntent(ctx, sqlcgen.UpdateLBIntentParams{TenantID: i.TenantID, LbID: i.ID, Version: i.ExpectedVersion, Name: i.Name, Description: i.Description, OperationID: &opID})
 	}
@@ -387,9 +398,6 @@ func (p *Postgres) AcceptLoadBalancer(ctx context.Context, i biz.LoadBalancerInt
 		return biz.LoadBalancerResult{}, databaseFailure(err)
 	}
 	if creating {
-		if err = q.InsertLBListener(ctx, sqlcgen.InsertLBListenerParams{TenantID: i.TenantID, ClusterID: pb.ClusterID, Namespace: pb.Namespace, LbID: row.LbID, ListenerID: uuid.NewString(), Port: int32(i.ListenerPort)}); err != nil {
-			return biz.LoadBalancerResult{}, databaseFailure(err)
-		}
 		if eipID != "" {
 			n, err := q.ClaimEIPForLB(ctx, sqlcgen.ClaimEIPForLBParams{TenantID: i.TenantID, ClusterID: pb.ClusterID, Namespace: pb.Namespace, LbID: &row.LbID, EipID: eipID, CreatedAt: now})
 			if err != nil {
@@ -408,16 +416,12 @@ func (p *Postgres) AcceptLoadBalancer(ctx context.Context, i biz.LoadBalancerInt
 				return biz.LoadBalancerResult{}, biz.Fail(biz.VIPInUse, "VIP is reserved by another load balancer")
 			}
 		}
-		for _, kind := range []string{"route", "policy"} {
-			if err = insertLBComponent(ctx, q, row, kind, nil); err != nil {
-				return biz.LoadBalancerResult{}, err
-			}
-		}
 	}
 	h := i.Health
 	if err = q.InsertLBConfiguration(ctx, sqlcgen.InsertLBConfigurationParams{TenantID: i.TenantID, ClusterID: pb.ClusterID, Namespace: pb.Namespace, LbID: row.LbID, ConfigVersion: row.DesiredVersion, Name: i.Name, Description: i.Description, IntervalSeconds: int64(h.IntervalSeconds), TimeoutSeconds: int64(h.TimeoutSeconds), UnhealthyThreshold: int64(h.UnhealthyThreshold), HealthyThreshold: int64(h.HealthyThreshold), HealthCheckPort: int32(h.Port)}); err != nil {
 		return biz.LoadBalancerResult{}, databaseFailure(err)
 	}
+	memberIDs := map[string]string{}
 	for j, b := range i.Backends {
 		memberID := b.ID
 		if memberID == "" {
@@ -434,6 +438,10 @@ func (p *Postgres) AcceptLoadBalancer(ctx context.Context, i biz.LoadBalancerInt
 		if err = q.InsertLBConfigurationMember(ctx, sqlcgen.InsertLBConfigurationMemberParams{TenantID: i.TenantID, ClusterID: pb.ClusterID, Namespace: pb.Namespace, LbID: row.LbID, ConfigVersion: row.DesiredVersion, MemberID: memberID, Weight: int32(b.Weight)}); err != nil {
 			return biz.LoadBalancerResult{}, databaseFailure(err)
 		}
+		memberIDs[lbBackendKey(b)] = memberID
+	}
+	if err = saveLBListeners(ctx, q, row, i.Listeners, memberIDs); err != nil {
+		return biz.LoadBalancerResult{}, err
 	}
 	for id := range needed {
 		if err = q.ReserveLBSubnet(ctx, sqlcgen.ReserveLBSubnetParams{TenantID: i.TenantID, ClusterID: pb.ClusterID, Namespace: pb.Namespace, LbID: row.LbID, VpcID: vpcID, SubnetID: id}); err != nil {
@@ -465,7 +473,7 @@ func (p *Postgres) AcceptLoadBalancer(ctx context.Context, i biz.LoadBalancerInt
 	if err != nil {
 		return result, err
 	}
-	if err = q.InsertLBIdempotency(ctx, sqlcgen.InsertLBIdempotencyParams{TenantID: i.TenantID, OperationKind: i.Kind, IdempotencyKey: i.IdempotencyKey, Fingerprint: i.Fingerprint(), LbID: &row.LbID, OperationID: opID, Response: snapshot, CreatedAt: now}); err != nil {
+	if err = q.InsertLBIdempotency(ctx, sqlcgen.InsertLBIdempotencyParams{TenantID: i.TenantID, OperationKind: i.Kind, IdempotencyKey: i.IdempotencyKey, Fingerprint: acceptedFingerprint, LbID: &row.LbID, OperationID: opID, Response: snapshot, CreatedAt: now}); err != nil {
 		return result, databaseFailure(err)
 	}
 	if err = lbHistory(ctx, q, row, a, i.Kind+"_accepted", now); err != nil {
@@ -483,8 +491,7 @@ func lastAddress(cidr netip.Prefix) netip.Addr {
 	return netip.AddrFrom4([4]byte{byte(v >> 24), byte(v >> 16), byte(v >> 8), byte(v)})
 }
 func insertLBComponent(ctx context.Context, q *sqlcgen.Queries, row sqlcgen.NetworkLoadBalancer, kind string, member *string) error {
-	id := uuid.NewString()
-	return databaseFailure(q.InsertLBComponent(ctx, sqlcgen.InsertLBComponentParams{TenantID: row.TenantID, ClusterID: row.ClusterID, Namespace: row.Namespace, LbID: row.LbID, ComponentID: id, Kind: kind, MemberID: member, ProviderName: "lb-" + kind + "-" + strings.ReplaceAll(id, "-", "")}))
+	return insertLBListenerComponent(ctx, q, row, kind, member, nil)
 }
 func lbHistory(ctx context.Context, q *sqlcgen.Queries, row sqlcgen.NetworkLoadBalancer, a biz.Attribution, event string, now time.Time) error {
 	return databaseFailure(q.InsertHistory(ctx, sqlcgen.InsertHistoryParams{TenantID: row.TenantID, LbID: row.LbID, HistoryID: uuid.NewString(), OperationID: row.LastOperationID, Event: event, ResourceState: row.State, OperationState: string(biz.Queued), ActorRef: a.Actor, CallerRef: a.DirectCaller, CorrelationID: a.CorrelationID, CreatedAt: now}))

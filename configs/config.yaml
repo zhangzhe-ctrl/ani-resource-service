@@ -9,6 +9,9 @@ server:
     timeout: "${SERVER_ADMIN_TIMEOUT:1s}"
   shutdown_timeout: "${SERVER_SHUTDOWN_TIMEOUT:5s}"
 network:
+  # Administrator supplies verified RFC1918 candidates; restart Resource to apply.
+  # Empty is fail closed for new VPCs. This example is not live platform policy.
+  vpc_cidr_presets: []
   database_dsn: "${NETWORK_DATABASE_DSN:}"
   kubeconfig: "${NETWORK_KUBECONFIG:}"
   cluster_id: "${NETWORK_CLUSTER_ID:primary}"

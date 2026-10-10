@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 // NetworkService owns tenant network intent, operations and queries. Caller
 // authentication is deferred; tenant_id is mandatory caller-supplied scope.
 service NetworkService {
+  rpc ListVPCCIDRPresets(ListVPCCIDRPresetsRequest) returns (ListVPCCIDRPresetsResponse);
   rpc CreateVPC(CreateVPCRequest) returns (CreateVPCResponse);
   rpc GetVPC(GetVPCRequest) returns (GetVPCResponse);
   rpc ListVPCs(ListVPCsRequest) returns (ListVPCsResponse);
@@ -316,3 +317,6 @@ message GetSubmissionResponse {
  repeated string controller_uids = 12;
  google.protobuf.Timestamp closed_at = 13;
 }
+
+message ListVPCCIDRPresetsRequest { string tenant_id = 1; }
+message ListVPCCIDRPresetsResponse { repeated string cidrs = 1; }

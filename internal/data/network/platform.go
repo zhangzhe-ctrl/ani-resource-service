@@ -283,6 +283,13 @@ func (p *Postgres) AcceptPlatform(ctx context.Context, i biz.PlatformIntent, a b
 		if err != nil {
 			return biz.PlatformResource{}, biz.Fail(biz.InvalidArgument, "invalid pool CIDR")
 		}
+		vpcCount, err := q.PlatformPoolVPCOverlaps(ctx, sqlcgen.PlatformPoolVPCOverlapsParams{ClusterID: p.placement.ClusterID, Cidr: cidr})
+		if err != nil {
+			return biz.PlatformResource{}, databaseFailure(err)
+		}
+		if vpcCount > 0 {
+			return biz.PlatformResource{}, biz.Fail(biz.ResourceInUse, "address pool CIDR overlaps an accepted VPC")
+		}
 		n, err := q.PublicPoolOverlaps(ctx, sqlcgen.PublicPoolOverlapsParams{ClusterID: p.placement.ClusterID, Cidr: cidr})
 		if err != nil {
 			return biz.PlatformResource{}, databaseFailure(err)

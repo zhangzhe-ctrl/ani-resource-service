@@ -169,3 +169,14 @@ func rpcError(err error) error {
 }
 
 var resourceTypesToWire = map[string]networkv1.ResourceType{"load_balancer": networkv1.ResourceType_RESOURCE_TYPE_LOAD_BALANCER, "vpc": networkv1.ResourceType_RESOURCE_TYPE_VPC, "subnet": networkv1.ResourceType_RESOURCE_TYPE_SUBNET, "eip": networkv1.ResourceType_RESOURCE_TYPE_EIP, "snat": networkv1.ResourceType_RESOURCE_TYPE_VPC_SNAT_BINDING, "device": networkv1.ResourceType_RESOURCE_TYPE_NETWORK_DEVICE, "vlan": networkv1.ResourceType_RESOURCE_TYPE_VLAN_NETWORK, "egress_gateway": networkv1.ResourceType_RESOURCE_TYPE_EGRESS_GATEWAY, "public_pool": networkv1.ResourceType_RESOURCE_TYPE_PUBLIC_ADDRESS_POOL}
+
+func (s *NetworkService) ListVPCCIDRPresets(ctx context.Context, r *networkv1.ListVPCCIDRPresetsRequest) (*networkv1.ListVPCCIDRPresetsResponse, error) {
+	if r == nil {
+		return nil, rpcError(biz.Fail(biz.InvalidArgument, "request required"))
+	}
+	values, err := s.network.ListVPCCIDRPresets(ctx, r.TenantId)
+	if err != nil {
+		return nil, rpcError(err)
+	}
+	return &networkv1.ListVPCCIDRPresetsResponse{Cidrs: values}, nil
+}

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
@@ -41,6 +42,9 @@ func (c *Bootstrap) Validate() error {
 	if c.Network == nil || c.Network.Worker == nil || strings.TrimSpace(c.Network.DatabaseDsn) == "" ||
 		strings.TrimSpace(c.Network.ClusterId) == "" || c.Network.NamespacePrefix == "" {
 		return fmt.Errorf("Network database, placement and worker config are required")
+	}
+	if _, err := biz.NewVPCCIDRPresets(c.Network.VpcCidrPresets); err != nil {
+		return fmt.Errorf("network.vpc_cidr_presets: %w", err)
 	}
 	key, err := base64.StdEncoding.DecodeString(c.Network.CursorSigningKey)
 	if err != nil || len(key) < 32 || len(key) > 128 {

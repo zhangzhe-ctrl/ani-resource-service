@@ -1,6 +1,14 @@
 # Network 执行状态
 
-更新日期：2026-10-09。本文件是唯一当前进度入口；[规格](../specs/vpc-subnet.md)描述目标，[计划](../plans/vpc-subnet.md)描述工作包。
+更新日期：2026-10-10。本文件是唯一当前进度入口；[规格](../specs/vpc-subnet.md)描述目标，[计划](../plans/vpc-subnet.md)描述工作包。
+
+## 2026-10-10：固定三规格、多监听器与 VPC 预设后端
+
+本轮从 Resource `6690df41110af98b91909c9f5bbb78b00805b249`、Governance `dd1e772ac5d0718c00a3cc197c9e750c0b9fe896` 创建任务工作树与 `codex/network-lb-vpc-presets-20261010` 分支。用户后续禁止修改前端，本批只改后端；验收快照时尚未提交或发布。用户随后授权将两仓相关改动提交并推送 main，按 Resource 发布 → Governance 锁定正式 SDK 版本的顺序交付，最终提交以 Git 和交付回执为准。三条真实业务代码主链在 Fedora 联合隔离环境通过，外部 KC/Envoy/实例 owner 使用协议替身；固定三规格实际持久化、多监听器生命周期/逐端口观察/选择性失效、VPC 预设和 Subnet、权限/套餐/跨租户、旧升级回执及两种更新响应丢失恢复已定向核实。产品链清理和隔离基础设施清理结果分别留证。
+
+唯一具体结果/失败/命令入口为 Governance 同名任务工作树的 `docs/plans/network-lb-vpc-presets.md#实施结果与剩余断点`，接口沿用 [Governance 接口登记](https://github.com/zhangzhe-ctrl/ani-governance/blob/dd1e772ac5d0718c00a3cc197c9e750c0b9fe896/docs/interface-integration-register.md) 的既有 NET-01～24，本次追加 NET-25。新合同见本仓 [LB](../specs/vpc-connectivity-lb.md) / [VPC](../specs/vpc-subnet.md)。发布前的候选 SDK 通过任务私有 modfile 验证；正式消费版本由 Governance go.mod 锁定，发布后的独立消费验证在上述 Governance 结果入口记录。真实 10～12 的 VPC 完整子场景已通过：原有采集代码获取三节点新鲜网段，独占后端经 JWT/AK 产品接口在同一轮完成候选读取、VPC 创建、Subnet 划分、自定义 400/平台冲突 412 拒绝及删除，八个创建/删除操作均 succeeded，四个 Provider UID 持久化，活动资源/占用为 0。拒绝场景复现定位到联调夹具默认 1s 期限提前取消查询；对齐仓库正式配置 10s 后，仅复验拒绝子场景和原完整 VPC 子场景，均退出 0，原失败和真实节点查询抖动证据保留。LB 三规格/多监听器真实流量仍 not_verified：仅有 small 私网 Class/EnvoyProxy，其余五套缺失。共享 Resource 配置未改，验收阶段未执行正式部署与 SDK 发布；后续 main 源码发布不等于共享服务已部署。2026-10-10 按用户要求收尾，不再验收缺失的五套预置配置；保留 LB 实机流量 not_verified，不再扩大测试。
+
+提交前门禁在 Fedora 执行：`make verify` 的生成、边界、故障构建和依赖 tidy 检查通过，首次测试阶段因任务临时路径使 Unix socket 路径达到 157 字节而退出 2（`evidence/resource-publish-verify-01.log`）。未修改 socket 实现、用例或断言；缩短独占 TMPDIR 后，该用例、完整单元测试、vet、build 和模块校验全部通过（`resource-publish-verify-continuation-02.log`）。该续跑最后因远端源码快照无 `.git`，Git 差异检查退出 129；`git diff --check` 在本地实际工作树执行通过。合用上述阶段完成提交门禁，不重跑集群或五套预置配置验收。
 
 ## 2026-10-09：Governance 租户 Network 接入补齐
 

@@ -134,3 +134,14 @@ func TestLBUpdateRetainsRemovedSubnetUntilRouteAndBackendCleanup(t *testing.T) {
 		t.Fatal("LB took over instance-owner Pods")
 	}
 }
+
+// Controlled owner receipts remain independent of the Attachment being queried.
+type lbFinalizedOwners map[string]biz.ConsumerSubmission
+
+func (o lbFinalizedOwners) GetSubmission(_ context.Context, a biz.Attachment) (biz.ConsumerSubmission, error) {
+	value, ok := o[a.ID]
+	if !ok {
+		return biz.ConsumerSubmission{}, biz.Fail(biz.ResourceNotFound, "unknown controlled finalization")
+	}
+	return value, nil
+}

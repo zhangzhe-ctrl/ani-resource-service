@@ -347,7 +347,7 @@ func (q *Queries) GetLBInternal(ctx context.Context, arg GetLBInternalParams) (N
 }
 
 const getLBListener = `-- name: GetLBListener :one
-SELECT tenant_id, cluster_id, namespace, lb_id, listener_id, protocol, port FROM network_lb_listeners WHERE tenant_id=$1 AND lb_id=$2
+SELECT tenant_id, cluster_id, namespace, lb_id, listener_id, protocol, port, name FROM network_lb_listeners WHERE tenant_id=$1 AND lb_id=$2 ORDER BY name LIMIT 1
 `
 
 type GetLBListenerParams struct {
@@ -366,6 +366,7 @@ func (q *Queries) GetLBListener(ctx context.Context, arg GetLBListenerParams) (N
 		&i.ListenerID,
 		&i.Protocol,
 		&i.Port,
+		&i.Name,
 	)
 	return i, err
 }
@@ -407,8 +408,8 @@ func (q *Queries) GetLBMember(ctx context.Context, arg GetLBMemberParams) (Netwo
 }
 
 const insertLB = `-- name: InsertLB :one
-INSERT INTO network_load_balancers(tenant_id,lb_id,cluster_id,namespace,vpc_id,subnet_id,exposure,public_eip_id,private_ip,state,name,description,created_at,updated_at,last_operation_id)
-VALUES($1,$2,$3,$4,$5,$6,$7,NULLIF($8::text,''),NULLIF($9::text,''),'provisioning',$10,$11,$12,$12,$13) RETURNING tenant_id, lb_id, cluster_id, namespace, vpc_id, subnet_id, exposure, public_eip_id, public_scope, private_ip, state, version, created_at, name, description, flavor, reason, updated_at, observed_at, vip_occupied_revision, vip_absence_revision, last_operation_id, desired_version, applied_version, configuration_state, data_plane_state, data_plane_observed_at, accepted_config_version, applied_config_version
+INSERT INTO network_load_balancers(tenant_id,lb_id,cluster_id,namespace,vpc_id,subnet_id,exposure,flavor,public_eip_id,private_ip,state,name,description,created_at,updated_at,last_operation_id)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,NULLIF($9::text,''),NULLIF($10::text,''),'provisioning',$11,$12,$13,$13,$14) RETURNING tenant_id, lb_id, cluster_id, namespace, vpc_id, subnet_id, exposure, public_eip_id, public_scope, private_ip, state, version, created_at, name, description, flavor, reason, updated_at, observed_at, vip_occupied_revision, vip_absence_revision, last_operation_id, desired_version, applied_version, configuration_state, data_plane_state, data_plane_observed_at, accepted_config_version, applied_config_version
 `
 
 type InsertLBParams struct {
@@ -419,6 +420,7 @@ type InsertLBParams struct {
 	VpcID       string
 	SubnetID    string
 	Exposure    string
+	Flavor      string
 	PublicEipID string
 	PrivateIp   string
 	Name        string
@@ -436,6 +438,7 @@ func (q *Queries) InsertLB(ctx context.Context, arg InsertLBParams) (NetworkLoad
 		arg.VpcID,
 		arg.SubnetID,
 		arg.Exposure,
+		arg.Flavor,
 		arg.PublicEipID,
 		arg.PrivateIp,
 		arg.Name,
@@ -479,8 +482,8 @@ func (q *Queries) InsertLB(ctx context.Context, arg InsertLBParams) (NetworkLoad
 }
 
 const insertLBComponent = `-- name: InsertLBComponent :exec
-INSERT INTO network_lb_components(tenant_id,cluster_id,namespace,lb_id,component_id,kind,member_id,provider_name)
-VALUES($1,$2,$3,$4,$5,$6,$8,$7)
+INSERT INTO network_lb_components(tenant_id,cluster_id,namespace,lb_id,component_id,kind,member_id,listener_id,provider_name)
+VALUES($1,$2,$3,$4,$5,$6,$8,$9,$7)
 `
 
 type InsertLBComponentParams struct {
@@ -492,6 +495,7 @@ type InsertLBComponentParams struct {
 	Kind         string
 	ProviderName string
 	MemberID     *string
+	ListenerID   *string
 }
 
 func (q *Queries) InsertLBComponent(ctx context.Context, arg InsertLBComponentParams) error {
@@ -504,6 +508,7 @@ func (q *Queries) InsertLBComponent(ctx context.Context, arg InsertLBComponentPa
 		arg.Kind,
 		arg.ProviderName,
 		arg.MemberID,
+		arg.ListenerID,
 	)
 	return err
 }
@@ -604,7 +609,7 @@ func (q *Queries) InsertLBIdempotency(ctx context.Context, arg InsertLBIdempoten
 }
 
 const insertLBListener = `-- name: InsertLBListener :exec
-INSERT INTO network_lb_listeners(tenant_id,cluster_id,namespace,lb_id,listener_id,port) VALUES($1,$2,$3,$4,$5,$6)
+INSERT INTO network_lb_listeners(tenant_id,cluster_id,namespace,lb_id,listener_id,port,name) VALUES($1,$2,$3,$4,$5,$6,$7)
 `
 
 type InsertLBListenerParams struct {
@@ -614,6 +619,7 @@ type InsertLBListenerParams struct {
 	LbID       string
 	ListenerID string
 	Port       int32
+	Name       string
 }
 
 func (q *Queries) InsertLBListener(ctx context.Context, arg InsertLBListenerParams) error {
@@ -624,6 +630,7 @@ func (q *Queries) InsertLBListener(ctx context.Context, arg InsertLBListenerPara
 		arg.LbID,
 		arg.ListenerID,
 		arg.Port,
+		arg.Name,
 	)
 	return err
 }
@@ -742,7 +749,7 @@ func (q *Queries) ListLBBackendAttachments(ctx context.Context, arg ListLBBacken
 }
 
 const listLBComponents = `-- name: ListLBComponents :many
-SELECT tenant_id, cluster_id, namespace, lb_id, component_id, kind, member_id, provider_name, provider_uid, create_dispatched, pending_action, pending_since, target_version, applied_version, applied_config_version, deleted_at FROM network_lb_components WHERE tenant_id=$1 AND lb_id=$2 ORDER BY kind,component_id
+SELECT tenant_id, cluster_id, namespace, lb_id, component_id, kind, member_id, provider_name, provider_uid, create_dispatched, pending_action, pending_since, target_version, applied_version, applied_config_version, deleted_at, listener_id FROM network_lb_components WHERE tenant_id=$1 AND lb_id=$2 ORDER BY kind,component_id
 `
 
 type ListLBComponentsParams struct {
@@ -776,6 +783,7 @@ func (q *Queries) ListLBComponents(ctx context.Context, arg ListLBComponentsPara
 			&i.AppliedVersion,
 			&i.AppliedConfigVersion,
 			&i.DeletedAt,
+			&i.ListenerID,
 		); err != nil {
 			return nil, err
 		}

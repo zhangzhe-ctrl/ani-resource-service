@@ -12,6 +12,10 @@ import (
 
 func (p *KCProvider) lbGenerated(ctx context.Context, r lbResolved, o *biz.LoadBalancerObservation) error {
 	l := r.work.Resource.LoadBalancer.LoadBalancer
+	flavor, ok := biz.FindLoadBalancerFlavor(l.Flavor)
+	if !ok {
+		return &biz.ProviderError{Kind: biz.ProviderConflict}
+	}
 	namespace := r.binding.Namespace
 	gateway := lbFind(r.objects[lbGateways], namespace, r.binding.ProviderName)
 	uid := r.binding.ProviderUid
@@ -159,7 +163,7 @@ func (p *KCProvider) lbGenerated(ctx context.Context, r lbResolved, o *biz.LoadB
 		ipReleased = ipReleased && vipReleased
 	}
 	o.AddressReleased = o.GeneratedReleased && ipReleased
-	deploymentReady := deployment != nil && deployment.GetDeletionTimestamp() == nil && crInt(deployment, "spec", "replicas") == 2 && crInt(deployment, "status", "observedGeneration") == deployment.GetGeneration() && crInt(deployment, "status", "updatedReplicas") == 2 && crInt(deployment, "status", "availableReplicas") == 2
+	deploymentReady := deployment != nil && deployment.GetDeletionTimestamp() == nil && crInt(deployment, "spec", "replicas") == flavor.Replicas && crInt(deployment, "status", "observedGeneration") == deployment.GetGeneration() && crInt(deployment, "status", "updatedReplicas") == flavor.Replicas && crInt(deployment, "status", "availableReplicas") == flavor.Replicas
 	readyPods := 0
 	proxyByUID := map[string]*unstructured.Unstructured{}
 	for _, pod := range proxyPods {
@@ -198,11 +202,15 @@ func (p *KCProvider) lbGenerated(ctx context.Context, r lbResolved, o *biz.LoadB
 			c, _ := raw.(map[string]any)
 			if c["name"] == "envoy" {
 				obj := &unstructured.Unstructured{Object: c}
-				resourcesMatch = lbQuantityEquals(obj, "1", "resources", "requests", "cpu") && lbQuantityEquals(obj, "1Gi", "resources", "requests", "memory") && lbQuantityEquals(obj, "2", "resources", "limits", "cpu") && lbQuantityEquals(obj, "2Gi", "resources", "limits", "memory")
+				resourcesMatch = lbQuantityEquals(obj, flavor.RequestCPU, "resources", "requests", "cpu") && lbQuantityEquals(obj, flavor.RequestMemory, "resources", "requests", "memory") && lbQuantityEquals(obj, flavor.LimitCPU, "resources", "limits", "cpu") && lbQuantityEquals(obj, flavor.LimitMemory, "resources", "limits", "memory")
 			}
 		}
 	}
-	slicePods := map[string]bool{}
+	slicePods := map[uint32]map[string]bool{}
+	targetPorts, portsReady := lbServiceTargets(service, l, proxyByUID)
+	for target := range targetPorts {
+		slicePods[target] = map[string]bool{}
+	}
 	if service != nil {
 		for i := range r.objects[lbEndpointSlices] {
 			slice := &r.objects[lbEndpointSlices][i]
@@ -213,13 +221,18 @@ func (p *KCProvider) lbGenerated(ctx context.Context, r lbResolved, o *biz.LoadB
 				continue
 			}
 			ports, _, _ := unstructured.NestedSlice(slice.Object, "ports")
-			portOK := false
+			slicePorts := []uint32{}
 			for _, raw := range ports {
 				port, _ := raw.(map[string]any)
 				value, _, _ := unstructured.NestedInt64(port, "port")
-				portOK = portOK || (value == int64(l.Listener.Port) && port["protocol"] == "TCP")
+				name, _ := port["name"].(string)
+				if value > 0 && value <= 65535 && slicePods[uint32(value)] != nil && port["protocol"] == "TCP" && name == targetPorts[uint32(value)] {
+					slicePorts = append(slicePorts, uint32(value))
+				} else {
+					portsReady = false
+				}
 			}
-			if !portOK {
+			if len(slicePorts) == 0 {
 				continue
 			}
 			endpoints, _, _ := unstructured.NestedSlice(slice.Object, "endpoints")
@@ -234,12 +247,17 @@ func (p *KCProvider) lbGenerated(ctx context.Context, r lbResolved, o *biz.LoadB
 				}
 				addresses, _, _ := unstructured.NestedStringSlice(e, "addresses")
 				if len(addresses) == 1 && addresses[0] == crString(pod, "status", "podIP") && addresses[0] != "" {
-					slicePods[id] = true
+					for _, port := range slicePorts {
+						slicePods[port][id] = true
+					}
 				}
 			}
 		}
 	}
-	o.GeneratedReady = serviceReady && deploymentReady && readyPods == 2 && ipAllocated && resourcesMatch && len(slicePods) == 2
+	for _, pods := range slicePods {
+		portsReady = portsReady && int64(len(pods)) == flavor.Replicas
+	}
+	o.GeneratedReady = serviceReady && deploymentReady && int64(readyPods) == flavor.Replicas && ipAllocated && resourcesMatch && portsReady
 	return nil
 }
 func lbServiceConditions(obj *unstructured.Unstructured, kinds ...string) bool {
@@ -279,15 +297,91 @@ func lbServiceMatches(s *unstructured.Unstructured, r lbResolved) bool {
 	if annotations["networking.kubercloud.com/lb_vpc"] != r.vpc.Namespace+"/"+r.vpc.ProviderName || annotations["networking.kubercloud.com/subnet"] != r.subnet.Namespace+"/"+r.subnet.ProviderName || annotations["networking.kubercloud.com/lb_vip_address"] != vip || annotations["networking.kubercloud.com/lb_eips"] != r.eip.ProviderName {
 		return false
 	}
-	ports, _, _ := unstructured.NestedSlice(s.Object, "spec", "ports")
-	if len(ports) != 1 {
-		return false
-	}
-	port, _ := ports[0].(map[string]any)
-	p, _, _ := unstructured.NestedInt64(port, "port")
-	target, _, _ := unstructured.NestedInt64(port, "targetPort")
-	return p == int64(l.Listener.Port) && target == p && port["protocol"] == "TCP"
+	return true
 }
+
+// Service exposes listener ports, while EndpointSlices contain resolved Pod
+// target ports. Numeric and named targetPort mappings are both verified.
+func lbServiceTargets(s *unstructured.Unstructured, l biz.LoadBalancer, pods map[string]*unstructured.Unstructured) (map[uint32]string, bool) {
+	result := map[uint32]string{}
+	if s == nil {
+		return result, false
+	}
+	ports, _, _ := unstructured.NestedSlice(s.Object, "spec", "ports")
+	wanted := map[int64]bool{}
+	for _, listener := range biz.EffectiveLoadBalancerListeners(l) {
+		wanted[int64(listener.Port)] = true
+	}
+	if len(ports) != len(wanted) {
+		return result, false
+	}
+	for _, raw := range ports {
+		port, ok := raw.(map[string]any)
+		if !ok {
+			return result, false
+		}
+		exposed, _, _ := unstructured.NestedInt64(port, "port")
+		if !wanted[exposed] || port["protocol"] != "TCP" {
+			return result, false
+		}
+		delete(wanted, exposed)
+		target := exposed
+		if value, exists := port["targetPort"]; exists {
+			switch value := value.(type) {
+			case int64:
+				target = value
+			case string:
+				if len(pods) == 0 || value == "" {
+					return result, false
+				}
+				target = 0
+				for _, pod := range pods {
+					containers, _, _ := unstructured.NestedSlice(pod.Object, "spec", "containers")
+					resolved := int64(0)
+					for _, raw := range containers {
+						container, ok := raw.(map[string]any)
+						if !ok {
+							return result, false
+						}
+						if container["name"] != "envoy" {
+							continue
+						}
+						containerPorts, _, _ := unstructured.NestedSlice(container, "ports")
+						for _, raw := range containerPorts {
+							entry, ok := raw.(map[string]any)
+							if !ok {
+								return result, false
+							}
+							if entry["name"] == value {
+								number, _, _ := unstructured.NestedInt64(entry, "containerPort")
+								if resolved != 0 || (entry["protocol"] != nil && entry["protocol"] != "TCP") {
+									return result, false
+								}
+								resolved = number
+							}
+						}
+					}
+					if resolved == 0 || (target != 0 && target != resolved) {
+						return result, false
+					}
+					target = resolved
+				}
+			default:
+				return result, false
+			}
+		}
+		if target < 1 || target > 65535 {
+			return result, false
+		}
+		if _, exists := result[uint32(target)]; exists {
+			return result, false
+		}
+		name, _ := port["name"].(string)
+		result[uint32(target)] = name
+	}
+	return result, len(wanted) == 0
+}
+
 func lbEIPBound(eip, svc *unstructured.Unstructured, r lbResolved) bool {
 	if svc == nil || eip == nil {
 		return false

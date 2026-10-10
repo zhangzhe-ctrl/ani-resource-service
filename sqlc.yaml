@@ -10,6 +10,8 @@ sql:
       - migrations/0006_vpc_base_connectivity.sql
       - migrations/0007_load_balancers.sql
       - migrations/0008_lb_health_check_port.sql
+      - migrations/0009_lb_fixed_flavors.sql
+      - migrations/0010_lb_listeners.sql
     queries: internal/data/network/queries
     gen:
       go:

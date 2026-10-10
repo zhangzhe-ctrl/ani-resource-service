@@ -28,8 +28,12 @@ type LoadBalancerHealthInput struct {
 	Port                                                                  *uint32
 }
 type LoadBalancerListener struct {
-	ID   string
-	Port uint32
+	ID       string
+	Port     uint32
+	Name     string                `json:"Name,omitempty"`
+	Protocol string                `json:"Protocol,omitempty"`
+	Backends []LoadBalancerBackend `json:"Backends,omitempty"`
+	Health   LoadBalancerHealth    `json:"Health,omitzero"`
 }
 type LoadBalancerBackendInput struct {
 	ID, SubnetID, Address string
@@ -48,6 +52,7 @@ type LoadBalancer struct {
 	EgressMetadata
 	TenantID, VPCID, SubnetID, Exposure, Flavor, PublicEIPID, PrivateIP, PublicAddress string
 	Listener                                                                           LoadBalancerListener
+	Listeners                                                                          []LoadBalancerListener `json:"Listeners,omitempty"`
 	Backends                                                                           []LoadBalancerBackend
 	Health                                                                             LoadBalancerHealth
 	DesiredVersion, AppliedVersion                                                     int64
@@ -62,6 +67,8 @@ type LoadBalancerMutableInput struct {
 	Name, Description string
 	Backends          []LoadBalancerBackendInput
 	Health            LoadBalancerHealthInput
+	Listeners         []LoadBalancerListenerInput
+	UpdateMask        []string
 }
 type CreateLoadBalancer struct {
 	LoadBalancerMutableInput
@@ -84,6 +91,8 @@ type LoadBalancerIntent struct {
 	ListenerPort                                                                 uint32
 	Backends                                                                     []LoadBalancerBackend
 	Health                                                                       LoadBalancerHealth
+	Listeners                                                                    []LoadBalancerListener `json:"Listeners,omitempty"`
+	UpdateMask                                                                   []string               `json:"UpdateMask,omitempty"`
 }
 
 func (i LoadBalancerIntent) Fingerprint() string {
@@ -213,8 +222,11 @@ func (l *LoadBalancers) Create(ctx context.Context, r CreateLoadBalancer) (LoadB
 	if i.Flavor == "" {
 		i.Flavor = "small"
 	}
-	if i.Flavor != "small" || (r.ListenerProtocol != "" && r.ListenerProtocol != "HTTP") || i.ListenerPort == 0 || i.ListenerPort > 65535 {
-		return LoadBalancerResult{}, Fail(InvalidArgument, "only small with one HTTP listener on a valid port is supported")
+	if _, ok := FindLoadBalancerFlavor(i.Flavor); !ok {
+		return LoadBalancerResult{}, Fail(InvalidArgument, "flavor must be small, medium or large")
+	}
+	if (r.ListenerProtocol != "" && r.ListenerProtocol != "HTTP") || i.ListenerPort == 0 || i.ListenerPort > 65535 {
+		return LoadBalancerResult{}, Fail(InvalidArgument, "an HTTP listener on a valid port is required")
 	}
 	if i.Exposure != "private" && i.Exposure != "public" && i.Exposure != "public_private" {
 		return LoadBalancerResult{}, Fail(InvalidArgument, "invalid load balancer exposure")
@@ -231,7 +243,13 @@ func (l *LoadBalancers) Create(ctx context.Context, r CreateLoadBalancer) (LoadB
 			return LoadBalancerResult{}, Fail(InvalidArgument, "a canonical private IPv4 VIP is required")
 		}
 	}
-	if err = normalizeLBMutable(&i, r.LoadBalancerMutableInput, true); err != nil {
+	if r.Listeners != nil && (r.ListenerProtocol != "" || r.ListenerPort != nil) {
+		return LoadBalancerResult{}, Fail(InvalidArgument, "listeners cannot be combined with the legacy listener")
+	}
+	if r.Listeners != nil {
+		i.ListenerPort = 0
+	}
+	if err = normalizeLBInput(&i, r.LoadBalancerMutableInput, true); err != nil {
 		return LoadBalancerResult{}, err
 	}
 	return l.repository.AcceptLoadBalancer(ctx, i, a, l.freshness)
@@ -248,7 +266,7 @@ func (l *LoadBalancers) Update(ctx context.Context, r UpdateLoadBalancer) (LoadB
 		return LoadBalancerResult{}, Fail(InvalidArgument, "expected_version is required")
 	}
 	i := LoadBalancerIntent{TenantID: tenant, ID: r.ID, Kind: "update_load_balancer", IdempotencyKey: r.IdempotencyKey, ExpectedVersion: r.ExpectedVersion}
-	if err = normalizeLBMutable(&i, r.LoadBalancerMutableInput, false); err != nil {
+	if err = normalizeLBInput(&i, r.LoadBalancerMutableInput, false); err != nil {
 		return LoadBalancerResult{}, err
 	}
 	return l.repository.AcceptLoadBalancer(ctx, i, a, l.freshness)
@@ -266,6 +284,17 @@ func (l *LoadBalancers) observation(v LoadBalancer) LoadBalancer {
 		v.Backends[j].ObservationStale = stale(v.Backends[j].ObservedAt)
 		if v.Backends[j].ObservationStale {
 			v.Backends[j].State = "unknown"
+		}
+	}
+	v.Listeners = slices.Clone(v.Listeners)
+	for j := range v.Listeners {
+		v.Listeners[j].Backends = slices.Clone(v.Listeners[j].Backends)
+		for k := range v.Listeners[j].Backends {
+			b := &v.Listeners[j].Backends[k]
+			b.ObservationStale = stale(b.ObservedAt)
+			if b.ObservationStale {
+				b.State = "unknown"
+			}
 		}
 	}
 	return v
