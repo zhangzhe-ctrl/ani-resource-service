@@ -12,6 +12,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,6 +21,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	InstanceService_AdminListPresets_FullMethodName      = "/instance.v1.InstanceService/AdminListPresets"
+	InstanceService_AdminGetPreset_FullMethodName        = "/instance.v1.InstanceService/AdminGetPreset"
+	InstanceService_AdminCreatePreset_FullMethodName     = "/instance.v1.InstanceService/AdminCreatePreset"
+	InstanceService_AdminUpdatePreset_FullMethodName     = "/instance.v1.InstanceService/AdminUpdatePreset"
+	InstanceService_AdminSetPresetEnabled_FullMethodName = "/instance.v1.InstanceService/AdminSetPresetEnabled"
+	InstanceService_AdminDeletePreset_FullMethodName     = "/instance.v1.InstanceService/AdminDeletePreset"
+	InstanceService_GetInstanceRuntime_FullMethodName    = "/instance.v1.InstanceService/GetInstanceRuntime"
+	InstanceService_ListInstanceEvents_FullMethodName    = "/instance.v1.InstanceService/ListInstanceEvents"
+	InstanceService_StreamInstanceLogs_FullMethodName    = "/instance.v1.InstanceService/StreamInstanceLogs"
 	InstanceService_ListPresets_FullMethodName           = "/instance.v1.InstanceService/ListPresets"
 	InstanceService_ResolveCreateSpec_FullMethodName     = "/instance.v1.InstanceService/ResolveCreateSpec"
 	InstanceService_AcceptCreate_FullMethodName          = "/instance.v1.InstanceService/AcceptCreate"
@@ -39,8 +49,17 @@ const (
 // Trusted Governance listener only. Public HTTP DTOs exclude the frozen fields,
 // namespace, tenant, plan and original charges.
 type InstanceServiceClient interface {
+	AdminListPresets(ctx context.Context, in *AdminListPresetsRequest, opts ...grpc.CallOption) (*ListPresetsResponse, error)
+	AdminGetPreset(ctx context.Context, in *AdminGetPresetRequest, opts ...grpc.CallOption) (*Preset, error)
+	AdminCreatePreset(ctx context.Context, in *AdminCreatePresetRequest, opts ...grpc.CallOption) (*Preset, error)
+	AdminUpdatePreset(ctx context.Context, in *AdminUpdatePresetRequest, opts ...grpc.CallOption) (*Preset, error)
+	AdminSetPresetEnabled(ctx context.Context, in *AdminSetPresetEnabledRequest, opts ...grpc.CallOption) (*Preset, error)
+	AdminDeletePreset(ctx context.Context, in *AdminDeletePresetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	GetInstanceRuntime(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*InstanceRuntime, error)
+	ListInstanceEvents(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*InstanceEvents, error)
+	StreamInstanceLogs(ctx context.Context, in *StreamInstanceLogsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[InstanceLogFrame], error)
 	ListPresets(ctx context.Context, in *ListPresetsRequest, opts ...grpc.CallOption) (*ListPresetsResponse, error)
-	ResolveCreateSpec(ctx context.Context, in *ResolveCreateSpecRequest, opts ...grpc.CallOption) (*CreateBusiness, error)
+	ResolveCreateSpec(ctx context.Context, in *ResolveCreateSpecRequest, opts ...grpc.CallOption) (*CreateSpec, error)
 	AcceptCreate(ctx context.Context, in *AcceptCreateRequest, opts ...grpc.CallOption) (*OperationResponse, error)
 	AcceptDelete(ctx context.Context, in *AcceptDeleteRequest, opts ...grpc.CallOption) (*OperationResponse, error)
 	Start(ctx context.Context, in *ChangeInstanceRequest, opts ...grpc.CallOption) (*OperationResponse, error)
@@ -59,6 +78,105 @@ func NewInstanceServiceClient(cc grpc.ClientConnInterface) InstanceServiceClient
 	return &instanceServiceClient{cc}
 }
 
+func (c *instanceServiceClient) AdminListPresets(ctx context.Context, in *AdminListPresetsRequest, opts ...grpc.CallOption) (*ListPresetsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPresetsResponse)
+	err := c.cc.Invoke(ctx, InstanceService_AdminListPresets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) AdminGetPreset(ctx context.Context, in *AdminGetPresetRequest, opts ...grpc.CallOption) (*Preset, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Preset)
+	err := c.cc.Invoke(ctx, InstanceService_AdminGetPreset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) AdminCreatePreset(ctx context.Context, in *AdminCreatePresetRequest, opts ...grpc.CallOption) (*Preset, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Preset)
+	err := c.cc.Invoke(ctx, InstanceService_AdminCreatePreset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) AdminUpdatePreset(ctx context.Context, in *AdminUpdatePresetRequest, opts ...grpc.CallOption) (*Preset, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Preset)
+	err := c.cc.Invoke(ctx, InstanceService_AdminUpdatePreset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) AdminSetPresetEnabled(ctx context.Context, in *AdminSetPresetEnabledRequest, opts ...grpc.CallOption) (*Preset, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Preset)
+	err := c.cc.Invoke(ctx, InstanceService_AdminSetPresetEnabled_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) AdminDeletePreset(ctx context.Context, in *AdminDeletePresetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, InstanceService_AdminDeletePreset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) GetInstanceRuntime(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*InstanceRuntime, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InstanceRuntime)
+	err := c.cc.Invoke(ctx, InstanceService_GetInstanceRuntime_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) ListInstanceEvents(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*InstanceEvents, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InstanceEvents)
+	err := c.cc.Invoke(ctx, InstanceService_ListInstanceEvents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) StreamInstanceLogs(ctx context.Context, in *StreamInstanceLogsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[InstanceLogFrame], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &InstanceService_ServiceDesc.Streams[0], InstanceService_StreamInstanceLogs_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[StreamInstanceLogsRequest, InstanceLogFrame]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type InstanceService_StreamInstanceLogsClient = grpc.ServerStreamingClient[InstanceLogFrame]
+
 func (c *instanceServiceClient) ListPresets(ctx context.Context, in *ListPresetsRequest, opts ...grpc.CallOption) (*ListPresetsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPresetsResponse)
@@ -69,9 +187,9 @@ func (c *instanceServiceClient) ListPresets(ctx context.Context, in *ListPresets
 	return out, nil
 }
 
-func (c *instanceServiceClient) ResolveCreateSpec(ctx context.Context, in *ResolveCreateSpecRequest, opts ...grpc.CallOption) (*CreateBusiness, error) {
+func (c *instanceServiceClient) ResolveCreateSpec(ctx context.Context, in *ResolveCreateSpecRequest, opts ...grpc.CallOption) (*CreateSpec, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateBusiness)
+	out := new(CreateSpec)
 	err := c.cc.Invoke(ctx, InstanceService_ResolveCreateSpec_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -166,8 +284,17 @@ func (c *instanceServiceClient) ResolveTerminalTarget(ctx context.Context, in *R
 // Trusted Governance listener only. Public HTTP DTOs exclude the frozen fields,
 // namespace, tenant, plan and original charges.
 type InstanceServiceServer interface {
+	AdminListPresets(context.Context, *AdminListPresetsRequest) (*ListPresetsResponse, error)
+	AdminGetPreset(context.Context, *AdminGetPresetRequest) (*Preset, error)
+	AdminCreatePreset(context.Context, *AdminCreatePresetRequest) (*Preset, error)
+	AdminUpdatePreset(context.Context, *AdminUpdatePresetRequest) (*Preset, error)
+	AdminSetPresetEnabled(context.Context, *AdminSetPresetEnabledRequest) (*Preset, error)
+	AdminDeletePreset(context.Context, *AdminDeletePresetRequest) (*emptypb.Empty, error)
+	GetInstanceRuntime(context.Context, *GetInstanceRequest) (*InstanceRuntime, error)
+	ListInstanceEvents(context.Context, *GetInstanceRequest) (*InstanceEvents, error)
+	StreamInstanceLogs(*StreamInstanceLogsRequest, grpc.ServerStreamingServer[InstanceLogFrame]) error
 	ListPresets(context.Context, *ListPresetsRequest) (*ListPresetsResponse, error)
-	ResolveCreateSpec(context.Context, *ResolveCreateSpecRequest) (*CreateBusiness, error)
+	ResolveCreateSpec(context.Context, *ResolveCreateSpecRequest) (*CreateSpec, error)
 	AcceptCreate(context.Context, *AcceptCreateRequest) (*OperationResponse, error)
 	AcceptDelete(context.Context, *AcceptDeleteRequest) (*OperationResponse, error)
 	Start(context.Context, *ChangeInstanceRequest) (*OperationResponse, error)
@@ -186,10 +313,37 @@ type InstanceServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedInstanceServiceServer struct{}
 
+func (UnimplementedInstanceServiceServer) AdminListPresets(context.Context, *AdminListPresetsRequest) (*ListPresetsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminListPresets not implemented")
+}
+func (UnimplementedInstanceServiceServer) AdminGetPreset(context.Context, *AdminGetPresetRequest) (*Preset, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminGetPreset not implemented")
+}
+func (UnimplementedInstanceServiceServer) AdminCreatePreset(context.Context, *AdminCreatePresetRequest) (*Preset, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminCreatePreset not implemented")
+}
+func (UnimplementedInstanceServiceServer) AdminUpdatePreset(context.Context, *AdminUpdatePresetRequest) (*Preset, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminUpdatePreset not implemented")
+}
+func (UnimplementedInstanceServiceServer) AdminSetPresetEnabled(context.Context, *AdminSetPresetEnabledRequest) (*Preset, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminSetPresetEnabled not implemented")
+}
+func (UnimplementedInstanceServiceServer) AdminDeletePreset(context.Context, *AdminDeletePresetRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminDeletePreset not implemented")
+}
+func (UnimplementedInstanceServiceServer) GetInstanceRuntime(context.Context, *GetInstanceRequest) (*InstanceRuntime, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetInstanceRuntime not implemented")
+}
+func (UnimplementedInstanceServiceServer) ListInstanceEvents(context.Context, *GetInstanceRequest) (*InstanceEvents, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListInstanceEvents not implemented")
+}
+func (UnimplementedInstanceServiceServer) StreamInstanceLogs(*StreamInstanceLogsRequest, grpc.ServerStreamingServer[InstanceLogFrame]) error {
+	return status.Errorf(codes.Unimplemented, "method StreamInstanceLogs not implemented")
+}
 func (UnimplementedInstanceServiceServer) ListPresets(context.Context, *ListPresetsRequest) (*ListPresetsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPresets not implemented")
 }
-func (UnimplementedInstanceServiceServer) ResolveCreateSpec(context.Context, *ResolveCreateSpecRequest) (*CreateBusiness, error) {
+func (UnimplementedInstanceServiceServer) ResolveCreateSpec(context.Context, *ResolveCreateSpecRequest) (*CreateSpec, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResolveCreateSpec not implemented")
 }
 func (UnimplementedInstanceServiceServer) AcceptCreate(context.Context, *AcceptCreateRequest) (*OperationResponse, error) {
@@ -236,6 +390,161 @@ func RegisterInstanceServiceServer(s grpc.ServiceRegistrar, srv InstanceServiceS
 	}
 	s.RegisterService(&InstanceService_ServiceDesc, srv)
 }
+
+func _InstanceService_AdminListPresets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListPresetsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).AdminListPresets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_AdminListPresets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).AdminListPresets(ctx, req.(*AdminListPresetsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_AdminGetPreset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminGetPresetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).AdminGetPreset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_AdminGetPreset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).AdminGetPreset(ctx, req.(*AdminGetPresetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_AdminCreatePreset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminCreatePresetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).AdminCreatePreset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_AdminCreatePreset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).AdminCreatePreset(ctx, req.(*AdminCreatePresetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_AdminUpdatePreset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminUpdatePresetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).AdminUpdatePreset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_AdminUpdatePreset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).AdminUpdatePreset(ctx, req.(*AdminUpdatePresetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_AdminSetPresetEnabled_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminSetPresetEnabledRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).AdminSetPresetEnabled(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_AdminSetPresetEnabled_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).AdminSetPresetEnabled(ctx, req.(*AdminSetPresetEnabledRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_AdminDeletePreset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDeletePresetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).AdminDeletePreset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_AdminDeletePreset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).AdminDeletePreset(ctx, req.(*AdminDeletePresetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_GetInstanceRuntime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInstanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).GetInstanceRuntime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_GetInstanceRuntime_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).GetInstanceRuntime(ctx, req.(*GetInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_ListInstanceEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInstanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).ListInstanceEvents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_ListInstanceEvents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).ListInstanceEvents(ctx, req.(*GetInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_StreamInstanceLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamInstanceLogsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(InstanceServiceServer).StreamInstanceLogs(m, &grpc.GenericServerStream[StreamInstanceLogsRequest, InstanceLogFrame]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type InstanceService_StreamInstanceLogsServer = grpc.ServerStreamingServer[InstanceLogFrame]
 
 func _InstanceService_ListPresets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPresetsRequest)
@@ -425,6 +734,38 @@ var InstanceService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*InstanceServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "AdminListPresets",
+			Handler:    _InstanceService_AdminListPresets_Handler,
+		},
+		{
+			MethodName: "AdminGetPreset",
+			Handler:    _InstanceService_AdminGetPreset_Handler,
+		},
+		{
+			MethodName: "AdminCreatePreset",
+			Handler:    _InstanceService_AdminCreatePreset_Handler,
+		},
+		{
+			MethodName: "AdminUpdatePreset",
+			Handler:    _InstanceService_AdminUpdatePreset_Handler,
+		},
+		{
+			MethodName: "AdminSetPresetEnabled",
+			Handler:    _InstanceService_AdminSetPresetEnabled_Handler,
+		},
+		{
+			MethodName: "AdminDeletePreset",
+			Handler:    _InstanceService_AdminDeletePreset_Handler,
+		},
+		{
+			MethodName: "GetInstanceRuntime",
+			Handler:    _InstanceService_GetInstanceRuntime_Handler,
+		},
+		{
+			MethodName: "ListInstanceEvents",
+			Handler:    _InstanceService_ListInstanceEvents_Handler,
+		},
+		{
 			MethodName: "ListPresets",
 			Handler:    _InstanceService_ListPresets_Handler,
 		},
@@ -465,6 +806,12 @@ var InstanceService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _InstanceService_ResolveTerminalTarget_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamInstanceLogs",
+			Handler:       _InstanceService_StreamInstanceLogs_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "instance/v1/instance.proto",
 }

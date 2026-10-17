@@ -30,7 +30,7 @@ func NewGRPCServer(c *conf.Server_GRPC, readiness *Readiness, tlsConfig *tls.Con
 		kratosgrpc.Timeout(c.Timeout.AsDuration()),
 		kratosgrpc.TLSConfig(tlsConfig.Clone()),
 		kratosgrpc.UnaryInterceptor(governanceUnary(readOnly)),
-		kratosgrpc.StreamInterceptor(DenyGovernanceStreams),
+		kratosgrpc.StreamInterceptor(GovernanceStreams(readOnly)),
 		kratosgrpc.Options(grpc.UnknownServiceHandler(func(any, grpc.ServerStream) error {
 			return status.Error(codes.PermissionDenied, "internal RPC is not registered")
 		})),

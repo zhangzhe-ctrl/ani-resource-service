@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "modules": [
+    {
+      "module": "github.com/zhangzhe-ctrl/ani-accelerator-service",
+      "version": "v0.0.0-20261017194326-24820240a6b0",
+      "sum": "h1:xfAEkRpW7gvKvU0RAPdIgIaMoUCoJ4TV2uP4rAGAOzk=",
+      "go_mod_sum": "h1:88qTWpamcj3AopZ5MDK0NVO1KFhp0gWjZUTcJ4RVvdQ=",
+      "origin": {
+        "VCS": "git",
+        "URL": "https://github.com/zhangzhe-ctrl/ani-accelerator-service",
+        "Hash": "24820240a6b02bc82f922e98448b32a1451b81f8"
+      },
+      "license_status": "UNDECLARED"
+    },
+    {
+      "module": "github.com/zhangzhe-ctrl/ani-governance/api/quota",
+      "version": "v0.0.0-20261017184327-1c605c793b88",
+      "sum": "h1:U+d42xSPXbOP8hssY4GNoKhoSUe2RiI3sMuz3JxmBq0=",
+      "go_mod_sum": "h1:OmpTNUUTOEMzeXx5cOUdOYqNxrmA+KBthlt44mfZ4s8=",
+      "origin": {
+        "VCS": "git",
+        "URL": "https://github.com/zhangzhe-ctrl/ani-governance",
+        "Subdir": "api/quota",
+        "Hash": "1c605c793b88e460a84e64a88cbfa91c0a801afa"
+      },
+      "license_status": "UNDECLARED"
+    },
+    {
+      "module": "github.com/zhangzhe-ctrl/ani-resource-service/api/instance/terminal",
+      "version": "v0.0.0-20261013075021-0937f5aa9c6c",
+      "sum": "h1:+Z/R4AX9U0RpY+smnrCO9cVFTxLqjjp0r7NbUWdchNE=",
+      "go_mod_sum": "h1:8N+MSiQHH8SrwQ6HOvEunPq37KNHiTr2/78mhzraFSw=",
+      "origin": {
+        "VCS": "git",
+        "URL": "https://github.com/zhangzhe-ctrl/ani-resource-service",
+        "Subdir": "api/instance/terminal",
+        "Hash": "0937f5aa9c6cc21e5ee7d72e7aa2ba82dfc73717"
+      },
+      "license_status": "UNDECLARED"
+    }
+  ]
+}

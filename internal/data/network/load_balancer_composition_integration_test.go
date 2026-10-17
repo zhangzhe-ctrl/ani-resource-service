@@ -54,12 +54,21 @@ func TestLBPinsExistingAddressesAcrossBothDefaultPoolSwitchesAndClosure(t *testi
 	}
 	lb = lbState(t, f, lb.ID, biz.Available)
 	update := biz.UpdateLoadBalancer{ID: lb.ID, ExpectedVersion: lb.Version, IdempotencyKey: "update-after-pool-closure", LoadBalancerMutableInput: biz.LoadBalancerMutableInput{Health: f.request.Health, Name: "still-pinned", Backends: []biz.LoadBalancerBackendInput{{ID: lb.Backends[0].ID, SubnetID: lb.Backends[0].SubnetID, Address: lb.Backends[0].Address, Port: lb.Backends[0].Port}}}}
-	if _, err = f.lbs.Update(f.f.ctx, update); err != nil {
+	updated, err := f.lbs.Update(f.f.ctx, update)
+	if err != nil {
 		t.Fatal("allocation closure invalidated existing LB", err)
+	}
+	// Only metadata changed. Deferred activation advances the accepted version
+	// while retaining the already applied Provider configuration and addresses.
+	if updated.LoadBalancer.DesiredVersion != lb.DesiredVersion+1 || updated.LoadBalancer.ProviderTargetVersion != lb.ProviderTargetVersion {
+		t.Fatal("metadata update changed the pinned Provider configuration", updated)
 	}
 	f.f.drive(t, func() bool {
 		lb, err = f.lbs.Get(f.f.ctx, "", lb.ID)
-		return err == nil && lb.AppliedVersion == 2 && lb.State == biz.Available
+		return err == nil && lb.DesiredVersion == updated.LoadBalancer.DesiredVersion &&
+			lb.ProviderTargetVersion == updated.LoadBalancer.ProviderTargetVersion &&
+			lb.AppliedVersion == updated.LoadBalancer.ProviderTargetVersion && lb.Name == update.Name &&
+			lb.ConfigurationState == "configured" && lb.State == biz.Available
 	})
 	for i, on := range []bool{false, true, false} {
 		f.f.drive(t, func() bool {

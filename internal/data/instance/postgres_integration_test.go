@@ -97,15 +97,14 @@ func database(t *testing.T) *fixture {
 }
 func create() biz.Create {
 	tenant, id, op := uuid.NewString(), uuid.NewString(), uuid.NewString()
-	return biz.Create{TenantID: tenant, ID: id, OperationID: op, RequestHash: strings.Repeat("a", 64), BusinessDigest: strings.Repeat("b", 64), Charges: []biz.Charge{{ID: uuid.NewString(), Code: "gpu.shared_memory_mib", Units: 6144}}, Spec: biz.Spec{Name: "workspace", ImageID: uuid.NewString(), ImageScope: "platform", ImageReference: "registry.invalid/platform/workspace@sha256:" + strings.Repeat("c", 64), ImageDigest: "sha256:" + strings.Repeat("c", 64), PresetID: "shared", PresetVersion: 1, CPU: "1", Memory: "2Gi", UID: 1000, GID: 1000, Shell: "/bin/bash", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", ClusterID: uuid.NewString(), Namespace: "tenant-" + tenant, NotebookName: "instance-" + id, PVCName: "workspace-" + id, GPU: biz.GPU{Scheduler: "volcano", Queue: "default", Recipe: "volcano-hami-v1", Digest: strings.Repeat("d", 64), NodeLabels: map[string]string{"accelerator.ani.io/supply-group": "test"}, Annotations: map[string]string{"volcano.sh/vgpu-mode": "hami-core"}, Limits: map[string]string{"volcano.sh/vgpu-number": "1", "volcano.sh/vgpu-memory": "6", "volcano.sh/vgpu-cores": "25"}, Plan: json.RawMessage(`{"frozen_external_plan":true}`)}}}
+	return biz.Create{TenantID: tenant, ID: id, OperationID: op, RequestHash: strings.Repeat("a", 64), BusinessDigest: strings.Repeat("b", 64), Spec: biz.Spec{InstanceKind: biz.KindContainer, ComputeType: biz.TypeGPU, Scheduling: biz.Scheduling{PodPlacement: "NONE"}, Name: "workspace", ImageID: uuid.NewString(), ImageScope: "platform", ImageReference: "registry.invalid/platform/workspace@sha256:" + strings.Repeat("c", 64), ImageDigest: "sha256:" + strings.Repeat("c", 64), PresetID: "shared", CPU: "1", Memory: "2Gi", UID: 1000, GID: 1000, Shell: "/bin/bash", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", ClusterID: uuid.NewString(), Namespace: "tenant-" + tenant, NotebookName: "instance-" + id, PVCName: "workspace-" + id, GPU: biz.GPU{Scheduler: "volcano", RuntimeClass: "nvidia", Queue: "default", Digest: strings.Repeat("d", 64), NodeLabels: map[string]string{"accelerator.ani.io/supply-group": "test"}, Annotations: map[string]string{"volcano.sh/vgpu-mode": "hami-core"}, Limits: map[string]string{"volcano.sh/vgpu-number": "1", "volcano.sh/vgpu-memory": "6144", "volcano.sh/vgpu-cores": "25"}}}}
 }
 
 func cpuCreate() biz.Create {
 	c := create()
-	c.Spec.InstanceType = biz.TypeCPU
+	c.Spec.ComputeType = biz.TypeCPU
 	c.Spec.PresetID = "cpu-small"
 	c.Spec.GPU = biz.GPU{}
-	c.Charges = nil
 	return c
 }
 
@@ -129,12 +128,12 @@ func TestCPUInstancePersistentLifecycleAndTerminal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	w, _ := biz.NewWorker(f.repo, p, reporter, "cpu-worker")
+	w, _ := biz.NewWorker(f.repo, p, reporter, &releaseObservation{confirmed: true}, "cpu-worker")
 	var i biz.Instance
 	for n := 0; n < 3; n++ {
 		i = step(t, f, w, c)
 	}
-	if i.Observed != biz.Running || i.Spec.Type() != biz.TypeCPU || !i.Spec.GPU.Empty() || len(i.Charges) != 0 {
+	if i.Observed != biz.Running || i.Spec.ComputeType != biz.TypeCPU || !i.Spec.GPU.Empty() {
 		t.Fatal("CPU instance did not reach running with its fixed specification", i.Reason)
 	}
 	authority := service.NewTerminalValidation(f.repo, p)
@@ -170,7 +169,7 @@ func TestCPUInstancePersistentLifecycleAndTerminal(t *testing.T) {
 	if _, err := authority.ValidateTerminalTarget(ctx, target(i)); err != nil {
 		t.Fatal("new CPU terminal rejected", err)
 	}
-	d := biz.Delete{InstanceType: biz.TypeCPU, TenantID: c.TenantID, ID: c.ID, OperationID: uuid.NewString(), CreateOperationID: c.OperationID, RequestHash: strings.Repeat("e", 64), ExpectedVersion: i.Version}
+	d := biz.Delete{InstanceKind: biz.KindContainer, ComputeType: biz.TypeCPU, TenantID: c.TenantID, ID: c.ID, OperationID: uuid.NewString(), CreateOperationID: c.OperationID, RequestHash: strings.Repeat("e", 64), ExpectedVersion: i.Version}
 	if _, err := f.repo.AcceptDelete(ctx, d); err != nil {
 		t.Fatal("CPU delete required a GPU plan or ledger", err)
 	}
@@ -203,7 +202,7 @@ func TestCPUDeleteFirstAndUnknownCreate(t *testing.T) {
 	f := database(t)
 	ctx := context.Background()
 	c := cpuCreate()
-	d := biz.Delete{InstanceType: biz.TypeCPU, TenantID: c.TenantID, ID: c.ID, OperationID: uuid.NewString(), CreateOperationID: c.OperationID, RequestHash: strings.Repeat("e", 64)}
+	d := biz.Delete{InstanceKind: biz.KindContainer, ComputeType: biz.TypeCPU, TenantID: c.TenantID, ID: c.ID, OperationID: uuid.NewString(), CreateOperationID: c.OperationID, RequestHash: strings.Repeat("e", 64)}
 	ack, err := f.repo.AcceptDelete(ctx, d)
 	if err != nil {
 		t.Fatal(err)
@@ -220,7 +219,7 @@ func TestCPUDeleteFirstAndUnknownCreate(t *testing.T) {
 		t.Fatal("late CPU create did not receive its superseded ACK", err)
 	}
 	p, q := &provider{}, &quota{}
-	w, _ := biz.NewWorker(f.repo, p, q, "cpu-delete-first")
+	w, _ := biz.NewWorker(f.repo, p, q, &releaseObservation{confirmed: true}, "cpu-delete-first")
 	var i biz.Instance
 	for n := 0; n < 3; n++ {
 		i = step(t, f, w, c)
@@ -233,14 +232,14 @@ func TestCPUDeleteFirstAndUnknownCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 	p = &provider{unknown: true}
-	w, _ = biz.NewWorker(f.repo, p, q, "cpu-before-restart")
+	w, _ = biz.NewWorker(f.repo, p, q, &releaseObservation{confirmed: true}, "cpu-before-restart")
 	step(t, f, w, c)
 	i = step(t, f, w, c)
-	d = biz.Delete{InstanceType: biz.TypeCPU, TenantID: c.TenantID, ID: c.ID, OperationID: uuid.NewString(), CreateOperationID: c.OperationID, RequestHash: strings.Repeat("e", 64), ExpectedVersion: i.Version}
+	d = biz.Delete{InstanceKind: biz.KindContainer, ComputeType: biz.TypeCPU, TenantID: c.TenantID, ID: c.ID, OperationID: uuid.NewString(), CreateOperationID: c.OperationID, RequestHash: strings.Repeat("e", 64), ExpectedVersion: i.Version}
 	if _, err := f.repo.AcceptDelete(ctx, d); err != nil {
 		t.Fatal(err)
 	}
-	w, _ = biz.NewWorker(f.repo, p, q, "cpu-after-restart")
+	w, _ = biz.NewWorker(f.repo, p, q, &releaseObservation{confirmed: true}, "cpu-after-restart")
 	for n := 0; n < 3; n++ {
 		i = step(t, f, w, c)
 	}
@@ -386,7 +385,7 @@ func TestInstancePersistentLifecycle(t *testing.T) {
 	}
 	p := &provider{}
 	q := &quota{}
-	w, _ := biz.NewWorker(f.repo, p, q, "worker-1")
+	w, _ := biz.NewWorker(f.repo, p, q, &releaseObservation{confirmed: true}, "worker-1")
 	var i biz.Instance
 	for n := 0; n < 3; n++ {
 		i = step(t, f, w, c)
@@ -425,13 +424,13 @@ func TestInstancePersistentLifecycle(t *testing.T) {
 		command(t, f, c, i, "start")
 		i = step(t, f, w, c)
 		i = step(t, f, w, c)
-		if i.CreateOperationID != c.OperationID || !samePlan(i, c) || i.Observed != biz.Running || p.creates != 1 {
+		if i.CreateOperationID != c.OperationID || !sameSnapshot(i, c) || i.Observed != biz.Running || p.creates != 1 {
 			t.Fatal("start changed original freeze")
 		}
 	}
 	command(t, f, c, i, "delete")
 	p.obs.WorkspaceReason = "WORKSPACE_OBSERVATION_FAILED"
-	for n := 0; n < 5; n++ {
+	for n := 0; n < 6; n++ {
 		i = step(t, f, w, c)
 	}
 	if !i.ComputeCleaned || !i.QuotaReturned || i.WorkspaceCleaned || q.calls != 1 || i.Reason != "WORKSPACE_OBSERVATION_FAILED" {
@@ -466,11 +465,11 @@ func TestInstancePersistentLifecycle(t *testing.T) {
 	}
 	p2 := &provider{unknown: true}
 	q2 := &quota{}
-	w2, _ := biz.NewWorker(f.repo, p2, q2, "before-restart")
+	w2, _ := biz.NewWorker(f.repo, p2, q2, &releaseObservation{confirmed: true}, "before-restart")
 	step(t, f, w2, c2)
 	i = step(t, f, w2, c2)
 	command(t, f, c2, i, "delete")
-	w2, _ = biz.NewWorker(f.repo, p2, q2, "after-restart")
+	w2, _ = biz.NewWorker(f.repo, p2, q2, &releaseObservation{confirmed: true}, "after-restart")
 	for n := 0; n < 3; n++ {
 		i = step(t, f, w2, c2)
 	}
@@ -478,16 +477,16 @@ func TestInstancePersistentLifecycle(t *testing.T) {
 		t.Fatal("unknown CREATE incorrectly closed", i.Reason)
 	}
 }
-func samePlan(i biz.Instance, c biz.Create) bool {
+func sameSnapshot(i biz.Instance, c biz.Create) bool {
 	a, _ := json.Marshal(i.Spec)
 	b, _ := json.Marshal(c.Spec)
-	return string(a) == string(b) && len(i.Charges) == len(c.Charges) && i.Charges[0] == c.Charges[0]
+	return string(a) == string(b)
 }
 func TestInstanceDeleteFirstAndTenant(t *testing.T) {
 	f := database(t)
 	ctx := context.Background()
 	c := create()
-	d := biz.Delete{TenantID: c.TenantID, ID: c.ID, OperationID: uuid.NewString(), CreateOperationID: c.OperationID, RequestHash: strings.Repeat("e", 64), GPU: c.Spec.GPU, Charges: c.Charges}
+	d := biz.Delete{InstanceKind: biz.KindContainer, ComputeType: biz.TypeGPU, TenantID: c.TenantID, ID: c.ID, OperationID: uuid.NewString(), CreateOperationID: c.OperationID, RequestHash: strings.Repeat("e", 64)}
 	a, e := f.repo.AcceptDelete(ctx, d)
 	if e != nil {
 		t.Fatal(e)
@@ -505,7 +504,7 @@ func TestInstanceDeleteFirstAndTenant(t *testing.T) {
 	}
 	p := &provider{}
 	q := &quota{}
-	w, _ := biz.NewWorker(f.repo, p, q, "delete-first")
+	w, _ := biz.NewWorker(f.repo, p, q, &releaseObservation{confirmed: true}, "delete-first")
 	for n := 0; n < 3; n++ {
 		i = step(t, f, w, c)
 	}
@@ -526,23 +525,24 @@ func TestInstanceDeleteFirstAndTenant(t *testing.T) {
 // This substitutes only the remote Gov boundary. The production Resource
 // outbox, worker and terminal authority all share the restricted real PG repo.
 type releaseEndpoint struct {
-	request        *quotapb.ReportQuotaReleaseRequest
+	request        *quotapb.ReportResourceReleasedRequest
 	calls, applied int
+	wrongReceipt   bool
 }
 
-func (q *releaseEndpoint) ReportQuotaRelease(_ context.Context, r *quotapb.ReportQuotaReleaseRequest, _ ...grpc.CallOption) (*quotapb.ReportQuotaReleaseResponse, error) {
+func (q *releaseEndpoint) ReportResourceReleased(_ context.Context, r *quotapb.ReportResourceReleasedRequest, _ ...grpc.CallOption) (*quotapb.ReportResourceReleasedResponse, error) {
 	q.calls++
 	if q.request == nil {
-		q.request = proto.Clone(r).(*quotapb.ReportQuotaReleaseRequest)
+		q.request = proto.Clone(r).(*quotapb.ReportResourceReleasedRequest)
 		q.applied++
 		return nil, status.Error(codes.Unavailable, "response lost after commit")
 	}
 	if !proto.Equal(q.request, r) {
 		return nil, errors.New("release retry changed original event")
 	}
-	reply := new(quotapb.ReportQuotaReleaseResponse)
-	for _, c := range r.Items {
-		reply.Items = append(reply.Items, &quotapb.QuotaReleaseResult{ChargeId: c.ChargeId, ReleasedTotal: c.ReleasedTotal})
+	reply := &quotapb.ReportResourceReleasedResponse{ReleaseEventId: r.ReleaseEventId, CreateOperationId: r.CreateOperationId, ResourceId: r.ResourceId, Status: quotapb.ResourceReleaseStatus_ALREADY_APPLIED}
+	if q.wrongReceipt {
+		reply.ResourceId = uuid.NewString()
 	}
 	return reply, nil
 }
@@ -559,7 +559,7 @@ func TestInstanceReleaseRetryAndTerminalRevocation(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	worker, _ := biz.NewWorker(f.repo, p, reporter, "initial-worker")
+	worker, _ := biz.NewWorker(f.repo, p, reporter, &releaseObservation{confirmed: true}, "initial-worker")
 	var i biz.Instance
 	for n := 0; n < 3; n++ {
 		i = step(t, f, worker, c)
@@ -604,14 +604,14 @@ func TestInstanceReleaseRetryAndTerminalRevocation(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	worker, _ = biz.NewWorker(f.repo, p, reporter, "recovered-worker")
+	worker, _ = biz.NewWorker(f.repo, p, reporter, &releaseObservation{confirmed: true}, "recovered-worker")
 	for n := 0; n < 3; n++ {
 		i = step(t, f, worker, c)
 	}
 	if remote.calls != 2 || remote.applied != 1 || !i.QuotaReturned || i.WorkspaceCleaned || i.Observed == biz.Deleted {
 		t.Fatal("durable release retry/partial delete failed")
 	}
-	if remote.request.OperationId != c.OperationID || len(remote.request.Items) != len(c.Charges) || remote.request.Items[0].ChargeId != c.Charges[0].ID {
+	if remote.request.CreateOperationId != c.OperationID || remote.request.ResourceId != c.ID {
 		t.Fatal("release lost original ledger binding")
 	}
 	p.failPVC = false
@@ -679,5 +679,174 @@ func TestInstanceSupersededMutationAndLeaseFencing(t *testing.T) {
 	current, e = f.repo.Get(ctx, c.TenantID, c.ID)
 	if e != nil || current.Desired != biz.Running || current.Version != 3 {
 		t.Fatal("lease fence lost newest intent", e)
+	}
+}
+
+func TestResourceReleaseRequiresMatchingAck(t *testing.T) {
+	f := database(t)
+	ctx := context.Background()
+	c := create()
+	if _, e := f.repo.AcceptCreate(ctx, c); e != nil {
+		t.Fatal(e)
+	}
+	remote := &releaseEndpoint{wrongReceipt: true}
+	reporter, e := data.NewQuota(f.repo, remote)
+	if e != nil {
+		t.Fatal(e)
+	}
+	i, e := f.repo.Get(ctx, c.TenantID, c.ID)
+	if e != nil {
+		t.Fatal(e)
+	}
+	i.Desired = biz.Deleted
+	i.ComputeCleaned = true
+	if e = reporter.Report(ctx, i); e == nil {
+		t.Fatal("lost initial receipt accepted")
+	}
+	if e = reporter.Report(ctx, i); e == nil {
+		t.Fatal("mismatched resource ACK accepted")
+	}
+	var acknowledged bool
+	if e = f.runtime.QueryRow(ctx, "SELECT acknowledged FROM instance.instance_quota_release_outbox WHERE tenant_id=$1 AND instance_id=$2", i.TenantID, i.ID).Scan(&acknowledged); e != nil || acknowledged {
+		t.Fatal("mismatched outbox settled", e)
+	}
+	remote.wrongReceipt = false
+	if e = reporter.Report(ctx, i); e != nil {
+		t.Fatal(e)
+	}
+	if e = reporter.Report(ctx, i); e != nil || remote.calls != 3 || remote.applied != 1 {
+		t.Fatal("confirmed event retransmitted", e, remote.calls)
+	}
+}
+
+// Only ACC collection is substituted here; the fence and release outbox stay real.
+type releaseObservation struct {
+	confirmed bool
+	calls     int
+	scopes    []biz.Instance
+}
+
+func (r *releaseObservation) ObserveRelease(_ context.Context, i biz.Instance) (biz.ReleaseEvidence, error) {
+	r.calls++
+	r.scopes = append(r.scopes, i)
+	if i.ComputeSealAt.IsZero() || i.Pending != nil {
+		return biz.ReleaseEvidence{}, errors.New("unsealed physical scope")
+	}
+	return biz.ReleaseEvidence{Confirmed: r.confirmed, Digest: strings.Repeat("e", 64)}, nil
+}
+
+func TestGPUPhysicalReleaseRequiresDurableFenceAndCompleteEvidence(t *testing.T) {
+	f := database(t)
+	ctx := context.Background()
+	c := create()
+	if _, e := f.repo.AcceptCreate(ctx, c); e != nil {
+		t.Fatal(e)
+	}
+	provider := &provider{}
+	quota := &quota{}
+	releases := &releaseObservation{}
+	worker, _ := biz.NewWorker(f.repo, provider, quota, releases, "physical-owner")
+	var i biz.Instance
+	for n := 0; n < 3; n++ {
+		i = step(t, f, worker, c)
+	}
+	if !i.ExternalComputeStarted || len(i.GPUPods) != 1 {
+		t.Fatal("external scope was not durable", i.GPUPods)
+	}
+	command(t, f, c, i, "stop")
+	for n := 0; n < 2; n++ {
+		i = step(t, f, worker, c)
+	}
+	command(t, f, c, i, "start")
+	for n := 0; n < 2; n++ {
+		i = step(t, f, worker, c)
+	}
+	if len(i.GPUPods) != 2 {
+		t.Fatal("restart discarded prior Pod UID", i.GPUPods)
+	}
+	command(t, f, c, i, "delete")
+	i = step(t, f, worker, c)
+	i = step(t, f, worker, c)
+	if i.ComputeSealAt.IsZero() || i.ComputeCleaned || releases.calls != 0 || quota.calls != 0 {
+		t.Fatal("seal was not committed before ACC call")
+	}
+	sealed := i.ComputeSealAt
+	worker, _ = biz.NewWorker(f.repo, provider, quota, releases, "after-process-restart")
+	for n := 0; n < 3; n++ {
+		i = step(t, f, worker, c)
+	}
+	if i.ComputeCleaned || i.QuotaReturned || quota.calls != 0 || !i.ComputeSealAt.Equal(sealed) || len(releases.scopes[0].GPUPods) != 2 {
+		t.Fatal("API absence or unknown physical observation returned quota")
+	}
+	releases.confirmed = true
+	i = step(t, f, worker, c)
+	if !i.ComputeCleaned || i.PhysicalReleaseDigest == "" || quota.calls != 0 {
+		t.Fatal("confirmed physical fact was not persisted first")
+	}
+	i = step(t, f, worker, c)
+	if !i.QuotaReturned || quota.calls != 1 {
+		t.Fatal("physical confirmation did not unlock original release")
+	}
+}
+
+func TestGPUExternalScopeIsCommittedBeforeNotebookCall(t *testing.T) {
+	f := database(t)
+	ctx := context.Background()
+	c := create()
+	if _, e := f.repo.AcceptCreate(ctx, c); e != nil {
+		t.Fatal(e)
+	}
+	work, e := f.repo.Claim(ctx, "crashed-before-external-call", time.Minute)
+	if e != nil || work == nil {
+		t.Fatal(e)
+	}
+	work.Instance.GPUPods = []biz.PodRef{{ClusterID: c.Spec.ClusterID, Namespace: c.Spec.Namespace, Name: "pod", UID: "retired-pod", ContainerName: biz.Container}}
+	m := biz.Mutation{Kind: "create_notebook", OperationID: work.Instance.LastOperationID, Version: work.Instance.Version}
+	if e = f.repo.BeginMutation(ctx, *work, m); e != nil {
+		t.Fatal(e)
+	}
+	i, e := f.repo.Get(ctx, c.TenantID, c.ID)
+	if e != nil || !i.ExternalComputeStarted || i.Pending == nil || len(i.GPUPods) != 1 {
+		t.Fatal("process death before Finish lost external write scope", e)
+	}
+	remote := &releaseEndpoint{}
+	reporter, _ := data.NewQuota(f.repo, remote)
+	i.Pending = nil
+	i.Desired = biz.Deleted
+	i.ComputeCleaned = true
+	if e = reporter.Report(ctx, i); e == nil || remote.calls != 0 {
+		t.Fatal("outbox bypassed physical gate")
+	}
+}
+
+func TestGPUCreatedWithoutSeenPodStillRequiresOwnerWidePhysicalObservation(t *testing.T) {
+	f := database(t)
+	ctx := context.Background()
+	c := create()
+	if _, e := f.repo.AcceptCreate(ctx, c); e != nil {
+		t.Fatal(e)
+	}
+	provider := &provider{}
+	quota := &quota{}
+	releases := &releaseObservation{}
+	worker, _ := biz.NewWorker(f.repo, provider, quota, releases, "unallocated-owner")
+	_ = step(t, f, worker, c)
+	i := step(t, f, worker, c)
+	provider.obs.PodExists = false
+	provider.obs.PodReady = false
+	provider.obs.PodName = ""
+	provider.obs.PodUID = ""
+	command(t, f, c, i, "delete")
+	for n := 0; n < 5; n++ {
+		i = step(t, f, worker, c)
+	}
+	if len(i.GPUPods) != 0 || releases.calls == 0 || !i.ExternalComputeStarted || i.ComputeCleaned || quota.calls != 0 {
+		t.Fatal("unseen or unallocated Pod skipped owner-wide evidence")
+	}
+	releases.confirmed = true
+	i = step(t, f, worker, c)
+	i = step(t, f, worker, c)
+	if !i.ComputeCleaned || !i.QuotaReturned || quota.calls != 1 {
+		t.Fatal("complete owner-wide no-allocation evidence cannot close Pending")
 	}
 }

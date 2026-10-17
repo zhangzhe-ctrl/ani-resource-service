@@ -9,7 +9,7 @@ import (
 
 func TestCPUAdmissionRejectsGPUState(t *testing.T) {
 	const id = "11111111-1111-4111-8111-111111111111"
-	c := Create{TenantID: id, ID: id, OperationID: id, RequestHash: strings.Repeat("a", 64), BusinessDigest: strings.Repeat("b", 64), Spec: Spec{InstanceType: TypeCPU, ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("c", 64), ImageDigest: "sha256:" + strings.Repeat("c", 64), CPU: "1", Memory: "2Gi", UID: 1000, GID: 1000, Shell: "/bin/bash", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", ClusterID: id, Namespace: "tenant-" + id, NotebookName: "instance-" + id, PVCName: "workspace-" + id}}
+	c := Create{TenantID: id, ID: id, OperationID: id, RequestHash: strings.Repeat("a", 64), BusinessDigest: strings.Repeat("b", 64), Spec: Spec{InstanceKind: KindContainer, Scheduling: Scheduling{PodPlacement: "NONE"}, ComputeType: TypeCPU, ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("c", 64), ImageDigest: "sha256:" + strings.Repeat("c", 64), CPU: "1", Memory: "2Gi", UID: 1000, GID: 1000, Shell: "/bin/bash", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", ClusterID: id, Namespace: "tenant-" + id, NotebookName: "instance-" + id, PVCName: "workspace-" + id}}
 	if err := ValidateCreate(c); err != nil {
 		t.Fatal("fixed CPU specification rejected", err)
 	}
@@ -27,15 +27,13 @@ func TestCPUAdmissionRejectsGPUState(t *testing.T) {
 		t.Fatal("persisted CPU snapshot gained a GPU plan", err)
 	}
 	for name, mutate := range map[string]func(*Create){
-		"plan":              func(c *Create) { c.Spec.GPU.Plan = json.RawMessage(`{}`) },
-		"limit":             func(c *Create) { c.Spec.GPU.Limits = map[string]string{"volcano.sh/vgpu-number": "1"} },
-		"selector":          func(c *Create) { c.Spec.GPU.NodeLabels = map[string]string{"gpu": "true"} },
-		"annotation":        func(c *Create) { c.Spec.GPU.Annotations = map[string]string{"volcano.sh/vgpu-mode": "hami-core"} },
-		"scheduler":         func(c *Create) { c.Spec.GPU.Scheduler = "volcano" },
-		"queue":             func(c *Create) { c.Spec.GPU.Queue = "default" },
-		"charge":            func(c *Create) { c.Charges = []Charge{{ID: id, Code: "gpu.shared_memory_mib", Units: 1}} },
-		"unknown type":      func(c *Create) { c.Spec.InstanceType = "automatic" },
-		"empty legacy type": func(c *Create) { c.Spec.InstanceType = "" },
+		"limit":              func(c *Create) { c.Spec.GPU.Limits = map[string]string{"volcano.sh/vgpu-number": "1"} },
+		"selector":           func(c *Create) { c.Spec.GPU.NodeLabels = map[string]string{"gpu": "true"} },
+		"annotation":         func(c *Create) { c.Spec.GPU.Annotations = map[string]string{"volcano.sh/vgpu-mode": "hami-core"} },
+		"scheduler":          func(c *Create) { c.Spec.GPU.Scheduler = "volcano" },
+		"queue":              func(c *Create) { c.Spec.GPU.Queue = "default" },
+		"unknown type":       func(c *Create) { c.Spec.ComputeType = "automatic" },
+		"empty compute type": func(c *Create) { c.Spec.ComputeType = "" },
 	} {
 		t.Run(name, func(t *testing.T) {
 			changed := c
@@ -45,15 +43,11 @@ func TestCPUAdmissionRejectsGPUState(t *testing.T) {
 			}
 		})
 	}
-	d := Delete{InstanceType: TypeCPU, TenantID: id, ID: id, OperationID: id, CreateOperationID: id, RequestHash: c.RequestHash}
+	d := Delete{InstanceKind: KindContainer, ComputeType: TypeCPU, TenantID: id, ID: id, OperationID: id, CreateOperationID: id, RequestHash: c.RequestHash}
 	if err := ValidateDelete(d); err != nil {
 		t.Fatal("CPU delete required a GPU plan", err)
 	}
-	d.GPU.Digest = strings.Repeat("d", 64)
-	if err := ValidateDelete(d); !errors.Is(err, ErrInvalid) {
-		t.Fatal("CPU delete accepted a GPU binding", err)
-	}
-	if (Spec{}).Type() != TypeGPU || (Delete{}).Type() != TypeGPU {
-		t.Fatal("historical GPU snapshot type changed")
+	if err := ValidateCreate(Create{}); !errors.Is(err, ErrInvalid) {
+		t.Fatal("missing instance classification accepted")
 	}
 }

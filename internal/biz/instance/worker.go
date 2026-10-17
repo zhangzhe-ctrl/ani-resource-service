@@ -10,14 +10,15 @@ type Worker struct {
 	repo     Repository
 	provider Provider
 	quota    QuotaReporter
+	releases PhysicalReleaseObserver
 	owner    string
 }
 
-func NewWorker(r Repository, p Provider, q QuotaReporter, owner string) (*Worker, error) {
-	if r == nil || p == nil || q == nil || owner == "" {
+func NewWorker(r Repository, p Provider, q QuotaReporter, releases PhysicalReleaseObserver, owner string) (*Worker, error) {
+	if r == nil || p == nil || q == nil || releases == nil || owner == "" {
 		return nil, ErrInvalid
 	}
-	return &Worker{r, p, q, owner}, nil
+	return &Worker{r, p, q, releases, owner}, nil
 }
 func (w *Worker) Step(ctx context.Context) (bool, error) {
 	work, err := w.repo.Claim(ctx, w.owner, 45*time.Second)
@@ -32,8 +33,21 @@ func (w *Worker) Step(ctx context.Context) (bool, error) {
 	if i.Spec.NotebookName != "" {
 		obs, err = w.provider.Observe(ctx, i)
 	}
+	p.Instance.GPUPods = MergePodRefs(i.GPUPods, obs.GPUPods)
+	if i.Spec.ComputeType == TypeGPU && obs.PodUID != "" {
+		p.Instance.GPUPods = MergePodRefs(p.Instance.GPUPods, []PodRef{{i.Spec.ClusterID, i.Spec.Namespace, obs.PodName, obs.PodUID, Container}})
+	}
+	if obs.NotebookExists || obs.PodExists || obs.StatefulSetUID != "" {
+		p.Instance.ExternalComputeStarted = true
+		p.Instance.ComputeSealAt = time.Time{}
+		p.Instance.PhysicalReleaseDigest = ""
+		p.Instance.ComputeCleaned = false
+	}
 	if err != nil {
 		p.Instance.Reason = "PROVIDER_OBSERVATION_FAILED"
+		if errors.Is(err, ErrSchedulingConflict) {
+			p.Instance.Reason = "SCHEDULING_FIELD_CONFLICT"
+		}
 		return true, w.repo.Finish(ctx, *work, p)
 	}
 	if obs.NotebookExists {
@@ -82,6 +96,12 @@ func (w *Worker) Step(ctx context.Context) (bool, error) {
 		if kind == "delete_workspace" {
 			m.TargetUID = obs.PVCUID
 		}
+		if kind == "create_notebook" {
+			p.Instance.ExternalComputeStarted = true
+		}
+		// The admission/lease transaction commits both the external-write marker
+		// and every observed Pod before this call can reach Kubernetes.
+		work.Instance = p.Instance
 		if err := w.repo.BeginMutation(ctx, *work, m); err != nil {
 			if errors.Is(err, ErrVersion) || errors.Is(err, ErrLease) {
 				return true, nil
@@ -111,13 +131,26 @@ func (w *Worker) Step(ctx context.Context) (bool, error) {
 			p.Instance.Reason = "WAITING_FOR_COMPUTE_CLEANUP"
 			return true, w.repo.Finish(ctx, *work, p)
 		}
+		if i.Spec.ComputeType == TypeGPU && p.Instance.ExternalComputeStarted && !i.ComputeCleaned {
+			if i.ComputeSealAt.IsZero() {
+				p.Instance.ComputeSealAt = time.Now().UTC()
+				p.Instance.Reason = "WAITING_FOR_PHYSICAL_RELEASE"
+				return true, w.repo.Finish(ctx, *work, p)
+			}
+			evidence, e := w.releases.ObserveRelease(ctx, p.Instance)
+			if e != nil || !evidence.Confirmed || !digest64.MatchString(evidence.Digest) {
+				p.Instance.Reason = "WAITING_FOR_PHYSICAL_RELEASE"
+				return true, w.repo.Finish(ctx, *work, p)
+			}
+			p.Instance.PhysicalReleaseDigest = evidence.Digest
+		}
 		p.Instance.ComputeCleaned = true
 		if !i.ComputeCleaned {
 			return true, w.repo.Finish(ctx, *work, p)
 		}
-		// A stable event is rebuilt from original CREATE/charges; PVC errors do not hold GPU quota.
+		// A stable event is rebuilt from the original CREATE identity; PVC errors do not hold GPU quota.
 		if !i.QuotaReturned {
-			if i.Spec.Type() == TypeCPU {
+			if i.Spec.ComputeType == TypeCPU {
 				p.Instance.QuotaReturned = true
 			} else if err := w.quota.Report(ctx, p.Instance); err != nil {
 				p.Instance.Reason = "QUOTA_RETURN_PENDING"

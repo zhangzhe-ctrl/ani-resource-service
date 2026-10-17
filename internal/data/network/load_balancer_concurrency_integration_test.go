@@ -197,12 +197,13 @@ func TestLBUpdateContendsWithParentDeletionInBothOrders(t *testing.T) {
 				if _, err = tx.Exec(f.f.ctx, `SELECT vpc_id FROM network_vpcs WHERE tenant_id=$1 AND vpc_id=$2 FOR UPDATE`, f.f.tenant, f.vpc.ID); err != nil {
 					t.Fatal(err)
 				}
+				var updated biz.LoadBalancerResult
 				results := map[string]chan error{"update": make(chan error, 1), "delete": make(chan error, 1)}
 				start := func(kind string) {
 					go func() {
 						var e error
 						if kind == "update" {
-							_, e = f.lbs.Update(f.f.ctx, update)
+							updated, e = f.lbs.Update(f.f.ctx, update)
 						} else if parent == "vpc" {
 							_, e = f.f.n.DeleteVPC(f.f.ctx, f.f.tenant, f.vpc.ID)
 						} else {
@@ -235,9 +236,15 @@ func TestLBUpdateContendsWithParentDeletionInBothOrders(t *testing.T) {
 				if err = <-results["delete"]; biz.ReasonOf(err) != biz.ResourceInUse {
 					t.Fatal("referenced parent deletion accepted", err)
 				}
+				if updated.LoadBalancer.DesiredVersion != lb.DesiredVersion+1 || updated.LoadBalancer.ProviderTargetVersion != lb.ProviderTargetVersion {
+					t.Fatal("metadata update changed the Provider configuration", updated)
+				}
 				f.f.drive(t, func() bool {
 					current, e := f.lbs.Get(f.f.ctx, "", lb.ID)
-					return e == nil && current.AppliedVersion == 2 && current.State == biz.Available
+					return e == nil && current.DesiredVersion == updated.LoadBalancer.DesiredVersion &&
+						current.ProviderTargetVersion == updated.LoadBalancer.ProviderTargetVersion &&
+						current.AppliedVersion == updated.LoadBalancer.ProviderTargetVersion && current.Name == update.Name &&
+						current.ConfigurationState == "configured" && current.State == biz.Available
 				})
 				v, e := f.f.n.GetVPC(f.f.ctx, f.f.tenant, f.vpc.ID)
 				if e != nil || v.State != biz.Available {

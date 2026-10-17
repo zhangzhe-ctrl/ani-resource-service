@@ -2,48 +2,56 @@ package instance
 
 import (
 	"context"
-	"strings"
-	"testing"
-
-	attachment "github.com/zhangzhe-ctrl/ani-accelerator-service/api/gen/go/accelerator/integration/v1"
 	acc "github.com/zhangzhe-ctrl/ani-accelerator-service/api/gen/go/accelerator/v1"
 	pb "github.com/zhangzhe-ctrl/ani-resource-service/api/instance/v1"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/instance"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"strings"
+	"testing"
 )
 
-// These tests stop at the outbound repository boundary. Durable admission and
-// fixed-type conflict handling are exercised by the real PostgreSQL tests.
+// Only external persistence/image/environment boundaries are replaced here.
+// The same intake is exercised against real PostgreSQL in instanceintegration.
 type cpuIntake struct {
 	biz.Repository
+	biz.PresetRepository
+	preset  biz.Preset
 	creates []biz.Create
 	deletes []biz.Delete
 }
 
 func (r *cpuIntake) AcceptCreate(_ context.Context, c biz.Create) (biz.ACK, error) {
-	if err := biz.ValidateCreate(c); err != nil {
-		return biz.ACK{}, err
+	if e := biz.ValidateCreate(c); e != nil {
+		return biz.ACK{}, e
 	}
 	r.creates = append(r.creates, c)
 	return biz.ACK{OperationID: c.OperationID, ResourceID: c.ID, Accepted: true}, nil
 }
-
 func (r *cpuIntake) AcceptDelete(_ context.Context, d biz.Delete) (biz.ACK, error) {
-	if err := biz.ValidateDelete(d); err != nil {
-		return biz.ACK{}, err
+	if e := biz.ValidateDelete(d); e != nil {
+		return biz.ACK{}, e
 	}
 	r.deletes = append(r.deletes, d)
 	return biz.ACK{OperationID: d.OperationID, ResourceID: d.ID, Accepted: true}, nil
+}
+func (r *cpuIntake) GetPreset(_ context.Context, id string) (biz.Preset, error) {
+	if id != r.preset.ID {
+		return biz.Preset{}, biz.ErrNotFound
+	}
+	return r.preset, nil
+}
+func (r *cpuIntake) ListPresets(context.Context, biz.PresetFilter) ([]biz.Preset, int64, bool, error) {
+	return []biz.Preset{r.preset}, 1, false, nil
 }
 
 type cpuImageBoundary struct{ calls int }
 
 func (r *cpuImageBoundary) Resolve(context.Context, string, string, string) (biz.ResolvedImage, error) {
 	r.calls++
-	digest := "sha256:" + strings.Repeat("a", 64)
-	return biz.ResolvedImage{Reference: "registry.invalid/work@" + digest, Digest: digest}, nil
+	d := "sha256:" + strings.Repeat("a", 64)
+	return biz.ResolvedImage{Reference: "registry.invalid/work@" + d, Digest: d}, nil
 }
 
 type cpuEnvironmentBoundary struct{ calls int }
@@ -52,105 +60,68 @@ func (r *cpuEnvironmentBoundary) ValidateEnvironment(context.Context, string, st
 	r.calls++
 	return nil
 }
-
-func TestCPUServiceFrozenResolutionAndIntake(t *testing.T) {
+func testGPU() *acc.GpuExecution {
+	g := &acc.GpuExecution{SchedulerName: "volcano", QueueName: "default", RuntimeClassName: "nvidia", NodeSelector: map[string]string{"accelerator.ani.io/supply-group": "group", "accelerator.ani.io/model-key": "t4", "accelerator.ani.io/baseline-id": "config"}, PodAnnotations: map[string]string{"volcano.sh/vgpu-mode": "hami-core"}, Resources: map[string]string{"volcano.sh/vgpu-number": "1", "volcano.sh/vgpu-memory": "8192", "volcano.sh/vgpu-cores": "25"}}
+	g.ExecutionDigest, _ = pb.ExecutionDigest(g)
+	return g
+}
+func TestTrustedCPUAndGPUIntake(t *testing.T) {
 	const tenant = "11111111-1111-4111-8111-111111111111"
 	const resource = "22222222-2222-4222-8222-222222222222"
 	const operation = "33333333-3333-4333-8333-333333333333"
-	const actor = "governance:user:42"
-	repo, images, environment := &cpuIntake{}, &cpuImageBoundary{}, &cpuEnvironmentBoundary{}
-	s, err := NewService(repo, images, environment, Config{NamespacePrefix: "tenant-", ClusterID: tenant, ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", Shell: "/bin/bash", UID: 1000, GID: 1000, Presets: []*pb.Preset{{Id: "cpu", Version: 1, Name: "CPU", Cpu: "1", Memory: "2Gi", InstanceType: biz.TypeCPU}}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx := biz.WithCaller(context.Background(), biz.Caller{TenantID: tenant, Actor: actor})
-	presets, err := s.ListPresets(ctx, &pb.ListPresetsRequest{TenantId: tenant})
-	if err != nil || len(presets.Items) != 1 || presets.Items[0].InstanceType != biz.TypeCPU || presets.Items[0].Gpu != nil {
-		t.Fatal("CPU preset not exposed without GPU dependencies", presets, err)
-	}
-	business, err := s.ResolveCreateSpec(ctx, &pb.ResolveCreateSpecRequest{TenantId: tenant, Data: &pb.CreateInstanceData{Name: "cpu-work", ImageId: "img_" + strings.Repeat("a", 32), ImageScope: "platform", PresetId: "cpu", PresetVersion: 1}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if business.Gpu != nil || business.Spec.InstanceType != biz.TypeCPU || business.Spec.Cpu != "1" || business.Spec.Memory != "2Gi" || business.Spec.Namespace != "tenant-"+tenant || images.calls != 1 || environment.calls != 1 {
-		t.Fatal("CPU resolution did not freeze the configured runtime and external image", business)
-	}
-	digest, err := pb.BusinessPayloadDigest(business)
-	if err != nil {
-		t.Fatal(err)
-	}
-	request := &pb.AcceptCreateRequest{TenantId: tenant, OperationId: operation, Business: business, CpuOwnerAttachment: &pb.CpuOwnerCreateAttachment{ResourceId: resource, RequestHash: strings.Repeat("b", 64), BusinessPayloadDigest: digest, Actor: actor}}
-	accepted, err := s.AcceptCreate(ctx, request)
-	if err != nil || accepted.GetDurableOwnerAck().GetResourceId() != resource || !accepted.GetDurableOwnerAck().GetAccepted() || len(repo.creates) != 1 {
-		t.Fatal("trusted CPU create did not reach the repository", accepted, err)
-	}
-	c := repo.creates[0]
-	if c.TenantID != tenant || c.ID != resource || c.OperationID != operation || c.Spec.Type() != biz.TypeCPU || !c.Spec.GPU.Empty() || len(c.Charges) != 0 || c.Spec.NotebookName != "instance-"+resource || c.Spec.PVCName != "workspace-"+resource {
-		t.Fatal("CPU intake gained GPU state or lost its trusted identity", c)
-	}
-	for name, mutate := range map[string]func(*pb.AcceptCreateRequest){
-		"mixed attachments": func(r *pb.AcceptCreateRequest) { r.GpuOwnerAttachment = &attachment.GpuOwnerCreateAttachment{} },
-		"GPU charge": func(r *pb.AcceptCreateRequest) {
-			r.OriginalCharges = []*pb.OriginalQuotaCharge{{ChargeId: resource, QuotaCode: "gpu.shared_memory_mib", OriginalUnits: 1}}
-		},
-		"GPU request in CPU business":            func(r *pb.AcceptCreateRequest) { r.Business.Gpu = &acc.GpuRequest{} },
-		"GPU type through CPU attachment":        func(r *pb.AcceptCreateRequest) { r.Business.Spec.InstanceType = biz.TypeGPU },
-		"legacy GPU type through CPU attachment": func(r *pb.AcceptCreateRequest) { r.Business.Spec.InstanceType = "" },
-		"CPU type through GPU attachment": func(r *pb.AcceptCreateRequest) {
-			r.CpuOwnerAttachment = nil
-			r.GpuOwnerAttachment = &attachment.GpuOwnerCreateAttachment{}
-		},
-		"changed frozen business": func(r *pb.AcceptCreateRequest) { r.Business.Spec.Cpu = "2" },
-	} {
-		t.Run(name, func(t *testing.T) {
-			changed := proto.Clone(request).(*pb.AcceptCreateRequest)
-			mutate(changed)
-			if _, err := s.AcceptCreate(ctx, changed); status.Code(err) != codes.InvalidArgument {
-				t.Fatal("invalid CPU/GPU transport combination reached intake", err)
+	for _, kind := range []string{biz.TypeCPU, biz.TypeGPU} {
+		t.Run(kind, func(t *testing.T) {
+			repo := &cpuIntake{preset: biz.Preset{ID: resource, Code: "small", Name: "small", ComputeType: kind, CPUMillis: 4000, MemoryMiB: 8192, Enabled: true}}
+			if kind == biz.TypeGPU {
+				repo.preset.GPU = &biz.GPUReference{ProfileID: resource, ProfileVersion: 1, SpecDigest: strings.Repeat("b", 64), DevicesPerInstance: 1, ClusterID: tenant, PoolID: tenant, Mode: "SHARED_FIXED", ModelKey: "t4", MemoryMiBPerDevice: 8192, CoreLimitPercent: 25}
 			}
-			if len(repo.creates) != 1 {
-				t.Fatal("rejected create reached persistence")
+			images, environment := &cpuImageBoundary{}, &cpuEnvironmentBoundary{}
+			s, e := NewService(repo, images, environment, Config{NamespacePrefix: "tenant-", ClusterID: tenant, ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", Shell: "/bin/bash", UID: 1000, GID: 1000})
+			if e != nil {
+				t.Fatal(e)
 			}
-		})
-	}
-	wrongActor := proto.Clone(request).(*pb.AcceptCreateRequest)
-	wrongActor.CpuOwnerAttachment.Actor = "governance:user:other"
-	if _, err := s.AcceptCreate(ctx, wrongActor); status.Code(err) != codes.PermissionDenied {
-		t.Fatal("CPU attachment actor was not bound to the trusted caller", err)
-	}
-	foreign := biz.WithCaller(context.Background(), biz.Caller{TenantID: resource, Actor: actor})
-	for name, caller := range map[string]context.Context{"missing caller": context.Background(), "foreign tenant": foreign} {
-		t.Run(name, func(t *testing.T) {
-			if _, err := s.AcceptCreate(caller, request); status.Code(err) != codes.PermissionDenied {
-				t.Fatal("CPU admission ignored trusted tenant scope", err)
+			ctx := biz.WithCaller(context.Background(), biz.Caller{TenantID: tenant, Actor: "governance:user:42"})
+			resolved, e := s.ResolveCreateSpec(ctx, &pb.ResolveCreateSpecRequest{TenantId: tenant, Data: &pb.CreateInstanceData{Name: "work", ImageId: "img_" + strings.Repeat("a", 32), ImageScope: "platform", PresetId: resource}})
+			if e != nil {
+				t.Fatal(e)
 			}
-			if _, err := s.ResolveCreateSpec(caller, &pb.ResolveCreateSpecRequest{TenantId: tenant, Data: business.Data}); status.Code(err) != codes.PermissionDenied {
-				t.Fatal("CPU resolution ignored trusted tenant scope", err)
+			if images.calls != 1 || environment.calls != 1 || resolved.Cpu != "4000m" || resolved.Memory != "8192Mi" {
+				t.Fatal("managed resolution missing", resolved)
+			}
+			if kind == biz.TypeGPU {
+				resolved.GpuSelection = nil
+				resolved.GpuExecution = testGPU()
+				resolved.GpuDisplay = &acc.GpuDisplay{ProfileId: resource, ProfileVersion: 1, ProfileName: "T4", ModelKey: "t4", Mode: acc.SupplyMode_SHARED_FIXED}
+			}
+			request := &pb.AcceptCreateRequest{Context: &pb.CommandContext{TenantId: tenant, ResourceId: resource, OperationId: operation}, Spec: resolved}
+			request.Context.RequestDigest, e = pb.CommandDigest(request.Context, request.Spec)
+			if e != nil {
+				t.Fatal(e)
+			}
+			accepted, e := s.AcceptCreate(ctx, request)
+			if e != nil || !accepted.GetDurableOwnerAck().GetAccepted() || len(repo.creates) != 1 {
+				t.Fatal("durable intake", e)
+			}
+			if kind == biz.TypeGPU && repo.creates[0].Spec.GPU.RuntimeClass != "nvidia" {
+				t.Fatal("execution runtime was not frozen")
+			}
+			bad := proto.Clone(request).(*pb.AcceptCreateRequest)
+			bad.Spec.Cpu = "1"
+			if _, e = s.AcceptCreate(ctx, bad); status.Code(e) != codes.InvalidArgument {
+				t.Fatal("changed business accepted", e)
+			}
+			foreign := biz.WithCaller(context.Background(), biz.Caller{TenantID: resource, Actor: "governance:user:42"})
+			if _, e = s.AcceptCreate(foreign, request); status.Code(e) != codes.PermissionDenied {
+				t.Fatal("cross tenant create", e)
+			}
+			del := &pb.AcceptDeleteRequest{Context: &pb.CommandContext{TenantId: tenant, ResourceId: resource, OperationId: resource}, CreateOperationId: operation, InstanceKind: biz.KindContainer, ComputeType: kind, ExpectedVersion: 1}
+			del.Context.RequestDigest, _ = pb.DeleteCommandDigest(del)
+			if _, e = s.AcceptDelete(ctx, del); e != nil || len(repo.deletes) != 1 {
+				t.Fatal("delete without plan or quota", e)
+			}
+			if _, e = s.AcceptDelete(foreign, del); status.Code(e) != codes.PermissionDenied {
+				t.Fatal("cross tenant delete", e)
 			}
 		})
-	}
-	deleteRequest := &pb.AcceptDeleteRequest{TenantId: tenant, OperationId: resource, ExpectedVersion: 1, CpuOwnerAttachment: &pb.CpuOwnerDeleteAttachment{ResourceId: resource, CreateOperationId: operation, RequestHash: strings.Repeat("c", 64), Actor: actor}}
-	if _, err := s.AcceptDelete(ctx, deleteRequest); err != nil || len(repo.deletes) != 1 {
-		t.Fatal("trusted CPU delete required a GPU attachment", err)
-	}
-	d := repo.deletes[0]
-	if d.Type() != biz.TypeCPU || !d.GPU.Empty() || len(d.Charges) != 0 || d.TenantID != tenant || d.CreateOperationID != operation || d.ExpectedVersion != 1 {
-		t.Fatal("CPU deletion lost its original identity or gained GPU state", d)
-	}
-	mixedDelete := proto.Clone(deleteRequest).(*pb.AcceptDeleteRequest)
-	mixedDelete.GpuOwnerAttachment = &attachment.GpuOwnerDeleteAttachment{}
-	if _, err := s.AcceptDelete(ctx, mixedDelete); status.Code(err) != codes.InvalidArgument {
-		t.Fatal("mixed CPU/GPU delete accepted", err)
-	}
-	wrongDeleteActor := proto.Clone(deleteRequest).(*pb.AcceptDeleteRequest)
-	wrongDeleteActor.CpuOwnerAttachment.Actor = "governance:user:other"
-	if _, err := s.AcceptDelete(ctx, wrongDeleteActor); status.Code(err) != codes.PermissionDenied {
-		t.Fatal("CPU delete ignored trusted actor", err)
-	}
-	if _, err := s.AcceptDelete(foreign, deleteRequest); status.Code(err) != codes.PermissionDenied {
-		t.Fatal("CPU delete ignored trusted tenant", err)
-	}
-	if len(repo.creates) != 1 || len(repo.deletes) != 1 {
-		t.Fatal("rejected transport requests reached persistence")
 	}
 }

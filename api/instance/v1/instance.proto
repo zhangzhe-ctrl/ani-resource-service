@@ -3,14 +3,26 @@ package instance.v1;
 option go_package = "github.com/zhangzhe-ctrl/ani-resource-service/api/instance/v1;instancev1";
 
 import "accelerator/v1/accelerator.proto";
-import "accelerator/integration/v1/owner_gpu_attachment.proto";
+import "accelerator/command/v1/command.proto";
 import "instance/terminal/v1/terminal.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 
 // Trusted Governance listener only. Public HTTP DTOs exclude the frozen fields,
 // namespace, tenant, plan and original charges.
 service InstanceService {
+  rpc AdminListPresets(AdminListPresetsRequest) returns (ListPresetsResponse);
+  rpc AdminGetPreset(AdminGetPresetRequest) returns (Preset);
+  rpc AdminCreatePreset(AdminCreatePresetRequest) returns (Preset);
+  rpc AdminUpdatePreset(AdminUpdatePresetRequest) returns (Preset);
+  rpc AdminSetPresetEnabled(AdminSetPresetEnabledRequest) returns (Preset);
+  rpc AdminDeletePreset(AdminDeletePresetRequest) returns (google.protobuf.Empty);
+  rpc GetInstanceRuntime(GetInstanceRequest) returns (InstanceRuntime);
+  rpc ListInstanceEvents(GetInstanceRequest) returns (InstanceEvents);
+  rpc StreamInstanceLogs(StreamInstanceLogsRequest) returns (stream InstanceLogFrame);
   rpc ListPresets(ListPresetsRequest) returns (ListPresetsResponse);
-  rpc ResolveCreateSpec(ResolveCreateSpecRequest) returns (CreateBusiness);
+  rpc ResolveCreateSpec(ResolveCreateSpecRequest) returns (CreateSpec);
   rpc AcceptCreate(AcceptCreateRequest) returns (OperationResponse);
   rpc AcceptDelete(AcceptDeleteRequest) returns (OperationResponse);
   rpc Start(ChangeInstanceRequest) returns (OperationResponse);
@@ -21,78 +33,128 @@ service InstanceService {
   rpc ResolveTerminalTarget(ResolveTerminalTargetRequest) returns (instance.terminal.v1.TerminalTarget);
 }
 
+message SchedulingOptions {
+  enum PodPlacement { POD_PLACEMENT_UNSPECIFIED = 0; NONE = 1; COLOCATE_PREFERRED = 2; SPREAD_PREFERRED = 3; }
+  optional PodPlacement pod_placement = 1 [json_name = "pod_placement"];
+  optional string priority_class_name = 2 [json_name = "priority_class_name"];
+}
 message CreateInstanceData {
   string name = 1;
   string image_id = 2;
   string image_scope = 3;
   string preset_id = 4;
-  int64 preset_version = 5;
+  reserved 5;
+  reserved "preset_version";
+  SchedulingOptions scheduling = 6;
+}
+// Trusted, managed reference; never accepted directly from public JSON.
+message GpuPresetReference {
+  string profile_id = 1 [json_name = "profile_id"];
+  uint64 profile_version = 2 [json_name = "profile_version"];
+  string spec_digest = 3 [json_name = "spec_digest"];
+  uint32 devices_per_instance = 4 [json_name = "devices_per_instance"];
+  string cluster_id = 5 [json_name = "cluster_id"];
+  string pool_id = 6 [json_name = "pool_id"];
+  accelerator.v1.SupplyMode mode = 7;
+  string model_key = 8 [json_name = "model_key"];
+  reserved 9; reserved "shared_memory_mib_per_device";
+  int64 memory_mib_per_device = 11 [json_name = "memory_mib_per_device"];
+  uint32 core_limit_percent = 10 [json_name = "core_limit_percent"];
+}
+message GpuSummary {
+  string profile_id = 1 [json_name = "profile_id"];
+  uint64 profile_version = 2 [json_name = "profile_version"];
+  accelerator.v1.SupplyMode mode = 3;
+  string model_key = 4 [json_name = "model_key"];
+  uint32 devices_per_instance = 5 [json_name = "devices_per_instance"];
+  reserved 6,7; reserved "shared_memory_mib_per_device", "shared_memory_mib_total";
+  int64 memory_mib_per_device = 9 [json_name = "memory_mib_per_device"];
+  int64 memory_mib_total = 10 [json_name = "memory_mib_total"];
+  uint32 core_limit_percent = 8 [json_name = "core_limit_percent"];
 }
 message Preset {
   string id = 1;
-  int64 version = 2;
+  reserved 2, 4, 5, 6, 7;
+  reserved "version", "cpu", "memory", "instance_type";
   string name = 3;
-  string cpu = 4;
-  string memory = 5;
-  accelerator.v1.GpuRequest gpu = 6;
-  string instance_type = 7;
+  string code = 8;
+  string description = 9;
+  string compute_type = 10 [json_name = "compute_type"];
+  int64 cpu_millis = 11 [json_name = "cpu_millis"];
+  int64 memory_mib = 12 [json_name = "memory_mib"];
+  bool enabled = 13;
+  GpuPresetReference gpu = 14;
+  google.protobuf.Timestamp created_at = 15 [json_name = "created_at"];
+  google.protobuf.Timestamp updated_at = 16 [json_name = "updated_at"];
+  bool selectable = 17;
+  string unavailable_reason = 18 [json_name = "unavailable_reason"];
 }
-message ListPresetsRequest { string tenant_id = 1; }
-message ListPresetsResponse { repeated Preset items = 1; }
+message PresetData {
+  string code = 1; string name = 2; string description = 3;
+  string compute_type = 4 [json_name = "compute_type"];
+  int64 cpu_millis = 5 [json_name = "cpu_millis"];
+  int64 memory_mib = 6 [json_name = "memory_mib"];
+  optional bool enabled = 7;
+  GpuPresetReference gpu = 8;
+}
+message ListPresetsRequest {
+  string tenant_id = 1; uint32 page = 2; uint32 page_size = 3;
+  string name = 4; string code = 5; string compute_type = 6; string gpu_mode = 7;
+  repeated GpuPresetReference allowed_gpu_profiles = 8;
+}
+message ListPresetsResponse { repeated Preset items = 1; int64 total = 2; bool has_gpu_candidates = 3; }
+message AdminListPresetsRequest {
+  uint32 page = 1; uint32 page_size = 2; string name = 3; string code = 4;
+  string compute_type = 5; string gpu_mode = 6; optional bool enabled = 7;
+}
+message AdminGetPresetRequest { string id = 1; }
+message AdminCreatePresetRequest { PresetData data = 1; }
+message AdminUpdatePresetRequest { string id = 1; PresetData data = 2; google.protobuf.FieldMask update_mask = 3; }
+message AdminSetPresetEnabledRequest { string id = 1; optional bool enabled = 2; }
+message AdminDeletePresetRequest { string id = 1; }
 message ResolveCreateSpecRequest {
   string tenant_id = 1;
   CreateInstanceData data = 2;
-  // Optional trusted environment context, never a public field.
   string namespace = 3;
+  SchedulingOptions scheduling_defaults = 4;
 }
-message FrozenSpec {
-  string image_reference = 1;
-  string image_digest = 2;
-  string cpu = 3;
-  string memory = 4;
-  string cluster_id = 5;
-  string namespace = 6;
-  string service_account = 7;
-  string storage_class = 8;
-  string workspace_size = 9;
-  string shell = 10;
-  int64 uid = 11;
-  int64 gid = 12;
-  string instance_type = 13;
+// One managed business snapshot; GPU values exist only in gpu_execution.resources.
+message CreateSpec {
+  string name = 1 [json_name = "name"]; string image_id = 2 [json_name = "image_id"]; string image_scope = 3 [json_name = "image_scope"]; string preset_id = 4 [json_name = "preset_id"];
+  string image_reference = 5 [json_name = "image_reference"]; string cpu = 6 [json_name = "cpu"]; string memory = 7 [json_name = "memory"];
+  string cluster_id = 8 [json_name = "cluster_id"]; string namespace = 9 [json_name = "namespace"]; string service_account = 10 [json_name = "service_account"];
+  string storage_class = 11 [json_name = "storage_class"]; string workspace_size = 12 [json_name = "workspace_size"]; string shell = 13 [json_name = "shell"];
+  int64 uid = 14 [json_name = "uid"]; int64 gid = 15 [json_name = "gid"];
+  string instance_kind = 16 [json_name = "instance_kind"];
+  string compute_type = 17 [json_name = "compute_type"];
+  SchedulingOptions scheduling = 18 [json_name = "scheduling"];
+  string preset_name = 19 [json_name = "preset_name"];
+  string preset_code = 20 [json_name = "preset_code"];
+  accelerator.v1.GpuExecution gpu_execution = 21 [json_name = "gpu_execution"];
+  accelerator.v1.GpuDisplay gpu_display = 22 [json_name = "gpu_display"];
+  // Resolver-only managed selection reference, removed from accepted commands.
+  GpuPresetReference gpu_selection = 23 [json_name = "gpu_selection"];
 }
-message CreateBusiness {
-  CreateInstanceData data = 1;
-  FrozenSpec spec = 2;
-  accelerator.v1.GpuRequest gpu = 3;
+message CommandContext {
+  string tenant_id = 1 [json_name = "tenant_id"];
+  string resource_id = 2 [json_name = "resource_id"];
+  string operation_id = 3 [json_name = "operation_id"];
+  string request_digest = 4 [json_name = "request_digest"];
 }
-message OriginalQuotaCharge { string charge_id = 1; string quota_code = 2; int64 original_units = 3; }
 message AcceptCreateRequest {
-  string tenant_id = 1;
-  string operation_id = 2;
-  CreateBusiness business = 3;
-  accelerator.integration.v1.GpuOwnerCreateAttachment gpu_owner_attachment = 4;
-  repeated OriginalQuotaCharge original_charges = 5;
-  CpuOwnerCreateAttachment cpu_owner_attachment = 6;
-}
-message CpuOwnerCreateAttachment {
-  string resource_id = 1;
-  string request_hash = 2;
-  string business_payload_digest = 3;
-  string actor = 4;
+  reserved 1,2,3,4,5,6;
+  reserved "tenant_id", "operation_id", "business", "gpu_owner_attachment", "original_charges", "cpu_owner_attachment";
+  CommandContext context = 7;
+  CreateSpec spec = 8;
 }
 message AcceptDeleteRequest {
-  string tenant_id = 1;
-  string operation_id = 2;
-  accelerator.integration.v1.GpuOwnerDeleteAttachment gpu_owner_attachment = 3;
-  repeated OriginalQuotaCharge original_charges = 4;
+  reserved 1,2,3,4,6;
+  reserved "tenant_id", "operation_id", "gpu_owner_attachment", "original_charges", "cpu_owner_attachment";
   int64 expected_version = 5;
-  CpuOwnerDeleteAttachment cpu_owner_attachment = 6;
-}
-message CpuOwnerDeleteAttachment {
-  string resource_id = 1;
-  string create_operation_id = 2;
-  string request_hash = 3;
-  string actor = 4;
+  CommandContext context = 7;
+  string create_operation_id = 8 [json_name = "create_operation_id"];
+  string instance_kind = 9 [json_name = "instance_kind"];
+  string compute_type = 10 [json_name = "compute_type"];
 }
 message ChangeInstanceRequest {
   string tenant_id = 1;
@@ -100,18 +162,60 @@ message ChangeInstanceRequest {
   string idempotency_key = 3;
   int64 expected_version = 4;
 }
-message OperationResponse { accelerator.integration.v1.DurableOwnerAck durable_owner_ack = 1; }
+message OperationResponse { accelerator.command.v1.DurableOwnerAck durable_owner_ack = 1; }
 message GetInstanceRequest { string tenant_id = 1; string instance_id = 2; }
-message ListInstancesRequest { string tenant_id = 1; int32 page_size = 2; string after_id = 3; }
-message ListInstancesResponse { repeated Instance items = 1; string next_after_id = 2; }
-// Safe query view; full plans, charges and runtime credentials stay internal.
+message ListInstancesRequest {
+  string tenant_id = 1;
+  reserved 2, 3;
+  reserved "after_id";
+  uint32 page = 4; uint32 page_size = 5;
+  string instance_kind = 6 [json_name = "instance_kind"];
+  string compute_type = 7 [json_name = "compute_type"];
+  string observed_state = 8; string name = 9;
+}
+message ListInstancesResponse {
+  repeated Instance items = 1;
+  reserved 2;
+  reserved "next_after_id";
+  int64 total = 3;
+}
 message Instance {
   string id = 1; string name = 2; int64 version = 3;
   string desired_state = 4; string observed_state = 5; string reason = 6;
-  string image_id = 7; string image_digest = 8; string preset_id = 9; int64 preset_version = 10;
+  string image_id = 7; string image_digest = 8; string preset_id = 9;
+  reserved 10, 16;
+  reserved "preset_version", "instance_type";
   string create_operation_id = 11; string last_operation_id = 12;
   bool compute_cleaned = 13; bool workspace_cleaned = 14; bool quota_returned = 15;
-  string instance_type = 16;
+  string instance_kind = 17 [json_name = "instance_kind"];
+  string compute_type = 18 [json_name = "compute_type"];
+  string cpu = 19; string memory = 20; google.protobuf.Timestamp created_at = 21;
+  string workspace_size = 22; string preset_name = 23 [json_name = "preset_name"];
+  string preset_code = 24 [json_name = "preset_code"];
+  GpuSummary gpu_summary = 25 [json_name = "gpu_summary"];
+  SchedulingOptions scheduling = 26;
+}
+message EnvironmentSource { string name = 1; string source_type = 2; }
+message RuntimeMount { string name = 1; string volume_type = 2; string mount_path = 3; bool read_only = 4; }
+message RuntimePod {
+  string name = 1; string uid = 2; string node_name = 3; string pod_ip = 4;
+  string phase = 5; bool ready = 6; string reason = 7; string message = 8;
+  repeated EnvironmentSource environment_sources = 9; repeated RuntimeMount mounts = 10;
+}
+message RuntimeStatefulSet { optional int32 desired_replicas = 1; optional int32 ready_replicas = 2; }
+message InstanceRuntime {
+  string instance_id = 1; int64 version = 2; google.protobuf.Timestamp observed_at = 3;
+  RuntimePod pod = 4; RuntimeStatefulSet stateful_set = 5;
+}
+message InstanceEvent {
+  string type = 1; string reason = 2; string message = 3;
+  google.protobuf.Timestamp last_occurred_at = 4; optional int64 count = 5;
+}
+message InstanceEvents { optional string pod_uid = 1; google.protobuf.Timestamp observed_at = 2; repeated InstanceEvent events = 3; bool truncated = 4; }
+message StreamInstanceLogsRequest { string tenant_id = 1; string instance_id = 2; uint32 tail_lines = 3; bool follow = 4; }
+message InstanceLogFrame {
+  enum Kind { KIND_UNSPECIFIED = 0; READY = 1; DATA = 2; END = 3; ERROR = 4; }
+  Kind kind = 1; bytes data = 2; string reason = 3;
 }
 message GetOperationRequest { string tenant_id = 1; string operation_id = 2; }
 message Operation { string id = 1; string instance_id = 2; string action = 3; int64 intent_version = 4; string state = 5; string reason = 6; }

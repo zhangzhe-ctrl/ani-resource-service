@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	accelerator "github.com/zhangzhe-ctrl/ani-accelerator-service/api/gen/go/accelerator/v1"
 	quota "github.com/zhangzhe-ctrl/ani-governance/api/quota/gen/go/quota/service/v1"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/instance"
 	conf "github.com/zhangzhe-ctrl/ani-resource-service/internal/conf/v1"
@@ -29,17 +30,19 @@ import (
 )
 
 type instanceSettings struct {
-	DatabaseDSNFile, SigningKeyFile                                         string
-	QuotaAddress, QuotaCAFile, QuotaCertFile, QuotaKeyFile, QuotaServerName string
-	TerminalAddress                                                         string
-	Service                                                                 service.Config
+	DatabaseDSNFile, SigningKeyFile                                                   string
+	QuotaAddress, QuotaCAFile, QuotaCertFile, QuotaKeyFile, QuotaServerName           string
+	ReleaseAddress, ReleaseCAFile, ReleaseCertFile, ReleaseKeyFile, ReleaseServerName string
+	TerminalAddress                                                                   string
+	Service                                                                           service.Config
 }
 type instanceComponents struct {
-	service         *service.Service
-	execution       *server.InstanceWorkerServer
-	terminal        *server.InstanceTerminalServer
-	repo            *data.Postgres
-	quotaConnection *grpc.ClientConn
+	service           *service.Service
+	execution         *server.InstanceWorkerServer
+	terminal          *server.InstanceTerminalServer
+	repo              *data.Postgres
+	quotaConnection   *grpc.ClientConn
+	releaseConnection *grpc.ClientConn
 }
 
 func runInstanceMigration() error {
@@ -58,6 +61,9 @@ func (c *instanceComponents) Close() {
 	}
 	if c.quotaConnection != nil {
 		_ = c.quotaConnection.Close()
+	}
+	if c.releaseConnection != nil {
+		_ = c.releaseConnection.Close()
 	}
 	if c.repo != nil {
 		c.repo.Close()
@@ -84,7 +90,7 @@ func openInstance(ctx context.Context, network *conf.Network, images *imageCompo
 	}
 	// Namespace configuration is shared by value only, never Network tables.
 	cfg.Service.NamespacePrefix = network.NamespacePrefix
-	for _, f := range []string{cfg.DatabaseDSNFile, cfg.SigningKeyFile, cfg.QuotaCAFile, cfg.QuotaCertFile, cfg.QuotaKeyFile} {
+	for _, f := range []string{cfg.DatabaseDSNFile, cfg.SigningKeyFile, cfg.QuotaCAFile, cfg.QuotaCertFile, cfg.QuotaKeyFile, cfg.ReleaseCAFile, cfg.ReleaseCertFile, cfg.ReleaseKeyFile} {
 		if !filepath.IsAbs(f) {
 			return nil, fmt.Errorf("instance requires absolute managed private paths")
 		}
@@ -131,45 +137,34 @@ func openInstance(ctx context.Context, network *conf.Network, images *imageCompo
 	if e != nil {
 		return nil, e
 	}
+	if e = provider.ConfigureLogs(kube, cfg.Service.LogLimits); e != nil {
+		return nil, e
+	}
 	if e = provider.ConfigureSigningKey(ed25519.PrivateKey(signing)); e != nil {
 		return nil, e
 	}
 	if e = provider.ConfigureImages(images.runtime); e != nil {
 		return nil, e
 	}
-	ca, e := os.ReadFile(cfg.QuotaCAFile)
-	if e != nil {
-		return nil, fmt.Errorf("instance quota CA unavailable")
-	}
-	roots := x509.NewCertPool()
-	if !roots.AppendCertsFromPEM(ca) {
-		return nil, fmt.Errorf("instance quota CA invalid")
-	}
-	cert, e := tls.LoadX509KeyPair(cfg.QuotaCertFile, cfg.QuotaKeyFile)
-	if e != nil {
-		return nil, fmt.Errorf("instance quota client identity unavailable")
-	}
-	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots, Certificates: []tls.Certificate{cert}, ServerName: cfg.QuotaServerName, VerifyConnection: func(cs tls.ConnectionState) error {
-		if len(cs.VerifiedChains) == 0 || len(cs.PeerCertificates) == 0 {
-			return fmt.Errorf("quota peer unverified")
-		}
-		for _, name := range cs.PeerCertificates[0].DNSNames {
-			if name == cfg.QuotaServerName && !strings.Contains(name, "*") {
-				return nil
-			}
-		}
-		return fmt.Errorf("quota peer exact DNS SAN mismatch")
-	}}
-	connection, e := grpc.NewClient(cfg.QuotaAddress, grpc.WithDisableServiceConfig(), grpc.WithDisableRetry(), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	connection, e := instanceClientConnection(cfg.QuotaAddress, cfg.QuotaCAFile, cfg.QuotaCertFile, cfg.QuotaKeyFile, cfg.QuotaServerName)
 	if e != nil {
 		return nil, e
 	}
 	c.quotaConnection = connection
+	releaseConnection, e := instanceClientConnection(cfg.ReleaseAddress, cfg.ReleaseCAFile, cfg.ReleaseCertFile, cfg.ReleaseKeyFile, cfg.ReleaseServerName)
+	if e != nil {
+		return nil, e
+	}
+	c.releaseConnection = releaseConnection
+	releases, e := data.NewPhysicalReleaseObserver(accelerator.NewAcceleratorUsageServiceClient(releaseConnection))
+	if e != nil {
+		return nil, e
+	}
 	reporter, e := data.NewQuota(repo, quota.NewQuotaReleaseServiceClient(connection))
 	if e != nil {
 		return nil, e
 	}
-	worker, e := biz.NewWorker(repo, provider, reporter, uuid.NewString())
+	worker, e := biz.NewWorker(repo, provider, reporter, releases, uuid.NewString())
 	if e != nil {
 		return nil, e
 	}
@@ -185,4 +180,34 @@ func openInstance(ctx context.Context, network *conf.Network, images *imageCompo
 	}
 	ready = true
 	return c, nil
+}
+
+func instanceClientConnection(address, caFile, certFile, keyFile, serverName string) (*grpc.ClientConn, error) {
+	if address == "" || serverName == "" || strings.ContainsAny(serverName, "*:/") {
+		return nil, fmt.Errorf("instance exact peer identity required")
+	}
+	ca, e := os.ReadFile(caFile)
+	if e != nil {
+		return nil, fmt.Errorf("instance peer CA unavailable")
+	}
+	roots := x509.NewCertPool()
+	if !roots.AppendCertsFromPEM(ca) {
+		return nil, fmt.Errorf("instance peer CA invalid")
+	}
+	cert, e := tls.LoadX509KeyPair(certFile, keyFile)
+	if e != nil {
+		return nil, fmt.Errorf("instance peer client identity unavailable")
+	}
+	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots, Certificates: []tls.Certificate{cert}, ServerName: serverName, VerifyConnection: func(cs tls.ConnectionState) error {
+		if len(cs.VerifiedChains) == 0 || len(cs.PeerCertificates) == 0 {
+			return fmt.Errorf("instance peer unverified")
+		}
+		for _, name := range cs.PeerCertificates[0].DNSNames {
+			if name == serverName && !strings.Contains(name, "*") {
+				return nil
+			}
+		}
+		return fmt.Errorf("instance peer exact DNS SAN mismatch")
+	}}
+	return grpc.NewClient(address, grpc.WithDisableServiceConfig(), grpc.WithDisableRetry(), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 }

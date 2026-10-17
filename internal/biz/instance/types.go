@@ -2,9 +2,7 @@
 package instance
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -15,27 +13,36 @@ import (
 )
 
 var (
-	ErrInvalid   = errors.New("INVALID_INSTANCE_REQUEST")
-	ErrDenied    = errors.New("INSTANCE_SCOPE_DENIED")
-	ErrNotFound  = errors.New("INSTANCE_NOT_FOUND")
-	ErrConflict  = errors.New("INSTANCE_IDEMPOTENCY_CONFLICT")
-	ErrVersion   = errors.New("INSTANCE_VERSION_CONFLICT")
-	ErrLease     = errors.New("INSTANCE_LEASE_LOST")
-	ErrUnknown   = errors.New("INSTANCE_EXTERNAL_RESULT_UNKNOWN")
-	ErrOwnership = errors.New("INSTANCE_OBJECT_OWNERSHIP_CONFLICT")
+	ErrInvalid            = errors.New("INVALID_INSTANCE_REQUEST")
+	ErrDenied             = errors.New("INSTANCE_SCOPE_DENIED")
+	ErrNotFound           = errors.New("INSTANCE_NOT_FOUND")
+	ErrConflict           = errors.New("INSTANCE_IDEMPOTENCY_CONFLICT")
+	ErrVersion            = errors.New("INSTANCE_VERSION_CONFLICT")
+	ErrLease              = errors.New("INSTANCE_LEASE_LOST")
+	ErrUnknown            = errors.New("INSTANCE_EXTERNAL_RESULT_UNKNOWN")
+	ErrOwnership          = errors.New("INSTANCE_OBJECT_OWNERSHIP_CONFLICT")
+	ErrDiagnosticTarget   = errors.New("INSTANCE_DIAGNOSTIC_TARGET_UNAVAILABLE")
+	ErrPodChanged         = errors.New("INSTANCE_LOG_POD_CHANGED")
+	ErrLogLimit           = errors.New("INSTANCE_LOG_CONNECTION_LIMIT")
+	ErrLogSlow            = errors.New("INSTANCE_LOG_CLIENT_TOO_SLOW")
+	ErrSchedulingConflict = errors.New("SCHEDULING_FIELD_CONFLICT")
 )
 
 const Owner = "ani-resource-service"
 const Container = "workspace"
 const (
-	TypeCPU = "cpu"
-	TypeGPU = "gpu"
-	Running = "running"
-	Stopped = "stopped"
-	Deleted = "deleted"
+	KindContainer = "container"
+	TypeCPU       = "cpu"
+	TypeGPU       = "gpu"
+	Running       = "running"
+	Stopped       = "stopped"
+	Deleted       = "deleted"
 )
 
-type Caller struct{ TenantID, Actor string }
+type Caller struct {
+	TenantID, Actor string
+	Platform        bool
+}
 type callerKey struct{}
 
 func WithCaller(ctx context.Context, c Caller) context.Context {
@@ -43,20 +50,28 @@ func WithCaller(ctx context.Context, c Caller) context.Context {
 }
 func CallerFromContext(ctx context.Context) (Caller, error) {
 	c, ok := ctx.Value(callerKey{}).(Caller)
-	if !ok || c.Actor == "" || !UUID(c.TenantID) {
+	if !ok || c.Platform || c.Actor == "" || !UUID(c.TenantID) {
 		return Caller{}, ErrDenied
 	}
 	return c, nil
 }
 func RequireTenant(ctx context.Context, tenant string) error {
 	c, ok := ctx.Value(callerKey{}).(Caller)
-	if !ok || !UUID(tenant) || c.TenantID != tenant || c.Actor == "" {
+	if !ok || c.Platform || !UUID(tenant) || c.TenantID != tenant || c.Actor == "" {
 		return ErrDenied
 	}
 	return nil
 }
+func RequirePlatform(ctx context.Context) (Caller, error) {
+	c, ok := ctx.Value(callerKey{}).(Caller)
+	if !ok || !c.Platform || c.TenantID != "" || c.Actor == "" {
+		return Caller{}, ErrDenied
+	}
+	return c, nil
+}
 func UUID(v string) bool { u, e := uuid.Parse(v); return e == nil && u != uuid.Nil && u.String() == v }
 
+var digest64 = regexp.MustCompile(`^[0-9a-f]{64}$`)
 var dnsName = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
 
 func ResolveNamespace(tenant, trusted, prefix string) (string, error) {
@@ -73,30 +88,24 @@ func ResolveNamespace(tenant, trusted, prefix string) (string, error) {
 	return ns, nil
 }
 
-type Charge struct {
-	ID, Code string
-	Units    int64
-}
-
-// GPU contains the frozen execution values; no memory-factor recomputation occurs.
+// GPU is the sole frozen execution authority. Values are already absolute MiB.
 type GPU struct {
-	Scheduler, Queue, RuntimeClass, Recipe, Digest string
-	NodeLabels, Annotations, Limits                map[string]string
-	Plan                                           json.RawMessage
+	Scheduler, Queue, RuntimeClass, Digest string
+	NodeLabels, Annotations, Limits        map[string]string
 }
 
 func (g GPU) Empty() bool {
-	// A nil RawMessage is stored as JSON null in an instance snapshot. Decoding
-	// it yields the literal bytes "null", which still means no GPU plan.
-	emptyPlan := len(g.Plan) == 0 || bytes.Equal(bytes.TrimSpace(g.Plan), []byte("null"))
-	return g.Scheduler == "" && g.Queue == "" && g.RuntimeClass == "" && g.Recipe == "" && g.Digest == "" && len(g.NodeLabels) == 0 && len(g.Annotations) == 0 && len(g.Limits) == 0 && emptyPlan
+	return g.Scheduler == "" && g.Queue == "" && g.RuntimeClass == "" && g.Digest == "" && len(g.NodeLabels) == 0 && len(g.Annotations) == 0 && len(g.Limits) == 0
 }
 
 type Spec struct {
-	InstanceType                                           string
+	InstanceKind                                           string `json:"instance_kind"`
+	ComputeType                                            string `json:"compute_type"`
 	Name, ImageID, ImageScope, ImageReference, ImageDigest string
 	PresetID                                               string
-	PresetVersion                                          int64
+	PresetName, PresetCode                                 string
+	Scheduling                                             Scheduling
+	GPUSummary                                             *GPUSummary
 	CPU, Memory                                            string
 	UID, GID                                               int64
 	Shell, ServiceAccount, StorageClass, WorkspaceSize     string
@@ -105,29 +114,26 @@ type Spec struct {
 	GPU                                                    GPU
 }
 
-// Type preserves snapshots created before the instance type was explicit.
-// Only those legacy empty values mean GPU; CPU is always explicitly selected.
-func (s Spec) Type() string {
-	if s.InstanceType == "" {
-		return TypeGPU
-	}
-	return s.InstanceType
+type Scheduling struct {
+	PodPlacement      string
+	PriorityClassName *string
+}
+type GPUSummary struct {
+	ProfileID                   string
+	ProfileVersion              uint64
+	ProfileName, Mode, ModelKey string
 }
 
 type Create struct {
 	TenantID, ID, OperationID, RequestHash, BusinessDigest string
 	Spec                                                   Spec
-	Charges                                                []Charge
 }
 type Delete struct {
-	InstanceType                                              string
+	InstanceKind                                              string `json:"instance_kind"`
+	ComputeType                                               string `json:"compute_type"`
 	TenantID, ID, OperationID, CreateOperationID, RequestHash string
 	ExpectedVersion                                           int64
-	GPU                                                       GPU
-	Charges                                                   []Charge
 }
-
-func (d Delete) Type() string { return (Spec{InstanceType: d.InstanceType}).Type() }
 
 type Command struct {
 	TenantID, ID, OperationID, Key, RequestHash, Action string
@@ -146,7 +152,6 @@ type Operation struct {
 type Instance struct {
 	TenantID, ID, CreateOperationID, CreateRequestHash, BusinessDigest string
 	Spec                                                               Spec
-	Charges                                                            []Charge
 	Version                                                            int64
 	Desired, Observed, Reason, LastOperationID                         string
 	NotebookUID, NotebookRV, PVCUID                                    string
@@ -154,6 +159,11 @@ type Instance struct {
 	VolumeName, VolumeUID                                              string
 	PodUID, PodName                                                    string
 	ComputeCleaned, WorkspaceCleaned, QuotaReturned                    bool
+	// The scope is durable before any external Notebook creation or mutation.
+	ExternalComputeStarted bool
+	GPUPods                []PodRef
+	ComputeSealAt          time.Time
+	PhysicalReleaseDigest  string
 	// Pending is written before sending. Absence of a target never clears an unknown CREATE.
 	Pending              *Mutation
 	CreatedAt, UpdatedAt time.Time
@@ -175,7 +185,36 @@ type Observation struct {
 	IntentVersion                                           int64
 	VolumeExists                                            bool
 	VolumeName, VolumeUID, WorkspaceReason                  string
+	GPUPods                                                 []PodRef
 }
+type PodRef struct {
+	ClusterID, Namespace, Name, UID, ContainerName string
+}
+type ReleaseEvidence struct {
+	Confirmed bool
+	Digest    string
+}
+type PhysicalReleaseObserver interface {
+	ObserveRelease(context.Context, Instance) (ReleaseEvidence, error)
+}
+
+func MergePodRefs(a, b []PodRef) []PodRef {
+	out := append([]PodRef(nil), a...)
+	for _, p := range b {
+		found := false
+		for _, old := range out {
+			if old == p {
+				found = true
+				break
+			}
+		}
+		if !found {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
 type MutationReceipt struct {
 	Mutation Mutation
 	Outcome  string
@@ -190,7 +229,7 @@ type Repository interface {
 	AcceptDelete(context.Context, Delete) (ACK, error)
 	AcceptCommand(context.Context, Command) (ACK, error)
 	Get(context.Context, string, string) (Instance, error)
-	List(context.Context, string, int, string) ([]Instance, error)
+	List(context.Context, string, ListFilter) ([]Instance, int64, error)
 	GetOperation(context.Context, string, string) (Operation, error)
 	Claim(context.Context, string, time.Duration) (*Work, error)
 	BeginMutation(context.Context, Work, Mutation) error
@@ -221,16 +260,22 @@ func ValidateCreate(c Create) error {
 		return ErrInvalid
 	}
 	s := c.Spec
+	if s.InstanceKind != KindContainer || ValidateScheduling(s.Scheduling) != nil {
+		return ErrInvalid
+	}
 	if len(s.ImageDigest) != 71 || !strings.HasPrefix(s.ImageDigest, "sha256:") || !strings.HasSuffix(s.ImageReference, "@"+s.ImageDigest) {
 		return ErrInvalid
 	}
 	if !UUID(s.ClusterID) || len(s.Namespace) > 63 || !dnsName.MatchString(s.Namespace) || s.NotebookName == "" || s.PVCName == "" || s.ImageReference == "" || s.ImageDigest == "" || s.CPU == "" || s.Memory == "" || s.UID < 0 || s.GID < 0 || s.ServiceAccount == "" || s.StorageClass == "" || s.WorkspaceSize == "" || s.Shell == "" {
 		return ErrInvalid
 	}
-	if err := validateResources(s.Type(), s.GPU, c.Charges); err != nil {
+	if s.ComputeType == TypeCPU && (s.GPUSummary != nil) {
+		return ErrInvalid
+	}
+	if err := validateResources(s.ComputeType, s.GPU); err != nil {
 		return err
 	}
-	if s.Type() == TypeGPU && (s.GPU.Scheduler != "volcano" || s.GPU.Queue == "" || s.GPU.Recipe != "volcano-hami-v1" || len(s.GPU.Plan) == 0 || len(s.GPU.Limits) == 0 || len(s.GPU.NodeLabels) == 0) {
+	if s.ComputeType == TypeGPU && (s.GPU.Scheduler != "volcano" || s.GPU.Queue == "" || len(s.GPU.Limits) == 0 || len(s.GPU.NodeLabels) == 0) {
 		return ErrInvalid
 	}
 	return nil
@@ -240,29 +285,54 @@ func ValidateDelete(d Delete) error {
 	if !UUID(d.TenantID) || !UUID(d.ID) || !UUID(d.OperationID) || !UUID(d.CreateOperationID) || len(d.RequestHash) != 64 || d.ExpectedVersion < 0 {
 		return ErrInvalid
 	}
-	return validateResources(d.Type(), d.GPU, d.Charges)
+	if d.InstanceKind != KindContainer {
+		return ErrInvalid
+	}
+	if d.ComputeType != TypeCPU && d.ComputeType != TypeGPU {
+		return ErrInvalid
+	}
+	return nil
 }
 
-func validateResources(kind string, gpu GPU, charges []Charge) error {
+func validateResources(kind string, gpu GPU) error {
 	switch kind {
 	case TypeCPU:
-		if !gpu.Empty() || len(charges) != 0 {
+		if !gpu.Empty() {
 			return ErrInvalid
 		}
-		return nil
 	case TypeGPU:
-		if len(gpu.Digest) != 64 || len(charges) == 0 {
+		if len(gpu.Digest) != 64 || gpu.Scheduler != "volcano" || gpu.Queue == "" || gpu.RuntimeClass == "" || len(gpu.Limits) != 3 {
 			return ErrInvalid
 		}
 	default:
 		return ErrInvalid
 	}
-	seen := map[string]bool{}
-	for _, q := range charges {
-		if !UUID(q.ID) || q.Code == "" || q.Units <= 0 || seen[q.ID] {
-			return ErrInvalid
-		}
-		seen[q.ID] = true
+	return nil
+}
+
+type ListFilter struct {
+	Page, PageSize                                 uint32
+	InstanceKind, ComputeType, ObservedState, Name string
+}
+
+func PageWindow(page, size uint32) (uint32, uint32, int64, error) {
+	if page == 0 {
+		page = 1
+	}
+	if size == 0 {
+		size = 20
+	}
+	if size > 100 {
+		return 0, 0, 0, ErrInvalid
+	}
+	return page, size, int64(page-1) * int64(size), nil
+}
+func ValidateScheduling(s Scheduling) error {
+	if s.PodPlacement != "NONE" && s.PodPlacement != "COLOCATE_PREFERRED" && s.PodPlacement != "SPREAD_PREFERRED" {
+		return ErrInvalid
+	}
+	if s.PriorityClassName != nil && (*s.PriorityClassName == "" || strings.TrimSpace(*s.PriorityClassName) != *s.PriorityClassName) {
+		return ErrInvalid
 	}
 	return nil
 }

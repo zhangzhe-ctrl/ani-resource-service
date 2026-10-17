@@ -3,6 +3,7 @@ package instance
 import (
 	"context"
 	"crypto/ed25519"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"strings"
@@ -19,7 +20,7 @@ import (
 
 func TestCPUNotebookProjectionAndPodBinding(t *testing.T) {
 	const id = "11111111-1111-4111-8111-111111111111"
-	i := biz.Instance{TenantID: id, ID: id, CreateOperationID: id, CreateRequestHash: strings.Repeat("a", 64), BusinessDigest: strings.Repeat("b", 64), Version: 1, Desired: biz.Running, Spec: biz.Spec{InstanceType: biz.TypeCPU, ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("c", 64), ImageDigest: "sha256:" + strings.Repeat("c", 64), CPU: "1", Memory: "2Gi", UID: 1000, GID: 1000, Shell: "/bin/bash", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", ClusterID: id, Namespace: "tenant-" + id, NotebookName: "instance-" + id, PVCName: "workspace-" + id}}
+	i := biz.Instance{TenantID: id, ID: id, CreateOperationID: id, CreateRequestHash: strings.Repeat("a", 64), BusinessDigest: strings.Repeat("b", 64), Version: 1, Desired: biz.Running, Spec: biz.Spec{InstanceKind: biz.KindContainer, Scheduling: biz.Scheduling{PodPlacement: "NONE"}, ComputeType: biz.TypeCPU, ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("c", 64), ImageDigest: "sha256:" + strings.Repeat("c", 64), CPU: "1", Memory: "2Gi", UID: 1000, GID: 1000, Shell: "/bin/bash", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", ClusterID: id, Namespace: "tenant-" + id, NotebookName: "instance-" + id, PVCName: "workspace-" + id}}
 	notebook, err := RenderNotebook(i)
 	if err != nil {
 		t.Fatal(err)
@@ -53,7 +54,7 @@ func TestCPUNotebookProjectionAndPodBinding(t *testing.T) {
 	mutations := map[string]func(*unstructured.Unstructured){
 		"GPU annotation": func(p *unstructured.Unstructured) {
 			a := p.GetAnnotations()
-			a["accelerator.ani.io/plan-digest"] = "foreign"
+			a["accelerator.ani.io/execution-digest"] = "foreign"
 			p.SetAnnotations(a)
 		},
 		"GPU scheduler": func(p *unstructured.Unstructured) {
@@ -115,7 +116,7 @@ func TestCPUNotebookProjectionAndPodBinding(t *testing.T) {
 
 func TestNotebookMappingAndConditionalStop(t *testing.T) {
 	const id = "11111111-1111-4111-8111-111111111111"
-	i := biz.Instance{TenantID: id, ID: id, CreateOperationID: id, CreateRequestHash: strings.Repeat("a", 64), BusinessDigest: strings.Repeat("b", 64), Version: 1, Desired: biz.Running, Charges: []biz.Charge{{ID: id, Code: "gpu.shared_memory_mib", Units: 6144}}, Spec: biz.Spec{Name: "work", ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("c", 64), ImageDigest: "sha256:" + strings.Repeat("c", 64), CPU: "1", Memory: "2Gi", UID: 1000, GID: 1000, Shell: "/bin/sh", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", ClusterID: id, Namespace: "tenant-" + id, NotebookName: "instance-" + id, PVCName: "workspace-" + id, GPU: biz.GPU{Scheduler: "volcano", Queue: "test-queue", Recipe: "volcano-hami-v1", Digest: strings.Repeat("d", 64), NodeLabels: map[string]string{"accelerator.ani.io/supply-group": id}, Annotations: map[string]string{"volcano.sh/vgpu-mode": "hami-core"}, Limits: map[string]string{"volcano.sh/vgpu-number": "1", "volcano.sh/vgpu-memory": "6", "volcano.sh/vgpu-cores": "25"}, Plan: json.RawMessage(`{"external_plan":true}`)}}}
+	i := biz.Instance{TenantID: id, ID: id, CreateOperationID: id, CreateRequestHash: strings.Repeat("a", 64), BusinessDigest: strings.Repeat("b", 64), Version: 1, Desired: biz.Running, Spec: biz.Spec{InstanceKind: biz.KindContainer, ComputeType: biz.TypeGPU, Scheduling: biz.Scheduling{PodPlacement: "NONE"}, Name: "work", ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("c", 64), ImageDigest: "sha256:" + strings.Repeat("c", 64), CPU: "1", Memory: "2Gi", UID: 1000, GID: 1000, Shell: "/bin/sh", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", ClusterID: id, Namespace: "tenant-" + id, NotebookName: "instance-" + id, PVCName: "workspace-" + id, GPU: biz.GPU{Scheduler: "volcano", RuntimeClass: "nvidia", Queue: "test-queue", Digest: strings.Repeat("d", 64), NodeLabels: map[string]string{"accelerator.ani.io/supply-group": id}, Annotations: map[string]string{"volcano.sh/vgpu-mode": "hami-core"}, Limits: map[string]string{"volcano.sh/vgpu-number": "1", "volcano.sh/vgpu-memory": "6144", "volcano.sh/vgpu-cores": "25"}}}}
 	obj, e := RenderNotebook(i)
 	if e != nil {
 		t.Fatal(e)
@@ -126,7 +127,7 @@ func TestNotebookMappingAndConditionalStop(t *testing.T) {
 	}
 	c := containers[0].(map[string]any)
 	gpu, _, _ := unstructured.NestedStringMap(c, "resources", "limits")
-	if gpu["volcano.sh/vgpu-memory"] != "6" || gpu["volcano.sh/vgpu-number"] != "1" {
+	if gpu["volcano.sh/vgpu-memory"] != "6144" || gpu["volcano.sh/vgpu-number"] != "1" {
 		t.Fatal("frozen units were recomputed")
 	}
 	queue, _, _ := unstructured.NestedString(obj.Object, "metadata", "annotations", "scheduling.volcano.sh/queue-name")
@@ -190,6 +191,10 @@ func TestNotebookMappingAndConditionalStop(t *testing.T) {
 	pod.Object["status"] = map[string]any{"phase": "Running", "containerStatuses": []any{map[string]any{"name": biz.Container, "ready": true}}, "conditions": []any{map[string]any{"type": "Ready", "status": "False"}}}
 	observations := fake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{podGVR: "PodList", stsGVR: "StatefulSetList"}, current, pod, set)
 	observer, _ := NewNotebook(observations)
+	signing := ed25519.NewKeyFromSeed(make([]byte, ed25519.SeedSize))
+	if e = observer.ConfigureSigningKey(signing); e != nil {
+		t.Fatal(e)
+	}
 	obs, e := observer.Observe(context.Background(), i)
 	if e != nil || obs.PodReady {
 		t.Fatal("container-only readiness exposed terminal", e)
@@ -201,6 +206,34 @@ func TestNotebookMappingAndConditionalStop(t *testing.T) {
 	obs, e = observer.Observe(context.Background(), i)
 	if e != nil || !obs.PodReady {
 		t.Fatal("ready managed Pod rejected", e)
+	}
+	signed, e := observations.Resource(podGVR).Namespace(i.Spec.Namespace).Get(context.Background(), pod.GetName(), metav1.GetOptions{})
+	if e != nil {
+		t.Fatal(e)
+	}
+	signature, e := base64.StdEncoding.DecodeString(signed.GetAnnotations()["accelerator.ani.io/owner-signature"])
+	if e != nil {
+		t.Fatal(e)
+	}
+	assertion := map[string]any{"pod": map[string]string{"cluster_id": i.Spec.ClusterID, "namespace": signed.GetNamespace(), "name": signed.GetName(), "uid": string(signed.GetUID()), "container_name": biz.Container}, "ref": map[string]string{"tenant_id": i.TenantID, "owner_service": biz.Owner, "resource_id": i.ID, "create_operation_id": i.CreateOperationID}, "execution_digest": i.Spec.GPU.Digest}
+	payload, _ := json.Marshal(assertion)
+	if !ed25519.Verify(signing.Public().(ed25519.PublicKey), append([]byte("acc-owner-pod-v2\n"), payload...), signature) {
+		t.Fatal("owner signature does not bind new execution assertion")
+	}
+	if ed25519.Verify(signing.Public().(ed25519.PublicKey), append([]byte("acc-owner-pod-v1\n"), payload...), signature) {
+		t.Fatal("old signature domain accepted")
+	}
+	assertion["pod"].(map[string]string)["uid"] = "foreign-pod"
+	payload, _ = json.Marshal(assertion)
+	if ed25519.Verify(signing.Public().(ed25519.PublicKey), append([]byte("acc-owner-pod-v2\n"), payload...), signature) {
+		t.Fatal("signature did not bind actual Pod UID")
+	}
+	badDigest := pod.DeepCopy()
+	annotations := badDigest.GetAnnotations()
+	annotations["accelerator.ani.io/execution-digest"] = "forged"
+	badDigest.SetAnnotations(annotations)
+	if e = verifyPod(badDigest, i); !errors.Is(e, biz.ErrOwnership) {
+		t.Fatal("forged execution digest accepted", e)
 	}
 	broken := pod.DeepCopy()
 	containers, _, _ = unstructured.NestedSlice(broken.Object, "spec", "containers")

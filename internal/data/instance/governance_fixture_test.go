@@ -63,12 +63,26 @@ func TestInstanceGovernanceFixture(t *testing.T) {
 	if clusterID == "" {
 		clusterID = "11111111-1111-4111-8111-111111111111"
 	}
-	preset := &pb.Preset{Id: "cpu", Version: 1, Name: "cpu", Cpu: "1", Memory: "2Gi", InstanceType: biz.TypeCPU}
+	f := database(t)
+	adminCtx := biz.WithCaller(context.Background(), biz.Caller{Platform: true, Actor: "governance:user:fixture"})
+	preset := biz.Preset{Code: "cpu", Name: "cpu", ComputeType: biz.TypeCPU, CPUMillis: 1000, MemoryMiB: 2048, Enabled: true}
 	if gpu != nil {
 		clusterID = gpu.ClusterId
-		preset.Id, preset.Name, preset.InstanceType, preset.Gpu = "shared", "shared", biz.TypeGPU, gpu
+		var ref pb.GpuPresetReference
+		if raw := os.Getenv("INSTANCE_JOINT_GPU_REFERENCE_JSON"); raw == "" {
+			t.Fatal("complete managed GPU reference required")
+		} else if e := protojson.Unmarshal([]byte(raw), &ref); e != nil {
+			t.Fatal(e)
+		}
+		preset.Code = "shared"
+		preset.Name = "shared"
+		preset.ComputeType = biz.TypeGPU
+		preset.GPU = &biz.GPUReference{ProfileID: ref.ProfileId, ProfileVersion: ref.ProfileVersion, SpecDigest: ref.SpecDigest, DevicesPerInstance: ref.DevicesPerInstance, ClusterID: ref.ClusterId, PoolID: ref.PoolId, Mode: ref.Mode.String(), ModelKey: ref.ModelKey, MemoryMiBPerDevice: ref.MemoryMibPerDevice, CoreLimitPercent: ref.CoreLimitPercent}
 	}
-	f := database(t)
+	preset, e := f.repo.CreatePreset(adminCtx, preset)
+	if e != nil {
+		t.Fatal(e)
+	}
 	providerState := &provider{}
 	var reporter biz.QuotaReporter
 	cpuQuota := &quota{}
@@ -109,7 +123,7 @@ func TestInstanceGovernanceFixture(t *testing.T) {
 	if reporter != nil {
 		// Only the external Kubernetes boundary is controlled in this ledger
 		// slice. Admission, worker, cleanup decisions, outbox and Gov RPC are real.
-		worker, e := biz.NewWorker(f.repo, providerState, reporter, "cross-service-worker")
+		worker, e := biz.NewWorker(f.repo, providerState, reporter, &releaseObservation{confirmed: true}, "cross-service-worker")
 		if e != nil {
 			t.Fatal(e)
 		}
@@ -130,7 +144,7 @@ func TestInstanceGovernanceFixture(t *testing.T) {
 			}
 		}()
 	}
-	handler, e := service.NewService(f.repo, fixtureImage{}, fixtureEnvironment{}, service.Config{NamespacePrefix: "tenant-", ClusterID: clusterID, ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", Shell: "/bin/sh", UID: 1000, GID: 1000, Presets: []*pb.Preset{preset}})
+	handler, e := service.NewService(f.repo, fixtureImage{}, fixtureEnvironment{}, service.Config{NamespacePrefix: "tenant-", ClusterID: clusterID, ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", Shell: "/bin/sh", UID: 1000, GID: 1000})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -165,7 +179,7 @@ func TestInstanceGovernanceFixture(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	transport := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)), grpc.UnaryInterceptor(server.GovernanceUnary()))
+	transport := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)), grpc.UnaryInterceptor(server.GovernanceUnary()), grpc.StreamInterceptor(server.GovernanceStreams(false)))
 	pb.RegisterInstanceServiceServer(transport, handler)
 	done := make(chan error, 1)
 	go func() { done <- transport.Serve(listener) }()
@@ -175,7 +189,7 @@ func TestInstanceGovernanceFixture(t *testing.T) {
 			t.Error(e)
 		}
 	}()
-	raw, e := json.Marshal(map[string]string{"Address": listener.Addr().String(), "CAFile": identity.CAFile, "CertFile": identity.ClientCertFile, "KeyFile": identity.ClientKeyFile, "TerminalAddress": terminalAddress, "SGClientCertFile": identity.SGClientCertFile, "SGClientKeyFile": identity.SGClientKeyFile, "SGServerCertFile": identity.SGServerCertFile, "SGServerKeyFile": identity.SGServerKeyFile, "GovControlCertFile": identity.GovControlCertFile, "GovControlKeyFile": identity.GovControlKeyFile})
+	raw, e := json.Marshal(map[string]string{"PresetID": preset.ID, "ClusterID": clusterID, "Address": listener.Addr().String(), "CAFile": identity.CAFile, "CertFile": identity.ClientCertFile, "KeyFile": identity.ClientKeyFile, "TerminalAddress": terminalAddress, "SGClientCertFile": identity.SGClientCertFile, "SGClientKeyFile": identity.SGClientKeyFile, "SGServerCertFile": identity.SGServerCertFile, "SGServerKeyFile": identity.SGServerKeyFile, "GovControlCertFile": identity.GovControlCertFile, "GovControlKeyFile": identity.GovControlKeyFile})
 	if e != nil {
 		t.Fatal(e)
 	}

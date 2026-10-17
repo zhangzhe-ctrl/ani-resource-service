@@ -20,13 +20,16 @@ import (
 	"time"
 
 	imagev1 "github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1"
+	instancev1 "github.com/zhangzhe-ctrl/ani-resource-service/api/instance/v1"
 	networkv1 "github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1"
 	imagebiz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image"
+	instancebiz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/instance"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 type vpcIdentityProbe struct {
@@ -36,6 +39,25 @@ type vpcIdentityProbe struct {
 
 type imageIdentityProbe struct {
 	imagev1.UnimplementedTenantImageServiceServer
+}
+type instanceIdentityProbe struct {
+	instancev1.UnimplementedInstanceServiceServer
+	calls *atomic.Int32
+}
+
+func (p instanceIdentityProbe) AcceptCreate(ctx context.Context, r *instancev1.AcceptCreateRequest) (*instancev1.OperationResponse, error) {
+	if e := instancebiz.RequireTenant(ctx, r.GetContext().GetTenantId()); e != nil {
+		return nil, e
+	}
+	p.calls.Add(1)
+	return &instancev1.OperationResponse{}, nil
+}
+func (p instanceIdentityProbe) AcceptDelete(ctx context.Context, r *instancev1.AcceptDeleteRequest) (*instancev1.OperationResponse, error) {
+	if e := instancebiz.RequireTenant(ctx, r.GetContext().GetTenantId()); e != nil {
+		return nil, e
+	}
+	p.calls.Add(1)
+	return &instancev1.OperationResponse{}, nil
 }
 
 func (imageIdentityProbe) GetImageSpace(ctx context.Context, r *imagev1.GetImageSpaceRequest) (*imagev1.GetImageSpaceResponse, error) {
@@ -136,6 +158,8 @@ func TestGovernanceMTLSBoundary(t *testing.T) {
 	var calls atomic.Int32
 	networkv1.RegisterNetworkServiceServer(srv, vpcIdentityProbe{calls: &calls})
 	imagev1.RegisterTenantImageServiceServer(srv, imageIdentityProbe{})
+	var instanceCalls atomic.Int32
+	instancev1.RegisterInstanceServiceServer(srv, instanceIdentityProbe{calls: &instanceCalls})
 	go func() {
 		if err := srv.Serve(lis); err != nil {
 			t.Log(err)
@@ -217,6 +241,36 @@ func TestGovernanceMTLSBoundary(t *testing.T) {
 			}
 		})
 	}
+	t.Run("instance-command-context", func(t *testing.T) {
+		conn, e := grpc.NewClient(lis.Addr().String(), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots, ServerName: NetworkSAN, Certificates: []tls.Certificate{good}})))
+		if e != nil {
+			t.Fatal(e)
+		}
+		defer conn.Close()
+		for _, commandTenant := range []string{tenant, "33333333-3333-4333-8333-333333333333", ""} {
+			for _, method := range []string{instancev1.InstanceService_AcceptCreate_FullMethodName, instancev1.InstanceService_AcceptDelete_FullMethodName} {
+				var command *instancev1.CommandContext
+				if commandTenant != "" {
+					command = &instancev1.CommandContext{TenantId: commandTenant}
+				}
+				var request proto.Message = &instancev1.AcceptCreateRequest{Context: command}
+				if method == instancev1.InstanceService_AcceptDelete_FullMethodName {
+					request = &instancev1.AcceptDeleteRequest{Context: command}
+				}
+				before := instanceCalls.Load()
+				call, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), base.Copy()), 2*time.Second)
+				e := conn.Invoke(call, method, request, &instancev1.OperationResponse{})
+				cancel()
+				want := codes.PermissionDenied
+				if commandTenant == tenant {
+					want = codes.OK
+				}
+				if status.Code(e) != want || (instanceCalls.Load() != before) != (want == codes.OK) {
+					t.Fatal("new command context authority", method, commandTenant, status.Code(e), e)
+				}
+			}
+		}
+	})
 	t.Run("tls12", func(t *testing.T) {
 		conn, err := grpc.NewClient(lis.Addr().String(), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12, MaxVersion: tls.VersionTLS12, RootCAs: roots, ServerName: NetworkSAN, Certificates: []tls.Certificate{good}})))
 		if err != nil {

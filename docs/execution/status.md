@@ -543,3 +543,33 @@ Gov 公开 HTTP 已通过真实 JWT/token cache、套餐闸门、Casbin 和当�
 - 后续授权实验已创建两个任务 Namespace 及普通 SA/SG namespaced exec Role；CPU Notebook/STS/Pod/PVC/PV 已全部回收。业务 Namespace 使用正式 Gov 创建的持久资源租户 UUID。五个隔离数据库、PG/Redis、任务 Harbor 项目和私有配置保留，资源 ID/清理边界见[真实实验记录](records/INSTANCE-MVP-V15/live-lab.md)。旧 fixture 容器/卷已清理；没有更新共享服务、平台 GPU/CNI/全局准入。运行/恢复入口为 [Fedora 手册](../runbooks/instance-mvp-fedora.md)。
 
 继续条件：10～12 实验集群提供实际可用 GPU、独立设备插件及有效 VGPU 调度配置，核对实际组合并完成 Acc 硬件消费证明/supply/profile；提供符合实例长驻/shell/目录约定的工作镜像并验证 GPU 软件。现有 Jupyter candidate 不能直接作为兼容镜像；真实拉取材料路径已验证。冻结合格镜像 digest/shell/UID/GID 后，使用已准备租户沿产品链执行共享/整卡、可信实例终端、原账启停和最终回收。本任务不安装缺失平台组件，不扩大兼容矩阵。MVP-05 完整矩阵不额外前置；MVP-01～04 的真实 GPU 后端验收仍未完成，前端已按用户要求移交。
+
+## GPU absolute memory 2026-10-18
+
+Implementation in progress under the fixed external task Goal. The new owner
+command accepts one context and one managed spec, with a single GPU execution
+snapshot and display metadata. Quota items remain in Governance; Resource's
+release outbox sends only event/create-operation/resource/reason and checks all
+matching receipt references before acknowledgement. RuntimeClass comes from
+ACC execution only. The Pod signature is `acc-owner-pod-v2` and binds the actual
+Pod UID to `execution_digest`.
+
+The explicit `004_gpu_execution.sql` cutover rejects active GPU state or an
+unacknowledged release outbox. It retains original snapshots in an audit table,
+keeps terminal operation references and disables existing GPU Presets for explicit
+replacement. Runtime never decodes archived GPU formats. Fedora `make generate`, the real PostgreSQL instance lifecycle suite and the
+repository-required `make verify` passed with formal ACC
+`93a539326e409ae9437b95faebd050624273fd22` and quota API
+`1c605c793b88e460a84e64a88cbfa91c0a801afa` dependencies (`GOWORK=off`, exact
+module checksums and ACC Origin.Hash checked). The first verification run retained
+an unrelated Unix-socket path-length failure under the long task TMPDIR; the same
+test and complete required gate passed with an exclusive short TMPDIR, without
+changing its code. Explicit migration tests rejected active GPU/unacknowledged
+outbox state and preserved terminal audit and ACK records after closure.
+
+Owner code is delivered through existing Resource PR #8 without merge. New GPU
+deployment, CUDA, physical release, capacity restoration and original-ledger
+refund remain `NOT_RUN` for this owner-code receipt; the task's final integrated
+receipt must establish them separately. Raw logs and exact module receipts stay
+outside source under the dedicated `gpu-catalog-absolute-memory-20261018/res`
+task directory.

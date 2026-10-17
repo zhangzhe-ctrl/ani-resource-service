@@ -8,6 +8,29 @@ import (
 	"time"
 )
 
+type InstanceComputePreset struct {
+	ID          string
+	Code        string
+	Name        string
+	Description string
+	ComputeType string
+	CpuMillis   int64
+	MemoryMib   int64
+	Enabled     bool
+	Gpu         []byte
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	CreatedBy   string
+	UpdatedBy   string
+}
+
+type InstanceGpuCutoverAudit struct {
+	TenantID         string
+	InstanceID       string
+	OriginalSnapshot []byte
+	ArchivedAt       time.Time
+}
+
 type InstanceInstance struct {
 	TenantID          string
 	InstanceID        string
@@ -40,8 +63,9 @@ type InstanceInstanceQuotaReleaseOutbox struct {
 	InstanceID                string
 	EventID                   string
 	OriginalCreateOperationID string
-	Charges                   []byte
+	ArchivedCharges           []byte
 	Acknowledged              bool
+	Reason                    string
 }
 
 type InstanceInstanceWork struct {

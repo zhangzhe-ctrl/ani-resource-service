@@ -1,35 +1,59 @@
 package instancev1
 
 import (
+	"google.golang.org/protobuf/proto"
+	"strings"
 	"testing"
-
-	acc "github.com/zhangzhe-ctrl/ani-accelerator-service/api/gen/go/accelerator/v1"
 )
 
-func TestCanonicalBusinessLegacyGPUBytes(t *testing.T) {
-	// Fixed bytes follow the pre-instance_type schema and HEAD's canonical
-	// encoding contract, including protobuf int64 strings and sorted JSON keys.
-	business := &CreateBusiness{Data: &CreateInstanceData{Name: "legacy", ImageId: "image", ImageScope: "platform", PresetId: "shared", PresetVersion: 1}, Spec: &FrozenSpec{ImageReference: "registry.invalid/work@sha256:abc", ImageDigest: "sha256:abc", Cpu: "1", Memory: "2Gi", ClusterId: "cluster", Namespace: "tenant", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", Shell: "/bin/bash", Uid: 1000, Gid: 1000}, Gpu: &acc.GpuRequest{ClusterId: "cluster", PoolId: "pool", ProfileId: "profile", ProfileVersion: 7, Replicas: 1, DevicesPerReplica: 1, ContainerName: "workspace"}}
-	const expected = `{"data":{"image_id":"image","image_scope":"platform","name":"legacy","preset_id":"shared","preset_version":"1"},"gpu":{"cluster_id":"cluster","container_name":"workspace","devices_per_replica":1,"pool_id":"pool","profile_id":"profile","profile_version":"7","replicas":1},"spec":{"cluster_id":"cluster","cpu":"1","gid":"1000","image_digest":"sha256:abc","image_reference":"registry.invalid/work@sha256:abc","memory":"2Gi","namespace":"tenant","service_account":"workload","shell":"/bin/bash","storage_class":"ani-block","uid":"1000","workspace_size":"1Gi"}}`
-	raw, err := CanonicalBusinessPayload(business)
-	if err != nil || string(raw) != expected {
-		t.Fatalf("legacy GPU canonical bytes changed; replay digest would drift: %s; error=%v", raw, err)
+func currentBusiness() *CreateSpec {
+	return &CreateSpec{Name: "workspace-a", ImageId: "img_" + strings.Repeat("b", 32), ImageScope: "platform", PresetId: "20000000-0000-4000-8000-000000000001", InstanceKind: "container", ComputeType: "cpu", ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("a", 64), Cpu: "1000m", Memory: "2048Mi", ClusterId: "11111111-1111-4111-8111-111111111111", Namespace: "tenant-a", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", Shell: "/bin/sh", Uid: 1000, Gid: 1000, Scheduling: &SchedulingOptions{PodPlacement: SchedulingOptions_NONE.Enum()}, PresetName: "CPU", PresetCode: "cpu-small"}
+}
+func TestCommandIdentityAndBusinessDigest(t *testing.T) {
+	b := currentBusiness()
+	c := &CommandContext{TenantId: "tenant", ResourceId: "resource", OperationId: "operation"}
+	want, e := CommandDigest(c, b)
+	if e != nil {
+		t.Fatal(e)
 	}
-	decoded, err := DecodeBusinessPayload([]byte(expected))
-	if err != nil {
-		t.Fatal("historical GPU payload no longer decodes", err)
+	for name, change := range map[string]func(*CreateSpec){"cpu": func(s *CreateSpec) { s.Cpu = "2" }, "image": func(s *CreateSpec) { s.ImageReference = "changed" }, "placement": func(s *CreateSpec) { s.Scheduling.PodPlacement = SchedulingOptions_SPREAD_PREFERRED.Enum() }, "display": func(s *CreateSpec) { s.PresetName = "changed" }} {
+		t.Run(name, func(t *testing.T) {
+			v := proto.Clone(b).(*CreateSpec)
+			change(v)
+			got, e := CommandDigest(c, v)
+			if e != nil || got == want {
+				t.Fatal("changed command lost conflict binding", e)
+			}
+		})
 	}
-	replayed, err := CanonicalBusinessPayload(decoded)
-	if err != nil || string(replayed) != expected {
-		t.Fatalf("historical GPU replay changed canonical bytes: %s; error=%v", replayed, err)
+	other := proto.Clone(c).(*CommandContext)
+	other.OperationId = "other"
+	got, _ := CommandDigest(other, b)
+	if got == want {
+		t.Fatal("operation not bound")
+	}
+	b.ProtoReflect().SetUnknown([]byte{0xf8, 0x07, 0x01})
+	if _, e = CommandDigest(c, b); e == nil {
+		t.Fatal("unknown command fields accepted")
 	}
 }
-
-func TestCanonicalBusinessExplicitCPUType(t *testing.T) {
-	business := &CreateBusiness{Spec: &FrozenSpec{InstanceType: "cpu"}}
-	const expected = `{"data":null,"gpu":null,"spec":{"cluster_id":"","cpu":"","gid":"0","image_digest":"","image_reference":"","instance_type":"cpu","memory":"","namespace":"","service_account":"","shell":"","storage_class":"","uid":"0","workspace_size":""}}`
-	raw, err := CanonicalBusinessPayload(business)
-	if err != nil || string(raw) != expected {
-		t.Fatalf("explicit CPU type missing from canonical business: %s; error=%v", raw, err)
+func TestOldTransportRejected(t *testing.T) {
+	for _, raw := range []string{`{"business":{}}`, `{"gpu_owner_attachment":{}}`, `{"original_charges":[]}`} {
+		if _, e := DecodeBusinessPayload([]byte(raw)); e == nil {
+			t.Fatal("old transport accepted")
+		}
+	}
+}
+func TestSchedulingPresenceAndConflict(t *testing.T) {
+	raw := &SchedulingOptions{PodPlacement: SchedulingOptions_SPREAD_PREFERRED.Enum()}
+	effective, e := ResolveSchedulingOptions(raw, nil)
+	if e != nil || effective.GetPodPlacement() != SchedulingOptions_SPREAD_PREFERRED {
+		t.Fatal(e)
+	}
+	if e = ValidateSchedulingConsistency(raw, &SchedulingOptions{PodPlacement: SchedulingOptions_NONE.Enum()}); e == nil {
+		t.Fatal("conflicting frozen options accepted")
+	}
+	if e = ValidateSchedulingOptions(&SchedulingOptions{}, true); e == nil {
+		t.Fatal("missing placement accepted")
 	}
 }

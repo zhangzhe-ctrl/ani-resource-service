@@ -37,6 +37,8 @@ type Notebook struct {
 	client     dynamic.Interface
 	signingKey ed25519.PrivateKey
 	images     imagebiz.RuntimeImages
+	logSource  podLogSource
+	logLimits  biz.LogLimits
 }
 
 func NewNotebook(client dynamic.Interface) (*Notebook, error) {
@@ -110,7 +112,7 @@ func stringMap(in map[string]string) map[string]any {
 // RenderNotebook consumes the frozen instance specification. User images cannot change the
 // managed container count, replicas, selectors, queue, or resource limits.
 func RenderNotebook(i biz.Instance) (*unstructured.Unstructured, error) {
-	if e := biz.ValidateCreate(biz.Create{TenantID: i.TenantID, ID: i.ID, OperationID: i.CreateOperationID, RequestHash: i.CreateRequestHash, BusinessDigest: i.BusinessDigest, Spec: i.Spec, Charges: i.Charges}); e != nil {
+	if e := biz.ValidateCreate(biz.Create{TenantID: i.TenantID, ID: i.ID, OperationID: i.CreateOperationID, RequestHash: i.CreateRequestHash, BusinessDigest: i.BusinessDigest, Spec: i.Spec}); e != nil {
 		return nil, e
 	}
 	s := i.Spec
@@ -126,9 +128,9 @@ func RenderNotebook(i biz.Instance) (*unstructured.Unstructured, error) {
 		ann[k] = v
 	}
 	pod := map[string]any{"serviceAccountName": s.ServiceAccount, "automountServiceAccountToken": false, "securityContext": map[string]any{"runAsUser": s.UID, "runAsGroup": s.GID, "fsGroup": s.GID}, "containers": []any{map[string]any{"name": biz.Container, "image": s.ImageReference, "imagePullPolicy": "Always", "workingDir": "/workspace", "securityContext": map[string]any{"allowPrivilegeEscalation": false, "capabilities": map[string]any{"drop": []any{"ALL"}}}, "resources": map[string]any{"requests": map[string]any{"cpu": s.CPU, "memory": s.Memory}, "limits": limits}, "volumeMounts": []any{map[string]any{"name": "workspace", "mountPath": "/workspace"}}}}, "volumes": []any{map[string]any{"name": "workspace", "persistentVolumeClaim": map[string]any{"claimName": s.PVCName}}}}
-	if s.Type() == biz.TypeGPU {
+	if s.ComputeType == biz.TypeGPU {
 		ann["scheduling.volcano.sh/queue-name"] = s.GPU.Queue
-		ann["accelerator.ani.io/plan-digest"] = s.GPU.Digest
+		ann["accelerator.ani.io/execution-digest"] = s.GPU.Digest
 		pod["schedulerName"] = s.GPU.Scheduler
 		pod["nodeSelector"] = stringMap(s.GPU.NodeLabels)
 	}
@@ -139,6 +141,9 @@ func RenderNotebook(i biz.Instance) (*unstructured.Unstructured, error) {
 	cs[0].(map[string]any)["env"] = []any{map[string]any{"name": "ANI_INSTANCE_POD_UID", "valueFrom": map[string]any{"fieldRef": map[string]any{"fieldPath": "metadata.uid"}}}}
 	if s.ImagePullSecret != "" {
 		pod["imagePullSecrets"] = []any{map[string]any{"name": s.ImagePullSecret}}
+	}
+	if err := ApplySchedulingOptions(pod, i); err != nil {
+		return nil, err
 	}
 	// NotebookTemplateSpec is a PodSpec wrapper, without metadata. The v1.10
 	// controller copies Notebook metadata to the new StatefulSet Pod template.
@@ -201,11 +206,19 @@ func (n *Notebook) Observe(ctx context.Context, i biz.Instance) (biz.Observation
 		if e := verifyPod(p, i); e != nil {
 			return out, e
 		}
-		if out.PodName != "" {
-			return out, fmt.Errorf("instance has multiple Pods")
+		if e := n.verifyPodGroupPriority(ctx, p, i); e != nil {
+			return out, e
+		}
+		if i.Spec.ComputeType == biz.TypeGPU {
+			out.GPUPods = append(out.GPUPods, biz.PodRef{ClusterID: i.Spec.ClusterID, Namespace: i.Spec.Namespace, Name: p.GetName(), UID: string(p.GetUID()), ContainerName: biz.Container})
 		}
 		out.PodName = p.GetName()
 		out.PodUID = string(p.GetUID())
+		if i.Spec.ComputeType == biz.TypeGPU && len(n.signingKey) == ed25519.PrivateKeySize {
+			if e := n.signPod(ctx, p, i); e != nil {
+				return out, e
+			}
+		}
 		if p.GetDeletionTimestamp() == nil {
 			phase, _, _ := unstructured.NestedString(p.Object, "status", "phase")
 			conditions, _, _ := unstructured.NestedSlice(p.Object, "status", "conditions")
@@ -223,11 +236,6 @@ func (n *Notebook) Observe(ctx context.Context, i biz.Instance) (biz.Observation
 				name, _ := c["name"].(string)
 				if phase == "Running" && podReady && name == biz.Container && ready {
 					out.PodReady = true
-				}
-			}
-			if i.Spec.Type() == biz.TypeGPU && len(n.signingKey) == ed25519.PrivateKeySize {
-				if e := n.signPod(ctx, p, i); e != nil {
-					return out, e
 				}
 			}
 		}
@@ -338,6 +346,9 @@ func (n *Notebook) observeWorkspace(ctx context.Context, i biz.Instance, out *bi
 	}
 }
 func verifyPod(p *unstructured.Unstructured, i biz.Instance) error {
+	if err := verifySchedulingOptions(p, i); err != nil {
+		return err
+	}
 	for _, field := range []string{"initContainers", "ephemeralContainers"} {
 		containers, _, _ := unstructured.NestedSlice(p.Object, "spec", field)
 		for _, v := range containers {
@@ -345,7 +356,7 @@ func verifyPod(p *unstructured.Unstructured, i biz.Instance) error {
 			for _, resourceField := range []string{"requests", "limits"} {
 				resources, _, _ := unstructured.NestedStringMap(container, "resources", resourceField)
 				for k := range resources {
-					if strings.Contains(k, "gpu") || (i.Spec.Type() == biz.TypeCPU && strings.Contains(k, "/")) {
+					if strings.Contains(k, "gpu") || (i.Spec.ComputeType == biz.TypeCPU && strings.Contains(k, "/")) {
 						return biz.ErrOwnership
 					}
 				}
@@ -389,7 +400,7 @@ func verifyPod(p *unstructured.Unstructured, i biz.Instance) error {
 				return biz.ErrOwnership
 			}
 		}
-		if i.Spec.Type() == biz.TypeCPU && len(resources) != 2 {
+		if i.Spec.ComputeType == biz.TypeCPU && len(resources) != 2 {
 			return biz.ErrOwnership
 		}
 	}
@@ -436,7 +447,7 @@ func verifyPod(p *unstructured.Unstructured, i biz.Instance) error {
 	limits, _, _ := unstructured.NestedStringMap(c, "resources", "limits")
 	for k, v := range i.Spec.GPU.Limits {
 		if limits[k] != v {
-			return fmt.Errorf("GPU plan was not projected to Pod")
+			return fmt.Errorf("GPU execution was not projected to Pod")
 		}
 	}
 	for k := range limits {
@@ -445,7 +456,7 @@ func verifyPod(p *unstructured.Unstructured, i biz.Instance) error {
 		}
 	}
 	scheduler, _, _ := unstructured.NestedString(p.Object, "spec", "schedulerName")
-	if i.Spec.Type() == biz.TypeCPU {
+	if i.Spec.ComputeType == biz.TypeCPU {
 		if scheduler != "" && scheduler != "default-scheduler" {
 			return biz.ErrOwnership
 		}
@@ -460,6 +471,9 @@ func verifyPod(p *unstructured.Unstructured, i biz.Instance) error {
 			}
 		}
 		return nil
+	}
+	if p.GetAnnotations()["accelerator.ani.io/execution-digest"] != i.Spec.GPU.Digest {
+		return biz.ErrOwnership
 	}
 	if scheduler != i.Spec.GPU.Scheduler {
 		return biz.ErrOwnership
@@ -487,14 +501,14 @@ func verifyPod(p *unstructured.Unstructured, i biz.Instance) error {
 	return nil
 }
 func (n *Notebook) signPod(ctx context.Context, p *unstructured.Unstructured, i biz.Instance) error {
-	if i.Spec.Type() != biz.TypeGPU {
+	if i.Spec.ComputeType != biz.TypeGPU {
 		return biz.ErrInvalid
 	}
-	payload, e := json.Marshal(map[string]any{"pod": map[string]string{"cluster_id": i.Spec.ClusterID, "namespace": p.GetNamespace(), "name": p.GetName(), "uid": string(p.GetUID()), "container_name": biz.Container}, "ref": map[string]string{"tenant_id": i.TenantID, "owner_service": biz.Owner, "resource_id": i.ID, "create_operation_id": i.CreateOperationID}, "plan_digest": i.Spec.GPU.Digest})
+	payload, e := json.Marshal(map[string]any{"pod": map[string]string{"cluster_id": i.Spec.ClusterID, "namespace": p.GetNamespace(), "name": p.GetName(), "uid": string(p.GetUID()), "container_name": biz.Container}, "ref": map[string]string{"tenant_id": i.TenantID, "owner_service": biz.Owner, "resource_id": i.ID, "create_operation_id": i.CreateOperationID}, "execution_digest": i.Spec.GPU.Digest})
 	if e != nil {
 		return e
 	}
-	sig := base64.StdEncoding.EncodeToString(ed25519.Sign(n.signingKey, append([]byte("acc-owner-pod-v1\n"), payload...)))
+	sig := base64.StdEncoding.EncodeToString(ed25519.Sign(n.signingKey, append([]byte("acc-owner-pod-v2\n"), payload...)))
 	ann := p.GetAnnotations()
 	if ann["accelerator.ani.io/owner-signature"] == sig {
 		return nil

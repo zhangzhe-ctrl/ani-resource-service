@@ -1,4 +1,4 @@
-# Res GPU 容器实例 MVP 实施方案 v1.5
+# Res 容器实例合同
 
 > 本版基于 v1.4 和后续讨论修订，面向当前受控实验环境。文中接口、字段及工作包是实施约定，不代表已经修改代码、部署或通过验收。
 
@@ -10,17 +10,33 @@
 
 > 2026-10-13 执行范围调整：用户要求本轮只完成后端，前端由专人接手。本文页面条目作为接口交接要求；本轮执行范围、实际结果和环境断点只见 [执行状态](../execution/status.md#gpu-container-instance-mvp-v15)。
 
-> 2026-10-15 用户追加 CPU 产品入口：分别创建 CPU、GPU 实例，创建后类型与规格固定，不支持互转。以下 CPU 规则替代原纯 CPU 排除项；GPU 的配额、冻结 plan 与实机验收要求继续有效，CPU 验收不替代 GPU 验收。
+> 2026-10-15 用户追加 CPU 产品入口：分别创建 CPU、GPU 实例，创建后类型与规格固定，不支持互转。以下 CPU 规则替代原纯 CPU 排除项；GPU 的原账配额、唯一执行快照与实机验收要求继续有效，CPU 验收不替代 GPU 验收。
 
-### CPU 增量合同
+### 2026-10-16 联合合同
 
-CPU 和 GPU 共用 Gov 当前授权、原公开请求幂等、持久命令投递、Res 持久 ACK、镜像解析、Notebook/PVC、启停、终端和最终清理。类型由受信 preset 决定并冻结，公共创建 DTO 仍只接受名称、镜像与 preset ID/版本；列表、详情和 preset 返回 `instance_type=cpu|gpu`。历史未保存类型的实例继续按 GPU 解释。
+本节是当前有效合同；下文保留历史生命周期依据，冲突处以本节为准。
 
-CPU 冻结规格必须显式为 `cpu`，没有 GPU request/plan/charges，不调用 Acc，不写 GPU 资源、调度器、Queue、runtime、签名或 plan 注解；CPU/内存同时设置 requests 和 limits。Gov 仅对固定 Resource CREATE/DELETE 的 `instance-cpu-v1` 严格合同允许空 charges，复用原持久队列；不新增 CPU 计费体系。CPU 删除的 `quota_returned=true` 表示无待退 GPU 配额。
+本节取代下文历史方案中的单卡、配置规格、旧类型/版本及旧分页约定。完整规格唯一来源是 `instance.compute_presets`：UUID、不可变唯一 code、名称/描述、cpu/gpu、正整数 cpu_millis/memory_mib、enabled 和受管 GPU 引用。新增默认禁用，无草稿/发布/版本表。CPU 引用为空；GPU 引用由受信 Gov 读取 ACC 后补全。PATCH 锁行后在同一事务按非空 FieldMask 合并、校验最终对象；gpu 整体替换或清除。删除不级联实例/ACC。
 
-CPU DELETE 保存原 CREATE、期望业务版本和幂等键。Stop/Start 保留类型、规格、镜像 digest、原 CREATE 和专属 PVC；无变配或互转入口。终端通过可信 InstanceBinding 核验业务版本及实际 Notebook/Pod UID，SG 使用已有 `CONTAINER` 类型。最终删除须同时完成计算和专属 PVC/PV 回收；停止、删除意图立即撤销旧终端权限。
+实例内外只有 `instance_kind=container`、`compute_type=cpu|gpu`，类型来自数据库规格并冻结。删除 `instance_type`、外层 `preset_version`、空类型默认 GPU、旧 canonical 分支及 `Config.Presets`。当前 schema 缺必填类型或实际调度对象直接拒绝。profile_version 与 expected_version 保留现有语义。
 
-CPU 最小交付是正式 Gov API 创建 → 实际 Notebook 运行 → SG 终端写 `/workspace` → 多次启停后文件仍在 → 正式删除并核对专属卷回收。前端由专人接手，本轮只提供接口及隔离运行环境。
+Gov 首先检查原始幂等记录，然后解析规格和默认值，一次持久受理/占额后投递。Res Resolve 只解析，不创建/占额；Accept 只消费单一 context/spec，不重读当前目录。CPU 不调用 ACC；GPU 只持久化 `GpuExecution` 与简短展示引用，原占额留在 Gov。共享设备数为 1；整卡按已解析资源执行，实例副本始终 1。002/003 历史迁移不改写，004 显式切换到绝对显存及无账目 owner 合同。
+
+规格 CPU/内存采用精确整数，分别转换为 `<cpu_millis>m` 与 `<memory_mib>Mi`，requests=limits。内存值必须可表达为合法 Kubernetes Quantity，超出 int64 字节上限拒绝。实例独立保存规格 ID/名称/编码、两维类型、CPU/内存、GPU 展示引用、唯一执行快照、镜像/环境和实际调度。修改、禁用或删除规格不影响已受理重试、静态展示、启停及清理。
+
+GPU 运行参数只来自 ACC 的 `GpuExecution`。Resource 保存一次执行快照及 Profile 展示引用；RuntimeClass 不再由本服务配置或回退。完整释放使用 `ReportResourceReleased`，不接收、保存或回传 Gov 的额度类型、数量和账目明细。新命令使用单一 context/spec；旧附件、Plan、百分比字段和签名格式不能进入新执行链。
+
+原始 CreateInstanceData.scheduling 可缺失；出现时拒绝空对象、非法枚举或空优先级。FrozenSpec.scheduling 必须存在且 placement 明确，按用户值 > 本次合法默认 > NONE，priority 无来源保持缺失。接收端再次校验原始明确值与实际值相等，正确摘要不能免除这项检查。原始哈希只包含原始意图；业务摘要覆盖完整冻结对象。
+
+执行摘要只覆盖 scheduler、queue、RuntimeClass、node selector、annotations、resources 六个明确字段，使用排序 canonical JSON 与 `acc-execution-v1` 域前缀。整命令摘要覆盖身份、业务配置、执行摘要及展示；未知字段与旧附件被拒绝。Pod v2 签名另外绑定实际 UID 及执行摘要，不能用摘要代替服务认证。
+
+`ApplySchedulingOptions` 只消费冻结 scheduling，COLOCATE/SPREAD 分别合并 weight=100、hostname 拓扑的软亲和/软反亲和，selector 固定可信 tenant+instance 并明确当前 namespace；NONE 不新增规则。节点约束、GPU Runtime 和不相关 affinity 保留，重复渲染去重；固定 priority 或相反受管关系冲突拒绝，不整体覆盖 affinity。Notebook v1.10 的 labels/annotations 从 Notebook metadata 传播，PodSpec 从 spec.template.spec 传播；最终 Pod 再核对所选规则与 priority。GPU Pod 引用现有 Volcano PodGroup 且本次选了 priority 时，只读核对同 namespace Group 的 priorityClassName，冲突回显 SCHEDULING_FIELD_CONFLICT，不重写 Group。
+
+AdminList/Get/Create/Update/SetPresetEnabled/DeletePreset 走现有 Gov mTLS 平台委托和独立实例平台 Caller，无伪租户。ListPresets/实例方法走可信租户。租户目录仅启用项，GPU 按可信授权 profile_id/version/digest/cluster/pool 交集过滤后分页；空允许集合严格禁止 GPU，返回内部 has_gpu_candidates 供 Gov 处理 ACC 故障。
+
+ListInstances 直接改为 page/page_size 与 items/total；删除 keyset 双轨。规格与实例 Count/List 在同一只读 Repeatable Read 事务、相同租户/筛选/授权 WHERE 中执行，按 created_at DESC 和唯一 ID DESC 排序。name 大小写不敏感字面子串，%/_ 不作为通配符。静态列表/详情同一安全映射，不查 Kubernetes/ACC/当前规格；返回真实 createdAt、workspaceSize、两维类型、CPU/内存、preset_name/code、gpu_summary、实际 scheduling。操作状态与清理标志沿原合同。
+
+CPU 最小运行验收仍为 Gov 正式入口 → 真实 PG → Notebook/控制器/Pod；GPU 需读取 Whole1/Shared1/Whole2 实际 Pod 字段。Pending 仅可作为字段证据，不是运行/硬件/隔离/释放通过。软件和外部边界替身单独报告。运行详情、事件与日志通过纯GET/LIST目标解析：可信租户/实例DB记录 → 保存cluster/namespace → Notebook/STS/Pod owner UID链。诊断不调用带签名写入的Observe、不清理/占额/usage同步。runtime仅返回安全状态、来源类别、挂载类别，不返回环境值/Secret内容/宿主路径；缺对象为null、读取失败为错误。事件只取当前Pod UID的core/v1 Event，每页200、最多1000、真实truncated，时间与计数缺失保持null。日志仅固定workspace stdout/stderr，开流前后GET同UID、READY后才传bytes，替换Pod终止；鉴权、取消和保护上限见[调用登记](governance-calls.md#平台规格与实例日志)。真实公开日志/SSE、长连接和Pod传播必须另行实测，软件测试不替代现场验收。
 
 ## 1. 本轮交付与明确边界
 
@@ -71,7 +87,7 @@ Notebook 运行，通过 SG 浏览器终端使用
 | Gov | 当前用户认证授权、可信租户上下文、占额、命令投递、幂等退额 | 不重新检查 Notebook／Pod 判断业务能否退额 |
 | Res／instance | 实例生命周期、Notebook 适配、工作盘、终端目标、本业务退额决定 | 不重建 IAM、配额账本或 GPU 调度器 |
 | Res／image | 镜像登记、可见范围、固定 digest、拉取材料 | 不在线修理任意镜像 |
-| Acc | GPU 规格、冻结 plan、供给与实际占用观察、使用关联 | 不将配额已退等同物理设备空闲 |
+| Acc | GPU 规格、最终执行快照、供给与实际占用观察、使用关联 | 不将配额已退等同物理设备空闲 |
 | SG | 终端票据、WebSocket 与 exec | 不管理实例生命周期，不承载新增 IDE 网页 |
 | 平台部署／镜像维护者 | 实验环境、基础镜像规范、现有网络与存储配置 | 本轮不建设通用租户环境平台 |
 | ModelDev | 本轮不修改 | 不作为 Notebook 请求转发层 |
@@ -132,31 +148,31 @@ Namespace 可能被同租户多个实例和其他服务共用，删除实例绝�
 
 不同 Namespace 本身不等于网络隔离；策略是否生效还取决于网络配置与插件支持。因此上述范围限制不能在生产交付中被写成“完整隔离已验证”。[4]
 
-## 5. GPU plan：正确映射，正常联调
+## 5. GPU 执行快照：正确映射，正常联调
 
 ### 5.1 执行职责
 
 ```text
-Acc 生成 plan
+Acc 生成 execution／quota_items／selection
     ↓
-Gov 冻结并传给 Res
+Gov 只将 execution 和展示随受管 spec 传给 Res
     ↓
 Res 填入 Notebook 对应位置
     ↓
 已有控制器、Volcano／设备插件执行
 ```
 
-Res 负责正确消费原 plan，不重复开发调度逻辑，也不在每次启动时重新推导 GPU 配置。
+Res 负责正确消费唯一执行快照，不重复开发调度逻辑，也不在每次启动时重新推导 GPU 配置。
 
 | 内容 | Res 的实现约定 |
 |---|---|
-| GPU limits | 使用 plan 中已经解析好的运行资源值，不用业务展示显存替代 |
-| scheduler／Queue | 按当前 recipe 写入正确对象位置，不根据字段名称猜测层级 |
+| GPU limits | 使用 execution.resources 中已经解析好的运行资源值，不用业务展示显存替代 |
+| scheduler／Queue | 按固定适配写入正确对象位置，不根据字段名称猜测层级 |
 | 节点限制、受管标签与注解 | 准确映射，不被镜像或普通业务配置覆盖 |
 | 主容器身份与 GPU 数量 | 与冻结请求一致，不增加额外 GPU 容器或副本 |
-| 启停重放 | 保留原 plan、原资源单位和原主容器名称 |
+| 启停重放 | 保留原 execution、MiB 资源值和主容器名称 |
 
-例如已有合同规定共享显存 `q=m/F`。当 `m=6144 MiB`、`F=1024 MiB/块` 时，账本记 6144 MiB，插件字段使用 6 块；Res 消费冻结结果，不再按当前 F 重算。[5]
+供给统一 F=1；`volcano.sh/vgpu-memory` 数值即 MiB。共享和整卡均使用正整数具体显存，整卡使用全部可用显存及 100 核心；不再生成或接受显存百分比键。Res 不计算 F，不渲染 Profile。
 
 ### 5.2 验收只做应有的测试
 
@@ -224,22 +240,22 @@ Gov 当前认证授权
                     ↓
 确定 instance_id、Notebook／主容器名称
                     ↓
-Gov 调 Acc 得到原 plan
+Gov 调 Acc 得到 execution、quota_items、selection
                     ↓
 Gov 一次事务占额并保存命令
                     ↓
-Res 持久接受原配置、plan、charges，返回 ACK
+Res 持久接受 context/spec 中唯一 execution 和展示，返回 ACK
                     ↓
 Res worker 准备工作盘和拉取材料，创建 Notebook
 ```
 
-**重放已受理请求不重新解析镜像、Namespace 或 GPU plan。** 镜像下架或 Harbor 暂时故障不能阻止返回原受理结果；但当前调用授权仍要执行。这不等于批准一个新的创建，也不保证原资源后续拉取永远成功。
+**重放已受理请求不重新解析镜像、Namespace 或 GPU execution。** 镜像下架或 Harbor 暂时故障不能阻止返回原受理结果；但当前调用授权仍要执行。这不等于批准一个新的创建，也不保证原资源后续拉取永远成功。
 
 Res 对同一命令也返回原持久 ACK，不重复建资源。已接受的后续停止／删除意图不被迟到 CREATE 重放覆盖。
 
 ### 8.2 普通停止与启动
 
-保留一个 Notebook。Stop 使用它的原生停止机制，Start 恢复同一个 Notebook；实际 Pod 可以变化，但 instance_id、原 CREATE、plan、charges 和工作盘不变。
+保留一个 Notebook。Stop 使用它的原生停止机制，Start 恢复同一个 Notebook；实际 Pod 可以变化，但 instance_id、原 CREATE、execution、Gov 原账和工作盘不变。
 
 沿用 v1.4 所选的 `kubeflow-resource-stopped` 注解适配：停止添加，启动移除，不将值写为 `false` 冒充移除。该机制的既有来源是 v1.4 引用的上游版本，仍须以实验集群实际控制器验证，不假设部署版本。[1]
 
@@ -305,27 +321,13 @@ Kubernetes 支持通过 resourceVersion 检测并拒绝基于旧对象版本的�
 
 恢复记录至少包含实例、原操作、目标身份、待定动作及所取得的确定结果。**等待一段时间、重复多次 404、重启服务，都不能单独充当恢复依据。** 无依据时允许人工介入和持续阻塞，本轮不承诺解决全部不确定请求的自动恢复。
 
-## 10. Gov／Acc：维持已确定的公共退额方向
+## 10. 完整释放及 Gov 原账退额
 
-通用链路仍为：
+Res 在计算资源清理完成且没有待确认写、已封闭迟到创建之后持久化释放 outbox，再发送 `ReportResourceReleased`。计算清理须同时满足 Kubernetes 对象消失及 ACC 物理释放确认：外部创建前持久开始标记和已见 Pod 历史，清理后先持久封闭时间，再以 cluster/owner 全范围 `ObserveRelease` 验证来源水位与正向释放事实。API absence、节点离线和未知证据不能单独完成清理；仅从未开始外部创建的封闭取消可凭内部未执行事实跳过物理观察。该通知只有稳定 release_event_id、create_operation_id、resource_id、reason。Stop、重启、普通退出及来源缺项不能触发完整释放。Pending 从未分配 GPU 时可在可靠封闭创建后退额。
 
-```text
-业务 owner 作出退额决定
-        ↓
-Gov 验证调用者、原操作／charges、数量及幂等
-        ↓
-Gov 事务提交：账本退额完成
-        ↓
-Gov 独立同步 Acc；失败重试，不回滚已完成退额
-```
+Gov 从已认证 owner 与原创建操作查原账，验证归属后幂等全退；Res 不接受或存储 charge/code/units，也不根据当前目录重算。响应必须匹配事件、原操作、资源且为 APPLIED／ALREADY_APPLIED，Res 才确认 outbox。丢回执重试相同内容；同事件异内容拒绝，同资源换事件不得重复退额。
 
-合法 owner 提前通知时 Gov 可以执行；这代表账本指令被接受，不代表 Res 删除正确或设备空闲。各服务分别负责，不能新增 Gov 回调业务状态的审批。
-
-沿用 v1.4 的待实施改动：移除公共 GPU 退额及使用结束派生对持久 DELETE 的通用硬前置；保留原 owner／tenant／CREATE／charge 校验、原 GPU 子集全量归还、累计幂等和审计；正式登记 Res owner。**这些是目标改动，不是本次又验证为已经实现。**[1]
-
-原 RPC、字段 tag 与可复用数据结构尽量保持，按公开契约流程更新注释、原因语义、版本与消费者测试。Acc 的 `ENDED` 以原 GPU 账本结束事实解释，仍不删除实际占用；不能伪造物理释放的证明或为匹配旧语义编造 DELETE。
-
-退款继续发送稳定事件 ID、原创建操作和原 charge 向量。响应未知时重试原内容，不改 ID 重新退；业务暂停、SG 故障、当前用户权限撤回不能被用来阻断可信原账的归还。
+Gov 独立异步同步 ACC 的薄 Usage 投影；失败重试不回滚已经完成退额。Usage ENDED 不能清除真实活绑定，物理释放与容量恢复仍由 ACC 的运行采集确认。各项实际验收状态仅见执行状态，协议和受控测试不代表真实 GPU 通过。
 
 ## 11. API、数据与代码落点
 
@@ -351,11 +353,11 @@ Gov 独立同步 Acc；失败重试，不回滚已完成退额
 
 | 记录 | 保存内容 |
 |---|---|
-| `instances` | 租户、原 CREATE／plan／charges、冻结规格镜像、保存的 cluster／namespace、Notebook 身份、期望与观察状态 |
+| `instances` | 租户、原 CREATE、唯一 execution／展示、冻结规格镜像、保存的 cluster／namespace、Notebook 身份、期望与观察状态 |
 | `instance_operations` | 请求指纹、幂等 ACK、命令意图版本、外部调用待定结果 |
 | `instance_work` | 到期时间、租约、Owner/Epoch、失败与重试信息 |
 | `workspace_bindings` | 实例专属 PVC 身份和删除进度，不提供独立保留卷生命周期 |
-| `instance_quota_release_outbox` | 原通知内容、稳定事件、Gov 回执 |
+| `instance_quota_release_outbox` | 稳定事件、原 CREATE、resource、reason、匹配 Gov ACK |
 
 无独立 Run 表、无第二套账户余额、无 Namespace 映射新表。业务版本只随有效命令变化，不随普通观察刷新变化。最终删除后保留必要操作与审计记录，不靠物理删除数据库行表达幂等终态。
 
@@ -389,7 +391,7 @@ SG 复用原 terminal／exec；只补当前实例目标和申请／建连时检�
 | Gov 未提供 Namespace | 使用当前 Network 前缀＋完整租户 UUID |
 | 前缀变化后重放／启停／删除 | 仍操作首次保存的 Namespace |
 | 已受理创建，镜像解析服务不可用 | 当前授权通过后返回原受理结果，不再次占额 |
-| GPU plan 经 Notebook 到 Pod | 关键运行字段正确，共享和整卡实际可用 |
+| GPU execution 经 Notebook 到 Pod | 关键运行字段正确，共享和整卡实际可用 |
 | 多次停止启动 | 配额不变，原工作盘文件保留 |
 | 旧 Start 请求最后到达 | 条件冲突或被最新意图拒绝，不让旧动作覆盖新状态 |
 | 创建结果未知，此时查不到对象 | 不错误宣告完成，保留待定动作和清晰原因 |

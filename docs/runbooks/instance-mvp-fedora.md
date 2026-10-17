@@ -6,7 +6,7 @@
 
 本任务重任务仅在 `ssh fedora` 执行，使用任务独占源码、缓存和 TMPDIR；互斥锁、资源预算、固定基线及快照见当前状态。按 [远程执行约定](../remote-execution.md) 同步带文件哈希的源码，不同步私钥、DSN 或 kubeconfig。
 
-Resource 的 [实例 API 生成器](../../scripts/generate-instance-api) 使用固定 Buf/Go 插件及正式 Acc proto；sqlc 使用根 `sqlc.yaml`。实例定向 PG 验证入口为 [instance-integration](../../scripts/instance-integration)，只创建、迁移和清理带任务标签的独占 PostgreSQL；`INSTANCE_TEST_RUN` 可限制相关场景。`make verify` 的全量测试入口不用于本 Goal。
+Resource 的 [实例 API 生成器](../../scripts/generate-instance-api) 使用固定 Buf/Go 插件及正式 Acc proto；sqlc 使用根 `sqlc.yaml`。实例定向 PG 验证入口为 [instance-integration](../../scripts/instance-integration)，只创建、迁移和清理带任务标签的独占 PostgreSQL；`INSTANCE_TEST_RUN` 可限制相关场景。提交前仍执行仓库要求的 `make verify`；实例真实 PG 门禁单独执行，不能由普通单元测试代替。
 
 终端验证协议单独发布为 `github.com/zhangzhe-ctrl/ani-resource-service/api/instance/terminal`，只依赖 protobuf/gRPC，SG 不依赖 Resource 根模块及其 Kubernetes SDK。正式版本固定在各消费者 `go.mod`；升级先发布 provider，核验下载来源 SHA/sums，再用 `GOWORK=off` 构建消费者。早期受控联调使用任务私有 go.work；2026-10-13 发布前已改为正式下载并验证 Resource/SG 独立构建，不提交兄弟目录 replace。
 
@@ -29,6 +29,11 @@ Resource 使用 `ANI_NETWORK_MODE=governance`，保留现有业务 mTLS listener
   "QuotaCertFile": "/managed/resource-client.pem",
   "QuotaKeyFile": "/managed/resource-client.key",
   "QuotaServerName": "ani-governance",
+  "ReleaseAddress": "accelerator.internal:9443",
+  "ReleaseCAFile": "/managed/accelerator-ca.pem",
+  "ReleaseCertFile": "/managed/resource-accelerator.pem",
+  "ReleaseKeyFile": "/managed/resource-accelerator.key",
+  "ReleaseServerName": "ani-accelerator-service",
   "TerminalAddress": ":9446",
   "Service": {
     "ClusterID": "<Acc 的真实 cluster UUID>",
@@ -37,23 +42,20 @@ Resource 使用 `ANI_NETWORK_MODE=governance`，保留现有业务 mTLS listener
     "WorkspaceSize": "10Gi",
     "Shell": "/bin/bash",
     "UID": 1000,
-    "GID": 1000,
-    "Presets": [{
-      "id": "shared", "version": 1, "name": "共享 GPU",
-      "cpu": "2", "memory": "4Gi",
-      "gpu": {
-        "cluster_id": "<同一真实 UUID>", "pool_id": "<已登记 UUID>",
-        "profile_id": "<已发布 UUID>", "profile_version": 1,
-        "replicas": 1, "devices_per_replica": 1, "container_name": "workspace"
-      }
-    }]
+    "GID": 1000
   }
 }
 ```
 
 示例中的 UUID、地址与私有路径必须替换；未配置默认拒绝。NamespacePrefix 始终从当前 Network 配置读入，不由该 JSON 改写。SigningKeyFile 为 64 字节原始 Ed25519 私钥，不放入源码、普通归档或日志。
 
-GPU 供给尚未就绪时，可使用真实 ClusterID 和 `"Presets": []` 启动隔离查询与持久恢复；规格查询返回空目录，新创建仍因没有匹配规格而拒绝，不占额、不生成 owner 操作。不得填入虚构 profile/设备来启动实验。供给就绪后再冻结真实 profile/version 并重启应用配置。
+ACC 物理释放只使用独立 `spiffe://ani.internal/service/ani-resource-service` 客户端身份，权限仅为 `ObserveRelease`，不复用 Gov 或 Quota 身份。`Release*` 字段全部必填，TLS 1.3 校验受管 CA 和精确 DNS SAN。创建 Notebook 的外部调用前，同一实例/lease 事务先持久 `ExternalComputeStarted` 与完整已见 Pod 历史；进程重启、Stop/Start 和并发删除均保留原 UID。普通 Notebook 删除采用 UID/RV 条件和 Foreground GC，不强制删除 Pod。
+
+Notebook、StatefulSet 和 Pod 全部消失且没有待确认写后，先持久 `ComputeSealAt`，下一轮才查询 ACC 的 cluster/owner 全范围物理证据。ACC 必须确认完整来源水位已越过该 fence、无活分配，所有已知分配都有正向释放事实；未知、节点离线、缺来源或不匹配回执继续占额，不能设置 `ComputeCleaned` 或发送退额事件。只有从未开始外部计算创建且已封闭的取消/删除先到，才使用内部未执行事实跳过物理查询。该证据不增加规格资格或有效期限制。
+
+GPU RuntimeClass 必须由 ACC 受管配置写入唯一 `GpuExecution.runtime_class_name`；Res 没有第二个配置来源。切换新合同前先完整结束旧 GPU 活动并确认释放 outbox 已匹配确认，再显式运行实例 migration，发布新 GPU Profile/Preset。不得把旧 F256 或百分比状态交给新服务恢复。
+
+规格唯一来源为 Resource 的 `instance.compute_presets`，配置中的 `Presets` 已删除，严格配置解码会拒绝该旧字段。规格通过 Gov 的平台管理入口创建，CPU 创建不依赖 ACC；GPU 新建/替换引用必须使用可信 ACC 目录的完整事实。
 
 首次迁移由独立 owner 身份显式运行 `ANI_INSTANCE_OWNER_DSN_FILE=<私有文件> ANI_INSTANCE_RUNTIME_ROLE=<受限角色> ./ani-resource-service -instance-migrate`。迁移维护本域 checksum/version 并向已有 runtime 角色授予本域权限；应用只用受限角色，不在启动时迁移，不用超级用户。启动方式沿用现有 Resource 的 `-conf` 与 Image 配置，新增 `ANI_INSTANCE_CONFIG_FILE`。
 
@@ -71,29 +73,25 @@ Notebook 1.10 的标签/注解放在 Notebook 顶层 metadata，`spec.template` 
 
 ## CPU 实例与前端联调
 
-2026-10-15 用户追加分别创建 CPU/GPU、类型和规格固定。CPU 使用同一套实例 API，配置显式 CPU preset，例如：
+实例内外统一为 `instance_kind=container` 与来自数据库规格的 `compute_type=cpu|gpu`。无空类型推断，不接受 `instance_type` 或外层 `preset_version`。
+
+先经平台入口创建规格，再使用返回的 UUID `preset_id` 创建租户实例：
 
 ```json
-{"id":"cpu","version":1,"name":"CPU 1核 / 2Gi","cpu":"1","memory":"2Gi","instance_type":"cpu"}
+{"data":{"code":"cpu-1c-2g","name":"CPU 1核 / 2Gi","compute_type":"cpu","cpu_millis":"1000","memory_mib":"2048","enabled":true}}
 ```
-
-该 preset 不得带 `gpu`。`Service.ClusterID` 仍指向实际受管集群；Notebook 使用默认调度器，无 GPU 设备、Acc plan/签名或 GPU quota。现有程序的受管私有配置与 TLS 配置仍按上述启动合同提供，CPU 请求不会调用 GPU 解析或退额。GPU preset 继续包含真实 GPU request；旧未显式填类型的 GPU 配置兼容。
-
-本次可用镜像 ID 为 `img_add4a49b0c694553a9e85768132584ec`，scope `platform`；选 `cpu` / version `1`。固定 digest 和实际验收只在当前状态维护。
-
-最小创建请求（沿用正常 Bearer 身份）：
 
 ```json
-{"data":{"idempotencyKey":"<新 UUID>","name":"cpu-dev","imageId":"img_add4a49b0c694553a9e85768132584ec","imageScope":"platform","presetId":"cpu","presetVersion":"1"}}
+{"data":{"idempotency_key":"<新UUID>","name":"cpu-dev","image_id":"<已登记镜像ID>","image_scope":"platform","preset_id":"<规格UUID>"}}
 ```
 
-HTTP JSON 的类型字段为 `instanceType`；版本等 int64 返回字符串，后续 `expectedVersion` 回传详情中的最新 `version`。其他字段及响应以 Gov OpenAPI 为准。
+CPU 不带 GPU request/plan/charges。CPU/内存精确转换为 Quantity 并冻结；规格修改、禁用、删除都不改变已经持久受理的命令或已有实例。调度原始缺失与实际 `NONE` 分别保留。已受理重试使用原命令；Start/Stop/Delete 继续使用新的幂等键和最新 `expected_version`。
 
-创建、查询、操作、启停、删除和终端沿用 [规格中的公开接口](../specs/instance-mvp.md#11-api数据与代码落点)，以 Gov 的 `api/protos/instance/service/v1/instance.proto` 和 OpenAPI 为正式 DTO。创建只选 preset ID/版本，不提交 `instance_type`、namespace、plan 或 charges。写请求使用 `{data:{...}}`；Start/Stop/Delete 带新的幂等键和最新 `expected_version`。创建受理后轮询 operation 与实例，只有 `running` 且当前版本可解析终端时才请求 exec。Gov 尚在投递时，CPU operation 返回真实 `QUEUED` / `DISPATCHING` / `UNKNOWN`；`CANCELED_UNSENT` 为未发送即取消的终态。Res 接单后使用原 Res operation 状态。
+普通列表使用 `page`/`pageSize`、`items`/`total`。静态详情返回冻结 CPU/内存、规格名称/编码、实际调度、安全 GPU 摘要及真实创建时间，不查询当前规格、ACC 或 Kubernetes。CPU `quota_returned=true` 表示无待退 GPU 配额。
 
 Exec 返回一次性 `ws_url`，通过 SG 的 `ani.terminal.v1` WebSocket 子协议传输终端帧；不要保存票据到普通日志或在停止/重启后复用旧票据。停止后保留 `/workspace`，最终删除会清除专属工作目录。CPU 不展示“仍占 GPU 配额”。
 
-本次 CPU 隔离运行根：`/home/chabking/workspace/ani-resource-service-runs/instance-cpu-mvp-20261015`。`private/cpu-runtime.sh start|stop|status [resource|gov|sg]` 管理任务专用 Docker 服务，SSH 退出后继续运行；不启动 Acc、不改共享部署。原持久 PG/Redis 与私有身份材料保留，任务容器按 label 核对归属。配置、二进制、Image receipt 只在该任务目录，登录密码/token 不进入仓库。
+以下 2026-10-15 隔离环境记录属于旧版运行证据，不是新合同启动配置；升级必须先完成本批迁移和配置切换。旧运行根：`/home/chabking/workspace/ani-resource-service-runs/instance-cpu-mvp-20261015`。`private/cpu-runtime.sh start|stop|status [resource|gov|sg]` 管理任务专用 Docker 服务，SSH 退出后继续运行；不启动 Acc、不改共享部署。原持久 PG/Redis 与私有身份材料保留，任务容器按 label 核对归属。配置、二进制、Image receipt 只在该任务目录，登录密码/token 不进入仓库。
 
 前端开发机可建立专用隧道：
 
@@ -125,10 +123,10 @@ ssh fedora 'python3 /home/chabking/workspace/ani-resource-service-runs/instance-
 
 ## 恢复与回退
 
-- 重启后由同一受限 PG、原冻结 spec/plan/charges、待定 mutation 和 lease epoch 恢复；普通 Stop/Start 不重占额、不重新解析镜像或 Namespace，不更换 PVC。
+- 重启后由同一受限 PG、原冻结 spec 和唯一 GPU execution、待定 mutation 和 lease epoch 恢复；普通 Stop/Start 不重占额、不重新解析镜像或 Namespace，不更换 PVC。
 - `CREATE_RESULT_UNKNOWN` / `WORKSPACE_CREATE_RESULT_UNKNOWN` 保留原待定动作与原账。404、等待和重启不能清除它；只有原归属对象或可归因的确定外部结果才可推进。未实现绕过该规则的管理强制完成接口。
 - 旧 worker 结果只能写入所属原操作的 receipt，不能覆盖新业务意图；过期 lease 拒绝回写。版本冲突后重新读取当前状态，不能重试旧 Start。
-- `QUOTA_RETURN_PENDING` 使用持久 outbox 中的原事件、原 CREATE 和完整原 GPU charge 向量重试。Gov 已入账但回执丢失也不能生成新事件。PVC 删除失败时允许 GPU 已归还，整体删除仍保持未完成。
+- `QUOTA_RETURN_PENDING` 使用持久 outbox 中的原事件、原 CREATE、resource 与 reason重试。Gov 已入账但回执丢失也不能生成新事件。PVC 删除失败时允许 GPU 已归还，整体删除仍保持未完成。
 - `WORKSPACE_OBSERVATION_FAILED` 保留磁盘重试，计算已清理时仍可归还原 GPU quota。`WAITING_FOR_WORKSPACE_RECLAIM` 表示 PVC 已消失、原 PV 尚未回收；只有回收核验通过才完成整体删除。不通过手改状态、移除存储 finalizer 或直接删 PV 解阻。
 - 回退前保存共享服务原配置、镜像、证书引用和数据库迁移点；恢复原启动配置可禁用新接入，但不能删除实例账本、待定动作或退额 outbox。已有接受请求未收敛时，保留 owner 执行与可靠退额能力。不得删除共享 Namespace、租户 Image pull secret 或其他任务对象。
 
