@@ -1026,3 +1026,10 @@ The first CPU Unix-socket path failure, Network alias/reproof and full-Stop fail
 中途共享 Gov 两次换成另一镜像，读取原 CREATE 冻结规范返回 400；原错误保留。用户明确要求恢复本轮原镜像后，只更换 image，最终 Gov generation 37 / `sha256:44998565…` Ready。原控制台请求及幂等键重放 202，正常 Stop/Start/Delete 均成功；未修改原创建规范、未绕过删除栅栏、未扩展兼容性修复。最后 Resource generation 16 与 SG generation 4 也均保持原镜像并 Ready。
 
 正常 DELETE `7cdf4695-d2ef-4733-b5bf-4a12855137bf` succeeded，VM v8/Deleted；13 个精确原生对象、3 个后端名称及其 3 个已捕获 RBD ID 均 Gone/ENOENT，同一 attachment Released，6 个保护 UID 保持。任务 Subnet/VPC 各只提交一次正常 DELETE，均 succeeded/deleted/native Gone；4 项临时通道、相关监听/控制 socket 及 11 个任务认证/票据等副本均已清理，用户媒体、自动 NAD/SA 与共享组件保留。CODE/PG/BOUNDARY 复用未失效的对应验证，新增 LIVE/GUEST/BROWSER 的 ISO 主链结果分别见本轮记录；原完整 V01–V25/双系统全组合仍未全量重跑，不宣布原一期全部验收完成。只更新任务分支和现有 draft PR #15/#45，不合 main/tag/release。
+
+## 2026-10-26 Image runtime Inference 接入
+
+独立 mTLS runtime listener 已接 full/governance，默认关闭，保留 Instance 同进程路径；
+Fedora 身份/tenant/日志/配置及真实 TLS 连接定向用例通过。
+LIVE/PRODUCT 未验收；CI 对所有 push/PR 的 Ubuntu 全量门禁与用户约束冲突，未推送或发布。
+准确命令、首次失败及修复后结果见[本次证据](records/IMAGE-REGISTRY-20261026/README.md)。
