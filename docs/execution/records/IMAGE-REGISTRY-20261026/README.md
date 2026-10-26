@@ -28,7 +28,7 @@ systemd scope `CPUQuota=200%/MemoryMax=2300M/MemorySwapMax=0`。
 go test ./internal/server ./cmd/ani-resource-service -run '^(TestImageRuntimeIdentityAndTenantBoundary|TestImageRuntimeMTLSListener|TestImageRuntimeConfigurationFailsClosed|TestImageGovernanceAllowlistAndScope|TestImageRequestAndCredentialReplyNotLogged)$' -count=1 -v
 ```
 
-[首次原始日志](runtime-test-attempt1.log) 中其他四项通过；mTLS 用例因测试直接调用阻塞式
+[首次原始日志](runtime-test-attempt1.txt) 中其他四项通过；mTLS 用例因测试直接调用阻塞式
 Kratos.Start 挂起，仅中断该任务明确 PID，记录该次整体 FAIL。测试改为 goroutine 启动及有界
 停止后，只重跑失败用例：
 
@@ -36,7 +36,7 @@ Kratos.Start 挂起，仅中断该任务明确 PID，记录该次整体 FAIL。�
 go test ./internal/server -run '^TestImageRuntimeMTLSListener$' -count=1 -timeout=45s -v
 ```
 
-[第二次原始日志](runtime-mtls-attempt2.log) 为 PASS；没有重跑已通过且未改的用例。
+[第二次原始日志](runtime-mtls-attempt2.txt) 为 PASS；没有重跑已通过且未改的用例。
 测试 probe 只验证 RPC/身份边界，不能代替真实 Harbor、数据库、Secret 或产品推理验收。
 
 CODE：实现完成；Fedora：上述定向行为通过；LIVE/PRODUCT：NOT_RUN。
