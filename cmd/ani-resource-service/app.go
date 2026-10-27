@@ -212,6 +212,13 @@ func buildApp(bc *conf.Bootstrap, logger *slog.Logger) (*kratos.App, error) {
 	}
 	adminServer := server.NewAdminServer(bc.Server.Admin, readiness, observability.Gatherer(), middlewares...)
 	servers := []transport.Server{grpcServer, adminServer, observation, execution}
+	imageRuntime, err := openImageRuntime(images, middlewares...)
+	if err != nil {
+		return nil, err
+	}
+	if imageRuntime != nil {
+		servers = append(servers, imageRuntime)
+	}
 	if vms != nil && vms.console != nil {
 		servers = append(servers, vms.console)
 	}

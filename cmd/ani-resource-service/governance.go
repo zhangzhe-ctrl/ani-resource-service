@@ -175,6 +175,13 @@ func runGovernance(bc *conf.Bootstrap, logger *slog.Logger) error {
 	configured = true
 	admin := server.NewAdminServer(bc.Server.Admin, readiness, observability.Gatherer(), middlewares...)
 	servers := []transport.Server{gs, admin, execution}
+	imageRuntime, err := openImageRuntime(images, middlewares...)
+	if err != nil {
+		return err
+	}
+	if imageRuntime != nil {
+		servers = append(servers, imageRuntime)
+	}
 	if vms != nil && vms.console != nil {
 		servers = append(servers, vms.console)
 	}
