@@ -23,7 +23,33 @@ import (
 
 const InferenceSAN = "ani-inference-service"
 
-// ImageRuntimeTLS authenticates the independent workload owner. Keeping this
+// ModelDevSAN is the training workload owner. Both identities are trusted for
+// Resolve and Ensure only; neither may read pull material in plaintext.
+const ModelDevSAN = "ani-modeldev-service"
+
+// runtimeSANs is the exact client identity allowlist. Matching remains literal
+// DNS equality: no wildcard, URI, IP or extra SAN is accepted.
+var runtimeSANs = []string{InferenceSAN, ModelDevSAN}
+
+func trustedRuntimeIdentity(cert *x509.Certificate) bool {
+	for _, san := range runtimeSANs {
+		if exactClientDNS(cert, san) {
+			return true
+		}
+	}
+	return false
+}
+
+func matchedRuntimeSAN(cert *x509.Certificate) string {
+	for _, san := range runtimeSANs {
+		if exactClientDNS(cert, san) {
+			return san
+		}
+	}
+	return ""
+}
+
+// ImageRuntimeTLS authenticates the independent workload owners. Keeping this
 // listener separate leaves Governance's certificate and method policy intact.
 func ImageRuntimeTLS(caFile, certFile, keyFile string) (*tls.Config, error) {
 	ca, err := os.ReadFile(caFile)
@@ -44,24 +70,30 @@ func ImageRuntimeTLS(caFile, certFile, keyFile string) (*tls.Config, error) {
 	}
 	return &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{cert}, ClientCAs: roots, ClientAuth: tls.RequireAndVerifyClientCert,
 		VerifyConnection: func(cs tls.ConnectionState) error {
-			if cs.Version != tls.VersionTLS13 || len(cs.VerifiedChains) == 0 || len(cs.PeerCertificates) == 0 || !exactClientDNS(cs.PeerCertificates[0], InferenceSAN) {
+			if cs.Version != tls.VersionTLS13 || len(cs.VerifiedChains) == 0 || len(cs.PeerCertificates) == 0 || !trustedRuntimeIdentity(cs.PeerCertificates[0]) {
 				return fmt.Errorf("untrusted image runtime service identity")
 			}
 			return nil
 		}}, nil
 }
 
-// ImageRuntimeUnary trusts tenant assertions only from the authenticated
-// Inference owner, after it has authorized and frozen the business command.
+// ImageRuntimeUnary trusts tenant assertions only from an authenticated
+// workload owner, after it has authorized and frozen the business command.
+// GetTenantPullMaterial is deliberately not in the allowed method set: the
+// unified Secret writer holds the only plaintext path.
 func ImageRuntimeUnary() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
-		denied := status.Error(codes.Unauthenticated, "trusted inference identity required")
+		denied := status.Error(codes.Unauthenticated, "trusted runtime identity required")
 		p, ok := peer.FromContext(ctx)
 		if !ok || p == nil {
 			return nil, denied
 		}
 		ti, ok := p.AuthInfo.(credentials.TLSInfo)
-		if !ok || ti.State.Version != tls.VersionTLS13 || len(ti.State.VerifiedChains) == 0 || len(ti.State.PeerCertificates) == 0 || !exactClientDNS(ti.State.PeerCertificates[0], InferenceSAN) {
+		if !ok || ti.State.Version != tls.VersionTLS13 || len(ti.State.VerifiedChains) == 0 || len(ti.State.PeerCertificates) == 0 {
+			return nil, denied
+		}
+		subject := matchedRuntimeSAN(ti.State.PeerCertificates[0])
+		if subject == "" {
 			return nil, denied
 		}
 		md, ok := metadata.FromIncomingContext(ctx)
@@ -91,26 +123,30 @@ func ImageRuntimeUnary() grpc.UnaryServerInterceptor {
 		var requestedTenant string
 		switch info.FullMethod {
 		case imagev1.ImageRuntimeService_ResolveImageForWorkload_FullMethodName:
-			if r, ok := req.(*imagev1.ResolveImageForWorkloadRequest); ok && r != nil {
-				requestedTenant = r.GetTenantId()
+			r, ok := req.(*imagev1.ResolveImageForWorkloadRequest)
+			if !ok || r == nil {
+				return nil, status.Error(codes.PermissionDenied, "runtime identity does not permit this request")
 			}
-		case imagev1.ImageRuntimeService_GetTenantPullMaterial_FullMethodName:
-			if r, ok := req.(*imagev1.GetTenantPullMaterialRequest); ok && r != nil {
-				requestedTenant = r.GetTenantId()
+			requestedTenant = r.GetTenantId()
+		case imagev1.ImageRuntimeService_EnsureTenantPullSecret_FullMethodName:
+			r, ok := req.(*imagev1.EnsureTenantPullSecretRequest)
+			if !ok || r == nil {
+				return nil, status.Error(codes.PermissionDenied, "runtime identity does not permit this request")
 			}
+			requestedTenant = r.GetTenantId()
 		default:
-			return nil, status.Error(codes.PermissionDenied, "inference credential does not permit this method")
+			return nil, status.Error(codes.PermissionDenied, "runtime identity does not permit this method")
 		}
 		if requestedTenant != tenant {
 			return nil, status.Error(codes.PermissionDenied, "image runtime tenant differs from authenticated scope")
 		}
-		ctx = imagebiz.WithCaller(ctx, imagebiz.Caller{Kind: imagebiz.RuntimeCaller, Subject: InferenceSAN, TenantID: tenant})
+		ctx = imagebiz.WithCaller(ctx, imagebiz.Caller{Kind: imagebiz.RuntimeCaller, Subject: subject, TenantID: tenant})
 		return next(ctx, req)
 	}
 }
 
-// NewImageRuntimeGRPCServer exposes only the two credential-bearing runtime
-// methods. It has no HTTP, health, reflection, catalog or streaming surface.
+// NewImageRuntimeGRPCServer exposes only the trusted runtime methods. It has no
+// HTTP, health, reflection, catalog or streaming surface.
 func NewImageRuntimeGRPCServer(c *conf.Server_GRPC, tlsConfig *tls.Config, runtime imagev1.ImageRuntimeServiceServer, middlewares ...middleware.Middleware) (*kratosgrpc.Server, error) {
 	if c == nil || c.Addr == "" || runtime == nil || tlsConfig == nil || tlsConfig.MinVersion < tls.VersionTLS13 ||
 		tlsConfig.ClientAuth != tls.RequireAndVerifyClientCert || tlsConfig.ClientCAs == nil || len(tlsConfig.Certificates) == 0 || tlsConfig.VerifyConnection == nil {
