@@ -148,7 +148,7 @@ func TestLifecycleIdentityRechecksControllerAfterPodRead(t *testing.T) {
 				return true, obj, nil
 			})
 			out, err := n.ObserveIdentity(context.Background(), i)
-			if err != nil || out.SafeStopped || reads < 2 {
+			if err != nil && !errors.Is(err, biz.ErrVersion) || out.SafeStopped || reads < 2 {
 				t.Fatal("controller drift accepted as stopped", out, reads, err)
 			}
 		})
@@ -353,6 +353,107 @@ func TestLifecycleTemplateIgnoresStatusResourceVersionChurn(t *testing.T) {
 			observation, err := n.ObserveIdentity(context.Background(), i)
 			if err != nil || observation.SafeStopped != stopped || observation.NotebookRV != lastNotebookRV {
 				t.Fatal("identity proof lost its latest trusted resourceVersion", observation, lastNotebookRV, err)
+			}
+			assertNotebookObservationReadOnly(t, client.Actions())
+		})
+	}
+}
+
+func TestLifecycleIdentityRefreshesRVAfterPodObservation(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		stopped bool
+		pod     bool
+	}{
+		{"running with Pod", false, true},
+		{"running without Pod", false, false},
+		{"stopping with Pod", true, true},
+		{"stopped controller not observed", true, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			n, i, client, pod := diagnosticFixture(t, false)
+			notebook, err := client.Resource(notebookGVR).Namespace(i.Spec.Namespace).Get(context.Background(), i.Spec.NotebookName, metav1.GetOptions{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			notebook.SetResourceVersion("10")
+			if test.stopped {
+				annotations := notebook.GetAnnotations()
+				annotations[stoppedAnnotation] = "true"
+				notebook.SetAnnotations(annotations)
+			}
+			if err := client.Tracker().Update(notebookGVR, notebook, i.Spec.Namespace); err != nil {
+				t.Fatal(err)
+			}
+			if !test.pod {
+				if err := client.Tracker().Delete(podGVR, i.Spec.Namespace, pod.GetName()); err != nil {
+					t.Fatal(err)
+				}
+			}
+			// Model the real controller probe advancing only status/RV while
+			// ObserveIdentity is gathering its Pod/StatefulSet observations.
+			client.PrependReactor("list", "pods", func(ktesting.Action) (bool, runtime.Object, error) {
+				latest := notebook.DeepCopy()
+				latest.SetResourceVersion("11")
+				latest.Object["status"] = map[string]any{"conditions": []any{map[string]any{"type": "Ready", "status": "True", "lastProbeTime": "2026-10-29T15:03:42Z"}}}
+				latest.SetManagedFields([]metav1.ManagedFieldsEntry{{Manager: "notebook-status-controller", Subresource: "status"}})
+				if err := client.Tracker().Update(notebookGVR, latest, i.Spec.Namespace); err != nil {
+					t.Fatal(err)
+				}
+				return false, nil, nil
+			})
+			client.ClearActions()
+			out, err := n.ObserveIdentity(context.Background(), i)
+			if err != nil || !out.NotebookExists || out.NotebookUID != i.NotebookUID || out.NotebookRV != "11" || out.Stopped != test.stopped || out.PodExists != test.pod || out.SafeStopped {
+				t.Fatal("stable control observation did not return the final Notebook RV", out, err)
+			}
+			assertNotebookObservationReadOnly(t, client.Actions())
+		})
+	}
+}
+
+func TestLifecycleIdentityRejectsControlDriftAfterPodObservation(t *testing.T) {
+	for name, mutate := range map[string]func(*unstructured.Unstructured){
+		"UID": func(o *unstructured.Unstructured) { o.SetUID("same-name-replacement") },
+		"ownership": func(o *unstructured.Unstructured) {
+			labels := o.GetLabels()
+			labels[resourceLabel] = "another-instance"
+			o.SetLabels(labels)
+		},
+		"spec": func(o *unstructured.Unstructured) {
+			containers, _, _ := unstructured.NestedSlice(o.Object, "spec", "template", "spec", "containers")
+			containers[0].(map[string]any)["image"] = "unexpected-image:changed"
+			_ = unstructured.SetNestedSlice(o.Object, containers, "spec", "template", "spec", "containers")
+		},
+		"metadata": func(o *unstructured.Unstructured) {
+			annotations := o.GetAnnotations()
+			annotations["test.ani.io/controller-policy"] = "changed"
+			o.SetAnnotations(annotations)
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			n, i, client, _ := diagnosticFixture(t, false)
+			notebook, err := client.Resource(notebookGVR).Namespace(i.Spec.Namespace).Get(context.Background(), i.Spec.NotebookName, metav1.GetOptions{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			notebook.SetResourceVersion("10")
+			if err := client.Tracker().Update(notebookGVR, notebook, i.Spec.Namespace); err != nil {
+				t.Fatal(err)
+			}
+			client.PrependReactor("list", "pods", func(ktesting.Action) (bool, runtime.Object, error) {
+				latest := notebook.DeepCopy()
+				mutate(latest)
+				latest.SetResourceVersion("11")
+				if err := client.Tracker().Update(notebookGVR, latest, i.Spec.Namespace); err != nil {
+					t.Fatal(err)
+				}
+				return false, nil, nil
+			})
+			client.ClearActions()
+			out, err := n.ObserveIdentity(context.Background(), i)
+			if !errors.Is(err, biz.ErrVersion) && !errors.Is(err, biz.ErrOwnership) {
+				t.Fatal("control drift returned an authorized Notebook write observation", out, err)
 			}
 			assertNotebookObservationReadOnly(t, client.Actions())
 		})

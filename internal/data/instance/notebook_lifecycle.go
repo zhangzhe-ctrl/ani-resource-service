@@ -140,14 +140,15 @@ func (n *Notebook) ObserveIdentity(ctx context.Context, i biz.Instance) (biz.Obs
 		}
 		identityPod(&out, i, pod)
 	}
-	if !out.NotebookExists || !out.Stopped || out.PodExists || (out.StatefulSetUID != "" && (!setGenerationObserved || out.StatefulSetGeneration < 1 || out.StatefulSetReplicas != 0 || out.StatefulSetObservedGeneration < out.StatefulSetGeneration)) {
+	if !out.NotebookExists {
 		return out, nil
 	}
-	// A controller update during Pod inspection invalidates this turn's proof.
+	// Pod inspection can take longer than a status probe interval. Refresh the
+	// write RV only after proving that the complete control object is unchanged.
 	last, err := n.lifecycleGet(ctx, notebookGVR, i.Spec.Namespace, i.Spec.NotebookName)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return out, nil
+			return out, biz.ErrVersion
 		}
 		return out, err
 	}
@@ -155,6 +156,10 @@ func (n *Notebook) ObserveIdentity(ctx context.Context, i biz.Instance) (biz.Obs
 		return out, biz.ErrOwnership
 	}
 	if !sameMountTemplateRead(obj, last) {
+		return out, biz.ErrVersion
+	}
+	out.NotebookRV = last.GetResourceVersion()
+	if !out.Stopped || out.PodExists || (out.StatefulSetUID != "" && (!setGenerationObserved || out.StatefulSetGeneration < 1 || out.StatefulSetReplicas != 0 || out.StatefulSetObservedGeneration < out.StatefulSetGeneration)) {
 		return out, nil
 	}
 	if _, stopped := last.GetAnnotations()[stoppedAnnotation]; !stopped {
@@ -180,7 +185,6 @@ func (n *Notebook) ObserveIdentity(ctx context.Context, i biz.Instance) (biz.Obs
 			return out, nil
 		}
 	}
-	out.NotebookRV = last.GetResourceVersion()
 	out.SafeStopped = true
 	return out, nil
 }

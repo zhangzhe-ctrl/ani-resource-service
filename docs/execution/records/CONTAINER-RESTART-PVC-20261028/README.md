@@ -13,3 +13,10 @@
 本轮新增原始入口：[Source21构建与发布制品](source21-build-publish.safe.json)、[当前259554静态来源核对](resource-259554-static-buildinfo.safe.json)、[A动作权限/候选证据](a05-auth-return-02/SHA256-manifest.safe.json)、[B跨租户/套餐证据](a05-cross-plan-return-01/SHA256-manifest.safe.json)、[用户授权占卷释放证明](cpu-volume-release-proof-01.safe.json)。结果和当前恢复动作只在status维护。
 
 后续原始入口：[Restart18失败及PG安全停止](cpu-restart18-final-pg.safe.json)、[真实停止/持久盘身份](cpu-restart18-final-stopped.safe.json)、[Source22合main完整门禁](source22-main792-verify.safe.json)、[GPU原CREATE](gpu-create01.safe.json)。
+
+GPU与发布后续原始入口：[GPU安全回件](gpu-workspace-return-01/return-manifest.safe.json)、[Source23构建](source23-build-publish.safe.json)、[维护前安全状态](source23-gov450-maintenance-preflight.safe.json)、[Gov当前dev祖先](gov-current-dev-ancestry.safe.json)。
+
+- [Source23 Resource实际部署/正常鉴权查询/开闸原始回执](source23-resource-release-01/index.safe.json)；[Restart20严格RV写冲突窄诊断](cpu-source23-restart20-diag-01.safe.json)。部署通过与CPU重启尚未通过分别记录。
+
+- [Source24 RV写确认修复：RED/GREEN、原make环境失败、组成续验及窄PG原件](source24-rv-cas-01/index.safe.json)。已PASS组成不重复执行；真实重启另行记录。
+- [Gov main450快进及两部署实际发布](gov-main-release-154003.safe.json)。本次按用户要求未运行测试/门禁。
