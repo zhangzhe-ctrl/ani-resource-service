@@ -3,6 +3,7 @@ package instance
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -142,6 +143,7 @@ func TestLifecycleIdentityRechecksControllerAfterPodRead(t *testing.T) {
 				}
 				if reads > 1 {
 					obj.SetResourceVersion("changed-during-pod-read")
+					obj.SetGeneration(obj.GetGeneration() + 1)
 				}
 				return true, obj, nil
 			})
@@ -312,6 +314,179 @@ func TestLifecycleTemplateRequiresNotebookAndSTSContent(t *testing.T) {
 		if action.GetResource() == pvcGVR {
 			t.Fatal("template proof depended on a missing PVC")
 		}
+	}
+}
+
+func TestLifecycleTemplateIgnoresStatusResourceVersionChurn(t *testing.T) {
+	for _, stopped := range []bool{false, true} {
+		t.Run(fmt.Sprintf("stopped=%t", stopped), func(t *testing.T) {
+			n, i, client, notebook, set := stoppedLifecycleFixture(t)
+			// Controller probes change status/RV while the complete managed
+			// templates and ownership remain stable in either runtime state.
+			if !stopped {
+				ann := notebook.GetAnnotations()
+				delete(ann, stoppedAnnotation)
+				notebook.SetAnnotations(ann)
+				_ = unstructured.SetNestedField(set.Object, int64(1), "spec", "replicas")
+			}
+			lastNotebookRV := ""
+			for resource, original := range map[string]*unstructured.Unstructured{"notebooks": notebook, "statefulsets": set} {
+				resource, original := resource, original
+				reads := 0
+				client.PrependReactor("get", resource, func(ktesting.Action) (bool, runtime.Object, error) {
+					reads++
+					obj := original.DeepCopy()
+					obj.SetResourceVersion(fmt.Sprintf("%s-status-%d", resource, reads))
+					if resource == "notebooks" {
+						lastNotebookRV = obj.GetResourceVersion()
+					}
+					_ = unstructured.SetNestedSlice(obj.Object, []any{map[string]any{"lastProbeTime": fmt.Sprintf("probe-%d", reads)}}, "status", "conditions")
+					obj.SetManagedFields([]metav1.ManagedFieldsEntry{{Manager: fmt.Sprintf("status-manager-%d", reads)}})
+					return true, obj, nil
+				})
+			}
+			client.ClearActions()
+			proof, err := n.VerifyMountTemplate(context.Background(), i, i.CurrentMounts, i.CurrentMounts)
+			if err != nil || proof.Class != "target" || proof.SafeStopped != stopped || proof.NotebookRV != lastNotebookRV {
+				t.Fatal("status-only controller updates prevented target proof", proof, err)
+			}
+			observation, err := n.ObserveIdentity(context.Background(), i)
+			if err != nil || observation.SafeStopped != stopped || observation.NotebookRV != lastNotebookRV {
+				t.Fatal("identity proof lost its latest trusted resourceVersion", observation, lastNotebookRV, err)
+			}
+			assertNotebookObservationReadOnly(t, client.Actions())
+		})
+	}
+}
+
+func TestLifecycleTemplateRejectsCriticalDrift(t *testing.T) {
+	mutations := map[string]func(*unstructured.Unstructured){
+		"UID":        func(o *unstructured.Unstructured) { o.SetUID("same-name-replacement") },
+		"generation": func(o *unstructured.Unstructured) { o.SetGeneration(o.GetGeneration() + 1) },
+		"non-mount template spec": func(o *unstructured.Unstructured) {
+			containers, _, _ := unstructured.NestedSlice(o.Object, "spec", "template", "spec", "containers")
+			containers[0].(map[string]any)["image"] = "unexpected-image:changed"
+			_ = unstructured.SetNestedSlice(o.Object, containers, "spec", "template", "spec", "containers")
+		},
+		"owned label": func(o *unstructured.Unstructured) {
+			m := o.GetLabels()
+			if m == nil {
+				m = map[string]string{}
+			}
+			m[resourceLabel] = "another-instance"
+			o.SetLabels(m)
+		},
+		"other label": func(o *unstructured.Unstructured) {
+			m := o.GetLabels()
+			if m == nil {
+				m = map[string]string{}
+			}
+			m["test.ani.io/controller"] = "changed"
+			o.SetLabels(m)
+		},
+		"owner reference": func(o *unstructured.Unstructured) {
+			controller := true
+			o.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: "kubeflow.org/v1", Kind: "Notebook", Name: "foreign", UID: "foreign", Controller: &controller}})
+		},
+		"stopped marker": func(o *unstructured.Unstructured) {
+			m := o.GetAnnotations()
+			if m == nil {
+				m = map[string]string{}
+			}
+			m[stoppedAnnotation] = "true"
+			o.SetAnnotations(m)
+		},
+		"intent marker": func(o *unstructured.Unstructured) {
+			m := o.GetAnnotations()
+			if m == nil {
+				m = map[string]string{}
+			}
+			m[versionAnnotation] = "99"
+			o.SetAnnotations(m)
+		},
+		"mutation marker": func(o *unstructured.Unstructured) {
+			m := o.GetAnnotations()
+			if m == nil {
+				m = map[string]string{}
+			}
+			m[mutationAnnotation] = "another-mutation"
+			o.SetAnnotations(m)
+		},
+		"finalizer": func(o *unstructured.Unstructured) { o.SetFinalizers([]string{"test.ani.io/controller"}) },
+		"deletion timestamp": func(o *unstructured.Unstructured) {
+			stamp := metav1.NewTime(time.Unix(1000, 0))
+			o.SetDeletionTimestamp(&stamp)
+		},
+	}
+	for _, resource := range []string{"notebooks", "statefulsets"} {
+		checks := map[string]func(*unstructured.Unstructured){}
+		for name, mutate := range mutations {
+			checks[name] = mutate
+		}
+		if resource == "statefulsets" {
+			checks["controller generation regressed"] = func(o *unstructured.Unstructured) {
+				_ = unstructured.SetNestedField(o.Object, int64(6), "status", "observedGeneration")
+			}
+			checks["controller generation changed"] = func(o *unstructured.Unstructured) {
+				_ = unstructured.SetNestedField(o.Object, int64(8), "status", "observedGeneration")
+			}
+		}
+		for _, boundary := range []string{"identity read", "pod observation"} {
+			for name, mutate := range checks {
+				t.Run(resource+"/"+boundary+"/"+name, func(t *testing.T) {
+					n, i, client, notebook, set := stoppedLifecycleFixture(t)
+					ann := notebook.GetAnnotations()
+					delete(ann, stoppedAnnotation)
+					notebook.SetAnnotations(ann)
+					_ = unstructured.SetNestedField(set.Object, int64(1), "spec", "replicas")
+					for key, obj := range map[string]*unstructured.Unstructured{"notebooks": notebook, "statefulsets": set} {
+						key, obj := key, obj
+						changed, reads := false, 0
+						if key == resource && boundary == "pod observation" {
+							client.PrependReactor("list", "pods", func(ktesting.Action) (bool, runtime.Object, error) { changed = true; return false, nil, nil })
+						}
+						client.PrependReactor("get", key, func(ktesting.Action) (bool, runtime.Object, error) {
+							reads++
+							out := obj.DeepCopy()
+							if key == resource && (changed || boundary == "identity read" && reads > 1) {
+								mutate(out)
+								out.SetResourceVersion("critical-change")
+							}
+							return true, out, nil
+						})
+					}
+					client.ClearActions()
+					proof, err := n.VerifyMountTemplate(context.Background(), i, i.CurrentMounts, i.CurrentMounts)
+					if proof.Class != "mixed" || err != nil && !errors.Is(err, biz.ErrVersion) && !errors.Is(err, biz.ErrOwnership) {
+						t.Fatal("critical drift produced a template proof", proof, err)
+					}
+					assertNotebookObservationReadOnly(t, client.Actions())
+				})
+			}
+		}
+	}
+}
+
+func TestLifecycleTemplateRequiresSafeStopForMissingStatefulSet(t *testing.T) {
+	for _, stopped := range []bool{false, true} {
+		t.Run(fmt.Sprintf("stopped=%t", stopped), func(t *testing.T) {
+			n, i, client, notebook, _ := stoppedLifecycleFixture(t)
+			if !stopped {
+				ann := notebook.GetAnnotations()
+				delete(ann, stoppedAnnotation)
+				notebook.SetAnnotations(ann)
+				_, _ = client.Resource(notebookGVR).Namespace(i.Spec.Namespace).Update(context.Background(), notebook, metav1.UpdateOptions{})
+			}
+			if err := client.Resource(stsGVR).Namespace(i.Spec.Namespace).Delete(context.Background(), i.Spec.NotebookName, metav1.DeleteOptions{}); err != nil {
+				t.Fatal(err)
+			}
+			client.ClearActions()
+			proof, err := n.VerifyMountTemplate(context.Background(), i, i.CurrentMounts, i.CurrentMounts)
+			if err != nil || (proof.Class == "target") != stopped || proof.SafeStopped != stopped {
+				t.Fatal("missing StatefulSet bypassed safe-stop requirement", proof, err)
+			}
+			assertNotebookObservationReadOnly(t, client.Actions())
+		})
 	}
 }
 
