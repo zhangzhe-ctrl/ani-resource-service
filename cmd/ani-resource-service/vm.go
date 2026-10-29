@@ -115,6 +115,9 @@ func wireVM(ctx context.Context, c *conf.Network, compute *computeComponents, re
 		return nil, nil, e
 	}
 	native.SetGuestCredentialReader(repo.GuestPasswordHash)
+	if e = native.ConfigureLogs(clientConfig, cfg.Service.LogLimits); e != nil {
+		return nil, nil, e
+	}
 	networkPort, e := data.NewNetwork(attachments, repo, native)
 	if e != nil {
 		return nil, nil, e

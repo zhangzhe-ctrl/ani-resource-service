@@ -9,3 +9,7 @@
 环境盘点由只读记录承接；CODE/PG/BOUNDARY/LIVE 的命令和结果在执行后追加同目录文件，所有未执行项不认作通过。
 
 原始收据索引：[停止态卸载、卸空启动、重挂读回及版本/原账证明](cp02-stopped-continuation-03.safe.json)（含逐文件SHA）；[正式终端SG边界](terminal-exec-diag-20261029-01.safe.json)。当前结论仍只维护在上方status入口。
+
+本轮新增原始入口：[Source21构建与发布制品](source21-build-publish.safe.json)、[当前259554静态来源核对](resource-259554-static-buildinfo.safe.json)、[A动作权限/候选证据](a05-auth-return-02/SHA256-manifest.safe.json)、[B跨租户/套餐证据](a05-cross-plan-return-01/SHA256-manifest.safe.json)、[用户授权占卷释放证明](cpu-volume-release-proof-01.safe.json)。结果和当前恢复动作只在status维护。
+
+后续原始入口：[Restart18失败及PG安全停止](cpu-restart18-final-pg.safe.json)、[真实停止/持久盘身份](cpu-restart18-final-stopped.safe.json)、[Source22合main完整门禁](source22-main792-verify.safe.json)、[GPU原CREATE](gpu-create01.safe.json)。
