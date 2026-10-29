@@ -6,6 +6,8 @@
 # so the deployment can grant only the namespaces its callers are allowed to
 # use. Applying this file does NOT grant cluster-wide write; repeat the Role and
 # RoleBinding for every tenant/inference/training namespace that Ensure serves.
+# Reading the authorizing Namespace itself is cluster-scoped, so it uses the
+# ClusterRole at the end of this file (a namespaced Role cannot grant it).
 #
 # Cluster application is NOT part of the code delivery: the manifests are
 # delivered, applying them stays an environment step (see README).
@@ -25,20 +27,6 @@ rules:
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get", "create", "update", "patch"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: ani-image-namespace-reader
-  labels:
-    app.kubernetes.io/name: ani-resource-service
-    app.kubernetes.io/component: image-pull-secret
-rules:
-  # Namespace name, UID and the tenant/managed-by labels are read to authorize
-  # the write. Read-only: Resource never mutates a namespace.
-  - apiGroups: [""]
-    resources: ["namespaces"]
-    verbs: ["get"]
 ---
 # Example binding for one authorizing namespace. Replace the namespace and the
 # subject with the deployment's actual values; do not reuse a guessed name.
