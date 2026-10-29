@@ -13,6 +13,8 @@ GPU 容器实例 v1.5：[规格](specs/instance-mvp.md)、[实施计划](plans/i
 
 [ani-resource-service 改名与模块整理计划](plans/resource-service-modularization.md)：原R0–R5沿用现有仓库和Kratos分层整理Network，并验证旧客户端、旧数据、资源接管和回退；本次Compute增量以[算力目录合同](specs/compute-presets.md)为准，Storage仍待后续切片。
 
+容器重启与已有 PVC 挂卸：[生命周期](specs/instance-mvp.md#84-restart-与挂卸操作)、[五个 RPC 与动作权限](specs/instance-mvp.md#111-用户-api)、[当前配置/引用代际/Storage 删除保护](specs/instance-configuration-network.md#43-持久化和投影)、[008 切换与向前恢复](runbooks/instance-mvp-fedora.md)、[精确服务调用登记](specs/governance-calls.md)。实施输入仍为[已审 v2.0 方案](plans/container-instance-restart-pvc-20261028.md)，来源 SHA-256 `b6dfb17aef74f3d99cc969ecd2ef51b19c77b0a984f82fbe6afd28aa94d41f7a`；部署、A35/A36 边界和实际验收只见[唯一执行状态](execution/status.md#container-restart-pvc-20261028)。
+
 ## 阅读顺序
 
 1. [领域词汇](../CONTEXT.md)：网络资源、消费者、操作、资源状态与身份角色。
@@ -28,6 +30,8 @@ GPU 容器实例 v1.5：[规格](specs/instance-mvp.md)、[实施计划](plans/i
 [LB 监听器延迟下发](specs/lb-deferred-activation.md)定义空监听器保存、运行投影、清空与再激活合同；实际进度只见 [LB-DEFERRED-01](execution/status.md#lb-deferred-01)，证据入口为 [工作包索引](execution/records/LB-DEFERRED-01/README.md)。
 
 [历史未知创建恢复提案](plans/provider-unknown-create-recovery.md)区分退出结果落库修正与旧回执缺失的恢复前提；本次实验例外已按用户授权恢复并复测；通用管理接口未实施，实际结果见执行状态。
+
+[Sandbox 未知创建只读诊断](runbooks/sandbox-unknown-create-review.md)输出目标、凭据身份及 Provider 观察，保留未知屏障；报告本身不是持久审计或恢复证明。
 
 [Sandbox Runtime 完整设计方案](plans/sandbox-runtime-design-20261025.md)是 Sandbox 唯一设计入口，已把旧 ANI 行为和 live evidence、新版 Resource 的 compute 解析/冻结快照/租户边界/Provider 恢复模型，以及推理服务资源语义合并在一份文档中。一期核心链和二期数据面能力分别按方案门禁推进；实际实现、部署和验收仅见[当前执行状态](execution/status.md)。
 

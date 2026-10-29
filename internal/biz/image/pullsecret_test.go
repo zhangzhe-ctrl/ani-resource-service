@@ -231,6 +231,12 @@ func (pullSecretCatalog) PageTenantRegistrations(context.Context, string, Filter
 func (pullSecretCatalog) PagePlatformRegistrations(context.Context, Filter, *PageKey) ([]Registration, int64, error) {
 	return nil, 0, nil
 }
+func (pullSecretCatalog) FindTenantRegistrationsByReference(context.Context, string, ReferenceLookup) ([]Registration, error) {
+	return nil, Fail(ImageNotFound, "not used")
+}
+func (pullSecretCatalog) FindPlatformRegistrationsByReference(context.Context, ReferenceLookup) ([]Registration, error) {
+	return nil, Fail(ImageNotFound, "not used")
+}
 func (pullSecretCatalog) ApplyTenantRegistration(context.Context, Command, Registration) (Registration, error) {
 	return Registration{}, Fail(InternalError, "not used")
 }

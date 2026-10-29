@@ -51,7 +51,7 @@ func runGovernance(bc *conf.Bootstrap, logger *slog.Logger) error {
 		return err
 	}
 	defer instances.Close()
-	sandboxes, err := openSandbox(context.Background(), compute, logger)
+	sandboxes, err := openSandbox(context.Background(), bc.Network, compute, images, logger)
 	if err != nil {
 		return err
 	}
@@ -88,10 +88,16 @@ func runGovernance(bc *conf.Bootstrap, logger *slog.Logger) error {
 		return err
 	}
 	var execution *server.WorkerServer
-	readiness := server.NewReadiness(func() bool { return execution != nil && execution.Ready() })
+	var storageRecovery *server.StorageDeleteWorker
+	readiness := server.NewReadiness(func() bool { return execution != nil && execution.Ready() }, func() bool { return storageRecovery == nil || storageRecovery.Ready() })
 	observability, err := server.NewObservability(Name, Version, readiness)
 	if err != nil {
 		return err
+	}
+	if instances != nil {
+		if err = observability.RegisterStorageDeleteMetrics(instances.repo.PVCDeleteStats); err != nil {
+			return err
+		}
 	}
 	defer func() {
 		if err := observability.Shutdown(context.Background()); err != nil {
@@ -190,14 +196,18 @@ func runGovernance(bc *conf.Bootstrap, logger *slog.Logger) error {
 	if vms != nil {
 		vmv1.RegisterVMServiceServer(gs, vms.service)
 	}
-	storageComponents, err := openStorage(context.Background(), bc)
+	storageComponents, err := openStorage(context.Background(), bc, instances)
 	if err != nil {
 		return err
 	}
 	storagev1.RegisterStorageServiceServer(gs, storageComponents.service)
+	storageRecovery = storageComponents.worker
 	configured = true
 	admin := server.NewAdminServer(bc.Server.Admin, readiness, observability.Gatherer(), middlewares...)
 	servers := []transport.Server{gs, admin, observation, execution}
+	if storageComponents.worker != nil {
+		servers = append(servers, storageComponents.worker)
+	}
 	imageRuntime, err := openImageRuntime(images, middlewares...)
 	if err != nil {
 		return err
@@ -205,7 +215,7 @@ func runGovernance(bc *conf.Bootstrap, logger *slog.Logger) error {
 	if imageRuntime != nil {
 		servers = append(servers, imageRuntime)
 	}
-	if sandboxes != nil {
+	if sandboxes != nil && sandboxes.execution != nil {
 		servers = append(servers, sandboxes.execution)
 	}
 	if vms != nil && vms.console != nil {

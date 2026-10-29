@@ -21,11 +21,12 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const InferenceSAN = "ani-inference-service"
-
-// ModelDevSAN is the training workload owner. Both identities are trusted for
-// Resolve and Ensure only; neither may read pull material in plaintext.
-const ModelDevSAN = "ani-modeldev-service"
+const (
+	InferenceSAN = "ani-inference-service"
+	// ModelDevSAN is the training workload owner. Both identities are trusted
+	// for Resolve and Ensure only; neither may read pull material in plaintext.
+	ModelDevSAN = "ani-modeldev-service"
+)
 
 // runtimeSANs is the exact client identity allowlist. Matching remains literal
 // DNS equality: no wildcard, URI, IP or extra SAN is accepted.

@@ -2,7 +2,7 @@
 
 本登记覆盖 Network/Image/Instance/Sandbox 用户业务委托，统一规则见 [ANI 服务间调用规范](https://github.com/zhangzhe-ctrl/ani-governance/blob/8724a32ab7dda903e1c67def28ad206a06d09c44/docs/contracts/service-to-service-calls.md)。平台网络及实例使用原业务委托身份；实例 owner 退额另走既有 QuotaReleaseService 的受管 owner 身份。
 
-Sandbox 条目当前表示 Resource 侧已冻结的 RPC 合同和精确接收方 allowlist。Governance BFF 的 HTTP 客户端、路由、权限目录和真实跨仓联调仍待包含 `api/sandbox/v1` 的正式 Resource API module 发布；在该 artifact 发布前，不使用本地 `replace`、复制生成代码或把 Resource 本地工作区当作已完成的 Gov 接入。
+Sandbox 条目定义 Resource RPC 合同和精确接收方 allowlist。Governance BFF 已接入 HTTP 客户端、路由和权限目录，并固定使用包含 `api/sandbox/v1` 的正式 Resource API module；不使用本地 `replace` 或复制生成代码。实现、部署与真实跨仓验收分别记录，实际验证范围见[执行状态](../execution/status.md)。
 
 ## 身份、范围和入口
 
@@ -65,6 +65,11 @@ Sandbox 条目当前表示 Resource 侧已冻结的 RPC 合同和精确接收方
 | `/instance.v1.InstanceService/AcceptDelete` | 原 CREATE + delete operation，expected_version |
 | `/instance.v1.InstanceService/Start` | 原键 + expected_version |
 | `/instance.v1.InstanceService/Stop` | 原键 + expected_version |
+| `/instance.v1.InstanceService/Restart` | 独立持久 operation；原键 + expected_version，默认能力关闭 |
+| `/instance.v1.InstanceService/AttachPVC` | borrowed PVC/path/readonly + 显式 restart_if_running；原键 + expected_version |
+| `/instance.v1.InstanceService/DetachPVC` | 当前 mount_path + 显式 restart_if_running；原键 + expected_version |
+| `/instance.v1.InstanceService/ListInstanceMountablePVCs` | 持久实例 placement 的只读候选；删除 guard 活跃时不可选 |
+| `/instance.v1.InstanceService/LookupCommandReplay` | 当前授权后只读原命令 ACK；固定 canonical 数组、无 Kubernetes 解析、无副作用 |
 | `/instance.v1.InstanceService/GetInstance` | 查询 |
 | `/instance.v1.InstanceService/ResolveInstanceMetricScope` | 仅持久化范围读取；历史查询不要求当前运行对象 |
 | `/instance.v1.InstanceService/ListInstances` | page/page_size，默认1/20、最大100，items/total；同RR快照Count/List |

@@ -55,7 +55,7 @@ func checkReady(ctx context.Context, db schemaReader) error {
 	err = db.QueryRow(ctx, `SELECT
   (SELECT count(*)=1 AND bool_and(version=1 AND checksum=$1) FROM compute.schema_version)
   AND EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='compute' AND c.relname='presets' AND c.relkind='r')
-  AND to_regclass('instance.compute_presets') IS NULL
+  AND NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='instance' AND c.relname='compute_presets')
   AND (SELECT count(*)=13 FROM pg_attribute WHERE attrelid='compute.presets'::regclass AND attnum>0 AND NOT attisdropped)
   AND (SELECT bool_and(attname||':'||format_type(atttypid,atttypmod)=ANY(ARRAY['id:uuid','code:text','name:text','description:text','compute_type:text','cpu_millis:bigint','memory_mib:bigint','enabled:boolean','gpu:jsonb','created_at:timestamp with time zone','updated_at:timestamp with time zone','created_by:text','updated_by:text'])) FROM pg_attribute WHERE attrelid='compute.presets'::regclass AND attnum>0 AND NOT attisdropped)
   AND EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='compute.presets'::regclass AND conname='presets_pkey' AND contype='p')
@@ -68,7 +68,7 @@ func checkReady(ctx context.Context, db schemaReader) error {
 	return nil
 }
 
-var historyFiles = []string{"001_instance.sql", "002_compute_presets.sql", "003_whole_gpu_quantity.sql", "004_gpu_execution.sql", "005_instance_configuration.sql", "006_instance_network_submissions.sql", "007_owner_cleanup_release.sql"}
+var historyFiles = []string{"001_instance.sql", "002_compute_presets.sql", "003_whole_gpu_quantity.sql", "004_gpu_execution.sql", "005_instance_configuration.sql", "006_instance_network_submissions.sql", "007_owner_cleanup_release.sql", "008_restart_pvc.sql"}
 
 // Migrate is explicit; it never executes historical instance SQL.
 func Migrate(ctx context.Context, dsn, runtimeRole string) error {
