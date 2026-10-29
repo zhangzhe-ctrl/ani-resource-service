@@ -1142,6 +1142,8 @@ LIVE/PRODUCT 未验收；CI 对所有 push/PR 的 Ubuntu 全量门禁与用户�
 <a id="container-restart-pvc-20261028"></a>
 ## 容器 Restart 与 borrowed PVC 挂卸（2026-10-28）
 
+当前 Resource 已前向更新至 `d505f4a9ace1d62836a36a8df66ce7a7fda1eda3` / image `f5f006771…`，gen75、新Pod `9ad09063-3ec6-4f58-a64b-5506a9cb4f5e`。同名历史Pod重复GET改为每次观察复用同一对象后继续逐UID校验。静态编译26.24秒、构建/推送40.324秒、直接部署8.622秒，未运行生成/测试/PG/额外发布门禁；Gov 保持已合 main/dev 的 `a863ebc1…` / image `a3f1d3f5…`。原失败 reader5 保持同版本5、同Pod `6d803bbf…`、同旧marker，正式 Gov HTTP202→WS101→cat/hash→Close1000→正常logout 全PASS（17:10:53.786Z→17:11:00.200Z）。该结果验证当前CPU反例修复，不把已删除GPU9历史失败改为PASS。最后reader已正常DELETE6/f529c053… completed，原key/body重放同op、logout confirmed；墓碑五项清理全true、自己NB/STS/Pod/workPVC/PV已消失、自身保护引用0，借卷原UID/PV保持Bound。[发布和正式终端收据](records/CONTAINER-RESTART-PVC-20261028/source25-terminal-01/reader5-terminal.safe.json)。
+
 用户要求服务更新直接覆盖，不加额外测试或发布门禁，出现实际问题再修复。Resource `2dbde6411d612e3749bf86652da9b1f7ec7bcc09` / 镜像 `053bf027…` 已发布，初次更新 9.115 秒。16:05:51Z 被 kubectl-set 改回旧 68628fa2…，导致 Detach23 在旧进程上失败；16:10:10Z→19Z 直接恢复新镜像，gen73，8.255 秒，不再追查操作者。此后真实 CPU/GPU 挂卸通过；失败历史保持。Source24 已有此前 [RED/GREEN、组成续验和窄 PG](records/CONTAINER-RESTART-PVC-20261028/source24-rv-cas-01/index.safe.json)，本轮更新未重复测试。
 
 CPU：Restart22、新 Pod 和原工作盘/借卷文件保持 PASS；随后 Start24→运行态 Detach25→运行态 AttachRW26→Stop27 全部 completed，实际卸载无目标挂载、重挂旧两文件哈希不变。omitted/false 两运行态请求均 409/INSTANCE_REQUIRES_STOP，版本/配置/活动操作不变。最终 DELETE28/f1302bd3… completed、同 key/body 重放同 op、logout confirmed；删除后墓碑五项清理全 true，原 Notebook/STS/Pod/工作 PVC/PV 消失，CPU 保护引用 0。借卷原 UID/Bound 保持，GPU9 已在 CPU 删除后只读读回两个原 CPU/GPU 文件哈希。原 CREATE/Spec/canonical 不变，原 charge/退款金额均 0，不能代替 GPU 退额证明。
@@ -1154,7 +1156,7 @@ Gov 改动已先 SSH 合 dev 再 main，当前 `a863ebc1639491bf4cf5c0acc02b0dbe
 
 A05 受限调用者已真实通过：任务 user41/role34 仅有 backend/list/read/operation-read/pvc-attach，不含 create/start/stop/restart，正常运行态 Attach5/f2d200cd… completed/runtime_verified/Running；实际新 Pod `6d803bbf-b117-4707-924a-daffb489b194` 只读读回两个原文件哈希。该临时用户/角色已通过正常 BOSS API 删除并正常注销。Reader5 保留作终端复现：初建 version1 的正式终端 PASS，但挂卸后 version5 的正式请求在3.093秒返回503，说明并非GPU特例；该失败不能被初建终端PASS覆盖。
 
-当前前向修复：reader5 同名 Pod 保存3个历史UID，Resource ObserveIdentity 每条历史引用重复GET同一对象，Observe/VerifyRuntime再重复该链。现改为每次观察按已校验的namespace/name复用GET结果，并对每个保存UID继续原比较，NotFound和完整LIST/Notebook复核仍保留；终端失败新增安全阶段/耗时/gRPC code日志，不输出原错误、凭据或连接票据。实际同名重复读取已证实，是否足以解除SG3秒校验失败仍待精确新镜像部署后，用保留的reader5正式终端验证。按用户直接更新要求，不运行新增测试或发布门禁。
+当前前向修复：reader5 同名 Pod 保存3个历史UID，Resource ObserveIdentity 每条历史引用重复GET同一对象，Observe/VerifyRuntime再重复该链。现改为每次观察按已校验的namespace/name复用GET结果，并对每个保存UID继续原比较，NotFound和完整LIST/Notebook复核仍保留；终端失败新增安全阶段/耗时/gRPC code日志，不输出原错误、凭据或连接票据。实际同名重复读取已证实，Source25部署后保留的reader5同版本/同Pod正式终端已PASS；此前失败与具体3秒根因的细分不改写为已证实。按用户直接更新要求，不运行新增测试或发布门禁。
 
 剩余异常恢复、权限和卷边界负例尚未全部验收，A36=DEFERRED_USER_SCOPE，A35 旧4PVC=NOT_PROVEN。Goal 继续，不能宣称整批 A01–A41 完成。权威方案：[v2.0](../plans/container-instance-restart-pvc-20261028.md)，SHA b6dfb17aef74f3d99cc969ecd2ef51b19c77b0a984f82fbe6afd28aa94d41f7a。
 

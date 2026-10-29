@@ -146,19 +146,24 @@
       "step": "read",
       "application": "console",
       "remote": "CONFIRMED"
+    },
+    {
+      "step": "read",
+      "application": "console",
+      "remote": "CONFIRMED"
     }
   ],
   "read_instance": {
     "id": "9f4b0ec2-aa9b-435e-a188-54ad42edb538",
     "instance_kind": "container",
     "compute_type": "cpu",
-    "version": "1",
+    "version": "5",
     "desiredState": "running",
     "observedState": "running",
     "activeOperationId": "",
     "executionRunState": "running",
-    "appliedMountVersion": "1",
-    "lastOperationId": "1f499d73-ec2a-4460-a9ee-ec3a07f80aaf",
+    "appliedMountVersion": "5",
+    "lastOperationId": "f2d200cd-88d8-4d8c-a410-cd2e4ee55ff0",
     "createOperationId": "1f499d73-ec2a-4460-a9ee-ec3a07f80aaf",
     "computeCleaned": false,
     "workspaceCleaned": false,
@@ -168,8 +173,8 @@
   },
   "read_configuration": {
     "instance_id": "9f4b0ec2-aa9b-435e-a188-54ad42edb538",
-    "version": "1",
-    "applied_mount_version": "1",
+    "version": "5",
+    "applied_mount_version": "5",
     "workspace_mount_path": "/workspace",
     "volume_mounts": [
       {
@@ -186,7 +191,7 @@
     "pvc_phase": "Bound",
     "pv_phase": "Bound"
   },
-  "read_pod_uid": "ac2329c5-7c51-4778-aa0b-0e0b6135ce6e",
+  "read_pod_uid": "6d803bbf-b117-4707-924a-daffb489b194",
   "marker_read_actual": {
     "mount_readonly": true,
     "marker_hashes": {
@@ -198,7 +203,7 @@
   "read_result": {
     "result": "PASS_ORIGINAL_BORROWED_PVC_PV_AND_TWO_MARKERS_READONLY",
     "instance_id": "9f4b0ec2-aa9b-435e-a188-54ad42edb538",
-    "pod_uid": "ac2329c5-7c51-4778-aa0b-0e0b6135ce6e",
+    "pod_uid": "6d803bbf-b117-4707-924a-daffb489b194",
     "storage": {
       "pvc_uid": "fa56c965-5a9a-4bb1-b271-3960a7309e96",
       "pv_name": "pvc-fa56c965-5a9a-4bb1-b271-3960a7309e96",
