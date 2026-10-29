@@ -7,3 +7,5 @@
 原 Resource checkout 为 `codex/image-mvp-20260930` / `d32c4f438b43b8cb7534486c73e116e4d26c890a`，有既有文档修改及未跟踪资料，未复制或覆盖。Gov 主 checkout `main` / `323eb749b8a3d607b26687797b372919052895c7` clean。实施使用各自隔离工作树。
 
 环境盘点由只读记录承接；CODE/PG/BOUNDARY/LIVE 的命令和结果在执行后追加同目录文件，所有未执行项不认作通过。
+
+原始收据索引：[停止态卸载、卸空启动、重挂读回及版本/原账证明](cp02-stopped-continuation-03.safe.json)（含逐文件SHA）；[正式终端SG边界](terminal-exec-diag-20261029-01.safe.json)。当前结论仍只维护在上方status入口。
