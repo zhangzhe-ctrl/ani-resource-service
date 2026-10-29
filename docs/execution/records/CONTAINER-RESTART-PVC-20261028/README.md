@@ -20,3 +20,4 @@ GPU与发布后续原始入口：[GPU安全回件](gpu-workspace-return-01/retur
 
 - [Source24 RV写确认修复：RED/GREEN、原make环境失败、组成续验及窄PG原件](source24-rv-cas-01/index.safe.json)。已PASS组成不重复执行；真实重启另行记录。
 - [Gov main450快进及两部署实际发布](gov-main-release-154003.safe.json)。本次按用户要求未运行测试/门禁。
+- [Source27 最后实际故障恢复、正常清理及正式镜像恢复](source27-live-03/README.md)。失败工具尝试及证据局限保留，当前状态仍只见本页顶部 status 入口。
