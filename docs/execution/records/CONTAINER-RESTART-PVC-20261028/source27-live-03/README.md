@@ -46,6 +46,7 @@ The roughly12-minute operation includes Kubernetes' increasing restart delay.
 - [A30 actual process-loss and old-generation recovery](a30/README.md).
 - [Final CPU deletion and scratch reclamation](final-cpu/README.md).
 - [Formal Source27 restore, 10.525 seconds](formal-restore/README.md).
+- [Temporary credential and transport cleanup, including the documented mistake](private-cleanup/README.md).
 
 All task business objects in these cases were cleaned through normal APIs.
 Original borrowed PVC/PV identities and data were retained. A36 remains

@@ -1142,9 +1142,9 @@ LIVE/PRODUCT 未验收；CI 对所有 push/PR 的 Ubuntu 全量门禁与用户�
 <a id="container-restart-pvc-20261028"></a>
 ## 容器 Restart 与 borrowed PVC 挂卸（2026-10-28）
 
-最新交付恢复点（2026-10-30 04:06 CST）：CP-01～CP-04 的本批业务实现和必要分层验收已完成，CPU/GPU 正式 Gov 主链、真实挂卸/重启/数据、终端/CUDA/网络和原账结果沿用下方对应源码的实际证据。本轮补齐最后 A14/A17/A18/A19/A30 LIVE；当前只剩本轮记录提交及任务临时凭据/通道清理，Goal 在收尾前仍 active。[本轮证据入口](records/CONTAINER-RESTART-PVC-20261028/source27-live-03/README.md)。用户明确暂缓的 A36 为 `DEFERRED_USER_SCOPE`，不记 PASS；A35 按已审方案“保持对象禁用”替代路径完成，旧 DELETE 历史仍 `NOT_PROVEN`。不把整批 A01–A41 无条件写成全部 PASS。
+最终交付记录（2026-10-30 04:10 CST）：CP-01～CP-04 的本批业务实现和必要分层验收已完成，CPU/GPU 正式 Gov 主链、真实挂卸/重启/数据、终端/CUDA/网络和原账结果沿用下方对应源码的实际证据。本轮补齐最后 A14/A17/A18/A19/A30 LIVE；本轮证据已普通 SSH 推送，远端/本地明确凭据副本已清理，远端三条任务连接已正常关闭；最后本地 master/agent 在最终提交推送后关闭，实际结果保存在下述清理入口所指的本地最终回执。[本轮证据入口](records/CONTAINER-RESTART-PVC-20261028/source27-live-03/README.md)。用户明确暂缓的 A36 为 `DEFERRED_USER_SCOPE`，不记 PASS；A35 按已审方案“保持对象禁用”替代路径完成，旧 DELETE 历史仍 `NOT_PROVEN`。不把整批 A01–A41 无条件写成全部 PASS。
 
-当前运行正式 Resource Source27 `123e66c0daf6fdd946abada44d3ff9507d5127e4`，tree `1043e34e2a0cb26dd20af1292a471c828e3ec52c`，binary `d343e934b41b7864fe8b1ea5a98993f88b5aaa71db9ee928f6b1b147c818a101`，image `sha256:1846ff442cc31f9a645f6137fb8a70ebc3f8d76e8a72bf675f0c72893714909e`。故障镜像已按精确所有权恢复；gen/observed83、Ready1、Pod UID `b3c8184a-d0fa-426d-8b80-d294c8f9c39d`。实际更新耗时 **10.525 秒**，临时 env/mount/volume/诊断 annotation 已移除，原运行安全设置保留。Gov main/dev 仍为已合入发布的 `a863ebc1639491bf4cf5c0acc02b0dbe9275a5ad`，image `a3f1d3f54bf83da66bb28721ade4b86fbfaa63848b7a04235e8c638c0223684d`。[正式恢复回执](records/CONTAINER-RESTART-PVC-20261028/source27-live-03/formal-restore/README.md)。本轮无产品代码变更、编译、生成、测试套件或发布门禁；按用户后续要求直接更新后处理实际问题。
+当前运行正式 Resource Source27 `123e66c0daf6fdd946abada44d3ff9507d5127e4`，tree `1043e34e2a0cb26dd20af1292a471c828e3ec52c`，binary `d343e934b41b7864fe8b1ea5a98993f88b5aaa71db9ee928f6b1b147c818a101`，image `sha256:1846ff442cc31f9a645f6137fb8a70ebc3f8d76e8a72bf675f0c72893714909e`。故障镜像已按精确所有权恢复；gen/observed83、Ready1、Pod UID `b3c8184a-d0fa-426d-8b80-d294c8f9c39d`。实际更新耗时 **10.525 秒**，临时 env/mount/volume/诊断 annotation 已移除，原运行安全设置保留。Gov main/dev 仍为已合入发布的 `a863ebc1639491bf4cf5c0acc02b0dbe9275a5ad`，正式 Resource module `v0.0.0-20261029095316-79261907c18c`（GOWORK=off，无本地 replace），image `a3f1d3f54bf83da66bb28721ade4b86fbfaa63848b7a04235e8c638c0223684d`。[正式恢复回执](records/CONTAINER-RESTART-PVC-20261028/source27-live-03/formal-restore/README.md)。本轮无产品代码变更、编译、生成、测试套件或发布门禁；按用户后续要求直接更新后处理实际问题。
 
 最后五类 LIVE 的实际结论：
 
@@ -1155,6 +1155,8 @@ LIVE/PRODUCT 未验收；CI 对所有 push/PR 的 Ubuntu 全量门禁与用户�
 - A30：真实 reserve 提交后/usage 前、write_started 提交后/发送前均实际 exit86；真实 DELETE2xx 后/观察前进程丢失也由原 ticket 自然恢复 completed。旧 UID 的迟到 DELETE 实际409，正常重建的同名新 UID 保留；后续两代自身对象正常清理。未改业务 SQL/lease，第一次过早要求 ticket completed 的工具失败保留，原 ticket 正常等待后 PASS。[A30](records/CONTAINER-RESTART-PVC-20261028/source27-live-03/a30/README.md)。
 
 最终资源清理：CPU `9b2e5371-5be3-4cac-8766-55147d8041fb` 正常 DELETE29 completed，五项 cleanup true，NB/STS/Pod/workspace PVC/PV Gone，未释放引用0，Pending/Fence 空；原 CREATE/ACC/charge 摘要不变，CPU 净账无漂移。原 borrowed PVC `fa56c965-5a9a-4bb1-b271-3960a7309e96`/PV `544dd33b-3330-48d7-a825-308c590d45f6` 仍同 UID/Bound，原文件此前已真实只读读回；A14/A19 三张 task scratch 的 PV 也已自动回收。[最终清理及回收回执](records/CONTAINER-RESTART-PVC-20261028/source27-live-03/final-cpu/README.md)。原用户 role5/plan3/quota、已停止占卷实例、旧保留 workspace、无关运行负载不动。旧会话远端注销 `NOT_CONFIRMED` 的历史边界保留，不声称拥有批量撤销权限；本轮驱动均正常 Logout，临时本地凭据副本/连接按任务所有权收尾。
+
+临时清理：明确的本地平台/PG/registry/bridge 副本、新机平台/DSN/Docker auth 副本、Fedora 两个明确平台/bridge 副本均已正常清理，所有回执 skips[]。新机三个精确 task SSH master 正常退出；最后本地 b.sock master 与 a.sock task agent 由同一脚本在 Git 最终推送后关闭，终结结果见 [清理入口](records/CONTAINER-RESTART-PVC-20261028/source27-live-03/private-cleanup/README.md) 所指的本地 `local-connections.result.safe.json`，不靠计划文字断言已关闭。清理首版脚本还误删了四份旧会话 private 诊断原件；实际动作已如实留存，已提交的脱敏旧会话结果和全部业务验收记录仍保留，剩余 private 证据不删。旧会话撤销 `NOT_CONFIRMED` 及 A35/A36 的边界不因清理改变。Resource 仍仅普通推送 `codex/container-restart-pvc-20261028`，未合 main/tag/release；原脏 checkout 未动。
 
 以下均为各时刻原始进展；其中“当前/剩余/Goal active”等用语仅对应当时，当前状态以本节首段为准。
 
