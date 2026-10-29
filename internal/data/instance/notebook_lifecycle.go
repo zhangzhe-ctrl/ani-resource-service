@@ -104,18 +104,26 @@ func (n *Notebook) ObserveIdentity(ctx context.Context, i biz.Instance) (biz.Obs
 		tracked = biz.MergePodRefs(tracked, []biz.PodRef{{ClusterID: i.Spec.ClusterID, Namespace: i.Spec.Namespace, Name: i.PodName, UID: i.PodUID, ContainerName: biz.Container}})
 	}
 	// Persisted identities are directly read even when labels have disappeared.
+	// StatefulSet replacements keep the same name. Read that object once per
+	// observation, then compare every persisted UID against the same result.
+	trackedObjects := map[string]*unstructured.Unstructured{}
 	for _, ref := range tracked {
 		if ref.ClusterID != i.Spec.ClusterID || ref.ClusterID == "" || ref.Namespace != i.Spec.Namespace || ref.Namespace == "" || ref.Name == "" || ref.UID == "" {
 			return out, biz.ErrOwnership
 		}
-		pod, e := n.lifecycleGet(ctx, podGVR, ref.Namespace, ref.Name)
-		if apierrors.IsNotFound(e) {
-			continue
+		pod, read := trackedObjects[ref.Name]
+		if !read {
+			var e error
+			pod, e = n.lifecycleGet(ctx, podGVR, ref.Namespace, ref.Name)
+			if e != nil && !apierrors.IsNotFound(e) {
+				return out, e
+			}
+			if apierrors.IsNotFound(e) {
+				pod = nil
+			}
+			trackedObjects[ref.Name] = pod
 		}
-		if e != nil {
-			return out, e
-		}
-		if string(pod.GetUID()) == ref.UID {
+		if pod != nil && string(pod.GetUID()) == ref.UID {
 			identityPod(&out, i, pod)
 		}
 	}

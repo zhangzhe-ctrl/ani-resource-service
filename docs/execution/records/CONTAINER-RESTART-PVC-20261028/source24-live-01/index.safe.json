@@ -1,0 +1,89 @@
+{
+  "cpu": {
+    "borrowed_post_delete_files_and_identity": "PASS",
+    "charge_vector": [],
+    "delete28_and_replay": "PASS",
+    "protective_references": 0,
+    "running_attach26": "PASS",
+    "running_detach25": "PASS",
+    "state": "deleted",
+    "version": "28"
+  },
+  "gov_revision": "a863ebc1639491bf4cf5c0acc02b0dbe9275a5ad",
+  "gpu": {
+    "borrowed_post_delete_files_and_identity": "PASS_FORMAL_READONLY_READER",
+    "delete_and_refund_once": "PASS",
+    "formal_terminal": "FAIL_CREATE_SESSION_UNAVAILABLE_CAUSE_NOT_PROVEN",
+    "new_pod_cuda": "PASS_DIRECT_HARDWARE_ONLY",
+    "original_charge_unchanged": "PASS",
+    "original_units_mib": 24570,
+    "protective_references": 0,
+    "release_events": 1,
+    "released_units": 24570,
+    "running_attach_ro9_and_EROFS": "PASS",
+    "running_detach8": "PASS",
+    "state": "deleted",
+    "version": "11"
+  },
+  "new_receipts": [
+    {
+      "path": "gpu-source24-runtime-01/04-stop/state.json",
+      "sha256": "8d4040da0568f89901236b0cb6c0f4e4ea8be44fc421b071eeb2b8f2e05fd534"
+    },
+    {
+      "path": "gpu-source24-runtime-01/04-stop/proof.safe.json",
+      "sha256": "259521e6f923c1133230619c9e80e3a3924f781c100c2960c18de00bb2d14d39"
+    },
+    {
+      "path": "final-delete-source24-01/gpu/state.json",
+      "sha256": "72148f67a73d68ba69f19176e6d10b30f232ad9abf7877b75335d8a2afbd3e4a"
+    },
+    {
+      "path": "gpu-source24-after-delete11-ledger-01/snapshot.safe.json",
+      "sha256": "2dacff88243a395aeb141986615e3cf23c81517b19a008d9a1c15084e4e6078b"
+    },
+    {
+      "path": "gpu-source24-after-delete11-ledger-01/receipt.safe.json",
+      "sha256": "1258c816462eba88f3b5d873e54240da880b3f69cb8047ef540ded91b5b1b36b"
+    },
+    {
+      "path": "sg-store-restart-01/result.safe.json",
+      "sha256": "63d891ce17831d33d77efc54caa06911d042166179b81700e11d2cfe00aa8714"
+    },
+    {
+      "path": "gpu-source24-terminal9-after-sg-restart-01/result.safe.json",
+      "sha256": "1edf9b020d33d9de82edd2824271b718f06daceca9ad76ecd8d2ead586a35712"
+    },
+    {
+      "path": "post-delete-borrowed-reader-01/state.json",
+      "sha256": "1adc088971deb1475971b7b4ec713e71beb642b3a954fff57de53b76e5fd97a1"
+    },
+    {
+      "path": "reader-terminal1-after-sg-restart-01/result.safe.json",
+      "sha256": "bb3daa20df4a03074007ff11165020f82ef0b7d84a5118fae47a545238b89a7f"
+    },
+    {
+      "path": "post-gpu-delete11-proof-01/result.safe.json",
+      "sha256": "e85134299b8d02a1cfc2c7a8893597347bded8b14b55d9928e773fe22d70f54e"
+    },
+    {
+      "path": "post-gpu-delete11-proof-01/refs.safe.json",
+      "sha256": "dbdae7736157bb782bc6e34191382319fbbf8cbaded52763a74401c041b3b0aa"
+    },
+    {
+      "path": "gov-direct-release-a863-01/result.safe.json",
+      "sha256": "c7c42e719ee11c2e3c4ee4c20195d960329c12f0ad7eeb1174c0573554af394e"
+    }
+  ],
+  "reader": {
+    "a25_and_restricted_running_attach": "IN_PROGRESS",
+    "borrowed_original_files": "PASS_READONLY_TWO_HASHES",
+    "formal_terminal": "PASS_HTTP202_WS101_CAT_CLOSE1000",
+    "instance_id": "9f4b0ec2-aa9b-435e-a188-54ad42edb538"
+  },
+  "release_tests_and_gates": "NOT_RUN_USER_PROHIBITED",
+  "resource_revision": "2dbde6411d612e3749bf86652da9b1f7ec7bcc09",
+  "result": "PARTIAL_REAL_BUSINESS_PROGRESS",
+  "schema": "source24-live-progress-v1",
+  "scope": "Individual states/proofs under this directory are authoritative; no claim all acceptance rows passed."
+}
