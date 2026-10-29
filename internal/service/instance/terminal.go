@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 	"time"
 
 	pb "github.com/zhangzhe-ctrl/ani-resource-service/api/instance/terminal/v1"
@@ -42,6 +43,7 @@ func (s *TerminalValidation) ValidateTerminalTarget(ctx context.Context, t *pb.T
 		slog.ErrorContext(ctx, "instance_terminal_target_validation_failed",
 			"stage", "provider.observe", "instance_id", i.ID,
 			"grpc_code", status.Code(mapped).String(), "elapsed_ms", time.Since(started).Milliseconds(),
+			"client_rate_limited", strings.Contains(e.Error(), "client rate limiter") || strings.Contains(e.Error(), "would exceed context deadline"),
 			"deadline_exceeded", errors.Is(e, context.DeadlineExceeded) || ctx.Err() == context.DeadlineExceeded)
 		return nil, mapped
 	}
