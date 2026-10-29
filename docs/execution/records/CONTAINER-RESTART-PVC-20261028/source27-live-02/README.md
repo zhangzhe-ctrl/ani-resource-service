@@ -42,6 +42,16 @@ business calls. No product source changed for these cases.
 - `resource-source27-fault-*`: direct diagnostic installation/update receipts,
   with separate immutable base/overlay/image identities. These are task-only
   timing builds; the formal Source27 image is the later restore target.
+- `a30-storage-crash-live-02/response-drop/`: a real exact-UID Storage DELETE
+  received Kubernetes 200, then lost that response. The same durable ticket
+  retained write_started/unknown, observed actual absence and completed; the
+  normal API returned GONE and the original PV was automatically reclaimed.
+  This case did not exit the process and does not establish all A30 crash points.
+- `a17-sts-negative-live-01/`: normal Start/Stop and original workspace proof
+  passed. The brief STS negative window was not captured and remains
+  NOT_VERIFIED; no extra Stop or controller change was used.
+- `fault-build/04/`: Source27 plus exact post-commit process-exit hooks for a
+  later scoped A14/A30 run. Build/deployment success is not a crash-case PASS.
 
 Current progress and remaining required cases live only in
 `docs/execution/status.md#container-restart-pvc-20261028`.
