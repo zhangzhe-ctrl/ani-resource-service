@@ -13,7 +13,7 @@ func snapshotWire(s biz.Snapshot) *pb.Snapshot {
 	if s.Complete {
 		completeness = "COMPLETE"
 	}
-	out := &pb.Snapshot{SnapshotId: s.ID, SourceVmId: s.SourceVMID, SourceVmUid: s.SourceVMUID, Ready: s.Ready, Completeness: completeness, Included: append([]string(nil), s.Included...), Excluded: append([]string(nil), s.Excluded...), Indications: append([]string(nil), s.Indications...), ObservedAt: observed(s.ObservedAt), Reason: s.Reason}
+	out := &pb.Snapshot{Name: s.Name, CreatedAt: observed(s.CreatedAt), SnapshotId: s.ID, SourceVmId: s.SourceVMID, SourceVmUid: s.SourceVMUID, Ready: s.Ready, Completeness: completeness, Included: append([]string(nil), s.Included...), Excluded: append([]string(nil), s.Excluded...), Indications: append([]string(nil), s.Indications...), ObservedAt: observed(s.ObservedAt), Reason: s.Reason}
 	for _, d := range s.Inventory {
 		out.Disks = append(out.Disks, &pb.Disk{DiskId: d.ID, Role: d.Role, Name: d.Name, SizeGb: d.SizeGB, RequestedBytes: d.RequestedBytes, ObservedCapacityBytes: d.ObservedCapacityBytes, VolumeName: d.VolumeName, Serial: d.Serial, Attached: d.Attached, PreparationState: d.Preparation, Reason: d.Reason})
 	}

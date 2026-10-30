@@ -188,7 +188,34 @@ message VirtualMachine {
   repeated MediaState media = 15; string boot_device = 16;
   repeated string security_group_ids = 17 [json_name = "security_group_ids"];
   string created_at = 18 [json_name = "createdAt"];
+  VMRuntime runtime = 19; VMRelations relations = 20;
 }
+// Read-only detail projection. Runtime is collected only by GetVM, never by ListVMs.
+message ResourceReference { string id = 1; string name = 2; string state = 3; }
+message VMRelations {
+  ResourceReference vpc = 1; ResourceReference subnet = 2;
+  repeated ResourceReference security_groups = 3;
+}
+message GuestInterface {
+  string name = 1; string guest_name = 2; string mac = 3;
+  repeated string addresses = 4; string info_source = 5;
+}
+message GuestFilesystem {
+  string disk_name = 1; string mount_point = 2; string file_system_type = 3;
+  optional uint64 total_bytes = 4; optional uint64 used_bytes = 5;
+}
+message VMRuntime {
+  // AVAILABLE, NOT_RUNNING, AGENT_NOT_CONNECTED, UNAVAILABLE, or CHANGED.
+  string state = 1; string agent_state = 2; string observed_at = 3;
+  string node_name = 4;
+  // VMI Running phase transition, not guest OS boot time.
+  string started_at = 5; string hostname = 6; string agent_version = 7;
+  string os_name = 8; string os_version = 9; string kernel_release = 10; string kernel_version = 11;
+  repeated GuestInterface interfaces = 12;
+  // AVAILABLE, UNSUPPORTED, UNAVAILABLE, or NOT_QUERIED. Empty AVAILABLE is a successful empty result.
+  string filesystems_state = 13; repeated GuestFilesystem filesystems = 14;
+}
+
 message Operation {
   string id = 1; string vm_id = 2; string action = 3; int64 intent_version = 4;
   string state = 5; string reason = 6; string observed_at = 7;
@@ -209,6 +236,7 @@ message Snapshot {
   bool ready = 4; string completeness = 5; repeated string included = 6;
   repeated string excluded = 7; repeated string indications = 8;
   repeated Disk disks = 9; string observed_at = 10; string reason = 11;
+  string name = 12; string created_at = 13;
 }
 message ListSnapshotsResponse { repeated Snapshot items = 1; }
 message RestoreDiskImpact { string disk_id = 1; string action = 2; string reason = 3; }

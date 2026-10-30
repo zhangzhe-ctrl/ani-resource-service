@@ -296,6 +296,7 @@ func (n *Native) ObserveSnapshot(ctx context.Context, v biz.VM, s biz.Snapshot) 
 		return s, biz.ErrOwnership
 	}
 	s.Native = objectRef(object)
+	s.CreatedAt = object.GetCreationTimestamp().Time
 	s.ObservedAt = time.Now().UTC()
 	if uid := snapshotString(object, "status", "sourceUID"); uid != "" && uid != s.SourceVMUID {
 		return s, biz.ErrOwnership

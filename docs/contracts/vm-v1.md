@@ -226,3 +226,15 @@ SG已有VNC字节转发可复用，但当前name-only路径不能作为本期受
 为 C03.3 删除受理栅栏保留已有短时幂等，SG SessionService 新增纯查询 GetSessionReplay(GetSessionReplayRequest) returns GetSessionReplayResponse；request 字段/tag 固定：idempotency_key=1、Principal principal=2、instance_id（VM ID）=3、expected_version=4。GetSessionReplayResponse 字段/tag 为 session_id=1、connect_url=2、google.protobuf.Timestamp expires_at=3、bool replayed=4，沿原会话响应语义。
 
 Gov 当前动作授权后，若删除已持久受理，仅调用该只读查询取得同主体/租户、同 VM/version/key 的原 managed VM/VNC 会话；SG 仍校验精确 Gov mTLS。仅原 issued 且未过期、未 claim 的会话可返回同票据/URL，不调用 ResolveConsoleTarget、ValidateConsoleSession、Issue/CreateOrGet，不创建或刷新票据、不改绑定。VM/version 等意图变化按既有幂等冲突拒绝；不存在时返回 NotFound，由 Gov 删除栅栏拒绝新会话；claimed/expired/closed 按既有 FailedPrecondition 拒绝。原票据后续连接仍执行 C06 的完整目标/closing 校验，查询成功不授予绕过删除的开流能力。
+
+## C07 VM 详情只读扩展（2026-10-30）
+
+沿用 `GetVM`、当前租户归属及 `vm:read`，不新增动作或修改冻结的创建摘要。`frozen_spec` 继续仅供受信 Gov 投影：规格名称、CPU 拓扑、源媒体名称和硬件参数来自创建快照；公开初始化摘要仅有方式、用户名和 SSH 公钥 SHA-256 指纹，不返回密码、密码标志、凭据摘要或原始公钥。Gov 公共 `createdAt` 直接透传 owner 行的创建时间。
+
+`relations` 的 VPC/子网 ID 来自冻结网络，安全组 ID 来自 owner 当前绑定；名称按同一可信租户读取当前 Network 记录。引用各自带 `RESOLVED/NOT_FOUND/UNAVAILABLE/NOT_QUERIED` 状态，读取失败保留 ID、清除名称，不跨租户补查。平台地址的 `observed_at` 来自 Attachment 地址资格观测，缺少该时间保持空。
+
+仅 `GetVM` 读取 `runtime`；列表不逐台查询 VMI 或 QGA。Native 验证 namespace UID、VM 归属/UID、VMI controller owner；对无 UID 返回的 `guestosinfo/filesystemlist` 在读取前后复核当前 VMI UID。总读取预算 5 秒；换代时丢弃来宾内容，返回 `CHANGED`。`runtime.state` 为 `AVAILABLE/NOT_RUNNING/AGENT_NOT_CONNECTED/UNAVAILABLE/CHANGED`；代理未连接不足以证明未安装。来宾依赖不可用不隐藏基础 VM 详情，也不伪造成功。`started_at` 是 VMI Running 阶段转换时间，不是 guest OS 启动时间。
+
+`runtime.interfaces` 独立展示 VMI 报告的 MAC、来宾网卡名、地址与来源，不替代 Network 的当前地址资格。文件系统来自 QGA；`filesystems_state` 区分 `AVAILABLE/UNSUPPORTED/UNAVAILABLE/NOT_QUERIED`。容量字段为 optional uint64，缺失与真实零值不同；按挂载点展示，不凭 vdX 名称推断 owner 云盘绑定。查询时间不代表 QGA 在该时刻重新采样，容量也不构成计量账本。所需只读 Kubernetes 权限见 [guest-info-rbac.yaml](../../deployments/vm/guest-info-rbac.yaml)，部署另行执行。
+
+快照 `name` 来自原创建名称，`created_at` 来自校验归属后的原生 VirtualMachineSnapshot metadata.creationTimestamp，并随 owner 观察持久保存。旧记录未保存该值时保持空，不以 observed_at 或当前时间回填。
