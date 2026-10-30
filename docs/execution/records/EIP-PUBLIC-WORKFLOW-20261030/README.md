@@ -22,8 +22,8 @@ No local execution fallback.
 `make generate` passed with Go 1.26.10 linux/amd64 and pinned Buf 1.60.0 / sqlc 1.31.1.
 `make verify` passed: reproducible generation, boundaries, fault builds,
 mod tidy, package tests, vet, build, module verification and whitespace check
-([complete log](resource-verify.log)).
-The focused PostgreSQL run passed in 15.658 seconds; [full command output](resource-pg.log).
+([complete log](resource-verify.txt)).
+The focused PostgreSQL run passed in 15.658 seconds; [full command output](resource-pg.txt).
 Command:
 
 ```bash
