@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -422,9 +423,33 @@ func TestEgressUnknownCreateRecoveryAndFencing(t *testing.T) {
 
 func TestEgressUnderlayPlatformOccupancyAndRetirement(t *testing.T) {
 	f := newEgressFixture(t)
-	device := f.platform(t, biz.PlatformIntent{Kind: "adopt_device", Name: "fixture-only", IdempotencyKey: "adopt", Device: &biz.DeviceConfig{DeviceName: "fixture0", InventoryFingerprint: strings.Repeat("1", 64)}})
-	vlan := f.platform(t, biz.PlatformIntent{Kind: "create_vlan", Name: "untagged", IdempotencyKey: "vlan0", Vlan: &biz.VlanConfig{DeviceID: device.ID, VlanID: 0}})
-	if _, err := f.e.CreatePlatform(f.ctx, biz.PlatformIntent{Kind: "create_vlan", Name: "duplicate", IdempotencyKey: "duplicate-vlan", Vlan: &biz.VlanConfig{DeviceID: device.ID, VlanID: 0}}); err == nil {
+	boundary := &switchBoundary{}
+	f.p.UseEgressInfrastructure(boundary)
+	sw, err := f.e.CreateVirtualSwitch(f.ctx, biz.VirtualSwitchIntent{Name: "underlay-occupancy", IdempotencyKey: "underlay-switch"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	intent := biz.PlatformIntent{Kind: "create_vlan", Name: "untagged", IdempotencyKey: "vlan0", Vlan: &biz.VlanConfig{ClusterID: "test-cluster", VirtualSwitchID: sw.ID, DeviceName: "fixture0", VlanID: 0}}
+	vlan, err := f.e.CreatePlatform(f.ctx, intent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	policy := biz.DefaultWorkerPolicy()
+	policy.ObserveEvery = 10 * time.Millisecond
+	switchWorker, err := biz.NewVirtualSwitchWorker(f.p, boundary, uuid.NewString(), policy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.drive(t, func() bool {
+		if _, err := switchWorker.Step(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+		v, err := f.e.GetPlatform(f.ctx, "vlan", vlan.ID)
+		return err == nil && v.State == biz.Available
+	})
+	duplicate := intent
+	duplicate.Name, duplicate.IdempotencyKey = "duplicate", "duplicate-vlan"
+	if _, err := f.e.CreatePlatform(f.ctx, duplicate); err == nil {
 		t.Fatal("duplicate device/VLAN accepted")
 	}
 	gateway := f.platform(t, biz.PlatformIntent{Kind: "create_egress_gateway", Name: "underlay-gateway", IdempotencyKey: "underlay-gateway"})
@@ -464,11 +489,19 @@ func TestEgressUnderlayPlatformOccupancyAndRetirement(t *testing.T) {
 		v, err := f.e.GetPlatform(f.ctx, "vlan", vlan.ID)
 		return err == nil && v.State == biz.Deleted
 	})
-	next := f.platform(t, biz.PlatformIntent{Kind: "create_vlan", Name: "next", IdempotencyKey: "vlan-replacement", Vlan: &biz.VlanConfig{DeviceID: device.ID, VlanID: 0}})
+	recreate := intent
+	recreate.Name, recreate.IdempotencyKey = "next", "vlan-replacement"
+	next := f.platform(t, recreate)
 	if next.ID == vlan.ID {
 		t.Fatal("retired VLAN reused identity")
 	}
-	// No provider image refresh can authorize a new pool from stale evidence.
+	// Public allocation uses current provider health without requiring manual
+	// evidence. Historical evidence must still fail explicit re-registration
+	// after the observed provider image changes.
+	before, err := f.e.GetPlatform(f.ctx, "public_pool", f.pool.ID)
+	if err != nil || before.Verification == nil {
+		t.Fatal("missing original manual evidence", before, err)
+	}
 	f.provider.mu.Lock()
 	f.provider.images = []string{"sha256:" + strings.Repeat("b", 64)}
 	f.provider.mu.Unlock()
@@ -476,8 +509,24 @@ func TestEgressUnderlayPlatformOccupancyAndRetirement(t *testing.T) {
 		v, err := f.e.GetPlatform(f.ctx, "public_pool", f.pool.ID)
 		return err == nil && len(v.ObservedProviderImages) == 1 && v.ObservedProviderImages[0] == "sha256:"+strings.Repeat("b", 64)
 	})
-	if _, err := f.e.CreateEIP(f.ctx, biz.EgressIntent{Name: "changed-provider", IdempotencyKey: "changed-provider"}); biz.ReasonOf(err) != biz.PublicEgressNotReady {
-		t.Fatal("old evidence survived provider image change", err)
+	changed, err := f.e.GetPlatform(f.ctx, "public_pool", f.pool.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.e.SetPool(f.ctx, biz.PlatformIntent{Kind: "verify_public_pool", ID: changed.ID, ExpectedVersion: changed.Version, IdempotencyKey: "reject-old-provider-evidence", Verification: before.Verification}); biz.ReasonOf(err) != biz.PublicEgressNotReady {
+		t.Fatal("old evidence re-registered after provider image change", err)
+	}
+	eip, err := f.e.CreateEIP(f.ctx, biz.EgressIntent{Name: "changed-provider", IdempotencyKey: "changed-provider"})
+	if err != nil {
+		t.Fatal("healthy public pool required manual evidence renewal", err)
+	}
+	f.drive(t, func() bool {
+		v, err := f.e.GetEIP(f.ctx, "", eip.ID)
+		return err == nil && v.State == biz.Available
+	})
+	after, err := f.e.GetPlatform(f.ctx, "public_pool", f.pool.ID)
+	if err != nil || !reflect.DeepEqual(after.Verification, before.Verification) {
+		t.Fatal("provider image observation silently re-signed manual evidence", after.Verification, err)
 	}
 }
 

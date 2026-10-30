@@ -87,7 +87,7 @@ func invalidateNodeAudit(o *KCObservation, sequence int32) {
 	o.changed(before, after)
 }
 
-func TestNodeFactsRetriesConsecutiveInvalidAuditsWithinCallerBudget(t *testing.T) {
+func TestNodeNetworkRetriesConsecutiveInvalidAuditsWithinCallerBudget(t *testing.T) {
 	p, collections := nodeAuditRetryProvider(t, func(o *KCObservation, attempt int32) error {
 		if attempt <= 2 {
 			invalidateNodeAudit(o, attempt)
@@ -96,19 +96,19 @@ func TestNodeFactsRetriesConsecutiveInvalidAuditsWithinCallerBudget(t *testing.T
 	})
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	nodes, _, _, at, err := p.nodeFactsObjects(ctx)
+	nodes, _, _, at, err := p.nodeNetworkObjects(ctx)
 	if err != nil || len(nodes) != 1 || at.IsZero() || collections.Load() != 3 {
 		t.Fatalf("stable third collection not consumed: collections=%d nodes=%d at=%v err=%v", collections.Load(), len(nodes), at, err)
 	}
 }
 
-func TestNodeFactsAuditRetriesStayBoundedAndDiagnostic(t *testing.T) {
+func TestNodeNetworkAuditRetriesStayBoundedAndDiagnostic(t *testing.T) {
 	t.Run("persistent_invalidation", func(t *testing.T) {
 		p, collections := nodeAuditRetryProvider(t, func(o *KCObservation, attempt int32) error { invalidateNodeAudit(o, attempt); return nil })
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 		defer cancel()
 		started := time.Now()
-		nodes, _, _, at, err := p.nodeFactsObjects(ctx)
+		nodes, _, _, at, err := p.nodeNetworkObjects(ctx)
 		var failure *biz.ProviderError
 		if !errors.As(err, &failure) || failure.Kind != biz.ProviderTemporary || failure.Cause == nil || !errors.Is(err, context.DeadlineExceeded) || len(nodes) != 0 || !at.IsZero() || collections.Load() < 2 || time.Since(started) > time.Second {
 			t.Fatalf("unbounded or opaque invalidation: collections=%d at=%v err=%#v", collections.Load(), at, err)
@@ -116,9 +116,9 @@ func TestNodeFactsAuditRetriesStayBoundedAndDiagnostic(t *testing.T) {
 	})
 	t.Run("without_deadline_one_refresh_only", func(t *testing.T) {
 		p, collections := nodeAuditRetryProvider(t, func(o *KCObservation, attempt int32) error { invalidateNodeAudit(o, attempt); return nil })
-		_, _, _, at, err := p.nodeFactsObjects(context.Background())
+		_, _, _, at, err := p.nodeNetworkObjects(context.Background())
 		var failure *biz.ProviderError
-		if !errors.As(err, &failure) || failure.Kind != biz.ProviderTemporary || failure.Cause == nil || !strings.Contains(failure.Cause.Error(), "node facts audit") || !at.IsZero() || collections.Load() != 2 {
+		if !errors.As(err, &failure) || failure.Kind != biz.ProviderTemporary || failure.Cause == nil || !strings.Contains(failure.Cause.Error(), "node network audit") || !at.IsZero() || collections.Load() != 2 {
 			t.Fatalf("unbounded caller did not stop after one fresh retry: collections=%d at=%v err=%#v", collections.Load(), at, err)
 		}
 	})
@@ -126,7 +126,7 @@ func TestNodeFactsAuditRetriesStayBoundedAndDiagnostic(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		p, collections := nodeAuditRetryProvider(t, func(o *KCObservation, attempt int32) error { invalidateNodeAudit(o, attempt); cancel(); return nil })
-		_, _, _, at, err := p.nodeFactsObjects(ctx)
+		_, _, _, at, err := p.nodeNetworkObjects(ctx)
 		if !errors.Is(err, context.Canceled) || !at.IsZero() || collections.Load() != 1 {
 			t.Fatalf("cancellation lost: collections=%d at=%v err=%v", collections.Load(), at, err)
 		}
@@ -134,7 +134,7 @@ func TestNodeFactsAuditRetriesStayBoundedAndDiagnostic(t *testing.T) {
 	t.Run("read_error", func(t *testing.T) {
 		readErr := errors.New("API LIST unavailable")
 		p, collections := nodeAuditRetryProvider(t, func(*KCObservation, int32) error { return readErr })
-		_, _, _, at, err := p.nodeFactsObjects(context.Background())
+		_, _, _, at, err := p.nodeNetworkObjects(context.Background())
 		if !errors.Is(err, readErr) || !at.IsZero() || collections.Load() != 1 {
 			t.Fatalf("real LIST failure retried or lost: collections=%d at=%v err=%v", collections.Load(), at, err)
 		}

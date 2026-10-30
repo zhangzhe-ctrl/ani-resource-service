@@ -43,8 +43,8 @@ func validateImageAdminModes() error {
 	if !validImageAdminAction(imageAdminAction) {
 		return fmt.Errorf("unknown Image operator action")
 	}
-	if flagImageMigrate || flagMigrate || flagNodeFacts || baseConnectivityAction != "" {
-		return fmt.Errorf("Image operator, migrations, node facts and base connectivity modes are exclusive")
+	if flagImageMigrate || flagMigrate || baseConnectivityAction != "" {
+		return fmt.Errorf("Image operator, migrations and base connectivity modes are exclusive")
 	}
 	if imageAdminOperator == "" {
 		return fmt.Errorf("Image operator identity file required")

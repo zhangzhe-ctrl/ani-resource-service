@@ -147,7 +147,7 @@ func (o *KCObservation) changed(old, new any) {
 			o.watchIndexBytes.Add(item.sign * int64(len(body)))
 		}
 	}
-	if unchangedNodeFactsRenewal(before, after, time.Now()) || unchangedNodeNetworkObservation(before, after) {
+	if unchangedNodeNetworkObservation(before, after) {
 		o.coalesced.Add(1)
 		return
 	}
@@ -467,7 +467,7 @@ func (o *KCObservation) collect(ctx context.Context) (*auditView, error) {
 		}
 		keys := []string{"object:" + egressCRKind(r.Kind) + "/" + ns + "/" + r.ProviderName, relation + ":" + ns + "/" + r.ProviderName, "uid:" + r.ProviderUid}
 		if r.Kind == "device" || r.Kind == "vlan" {
-			keys = append(keys, "node-facts")
+			keys = append(keys, "node-network")
 		}
 
 		if r.Kind == "public_pool" {
@@ -487,7 +487,7 @@ func (o *KCObservation) collect(ctx context.Context) (*auditView, error) {
 		if relation == "egress_gateway" {
 			relation = "gateway"
 		}
-		bind([]string{"node-facts", "provider-images", "object:ConfigMap/kcn-system/kcn-config", "intranet-service-ranges", "object:" + egressCRKind(edge.RefKind) + "/" + edge.Namespace + "/" + edge.ProviderName, relation + ":" + edge.Namespace + "/" + edge.ProviderName, "uid:" + edge.ProviderUid}, observationTarget{edge.TenantID, edge.ResourceID, edge.Kind})
+		bind([]string{"node-network", "provider-images", "object:ConfigMap/kcn-system/kcn-config", "intranet-service-ranges", "object:" + egressCRKind(edge.RefKind) + "/" + edge.Namespace + "/" + edge.ProviderName, relation + ":" + edge.Namespace + "/" + edge.ProviderName, "uid:" + edge.ProviderUid}, observationTarget{edge.TenantID, edge.ResourceID, edge.Kind})
 	}
 	for _, a := range attachments {
 		t := observationTarget{a.TenantID, a.AttachmentID, "attachment"}

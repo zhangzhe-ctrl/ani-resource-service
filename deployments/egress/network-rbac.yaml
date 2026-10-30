@@ -1,9 +1,9 @@
 # Resource definitions only. This file deliberately declares no binding: the
 # subject depends on the deployment, and a binding hardcoded to a placeholder
 # namespace silently fails (the ServiceAccount it names never exists). Bind this
-# ClusterRole, and the Role below, from the deployment's own manifest -- see
+# ClusterRole from the deployment's own manifest -- see
 # ../ani-system/networking-rbac.yaml for a worked example.
-# No real NIC is adopted by applying this RBAC; the admin API is a separate step.
+# Node patch is restricted by the application to its owned virtual-switch labels.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -30,14 +30,3 @@ rules:
   - apiGroups: [networking.k8s.io]
     resources: [servicecidrs]
     verbs: [get, list, watch]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: ani-network-device-adoption
-  namespace: kcn-system
-rules:
-  - apiGroups: [""]
-    resources: [configmaps]
-    resourceNames: [kcn-config]
-    verbs: [get, patch]

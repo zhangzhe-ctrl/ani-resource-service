@@ -21,24 +21,17 @@ func database(t *testing.T) (*data.Postgres, *pgxpool.Pool) {
 	t.Helper()
 	fixture := testenv.NewDatabase(t)
 	// Older repository/worker tests now supply an explicit startup policy.
-	// This replaces only external platform facts; admission, locking and SQL
-	// still run through the production implementation. KC policy tests use
-	// their protocol fixture instead, and NewDatabase itself remains closed.
+	// Admission, locking and SQL still run through the production implementation;
+	// NewDatabase itself remains closed until the fixture publishes its policy.
 	configureRepositoryVPCPresets(t, fixture.Repository)
 	return fixture.Repository, fixture.Owner
 }
 
 func configureRepositoryVPCPresets(t *testing.T, repository *data.Postgres) {
 	t.Helper()
-	if err := repository.ConfigureVPCCIDRPresets([]string{"10.0.0.0/16", "10.42.0.0/16"}, repositoryPlatformFacts{}); err != nil {
+	if err := repository.ConfigureVPCCIDRPresets([]string{"10.0.0.0/16", "10.42.0.0/16"}); err != nil {
 		t.Fatal(err)
 	}
-}
-
-type repositoryPlatformFacts struct{}
-
-func (repositoryPlatformFacts) PlatformCIDRs(context.Context) ([]string, time.Time, error) {
-	return []string{"10.16.0.0/16", "10.96.0.0/16", "172.16.101.0/24"}, time.Now(), nil
 }
 
 func TestVPCAcceptanceIsTenantScopedAndReplaysExactly(t *testing.T) {

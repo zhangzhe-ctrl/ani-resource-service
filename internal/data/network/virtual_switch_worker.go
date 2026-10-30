@@ -73,7 +73,7 @@ func (p *Postgres) SaveVirtualSwitchNode(ctx context.Context, w biz.VirtualSwitc
 	if err = json.Unmarshal(r.Nodes, &nodes); err != nil {
 		return databaseFailure(err)
 	}
-	if index < 0 || index >= len(nodes) || nodes[index].NodeUID != node.NodeUID || nodes[index].NodeName != node.NodeName || nodes[index].MAC != node.MAC || nodes[index].Priority != node.Priority || nodes[index].Allocated != node.Allocated {
+	if index < 0 || index >= len(nodes) || nodes[index].NodeUID != node.NodeUID || nodes[index].NodeName != node.NodeName || nodes[index].Priority != node.Priority || nodes[index].Allocated != node.Allocated {
 		return biz.ErrLeaseLost
 	}
 	old := nodes[index]

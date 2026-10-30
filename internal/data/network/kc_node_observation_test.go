@@ -64,7 +64,7 @@ func TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals(t *testing.T) {
 			at := time.Now().Add(-time.Second)
 			view := &auditView{collected: at}
 			o.changed(before, after)
-			if got := o.valid(view, []string{"node-facts"}); got != tc.keep {
+			if got := o.valid(view, []string{"node-network"}); got != tc.keep {
 				t.Fatalf("network audit validity=%v want %v", got, tc.keep)
 			}
 			oldAfter, _ := json.Marshal(before.Object)
@@ -83,7 +83,7 @@ func TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			o := &KCObservation{options: DefaultObservationOptions(), pending: map[string]struct{}{}, changes: map[string]uint64{}}
 			o.changed(tc.before, tc.after)
-			if o.valid(&auditView{}, []string{"node-facts"}) {
+			if o.valid(&auditView{}, []string{"node-network"}) {
 				t.Fatal("node identity lifecycle change ignored")
 			}
 		})

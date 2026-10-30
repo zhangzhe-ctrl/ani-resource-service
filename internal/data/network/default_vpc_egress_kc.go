@@ -50,7 +50,7 @@ func (p *DefaultEgressKCProvider) poolSet(ctx context.Context, poolID string, cl
 	if err != nil {
 		return egressResolved{}, egressReadSet{}, false, err
 	}
-	r, err := p.provider.resolveEgress(ctx, biz.ProviderTarget{Kind: "public_pool", ResourceID: poolID, BindingID: b.BindingID, KnownIdentity: b.ProviderUid, Direct: true})
+	r, err := p.provider.resolveEgress(ctx, biz.ProviderTarget{Kind: "public_pool", ResourceID: poolID, BindingID: b.BindingID, KnownIdentity: b.ProviderUid, Direct: true, Deleting: cleanup})
 	if err != nil {
 		return r, egressReadSet{}, false, err
 	}

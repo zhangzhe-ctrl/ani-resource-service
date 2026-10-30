@@ -96,7 +96,7 @@ func relationshipKeys(value any) ([]string, error) {
 	case "EIPGateway":
 		keys = append(keys, "gateway:/"+o.GetName())
 	case "VlanNetwork":
-		keys = append(keys, "node-facts", "vlan:/"+o.GetName(), "device:"+crString(o, "spec", "devName"))
+		keys = append(keys, "node-network", "vlan:/"+o.GetName(), "device:"+crString(o, "spec", "devName"))
 	case "Service":
 		for _, eip := range strings.Split(o.GetAnnotations()["networking.kubercloud.com/lb_eips"], ",") {
 			if strings.TrimSpace(eip) != "" {
@@ -104,10 +104,10 @@ func relationshipKeys(value any) ([]string, error) {
 			}
 		}
 	case "Node":
-		keys = append(keys, "node-facts", "node:"+o.GetName())
+		keys = append(keys, "node-network", "node:"+o.GetName())
 	case "ConfigMap":
-		if o.GetNamespace() == kcSystemNamespace && (o.GetName() == "kcn-config" || o.GetLabels()[ownerLabel] == "ani-network-node-facts") {
-			keys = append(keys, "node-facts")
+		if o.GetNamespace() == kcSystemNamespace && (o.GetName() == "kcn-config" || o.GetLabels()[ownerLabel] == "ani-network-node-network") {
+			keys = append(keys, "node-network")
 		}
 	case "VNic":
 		keys = append(keys, "vNic:"+o.GetNamespace()+"/"+o.GetName())

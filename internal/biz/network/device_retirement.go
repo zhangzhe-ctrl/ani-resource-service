@@ -55,21 +55,10 @@ type LegacyDeviceRetirementProvider interface {
 }
 
 func (e *Egress) RetireNetworkDevice(ctx context.Context, i DeviceRetirementIntent) (DeviceRetirement, error) {
-	a, err := e.authorization.Platform(ctx)
-	if err != nil {
+	if _, err := e.authorization.Platform(ctx); err != nil {
 		return DeviceRetirement{}, err
 	}
-	if !validEgressID(i.DeviceID, "device") || i.ExpectedVersion < 1 {
-		return DeviceRetirement{}, Fail(InvalidArgument, "device ID and positive expected_version are required")
-	}
-	if _, err = normalizeEgressName("retire-device", "", i.IdempotencyKey); err != nil {
-		return DeviceRetirement{}, err
-	}
-	r, ok := e.repository.(LegacyDeviceRetirementRepository)
-	if !ok {
-		return DeviceRetirement{}, Fail(DependencyUnavailable, "device retirement persistence unavailable")
-	}
-	return r.RetireNetworkDevice(ctx, i, a)
+	return DeviceRetirement{}, Fail(InvalidArgument, "standalone device registration has been removed")
 }
 func (e *Egress) GetNetworkDeviceRetirement(ctx context.Context, id string) (DeviceRetirement, error) {
 	if _, err := e.authorization.Platform(ctx); err != nil {

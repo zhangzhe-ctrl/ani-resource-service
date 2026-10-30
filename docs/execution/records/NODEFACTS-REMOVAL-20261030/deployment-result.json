@@ -1,0 +1,9 @@
+{
+  "uid": "e17f1f9e-e406-452f-838d-85062a6e860a",
+  "generation": 49,
+  "old_image": "172.16.101.10:30003/icn-01a15337-release/eight-res@sha256:00b99300322bef2cfe0c364846491813b82a173950797796bbc31a69000f0e3d",
+  "image": "172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:eb1f7995e1d95815ef542c9ea87c5aca4b4b2824c776b744439aa5a1d8af68fe",
+  "source_manifest_sha256": "92144ea8dbc375d922334ca68d25a1467c2accbbd4f4a0c754516456254a36db",
+  "ready": 1,
+  "available": 1
+}

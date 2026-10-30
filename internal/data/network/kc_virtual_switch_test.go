@@ -3,7 +3,6 @@ package data
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -17,25 +16,17 @@ func switchFixture(t *testing.T) (biz.VirtualSwitch, []unstructured.Unstructured
 	t.Helper()
 	now := time.Date(2026, 10, 21, 1, 0, 0, 0, time.UTC)
 	node := unstructured.Unstructured{Object: map[string]any{"metadata": map[string]any{"name": "n1", "uid": "uid1", "resourceVersion": "1", "labels": map[string]any{allocatedNodeLabel: "true"}, "annotations": map[string]any{"networking.kubercloud.com/chassis": "chassis1"}}, "status": map[string]any{"conditions": []any{map[string]any{"type": "Ready", "status": "True"}}}}}
-	iface := biz.NodeInterface{NodeName: "n1", NodeUID: "uid1", Name: "ens35", Kind: "device", MAC: "00:11:22:33:44:55", LinkUp: true, Carrier: true}
-	body, _ := json.Marshal(NodeFactsDocument{Version: 1, NodeName: "n1", NodeUID: "uid1", CollectedAt: now, Interfaces: []biz.NodeInterface{iface}})
-	facts := unstructured.Unstructured{Object: map[string]any{"metadata": map[string]any{"name": "facts", "namespace": kcSystemNamespace, "uid": "facts1", "resourceVersion": "2", "labels": map[string]any{ownerLabel: factsOwner, factsNodeLabel: "uid1"}}, "data": map[string]any{"facts.json": string(body)}}}
 	daemon := unstructured.Unstructured{Object: map[string]any{"metadata": map[string]any{"name": "cni1", "namespace": kcSystemNamespace, "labels": map[string]any{"networking.kubercloud.com/app": "cni-ds"}}, "spec": map[string]any{"nodeName": "n1", "containers": []any{map[string]any{"name": "cni"}}}, "status": map[string]any{"phase": "Running", "conditions": []any{map[string]any{"type": "Ready", "status": "True"}}, "containerStatuses": []any{map[string]any{"name": "cni", "ready": true}}}}}
 	config := &unstructured.Unstructured{Object: map[string]any{"metadata": map[string]any{"name": "kcn-config", "namespace": kcSystemNamespace, "uid": "config1", "resourceVersion": "3"}}}
-	return biz.VirtualSwitch{GroupName: "test-group"}, []unstructured.Unstructured{node}, []unstructured.Unstructured{facts}, []unstructured.Unstructured{daemon}, config, now
+	return biz.VirtualSwitch{GroupName: "test-group"}, []unstructured.Unstructured{node}, nil, []unstructured.Unstructured{daemon}, config, now
 }
 
-func TestVirtualSwitchInventoryRequiresEveryAllocatedNode(t *testing.T) {
-	for _, failure := range []string{"", "missing_interface", "stale", "node_unready", "missing_daemon", "external_same_value", "extra_allocated", "management"} {
+func TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe(t *testing.T) {
+	for _, failure := range []string{"", "node_unready", "missing_daemon", "external_same_value", "extra_allocated", "missing_uid", "legacy_owner", "foreign_vlan"} {
 		t.Run(failure, func(t *testing.T) {
 			sw, nodes, maps, daemons, config, now := switchFixture(t)
-			var doc NodeFactsDocument
-			_ = json.Unmarshal([]byte(crString(&maps[0], "data", "facts.json")), &doc)
+			var vlans []unstructured.Unstructured
 			switch failure {
-			case "missing_interface":
-				doc.Interfaces[0].Name = "ens36"
-			case "stale":
-				doc.CollectedAt = now.Add(-2 * time.Minute)
 			case "node_unready":
 				_ = unstructured.SetNestedSlice(nodes[0].Object, []any{map[string]any{"type": "Ready", "status": "False"}}, "status", "conditions")
 			case "missing_daemon":
@@ -49,48 +40,58 @@ func TestVirtualSwitchInventoryRequiresEveryAllocatedNode(t *testing.T) {
 				extra.SetName("n2")
 				extra.SetUID("uid2")
 				nodes = append(nodes, *extra)
-			case "management":
-				doc.Interfaces[0].Management = true
+			case "missing_uid":
+				nodes[0].SetUID("")
+			case "legacy_owner":
+				config.SetAnnotations(map[string]string{adoptionMarker("prepared0"): "other-binding"})
+			case "foreign_vlan":
+				vlans = []unstructured.Unstructured{{Object: map[string]any{"spec": map[string]any{"devName": "prepared0", "vClusterName": "another-group"}}}}
 			}
-			body, _ := json.Marshal(doc)
-			_ = unstructured.SetNestedField(maps[0].Object, string(body), "data", "facts.json")
-			v, err := virtualSwitchInventory(sw, "ens35", nodes, maps, nil, daemons, config, now, now)
+			v, err := virtualSwitchInventory(sw, "prepared0", nodes, maps, vlans, daemons, config, now, now)
 			if failure != "" {
 				if err == nil {
-					t.Fatal("incomplete or foreign inventory admitted")
+					t.Fatal("incomplete or foreign logical binding admitted")
 				}
 				return
 			}
 			if err != nil || len(v.Members) != 1 || len(v.Inventory.Items) != 1 || len(v.Fingerprint) != 64 || !v.Members[0].Allocated || v.Members[0].Priority != 100 {
 				t.Fatal(v, err)
 			}
+			device := v.Inventory.Items[0]
+			if device.Name != "prepared0" || device.NodeUID != "uid1" || device.MAC != "" || v.Members[0].MAC != "" || device.LinkUp || device.Carrier || device.OVSManaged || device.Selectable {
+				t.Fatal("administrator intent fabricated host probe evidence", v)
+			}
 		})
 	}
 }
 
-func TestVirtualSwitchWiringRequiresOwnGroupMapping(t *testing.T) {
-	sw, nodes, maps, _, _, _ := switchFixture(t)
-	var doc NodeFactsDocument
-	_ = json.Unmarshal([]byte(crString(&maps[0], "data", "facts.json")), &doc)
-	v := doc.Interfaces[0]
-	v.Master = "ovs-system"
-	v.OVSManaged = true
-	v.KCBridgeReady = true
-	annotations := nodes[0].GetAnnotations()
-	annotations[virtualSwitchGroupPrefix+sw.GroupName] = "ens35"
-	nodes[0].SetAnnotations(annotations)
-	v.KCBridgeNetworks = []string{"other-group.ens35"}
-	if switchWiring(&nodes[0], v, sw.GroupName) {
-		t.Fatal("foreign mapping proved readiness")
+func TestVirtualSwitchAdmissionAcceptsKCNManagedDeviceWithoutLegacyOwner(t *testing.T) {
+	sw, nodes, _, daemons, config, now := switchFixture(t)
+	_ = unstructured.SetNestedField(config.Object, "ens35", "data", "managedDevices")
+	if _, err := virtualSwitchInventory(sw, "ens35", nodes, nil, nil, daemons, config, now, now); err != nil {
+		t.Fatal("KCN's prepared device configuration blocked administrator intent", err)
 	}
-	v.KCBridgeNetworks = []string{sw.GroupName + ".ens35"}
-	if !switchWiring(&nodes[0], v, sw.GroupName) {
-		t.Fatal("real group mapping missing")
+	config.SetAnnotations(map[string]string{adoptionMarker("ens35"): "legacy-binding"})
+	if _, err := virtualSwitchInventory(sw, "ens35", nodes, nil, nil, daemons, config, now, now); err == nil {
+		t.Fatal("legacy adoption ownership was ignored")
 	}
-	delete(annotations, virtualSwitchGroupPrefix+sw.GroupName)
-	nodes[0].SetAnnotations(annotations)
+}
+
+func TestVirtualSwitchWiringUsesExactKCNDeviceAcknowledgement(t *testing.T) {
+	sw, nodes, _, _, _, _ := switchFixture(t)
+	v := biz.NodeInterface{NodeName: "n1", NodeUID: "uid1", Name: "ens35"}
+	for _, tc := range []struct {
+		feedback string
+		ready    bool
+	}{{"", false}, {"ens350", false}, {"ens36", false}, {"ens36, ens35", true}, {"ens35", true}} {
+		nodes[0].SetAnnotations(map[string]string{virtualSwitchGroupPrefix + sw.GroupName: tc.feedback})
+		if got := switchWiring(&nodes[0], v, sw.GroupName); got != tc.ready {
+			t.Fatalf("feedback=%q ready=%t want=%t", tc.feedback, got, tc.ready)
+		}
+	}
+	nodes[0].SetAnnotations(map[string]string{virtualSwitchGroupPrefix + "foreign": "ens35"})
 	if switchWiring(&nodes[0], v, sw.GroupName) {
-		t.Fatal("missing daemon annotation proved readiness")
+		t.Fatal("another group's acknowledgement proved this binding")
 	}
 }
 
@@ -153,30 +154,11 @@ func TestV09VlanCreationPrecedesWiringButReadinessDoesNot(t *testing.T) {
 	}
 }
 
-func TestKCBridgeFactsRetainV09GroupNetwork(t *testing.T) {
-	c := &NodeFactsCollector{Run: func(_ context.Context, name string, args ...string) ([]byte, error) {
-		cmd := name + " " + strings.Join(args, " ")
-		switch cmd {
-		case "ovs-vsctl --timeout=3 iface-to-br ens35":
-			return []byte("br-ens35"), nil
-		case "ovs-vsctl --timeout=3 --format=json --columns=external_ids list Bridge br-ens35":
-			return []byte(`{"headings":["external_ids"],"data":[[["map",[["vendor","kc-networking"],["purpose","vlan-network"]]]]]}`), nil
-		case "ovs-vsctl --timeout=3 --format=json --columns=external_ids list Open_vSwitch .":
-			return []byte(`{"headings":["external_ids"],"data":[[["map",[["ovn-bridge-mappings","test-group.ens35:br-ens35,foreign.ens35:br-other,dupe.ens35:br-ens35,dupe.ens35:br-ens35"]]]]]}`), nil
-		}
-		return nil, fmt.Errorf("unexpected command: %s", cmd)
-	}}
-	bridge, networks, err := c.collectKCBridgeFacts(context.Background(), "ens35")
-	if err != nil || bridge != "br-ens35" || len(networks) != 1 || networks[0] != "test-group.ens35" {
-		t.Fatal(bridge, networks, err)
-	}
-}
-
-// Node source timestamps gate physical freshness independently of the time of a
-// complete Kubernetes collection, which must cover the prior committed fact.
-func TestVirtualSwitchObservationProofCoversConsecutiveCollections(t *testing.T) {
+// API collection time proves logical state; no physical-source freshness is
+// renewed or required after removing the host collector.
+func TestVirtualSwitchObservationProofUsesCompleteKCNCollection(t *testing.T) {
 	sw, nodes, maps, daemons, config, now := switchFixture(t)
-	collected := now.Add(20 * time.Second)
+	collected := now.Add(2 * time.Minute)
 	current, err := virtualSwitchInventoryMode(sw, "ens35", nodes, maps, nil, daemons, config, collected, collected, false)
 	if err != nil {
 		t.Fatal(err)
@@ -184,23 +166,66 @@ func TestVirtualSwitchObservationProofCoversConsecutiveCollections(t *testing.T)
 	proof := virtualSwitchObservationProof(sw, current.Inventory, collected)
 	proof.CoveredGeneration = 2
 	requirement := biz.ObservationRequirement{RequestedGeneration: 2, AppliedAt: now.Add(10 * time.Second), Hash: "prior-applied-fact"}
-	if !proof.Covers(requirement) {
-		t.Fatalf("new complete collection was fenced by old node timestamp: proof=%+v requirement=%+v", proof, requirement)
+	if !proof.Covers(requirement) || !proof.CollectedAt.Equal(collected) {
+		t.Fatalf("complete KCN collection did not cover committed evidence: proof=%+v requirement=%+v", proof, requirement)
 	}
-	if !proof.CollectedAt.Equal(now) {
-		t.Fatal("reading source facts renewed physical freshness", proof)
-	}
-	requirement.PreviousCollectedAt = now.Add(time.Second)
+	requirement.PreviousCollectedAt = collected.Add(time.Second)
 	if proof.Covers(requirement) {
-		t.Fatal("physical evidence regressed behind committed source", proof)
+		t.Fatal("logical evidence regressed behind committed observation")
 	}
 	requirement.PreviousCollectedAt = time.Time{}
 	proof.CollectionStartedAt = now.Add(5 * time.Second)
 	if proof.Covers(requirement) {
-		t.Fatal("older API collection bypassed commit fence", proof)
+		t.Fatal("older API collection bypassed commit fence")
 	}
-	if _, err = virtualSwitchInventoryMode(sw, "ens35", nodes, maps, nil, daemons, config, now.Add(61*time.Second), now.Add(61*time.Second), false); err == nil {
-		t.Fatal("expired physical facts accepted")
+}
+
+func TestVirtualSwitchDeviceStateWaitsForEveryNodeAndIgnoresStoredMAC(t *testing.T) {
+	sw, nodes, maps, daemons, config, now := switchFixture(t)
+	extra := nodes[0].DeepCopy()
+	extra.SetName("n2")
+	extra.SetUID("uid2")
+	nodes = append(nodes, *extra)
+	cni := daemons[0].DeepCopy()
+	cni.SetName("cni2")
+	_ = unstructured.SetNestedField(cni.Object, "n2", "spec", "nodeName")
+	daemons = append(daemons, *cni)
+	accepted, err := virtualSwitchInventory(sw, "ens35", nodes, maps, nil, daemons, config, now, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sw.Nodes, sw.BindingID, sw.BindingState = accepted.Members, "binding1", "configured"
+	for i := range nodes {
+		labels := nodes[i].GetLabels()
+		labels[virtualSwitchGroupPrefix+sw.GroupName] = "100"
+		nodes[i].SetLabels(labels)
+		nodes[i].SetAnnotations(map[string]string{"networking.kubercloud.com/chassis": "chassis", VirtualSwitchOwnerKey(sw.GroupName): sw.BindingID, virtualSwitchGroupPrefix + sw.GroupName: "ens35"})
+		// Existing persisted MAC values are historical data, not a new gate.
+		accepted.Inventory.Items[i].MAC = "00:11:22:33:44:55"
+	}
+	body, _ := json.Marshal(accepted.Inventory.Items)
+	device := sqlcgen.NetworkDeviceAdoption{DeviceName: "ens35", NodeInventory: body}
+	// Existing switch-owned devices can remain in KCN's prepared device list.
+	_ = unstructured.SetNestedField(config.Object, "ens35", "data", "managedDevices")
+	for _, feedback := range []string{"", "ens350", "ens35"} {
+		annotations := nodes[1].GetAnnotations()
+		annotations[virtualSwitchGroupPrefix+sw.GroupName] = feedback
+		nodes[1].SetAnnotations(annotations)
+		current, err := virtualSwitchInventory(sw, "ens35", nodes, nil, nil, daemons, config, now, now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		configured, ready, err := inspectVirtualSwitchDeviceState(sw, &current, device, nodes)
+		if err != nil || !configured || ready != (feedback == "ens35") {
+			t.Fatal(feedback, configured, ready, err)
+		}
+	}
+	changed := append([]biz.NodeInterface(nil), accepted.Inventory.Items...)
+	changed[1].NodeUID = "replacement-uid"
+	body, _ = json.Marshal(changed)
+	device.NodeInventory = body
+	if _, _, err := inspectVirtualSwitchDeviceState(sw, &accepted, device, nodes); err == nil {
+		t.Fatal("replacement node adopted under frozen device registration")
 	}
 }
 

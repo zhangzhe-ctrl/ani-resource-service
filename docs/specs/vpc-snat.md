@@ -28,7 +28,7 @@ Network 保存产品身份、平台出口配置、租户归属、占用关系、
 | 产品概念/动作 | kc 映射 | 归属及 scope |
 |---|---|---|
 | 查询可用物理网卡 | 节点网卡事实与 kc 接管状态 | 平台，只读管理员接口 |
-| 接管物理网卡 | `kcn-system/kcn-config.data.managedDevices` | 平台，节点基础设施变更 |
+| 接管已准备接口 | Node 组标签与 `VlanNetwork.spec.vClusterName/devName/vlanID` | Res 管理逻辑占用与组；KCN 执行接口接管 |
 | VLAN 二层网络 | `VlanNetwork` | Cluster 资源，不填 namespace |
 | 平台出口网关 | `EIPGateway` | Cluster 资源，不填 namespace |
 | Public Address Pool | `Subnet(type: Public)` | 平台，固定 `kcn-system`；不进入租户私有 Subnet CRUD |
@@ -90,23 +90,19 @@ SNAT 将租户工作负载私网源地址转换为 EIP，回包由有状态转�
 
 ## 4. 平台管理员初始化
 
-### 4.1 Underlay 的网卡发现与二层网络
+<a id="41-underlay-的网卡发现与二层网络"></a>
 
-新增只读管理员网卡接口，按节点返回接口名、类型、MAC、MTU、链路/carrier、非 link-local 地址、master/OVS 占用、kc 接管状态、可选性/不可选原因及 `observed_at`。在 kind 中查询节点容器网络环境，不拿外层 Ubuntu 的同名网卡替代。
+### 4.1 Underlay 的手工网卡配置与二层网络
 
-筛选以 [kc 实际规则与手册](../kc-public-egress-manual.md#31-查询候选网卡)为基础：
+管理员在线下准备目标节点上的同名接口、物理交换机和 VLAN 连通条件，再按[虚拟交换机与二层网络流程](kcn-v09-underlay-flow.md)手工填写接口名（例如 `bond0`、`eno2`）和 VLAN。Resource 不部署宿主网卡采集器，也不把物理库存、MAC、carrier、管理口或默认路由审批作为第二次前置校验；接口是否适合接管由管理员准备责任和 KCN 实际执行共同确定。
 
-- 当前 `managedDevices` 是全部节点生效的同名接口配置；没有可用于此流程的 VlanNetwork nodeSelector。候选须覆盖目标部署所有适用节点，缺节点、缺设备或观测过期则拒绝接管。
-- kc 拒绝存在非 link-local IP 的候选；Network 额外排除管理/默认路由口、loopback、veth/隧道，以及被现有 bridge/bond/其他用途占用的口。不能自动删 IP 或拆 bond 来使网卡“可选”。
-- `managedDevices` 是 kc 接管物理口并支持 VlanNetwork 的前置配置，可以由部署安装器或 Network 平台操作准备。已由 kc 接管表示这一步已经完成，不能仅凭 OVS/KC managed 状态将它判为不可用于二层网络。跨节点同名、UP 或 IP 为空也不证明交换机 VLAN 已就绪。
-- `AdoptNetworkDevice` 沿用同一管理员入口处理两种起点：空闲物理口按原流程接管；安装器已准备好的物理口经核验后登记为 Network 可引用的设备。后者不是收养历史 VlanNetwork、Public 池或租户业务 CR。
-- 已受管设备必须覆盖所有适用节点，事实新鲜且 Node UID、接口 MAC 完整；kcn-config UID/managedDevices、节点接管反馈、实际 OVS 端口所属 `br-<dev>`、kc bridge 标记与 `net.<dev>` mapping 必须一致。管理/默认路由口、接口或内部桥上的业务 IP、其他 bridge/bond、外来 VLAN 占用、缺失/过期事实仍拒绝。列表的 `selectable` 表示可接受该管理员操作，不等于物理口空闲；KC/OVS managed 字段保持真实值。
-- 管理员明确选择物理接口后，后台再次核对同一组节点/设备事实。空闲口以资源版本条件合并 `managedDevices`，保留其他设备和配置；已受管口保持该字段原样，不重复修改网桥、地址或路由。两种情况都通过受 UID/resourceVersion 保护的既有 device-adoption annotation 登记 Network binding，禁止覆盖其他 binding；操作由现有持久 worker 异步推进。
-- 登记固定节点 UID/MAC 和 kcn-config UID，持续观察身份、kc 接管状态及真实 OVS wiring。已受管配置被移除、同名异 UID、网卡替换或事实失效时退化并阻止下游准入，不自行拆桥、重新接管或改写他人归属。删除 VlanNetwork 不删除设备登记或清除共享物理配置。
-- 关联设备核验复用同一完整审计；正常采集续报按[持续观察规则](cr-observation.md)处理，不能仅因事实不变的采集时间前进而使二层网络永久重试，亦不能延长旧证明的有效期。
-- 接管就绪后创建 VlanNetwork，填 `devName` 与 `vlanID`；等待 `Valid/Ready=True`、`notReadyNodes` 为空，核对 OVS bridge mapping 和交换机端口 tag/native VLAN。
+- Resource 在持久事务内固定完整目标 Node UID/allocated/优先级及组所有权，预留逻辑设备槽位，保护幂等、并发和其他交换机占用。
+- Worker 按 Node UID/resourceVersion 条件合并本产品组标签，再创建 `VlanNetwork`，填 `vClusterName`、`devName`、`vlanID`。不再修改 `managedDevices`、`kcn-config` 或旧 device-adoption annotation，也不要求先成功登记物理设备。
+- KCN daemon 负责查找接口、必要时置 UP、检查非链路本地 IP、配置 OVS 和发布组设备注解；`bond0` 等名称不因 Resource 的 `Kind==device` 规则被额外排除。Resource 不删 IP、不拆 bond、不改宿主路由或 OVS，也不代写接管成功注解。
+- Resource 观察同一 VLAN UID/不可变 spec、`Valid/Initialized`、完整非空成员范围与每节点组设备注解。`notReadyNodes` 是可能截断的可选字符串，空值不能独立证明成功；该 KCN profile 不发布 VLAN `Ready/Healthy`。反馈不等于物理链路或上游业务健康。
+- 部分节点接管失败保留进度和占用，阻止下游池开放。缺组或稳定配置错误的恢复沿用既有明确边界，本次不新增 KCN 重试、隐藏删除重建或拆桥实现。旧设备登记仅按历史记录处理，不成为新建主流程的操作步骤。
 
-设备接管与 VlanNetwork 是两个可观察步骤。部分节点接管失败时保留部分进度并阻止下游池开放，不能自动恢复整个旧 ConfigMap 覆盖他人并发修改，也不能自动撤销已有共享物理网络。删除 VlanNetwork 不等同于物理接口已归还；物理接口退役单独操作并检查依赖。
+VlanNetwork 接管反馈、池控制面就绪和真实出口流量分别观察。删除 VlanNetwork 不等同于物理接口已归还，不以组注解消失冒充 bridge/port 已拆；Resource 仅释放经过其生命周期确认的逻辑引用和占用。
 
 ### 4.2 先创建 EIPGateway
 
@@ -273,7 +269,7 @@ Provider 调用在事务外，通过现有租约、版本 fencing、稳定名称
 
 | ID | 必须证明的行为 |
 |---|---|
-| SNAT-V01 | 管理员网卡列表、不可选原因、部分节点失败、并发 managedDevices 保护；不覆盖管理口或他人配置；平台池/网关/VLAN 归属正确 |
+| SNAT-V01 | 管理员手填已准备接口；无宿主库存仍可受理；逻辑占用、完整节点组与部分接管失败保护；不写 managedDevices 或他人配置；平台池/网关/VLAN 归属正确 |
 | SNAT-V02 | 租户不能查询/修改 Public 池；All 只允许 Provider 跨 namespace 使用；管理员代办资源归属正确，普通租户伪造 tenant/ns 不越权；真实鉴权与受控注入结果分开 |
 | SNAT-V03 | EIP 自动分配与实际 spec.ipAddress、池耗尽、默认池关闭/切换、未知结果恢复、同键重放与无重复分配；跨 tenant/cluster FK 负例 |
 | SNAT-V04 | 并发两个 VPC 抢同 EIP、同 VPC 抢两个 EIP、绑定与删除竞态；disabled/failed/unknown 仍保留唯一占用；跨 namespace 同名 Nat/Snat/Service 不误绑 |

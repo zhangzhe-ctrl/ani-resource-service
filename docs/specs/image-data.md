@@ -18,7 +18,7 @@ internal/data/image/sqlcgen/*               Fedora 生成
 
 `sqlc.yaml` 新增一个独立 entry，schema=migrations/image，queries=internal/data/image/queries，输出 internal/data/image/sqlcgen；uuid→string、timestamptz→time.Time、nullable→指针，沿用原约定。不让 Image 导入 internal/data/network 或其 sqlcgen。
 
-同一二进制新增 `-image-migrate`，与 -migrate/-node-facts/平台管理命令互斥。Image runtime启动不能自动执行DDL。新迁移器独立锁定 Image schema_version，按有序文件checksum逐条短事务执行，已有版本checksum不符拒绝；不能删除旧版本记录或改历史迁移来修复。首次版本表bootstrap由迁移器与001协调：版本表不存在时执行001并在同一事务登记版本1；后续不重复CREATE旧表。
+同一二进制新增 `-image-migrate`，与 -migrate/平台管理命令互斥。Image runtime启动不能自动执行DDL。新迁移器独立锁定 Image schema_version，按有序文件checksum逐条短事务执行，已有版本checksum不符拒绝；不能删除旧版本记录或改历史迁移来修复。首次版本表bootstrap由迁移器与001协调：版本表不存在时执行001并在同一事务登记版本1；后续不重复CREATE旧表。
 
 ## 2. 四个业务表
 

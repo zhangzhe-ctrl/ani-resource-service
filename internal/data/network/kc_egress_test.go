@@ -1,20 +1,13 @@
 package data
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -183,65 +176,31 @@ func TestEgressProviderImagesUseRunningDigests(t *testing.T) {
 		t.Fatal("missing running digest preserved acceptance evidence")
 	}
 }
-func TestNodeFactsCollectorUsesOnlyReadonlyCommandsAndFencesPublication(t *testing.T) {
-	node := crFixture("Node", "", "node-a")
-	node.SetAPIVersion("v1")
-	node.SetUID("node-uid")
-	cm := crFixture("ConfigMap", kcSystemNamespace, nodeFactsName("node-uid"))
-	cm.SetAPIVersion("v1")
-	cm.SetLabels(map[string]string{ownerLabel: factsOwner, factsNodeLabel: "node-uid"})
-	client := fake.NewSimpleDynamicClient(runtime.NewScheme(), node, cm)
-	c := newNodeFactsCollector(client, "node-a", "node-uid")
-	now := time.Now()
-	c.Now = func() time.Time { return now }
-	c.Physical = func(path string) bool { return strings.Contains(path, "eth") }
-	c.ReadFile = func(string) ([]byte, error) { return []byte("1\n"), nil }
-	commands := []string{}
-	c.Run = func(_ context.Context, name string, args ...string) ([]byte, error) {
-		cmd := name + " " + strings.Join(args, " ")
-		commands = append(commands, cmd)
-		switch cmd {
-		case "ip -j -d link show":
-			return []byte(`[{"ifname":"eth0","ifindex":2,"mtu":1500,"flags":["UP"]},{"ifname":"eth1","ifindex":3,"mtu":1500,"flags":["UP"]},{"ifname":"veth0","ifindex":4,"linkinfo":{"info_kind":"veth"}}]`), nil
-		case "ip -j address show":
-			return []byte(`[{"ifname":"eth0","addr_info":[{"local":"10.0.0.2","prefixlen":24}]}]`), nil
-		case "ip -j route show table all":
-			return []byte(`[{"dst":"default","dev":"eth0"}]`), nil
-		case "ip -6 -j route show table all":
-			return []byte(`[]`), nil
-		case "ovs-vsctl --timeout=3 --format=json --columns=name list Interface":
-			return []byte(`{"headings":["name"],"data":[["veth0"]]}`), nil
-		case "ovs-vsctl --timeout=3 --format=json --columns=external_ids list Open_vSwitch .":
-			return []byte(`{"headings":["external_ids"],"data":[[["map",[]]]]}`), nil
-		default:
-			return nil, fmt.Errorf("unexpected command %s", cmd)
-		}
-	}
-	doc, err := c.Collect(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	filtered := biz.FilterNodeInterfaces(doc.Interfaces, now, time.Minute)
-	if len(commands) != 6 || !doc.OVSBridgeMappingsObserved || len(filtered) != 3 || filtered[0].Selectable || !filtered[1].Selectable || filtered[2].Selectable {
-		t.Fatal("unsafe link inventory", filtered, commands)
-	}
-	if err = c.Publish(context.Background(), doc); err != nil {
-		t.Fatal(err)
-	}
-	got, err := client.Resource(kcConfigMaps).Namespace(kcSystemNamespace).Get(context.Background(), cm.GetName(), metav1.GetOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	var saved NodeFactsDocument
-	if json.Unmarshal([]byte(crString(got, "data", "facts.json")), &saved) != nil || !saved.CollectedAt.Equal(now) {
-		t.Fatal("raw collection timestamp changed")
-	}
-	c.ConfigMapUID = "other-uid"
-	if c.Publish(context.Background(), doc) == nil {
-		t.Fatal("collector replaced another facts object")
-	}
-	c.Run = func(context.Context, string, ...string) ([]byte, error) { return nil, fmt.Errorf("probe offline") }
-	if _, err = c.Collect(context.Background()); err == nil {
-		t.Fatal("offline probe fabricated fresh facts")
+
+func TestKCNStringNotReadyNodesBlocksPrematureVLANAvailability(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		value any
+		ready bool
+	}{
+		{"all_nodes_acknowledged", "", true},
+		{"one_node_missing", "ani-02", false},
+		{"truncated_node_summary", "ani-01,ani-02...", false},
+		{"malformed_status", map[string]any{"unexpected": true}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			vlan := crFixture("VlanNetwork", "", "prepared-network")
+			vlan.SetLabels(map[string]string{ownerLabel: "ani-network-service", resourceLabel: "vlan_" + strings.Repeat("a", 32), bindingLabel: "binding"})
+			vlan.Object["spec"] = map[string]any{"devName": "bond0", "vlanID": int64(3), "vClusterName": "prepared"}
+			_ = unstructured.SetNestedField(vlan.Object, tc.value, "status", "notReadyNodes")
+			r := egressResolved{binding: sqlcgen.NetworkProviderBinding{ResourceKind: "vlan", ProviderName: vlan.GetName(), ProviderUid: string(vlan.GetUID()), BindingID: "binding"}, target: biz.ProviderTarget{Kind: "vlan", ResourceID: "vlan_" + strings.Repeat("a", 32), KnownIdentity: string(vlan.GetUID())}, spec: vlan.Object["spec"].(map[string]any)}
+			observed, err := inspectEgressSet(r, egressReadSet{objects: map[string]*unstructured.Unstructured{"self": vlan}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if observed.Ready != tc.ready {
+				t.Fatalf("ready=%t want=%t for KCN status %#v", observed.Ready, tc.ready, tc.value)
+			}
+		})
 	}
 }

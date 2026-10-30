@@ -79,7 +79,7 @@ func buildApp(bc *conf.Bootstrap, logger *slog.Logger) (*kratos.App, error) {
 		return nil, err
 	}
 	key, _ := base64.StdEncoding.DecodeString(bc.Network.CursorSigningKey)
-	if err = repository.ConfigureVPCCIDRPresets(bc.Network.VpcCidrPresets, provider); err != nil {
+	if err = repository.ConfigureVPCCIDRPresets(bc.Network.VpcCidrPresets); err != nil {
 		return nil, err
 	}
 	w := bc.Network.Worker
@@ -149,15 +149,12 @@ func buildApp(bc *conf.Bootstrap, logger *slog.Logger) (*kratos.App, error) {
 	if err != nil {
 		return nil, err
 	}
-	retirementWorker, err := biz.NewLegacyDeviceRetirementStepper(repository, provider, uuid.NewString(), policy)
-	if err != nil {
-		return nil, err
-	}
+
 	defaultService, defaultWorker, err := wireDefaultVPCEgress(repository, provider, bc.Network, policy)
 	if err != nil {
 		return nil, err
 	}
-	additional := []server.Stepper{attachmentWorker, switchWorker, retirementWorker}
+	additional := []server.Stepper{attachmentWorker, switchWorker}
 	if vms != nil {
 		additional = append(additional, vms.worker)
 	}

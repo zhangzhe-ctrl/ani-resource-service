@@ -41,6 +41,7 @@ func (e *ProviderError) Unwrap() error { return e.Cause }
 // ProviderTarget contains only domain references and an opaque provider object
 // identity. The adapter resolves namespace/name/cluster from its persisted map.
 type ProviderTarget struct {
+	Deleting                                             bool
 	Egress                                               *EgressWorkSpec
 	Requirement                                          ObservationRequirement
 	Direct                                               bool
@@ -207,6 +208,7 @@ func (w *Worker) Step(ctx context.Context) (worked bool, stepErr error) {
 	target := ProviderTarget{
 		TenantID: work.Resource.TenantID, ResourceID: work.Resource.ID, BindingID: work.BindingID, Egress: work.Resource.Egress,
 		KnownIdentity: work.KnownIdentity, CIDR: work.Resource.CIDR,
+		Deleting:    work.Resource.State == Deleting || work.Resource.State == Deleted,
 		Requirement: work.Requirement, Direct: work.ActiveOperation || work.PendingAction != "" || work.Resource.State == Deleted,
 		Kind: work.Resource.Kind, VPCID: work.Resource.VPCID, Gateway: work.Resource.Gateway,
 	}

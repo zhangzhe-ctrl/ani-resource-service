@@ -1,0 +1,227 @@
+127.0.0.1:5432 - accepting connections
+PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=bb7005229cfea9a60284f1e507a7c74c054370c096e5cd5c2a030764e85f3e85
+=== RUN   TestEgressOverlayUnderlayProviderFieldsAndAddressEvidence
+--- PASS: TestEgressOverlayUnderlayProviderFieldsAndAddressEvidence (0.00s)
+=== RUN   TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState
+=== RUN   TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/namespace
+=== RUN   TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/vpc_namespace
+=== RUN   TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/generation
+=== RUN   TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/bound_name
+=== RUN   TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/egress_node
+=== RUN   TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/disable
+=== RUN   TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/applied_disable
+=== RUN   TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/vpc_generation
+--- PASS: TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState (0.00s)
+    --- PASS: TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/namespace (0.00s)
+    --- PASS: TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/vpc_namespace (0.00s)
+    --- PASS: TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/generation (0.00s)
+    --- PASS: TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/bound_name (0.00s)
+    --- PASS: TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/egress_node (0.00s)
+    --- PASS: TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/disable (0.00s)
+    --- PASS: TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/applied_disable (0.00s)
+    --- PASS: TestEgressBindingRequiresExactNamespaceGenerationAndAppliedState/vpc_generation (0.00s)
+=== RUN   TestEgressUIDConflictsAndNatServiceDependencyIndex
+--- PASS: TestEgressUIDConflictsAndNatServiceDependencyIndex (0.00s)
+=== RUN   TestEgressProviderImagesUseRunningDigests
+--- PASS: TestEgressProviderImagesUseRunningDigests (0.00s)
+=== RUN   TestNodeNetworkRetriesConsecutiveInvalidAuditsWithinCallerBudget
+--- PASS: TestNodeNetworkRetriesConsecutiveInvalidAuditsWithinCallerBudget (0.00s)
+=== RUN   TestNodeNetworkAuditRetriesStayBoundedAndDiagnostic
+=== RUN   TestNodeNetworkAuditRetriesStayBoundedAndDiagnostic/persistent_invalidation
+=== RUN   TestNodeNetworkAuditRetriesStayBoundedAndDiagnostic/without_deadline_one_refresh_only
+=== RUN   TestNodeNetworkAuditRetriesStayBoundedAndDiagnostic/cancelled
+=== RUN   TestNodeNetworkAuditRetriesStayBoundedAndDiagnostic/read_error
+--- PASS: TestNodeNetworkAuditRetriesStayBoundedAndDiagnostic (0.03s)
+    --- PASS: TestNodeNetworkAuditRetriesStayBoundedAndDiagnostic/persistent_invalidation (0.03s)
+    --- PASS: TestNodeNetworkAuditRetriesStayBoundedAndDiagnostic/without_deadline_one_refresh_only (0.00s)
+    --- PASS: TestNodeNetworkAuditRetriesStayBoundedAndDiagnostic/cancelled (0.00s)
+    --- PASS: TestNodeNetworkAuditRetriesStayBoundedAndDiagnostic/read_error (0.00s)
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/resource_version
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/managed_fields
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/volcano_heartbeat
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/gpu_registration_order
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/gpu_capacity
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/gpu_allocatable
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/node_heartbeat
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/ready_lost
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/identity_replaced
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/deletion_started
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/network_owner
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/group_membership
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/allocation
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/chassis
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/device_wiring
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/address
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/pod_cidr
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/unknown_annotation
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/unknown_volcano_annotation
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/unknown_field
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/add
+=== RUN   TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/delete
+--- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/resource_version (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/managed_fields (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/volcano_heartbeat (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/gpu_registration_order (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/gpu_capacity (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/gpu_allocatable (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/node_heartbeat (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/ready_lost (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/identity_replaced (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/deletion_started (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/network_owner (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/group_membership (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/allocation (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/chassis (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/device_wiring (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/address (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/pod_cidr (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/unknown_annotation (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/unknown_volcano_annotation (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/unknown_field (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/add (0.00s)
+    --- PASS: TestNodeNetworkObservationIgnoresOnlyUnrelatedRenewals/delete (0.00s)
+=== RUN   TestSwitchLogicalDeviceIdentityIgnoresHistoricalPhysicalSnapshot
+--- PASS: TestSwitchLogicalDeviceIdentityIgnoresHistoricalPhysicalSnapshot (0.00s)
+=== RUN   TestSwitchMembershipRequiresFrozenUIDsAndPermitsEmptyKCNFeedback
+--- PASS: TestSwitchMembershipRequiresFrozenUIDsAndPermitsEmptyKCNFeedback (0.00s)
+=== RUN   TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe
+=== RUN   TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/clean_without_facts
+=== RUN   TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/empty_acknowledgement
+=== RUN   TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/unrelated_group
+=== RUN   TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/daemon_feedback
+=== RUN   TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/provider_vlan
+=== RUN   TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/owned_label
+=== RUN   TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/owned_marker
+=== RUN   TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/replacement_node
+--- PASS: TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe (0.00s)
+    --- PASS: TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/clean_without_facts (0.00s)
+    --- PASS: TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/empty_acknowledgement (0.00s)
+    --- PASS: TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/unrelated_group (0.00s)
+    --- PASS: TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/daemon_feedback (0.00s)
+    --- PASS: TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/provider_vlan (0.00s)
+    --- PASS: TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/owned_label (0.00s)
+    --- PASS: TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/owned_marker (0.00s)
+    --- PASS: TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe/replacement_node (0.00s)
+=== RUN   TestVirtualSwitchDeleteFenceRejectsDelayedOldPatch
+=== RUN   TestVirtualSwitchDeleteFenceRejectsDelayedOldPatch/0
+=== RUN   TestVirtualSwitchDeleteFenceRejectsDelayedOldPatch/1
+=== RUN   TestVirtualSwitchDeleteFenceRejectsDelayedOldPatch/2
+--- PASS: TestVirtualSwitchDeleteFenceRejectsDelayedOldPatch (0.10s)
+    --- PASS: TestVirtualSwitchDeleteFenceRejectsDelayedOldPatch/0 (0.03s)
+    --- PASS: TestVirtualSwitchDeleteFenceRejectsDelayedOldPatch/1 (0.03s)
+    --- PASS: TestVirtualSwitchDeleteFenceRejectsDelayedOldPatch/2 (0.03s)
+=== RUN   TestVirtualSwitchDeleteFenceKeepsKCNReleaseGate
+--- PASS: TestVirtualSwitchDeleteFenceKeepsKCNReleaseGate (0.00s)
+=== RUN   TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe
+=== RUN   TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/#00
+=== RUN   TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/node_unready
+=== RUN   TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/missing_daemon
+=== RUN   TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/external_same_value
+=== RUN   TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/extra_allocated
+=== RUN   TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/missing_uid
+=== RUN   TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/legacy_owner
+=== RUN   TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/foreign_vlan
+--- PASS: TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe (0.00s)
+    --- PASS: TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/#00 (0.00s)
+    --- PASS: TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/node_unready (0.00s)
+    --- PASS: TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/missing_daemon (0.00s)
+    --- PASS: TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/external_same_value (0.00s)
+    --- PASS: TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/extra_allocated (0.00s)
+    --- PASS: TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/missing_uid (0.00s)
+    --- PASS: TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/legacy_owner (0.00s)
+    --- PASS: TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe/foreign_vlan (0.00s)
+=== RUN   TestVirtualSwitchAdmissionAcceptsKCNManagedDeviceWithoutLegacyOwner
+--- PASS: TestVirtualSwitchAdmissionAcceptsKCNManagedDeviceWithoutLegacyOwner (0.00s)
+=== RUN   TestVirtualSwitchWiringUsesExactKCNDeviceAcknowledgement
+--- PASS: TestVirtualSwitchWiringUsesExactKCNDeviceAcknowledgement (0.00s)
+=== RUN   TestVirtualSwitchObservationProofUsesCompleteKCNCollection
+--- PASS: TestVirtualSwitchObservationProofUsesCompleteKCNCollection (0.00s)
+=== RUN   TestVirtualSwitchDeviceStateWaitsForEveryNodeAndIgnoresStoredMAC
+--- PASS: TestVirtualSwitchDeviceStateWaitsForEveryNodeAndIgnoresStoredMAC (0.00s)
+=== RUN   TestVirtualSwitchDependentReadRejectsInvalidParentViewForBoundedRetry
+--- PASS: TestVirtualSwitchDependentReadRejectsInvalidParentViewForBoundedRetry (0.00s)
+=== RUN   TestEgressRefreshesInvalidAuditWithoutLosingAppliedFacts
+--- PASS: TestEgressRefreshesInvalidAuditWithoutLosingAppliedFacts (1.22s)
+=== RUN   TestRemovedDeviceRetirementRemainsAuthorizedAndDoesNotPersist
+=== RUN   TestRemovedDeviceRetirementRemainsAuthorizedAndDoesNotPersist/untrusted
+=== RUN   TestRemovedDeviceRetirementRemainsAuthorizedAndDoesNotPersist/tenant
+=== RUN   TestRemovedDeviceRetirementRemainsAuthorizedAndDoesNotPersist/platform
+--- PASS: TestRemovedDeviceRetirementRemainsAuthorizedAndDoesNotPersist (0.47s)
+    --- PASS: TestRemovedDeviceRetirementRemainsAuthorizedAndDoesNotPersist/untrusted (0.00s)
+    --- PASS: TestRemovedDeviceRetirementRemainsAuthorizedAndDoesNotPersist/tenant (0.00s)
+    --- PASS: TestRemovedDeviceRetirementRemainsAuthorizedAndDoesNotPersist/platform (0.00s)
+=== RUN   TestEgressFinishesFreshAuditAfterConsecutiveWatchBoundaries
+I1030 11:07:28.503745  790836 reflector.go:664] "Warning: watch ended with error" reflector="/home/chabking/workspace/ani-resource-service-runs/container-restart-pvc-20261028/modcache/k8s.io/client-go@v0.36.0/tools/cache/reflector.go:343" type="*unstructured.Unstructured" err="very short watch: /home/chabking/workspace/ani-resource-service-runs/container-restart-pvc-20261028/modcache/k8s.io/client-go@v0.36.0/tools/cache/reflector.go:343: Unexpected watch close - watch lasted less than a second and no items received"
+I1030 11:07:29.554662  790836 reflector.go:664] "Warning: watch ended with error" reflector="/home/chabking/workspace/ani-resource-service-runs/container-restart-pvc-20261028/modcache/k8s.io/client-go@v0.36.0/tools/cache/reflector.go:343" type="*unstructured.Unstructured" err="very short watch: /home/chabking/workspace/ani-resource-service-runs/container-restart-pvc-20261028/modcache/k8s.io/client-go@v0.36.0/tools/cache/reflector.go:343: Unexpected watch close - watch lasted less than a second and no items received"
+I1030 11:07:32.419483  790836 reflector.go:664] "Warning: watch ended with error" reflector="/home/chabking/workspace/ani-resource-service-runs/container-restart-pvc-20261028/modcache/k8s.io/client-go@v0.36.0/tools/cache/reflector.go:343" type="*unstructured.Unstructured" err="very short watch: /home/chabking/workspace/ani-resource-service-runs/container-restart-pvc-20261028/modcache/k8s.io/client-go@v0.36.0/tools/cache/reflector.go:343: Unexpected watch close - watch lasted less than a second and no items received"
+--- PASS: TestEgressFinishesFreshAuditAfterConsecutiveWatchBoundaries (10.53s)
+=== RUN   TestRemovedDeviceDiscoveryAndRegistrationRemainAuthorized
+=== RUN   TestRemovedDeviceDiscoveryAndRegistrationRemainAuthorized/untrusted
+=== RUN   TestRemovedDeviceDiscoveryAndRegistrationRemainAuthorized/tenant
+=== RUN   TestRemovedDeviceDiscoveryAndRegistrationRemainAuthorized/platform
+--- PASS: TestRemovedDeviceDiscoveryAndRegistrationRemainAuthorized (0.56s)
+    --- PASS: TestRemovedDeviceDiscoveryAndRegistrationRemainAuthorized/untrusted (0.00s)
+    --- PASS: TestRemovedDeviceDiscoveryAndRegistrationRemainAuthorized/tenant (0.00s)
+    --- PASS: TestRemovedDeviceDiscoveryAndRegistrationRemainAuthorized/platform (0.00s)
+=== RUN   TestEgressGRPCContractAuthorizationAndNullableAppliedState
+--- PASS: TestEgressGRPCContractAuthorizationAndNullableAppliedState (0.89s)
+=== RUN   TestEgressPostgresLifecycleIsolationAndPermanentReplay
+--- PASS: TestEgressPostgresLifecycleIsolationAndPermanentReplay (1.08s)
+=== RUN   TestEgressConcurrentBindingAndAcceptanceRollback
+--- PASS: TestEgressConcurrentBindingAndAcceptanceRollback (0.90s)
+=== RUN   TestEgressUnknownCreateRecoveryAndFencing
+--- PASS: TestEgressUnknownCreateRecoveryAndFencing (0.67s)
+=== RUN   TestEgressUnderlayPlatformOccupancyAndRetirement
+--- PASS: TestEgressUnderlayPlatformOccupancyAndRetirement (2.99s)
+=== RUN   TestEgressUnknownUpdateKeepsOccupancyAndRecoversExactDesiredState
+--- PASS: TestEgressUnknownUpdateKeepsOccupancyAndRecoversExactDesiredState (0.83s)
+=== RUN   TestEgressKCAdapterSharedObservationLifecycleAndDrift
+--- PASS: TestEgressKCAdapterSharedObservationLifecycleAndDrift (1.74s)
+=== RUN   TestEgressServiceProcessesRecoverLostCreateDeleteAndTombstone
+--- PASS: TestEgressServiceProcessesRecoverLostCreateDeleteAndTombstone (24.14s)
+=== RUN   TestEgressDependencyUnavailableIsNotOwnershipConflict
+=== RUN   TestEgressDependencyUnavailableIsNotOwnershipConflict/vlan
+=== RUN   TestEgressDependencyUnavailableIsNotOwnershipConflict/public_pool
+--- PASS: TestEgressDependencyUnavailableIsNotOwnershipConflict (0.62s)
+    --- PASS: TestEgressDependencyUnavailableIsNotOwnershipConflict/vlan (0.00s)
+    --- PASS: TestEgressDependencyUnavailableIsNotOwnershipConflict/public_pool (0.00s)
+=== RUN   TestEgressListTotalsAndPlatformAuthorization
+--- PASS: TestEgressListTotalsAndPlatformAuthorization (0.77s)
+=== RUN   TestServiceProcessesRecoverT1AndProviderSuccessWithoutCaller
+=== RUN   TestServiceProcessesRecoverT1AndProviderSuccessWithoutCaller/after-T1
+    process_integration_test.go:185: after-T1: VPC=vpc_325e6301ef044dc4940b5383f8fe7ed2 create_op=673b1ecb-9589-43e0-b761-5a68845ba596 create_count_before_crash=0 final_creates=1 delete_op=267a2a1e-d533-4ea2-b3ce-7f9f8bb69db6; three distinct service processes (including two concurrent replicas) recovered creation and completed normal deletion
+=== RUN   TestServiceProcessesRecoverT1AndProviderSuccessWithoutCaller/after-provider-success
+    process_integration_test.go:218: after-provider-success: VPC=vpc_2e6a5e453c8f4413a0cb0fffe78ab7b5 create_op=c24e31e2-8cbd-4230-92b8-4fd025f10651 create_count_before_crash=1 final_creates=1 delete_op=3020a45b-2861-4cdd-874d-84603d0087a5; five distinct service processes (including two concurrent replicas) used the same database and API state
+--- PASS: TestServiceProcessesRecoverT1AndProviderSuccessWithoutCaller (26.56s)
+    --- PASS: TestServiceProcessesRecoverT1AndProviderSuccessWithoutCaller/after-T1 (7.16s)
+    --- PASS: TestServiceProcessesRecoverT1AndProviderSuccessWithoutCaller/after-provider-success (13.26s)
+=== RUN   TestVirtualSwitchDurableTwoStepAcceptanceAndRecovery
+--- PASS: TestVirtualSwitchDurableTwoStepAcceptanceAndRecovery (0.64s)
+=== RUN   TestVirtualSwitchDeleteWaitsForOldClaimLeaseExpiry
+    virtual_switch_integration_test.go:299: after-delete: state=deleting binding=cleaning operation=queued old_epoch=4 lease_remaining=19.988949s next_run_due=true
+    virtual_switch_integration_test.go:308: at-15s: state=deleting binding=cleaning operation=queued old_epoch=4 lease_remaining=4.994606s next_run_due=true
+    virtual_switch_integration_test.go:337: natural-expiry deletion completed: version=3 old_epoch=4 final_epoch=7 delete_elapsed=20.037781s
+--- PASS: TestVirtualSwitchDeleteWaitsForOldClaimLeaseExpiry (20.68s)
+=== RUN   TestVirtualSwitchScopePagingAndAtomicConcurrentVlan
+--- PASS: TestVirtualSwitchScopePagingAndAtomicConcurrentVlan (0.63s)
+=== RUN   TestVPCCIDRPresetContendsWithPlatformPool
+--- PASS: TestVPCCIDRPresetContendsWithPlatformPool (0.96s)
+=== RUN   TestVPCCIDRPresetsMainFlow
+--- PASS: TestVPCCIDRPresetsMainFlow (3.01s)
+=== RUN   TestVPCCIDRPresetsKeepPoolConflictsAndWhitelistAdmission
+--- PASS: TestVPCCIDRPresetsKeepPoolConflictsAndWhitelistAdmission (0.98s)
+=== RUN   TestKCPlatformShutdownBeforePostPersistsNoWriteOutcome
+--- PASS: TestKCPlatformShutdownBeforePostPersistsNoWriteOutcome (0.91s)
+=== RUN   TestPlatformCancellationPreservesDefinitiveMutationOutcome
+=== RUN   TestPlatformCancellationPreservesDefinitiveMutationOutcome/definitive_pre_send_failure
+=== RUN   TestPlatformCancellationPreservesDefinitiveMutationOutcome/uncertain_send_remains_pending
+=== RUN   TestPlatformCancellationPreservesDefinitiveMutationOutcome/expired_lease_cannot_clear_pending
+--- PASS: TestPlatformCancellationPreservesDefinitiveMutationOutcome (5.63s)
+    --- PASS: TestPlatformCancellationPreservesDefinitiveMutationOutcome/definitive_pre_send_failure (0.69s)
+    --- PASS: TestPlatformCancellationPreservesDefinitiveMutationOutcome/uncertain_send_remains_pending (1.94s)
+    --- PASS: TestPlatformCancellationPreservesDefinitiveMutationOutcome/expired_lease_cannot_clear_pending (3.00s)
+PASS
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	107.566s
+removed task container=bb7005229cfea9a60284f1e507a7c74c054370c096e5cd5c2a030764e85f3e85

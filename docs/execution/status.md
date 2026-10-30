@@ -1,5 +1,11 @@
 # Network 执行状态
 
+## 2026-10-30：NodeFacts 拆除
+
+**代码/Fedora：PASS；10～12 Res 更新与采集器移除：PASS；Boss 完整删除/原参数重建：not_verified（确认待返回）。** 基于 main `f60752b`，创建、持续观察、删除及 VPC 白名单路径已移除 NodeFacts 前置，保留权限、持久化、永久幂等、逻辑占用及 Node UID/组写入屏障，并修正 KCN `notReadyNodes` 字符串解析。未修改 KCN 或桥拆除。Fedora `make verify` 和定向真实 PG 网络/恢复用例通过；新镜像 `eb1f7995…` 已部署到 `.10/.11/.12`，collector 21 个精确对象及旧 adoption 专用 Role/Binding 已删除。移除后原 VLAN、池及默认出口仍持续 fresh/available。
+
+已修复 Gov 默认出口读取的 API 目录缺项，未增加角色权限；Boss 基于最新 `feat/governance-api@d0e89ea4` 修复 OVN 可在分配窗口外的合法原参数，Fedora 页面 `172.16.101.31:31083` 连接 10 集群。用户明确许可本次跳过不可用 GitNexus；前端行为测试、lint、格式和构建通过。Boss 已真实删除原默认出口，KCN EIP/Snat 已回收；现停在原公网池“删除后不可恢复”确认框，依浏览器规则已请求执行时确认，尚未删除公网池/二层/交换机或重建。系统 VPC 保持。所有范围、失败/中断、来源和页面证据见[唯一执行记录](records/NODEFACTS-REMOVAL-20261030/README.md)。
+
 ## Public Network Managed Gateway (2026-10-27)
 
 基于最新 main `33ea63b4699e7d47fd0d86bef86ae8461033c869`，代码 `c4472e933c9cdbd943bb6764187f5dd015fd8b72` 已发布到 `100.64.128.12`，镜像摘要 `86e0dcf617ffae46ab15770e7717a47c197e4fb98815fb0f12ce72e0dd4e6d55`，正式 Res 1/1 Ready、重启 0。已用真实 Res mTLS RPC 跑通省略 `gateway_id` 的 Underlay 地址池受理、永久幂等重放、专属网关创建、重启后持续观测、地址池及受管网关清理；临时资源已删除，原有网关 UID 保持。参数为 ens8f1np1、10.10.20.0/22、OVN 地址 .210、上游 10.10.23.254，可分配 .201–.209，未开启分配。

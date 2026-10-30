@@ -238,7 +238,7 @@ func (p *KCProvider) resolveEgress(ctx context.Context, t biz.ProviderTarget) (e
 			if device.SwitchBindingID == nil || sw.BindingID != *device.SwitchBindingID || sw.ClusterID != r.binding.ClusterID {
 				return r, switchConflict(fmt.Errorf("virtual switch %s binding identity does not match device %s", sw.ID, device.ResourceID))
 			}
-			if sw.State != biz.Available {
+			if !t.Deleting && sw.State != biz.Available {
 				return r, switchUnavailable(fmt.Errorf("virtual switch %s dependency is %s: %s", sw.ID, sw.State, sw.Reason))
 			}
 			r.spec["vClusterName"] = sw.GroupName
@@ -314,7 +314,7 @@ func (p *KCProvider) resolveEgress(ctx context.Context, t biz.ProviderTarget) (e
 			if device.Retired || device.SwitchBindingID == nil || sw.BindingID != *device.SwitchBindingID || sw.ClusterID != r.binding.ClusterID {
 				return r, switchConflict(fmt.Errorf("virtual switch %s binding identity does not match active device %s", sw.ID, device.ResourceID))
 			}
-			if sw.State != biz.Available {
+			if !t.Deleting && sw.State != biz.Available {
 				return r, switchUnavailable(fmt.Errorf("virtual switch %s dependency is %s: %s", sw.ID, sw.State, sw.Reason))
 			}
 			r.virtualSwitch = &sw
@@ -524,7 +524,7 @@ func (p *KCProvider) readEgressSetOnce(ctx context.Context, r egressResolved, cr
 		result.keys = append(result.keys, "object:ConfigMap/kcn-system/kcn-config", "intranet-service-ranges")
 	}
 	if r.deviceID != "" {
-		result.keys = append(result.keys, "node-facts")
+		result.keys = append(result.keys, "node-network")
 	}
 	relation := r.target.Kind
 	if relation == "public_pool" {
@@ -636,7 +636,7 @@ func (p *KCProvider) readEgressSetOnce(ctx context.Context, r egressResolved, cr
 		Objects map[string]*unstructured.Unstructured
 		All     map[string][]unstructured.Unstructured
 	}{result.objects, candidatesForHash(result.all)})
-	if r.deviceID != "" && !(r.target.Kind == "snat" && !r.snat.DesiredEnabled) {
+	if !r.target.Deleting && r.deviceID != "" && !(r.target.Kind == "snat" && !r.snat.DesiredEnabled) {
 		result.deviceRequired = true
 		if r.virtualSwitch != nil {
 			configured, wired, proof, err := p.virtualSwitchDeviceState(ctx, *r.virtualSwitch, r.switchDevice, result.view)
@@ -742,8 +742,7 @@ func inspectEgressSet(r egressResolved, set egressReadSet) (biz.ProviderObservat
 			}
 		}
 	case "vlan":
-		missing, _, _ := unstructured.NestedSlice(objectMap(o), "status", "notReadyNodes")
-		value.Ready = vlanControlReady(o) && len(missing) == 0
+		value.Ready = vlanControlReady(o) && providerNodesReady(o, "status", "notReadyNodes")
 		if r.virtualSwitch != nil {
 			value.Ready = value.Ready && set.switchWired
 		}
@@ -828,10 +827,9 @@ func publicPoolReady(r egressResolved, pool, gw, vlan *unstructured.Unstructured
 	if r.pool.Mode == "overlay" {
 		return !hasField(pool, "spec", "underlayConfig") && !hasField(pool, "status", "underlayState")
 	}
-	missing, _, _ := unstructured.NestedSlice(objectMap(pool), "status", "underlayState", "notReadyNodes")
-	vlanMissing, _, _ := unstructured.NestedSlice(objectMap(vlan), "status", "notReadyNodes")
+	nodesReady := providerNodesReady(pool, "status", "underlayState", "notReadyNodes") && providerNodesReady(vlan, "status", "notReadyNodes")
 	v09Observed := crString(vlan, "spec", "vClusterName") == "" || (crInt(pool, "status", "observedGeneration") == pool.GetGeneration() && crString(pool, "status", "underlayState", "vlanNetwork") == vlan.GetName())
-	return vlanControlReady(vlan) && len(vlanMissing) == 0 && crString(vlan, "status", "subnet") == pool.GetNamespace()+"/"+pool.GetName() && v09Observed && crBool(pool, "status", "underlayState", "ready") && len(missing) == 0 && crString(pool, "status", "underlayState", "chassisNode") != ""
+	return vlanControlReady(vlan) && nodesReady && crString(vlan, "status", "subnet") == pool.GetNamespace()+"/"+pool.GetName() && v09Observed && crBool(pool, "status", "underlayState", "ready") && crString(pool, "status", "underlayState", "chassisNode") != ""
 }
 func vlanControlReady(vlan *unstructured.Unstructured) bool {
 	if crString(vlan, "spec", "vClusterName") != "" {
@@ -1023,6 +1021,7 @@ func (p *KCProvider) UpdateEgress(ctx context.Context, t biz.ProviderTarget) (bi
 	return observed, nil
 }
 func (p *KCProvider) deleteEgress(ctx context.Context, t biz.ProviderTarget) error {
+	t.Deleting = true
 	if t.Kind == "device" || t.KnownIdentity == "" {
 		return &biz.ProviderError{Kind: biz.ProviderConflict}
 	}
@@ -1085,8 +1084,7 @@ func egressPrerequisites(r egressResolved, set egressReadSet) bool {
 			return false
 		}
 		if r.pool.Mode == "underlay" {
-			missing, _, _ := unstructured.NestedSlice(objectMap(vlan), "status", "notReadyNodes")
-			return vlanControlReady(vlan) && len(missing) == 0 && crString(vlan, "status", "subnet") == ""
+			return vlanControlReady(vlan) && providerNodesReady(vlan, "status", "notReadyNodes") && crString(vlan, "status", "subnet") == ""
 		}
 		return true
 	case "eip":
@@ -1172,4 +1170,24 @@ func verifiedEgressExit(r egressResolved, set egressReadSet) bool {
 		return false
 	}
 	return sameProviderImages(evidence.ProviderImageDigests, providerImages(set.all[pods])) && biz.ValidatePoolVerificationForScope(evidence, r.pool.Scope, time.Now()) == nil
+}
+
+// KCN publishes notReadyNodes as an optional comma-separated string. Older
+// provider snapshots used arrays; malformed values never authorize readiness.
+func providerNodesReady(o *unstructured.Unstructured, fields ...string) bool {
+	value, found, err := unstructured.NestedFieldNoCopy(objectMap(o), fields...)
+	if err != nil {
+		return false
+	}
+	if !found || value == nil {
+		return true
+	}
+	switch v := value.(type) {
+	case string:
+		return strings.TrimSpace(v) == ""
+	case []any:
+		return len(v) == 0
+	default:
+		return false
+	}
 }

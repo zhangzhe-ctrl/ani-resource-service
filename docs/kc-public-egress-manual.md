@@ -20,7 +20,7 @@ Network 的 [原 RPC](../api/network/v1/network.proto) 提供 VPC/Subnet/Attachm
 6. **解绑与释放。** `DeleteVPCSnatBinding(binding_id)` 后等待资源 deleted，确认 EIP 回到 unbound；需要释放地址时再 `DeleteEIP(eip_id)`。关闭池分配不会删除已有 EIP。平台退役依次关闭分配、释放全部 EIP/其他消费者、删除池、删除网关或 VLAN。VLAN 删除不自动归还物理网卡；部分接管不覆盖共享 `managedDevices` 回滚。
 7. **操作查询。** 租户通过已有 `GetOperation` 查询本租户 EIP/SNAT 操作；平台通过 `GetPlatformOperation` 查询独立平台操作。永久幂等重放返回原受理快照；查看当前状态使用 Get。查询不访问 Kubernetes，也不启动外部变更。
 
-完整字段与错误以生成的 Proto 为准。`scripts/snat-remote -- scripts/integration -p 2 -run 'TestEgress|TestNodeFactsCollector' ./internal/data` 可在 ubuntu 重放受控接口、实际 adapter、PG、Underlay 合同及服务崩溃恢复测试；不创建 live EIP/Snat，不执行物理接管。正式 Overlay 复测仍须满足[计划中的前置条件](plans/vpc-snat.md#3-overlay-复测入口)，并使用上述产品入口完成全过程。
+完整字段与错误以生成的 Proto 为准。`scripts/snat-remote -- scripts/integration -p 2 -run 'TestEgress|TestVirtualSwitch' ./internal/data` 可在 ubuntu 重放受控接口、实际 adapter、PG、Underlay 合同及服务崩溃恢复测试；不创建 live EIP/Snat，不执行物理接管。正式 Overlay 复测仍须满足[计划中的前置条件](plans/vpc-snat.md#3-overlay-复测入口)，并使用上述产品入口完成全过程。
 
 
 ## 1. 资源、模式与依赖顺序

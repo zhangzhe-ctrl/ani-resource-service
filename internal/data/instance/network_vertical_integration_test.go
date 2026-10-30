@@ -174,12 +174,6 @@ func (b *notebookNetworkBoundary) project() error {
 	return nil
 }
 
-type instanceNetworkPlatformFacts struct{}
-
-func (instanceNetworkPlatformFacts) PlatformCIDRs(context.Context) ([]string, time.Time, error) {
-	return []string{"10.16.0.0/16", "10.96.0.0/16", "172.16.101.0/24"}, time.Now(), nil
-}
-
 type lostPrepareReceipt struct {
 	biz.NetworkPort
 	lost                                        bool
@@ -231,7 +225,7 @@ func runInstanceNetworkVertical(t *testing.T, confirmFaults bool) {
 		t.Fatal(err)
 	}
 	defer nrepo.Close()
-	if err = nrepo.ConfigureVPCCIDRPresets([]string{"10.42.0.0/16"}, instanceNetworkPlatformFacts{}); err != nil {
+	if err = nrepo.ConfigureVPCCIDRPresets([]string{"10.42.0.0/16"}); err != nil {
 		t.Fatal(err)
 	}
 	api := &testenv.KC{}

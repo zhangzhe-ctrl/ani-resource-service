@@ -1,0 +1,17 @@
+{
+  "result": "PASS",
+  "removed": [
+    {
+      "kind": "RoleBinding",
+      "namespace": "kcn-system",
+      "name": "ani-network-device-adoption",
+      "uid": "46803a89-b6a5-4a19-8939-2f55135dd2a7"
+    },
+    {
+      "kind": "Role",
+      "namespace": "kcn-system",
+      "name": "ani-network-device-adoption",
+      "uid": "c151dc83-34e9-41c9-a1ff-516e233cdc2b"
+    }
+  ]
+}

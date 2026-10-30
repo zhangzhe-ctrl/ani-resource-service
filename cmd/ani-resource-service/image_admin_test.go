@@ -95,10 +95,10 @@ func TestImageAdminOutputDoesNotOverwrite(t *testing.T) {
 }
 func TestImageAdminModesAreExclusive(t *testing.T) {
 	oldAction, oldInput, oldOperator, oldOutput := imageAdminAction, imageAdminInput, imageAdminOperator, imageAdminSecretOutput
-	oldImage, oldNetwork, oldNode, oldBase := flagImageMigrate, flagMigrate, flagNodeFacts, baseConnectivityAction
+	oldImage, oldNetwork, oldBase := flagImageMigrate, flagMigrate, baseConnectivityAction
 	defer func() {
 		imageAdminAction, imageAdminInput, imageAdminOperator, imageAdminSecretOutput = oldAction, oldInput, oldOperator, oldOutput
-		flagImageMigrate, flagMigrate, flagNodeFacts, baseConnectivityAction = oldImage, oldNetwork, oldNode, oldBase
+		flagImageMigrate, flagMigrate, baseConnectivityAction = oldImage, oldNetwork, oldBase
 	}()
 	imageAdminAction = "init-platform"
 	imageAdminInput = ""
@@ -106,12 +106,11 @@ func TestImageAdminModesAreExclusive(t *testing.T) {
 	imageAdminSecretOutput = ""
 	flagImageMigrate = false
 	flagMigrate = false
-	flagNodeFacts = false
 	baseConnectivityAction = ""
 	if err := validateImageAdminModes(); err != nil {
 		t.Fatal(err)
 	}
-	for _, p := range []*bool{&flagImageMigrate, &flagMigrate, &flagNodeFacts} {
+	for _, p := range []*bool{&flagImageMigrate, &flagMigrate} {
 		*p = true
 		if validateImageAdminModes() == nil {
 			t.Fatal("conflicting mode accepted")

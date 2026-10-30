@@ -124,15 +124,7 @@ func fenceFixture(t *testing.T) (biz.VirtualSwitch, biz.VirtualSwitchNode, *unst
 	sw.Version = 3
 	sw.State = biz.Deleting
 	member := biz.VirtualSwitchNode{NodeName: "n1", NodeUID: "uid1", MAC: "00:11:22:33:44:55", Priority: 100, Allocated: true, Prepared: true, Unknown: true, ResourceVersion: "1"}
-	var doc NodeFactsDocument
-	if err := json.Unmarshal([]byte(crString(&maps[0], "data", "facts.json")), &doc); err != nil {
-		t.Fatal(err)
-	}
-	accepted, _ := json.Marshal(doc.Interfaces)
-	doc.OVSBridgeMappingsObserved = true
-	doc.OVSBridgeMappings = map[string]string{}
-	body, _ := json.Marshal(doc)
-	_ = unstructured.SetNestedField(maps[0].Object, string(body), "data", "facts.json")
+	accepted, _ := json.Marshal([]biz.NodeInterface{{NodeName: "n1", NodeUID: "uid1", Name: "ens35"}})
 	nodes[0].SetAPIVersion("v1")
 	nodes[0].SetKind("Node")
 	labels := nodes[0].GetLabels()
@@ -227,7 +219,7 @@ func TestVirtualSwitchDeleteFenceRejectsDelayedOldPatch(t *testing.T) {
 	}
 }
 
-func TestVirtualSwitchDeleteFenceKeepsPhysicalCleanupGate(t *testing.T) {
+func TestVirtualSwitchDeleteFenceKeepsKCNReleaseGate(t *testing.T) {
 	sw, member, node, maps, devices, now := fenceFixture(t)
 	labels := node.GetLabels()
 	labels[virtualSwitchGroupPrefix+sw.GroupName] = "100"
@@ -249,19 +241,14 @@ func TestVirtualSwitchDeleteFenceKeepsPhysicalCleanupGate(t *testing.T) {
 	if _, present := api.snapshot().GetAnnotations()[VirtualSwitchOwnerKey(sw.GroupName)]; present {
 		t.Fatal("owned marker survived the fence CAS")
 	}
-	var doc NodeFactsDocument
-	if err := json.Unmarshal([]byte(crString(&maps[0], "data", "facts.json")), &doc); err != nil {
-		t.Fatal(err)
-	}
-	if doc.OVSBridgeMappings == nil {
-		doc.OVSBridgeMappings = map[string]string{}
-	}
-	doc.OVSBridgeMappings[sw.GroupName+".ens35"] = "br-ens35"
-	body, _ := json.Marshal(doc)
-	_ = unstructured.SetNestedField(maps[0].Object, string(body), "data", "facts.json")
+	api.mu.Lock()
+	annotations = api.node.GetAnnotations()
+	annotations[virtualSwitchGroupPrefix+sw.GroupName] = "ens35"
+	api.node.SetAnnotations(annotations)
+	api.mu.Unlock()
 	current, err = inspectSwitchNodeCleanup(sw, current, api.snapshot(), maps, nil, devices, now)
 	if err != nil || current.State != "cleaning" {
-		t.Fatal("residual mapping bypassed cleanup", current, err)
+		t.Fatal("KCN device acknowledgement bypassed cleanup", current, err)
 	}
 	current.Unknown = true
 	_, err = provider.patchVirtualSwitchDeletionNode(context.Background(), sw, current, api.snapshot())
@@ -269,7 +256,7 @@ func TestVirtualSwitchDeleteFenceKeepsPhysicalCleanupGate(t *testing.T) {
 		t.Fatal(err)
 	}
 	if api.writes != 1 || api.snapshot().GetAnnotations()[virtualSwitchDeleteFenceKey(sw.GroupName)] == "" {
-		t.Fatal("fence removed before physical cleanup")
+		t.Fatal("fence removed before KCN release")
 	}
 	annotations = api.snapshot().GetAnnotations()
 	annotations[virtualSwitchDeleteFenceKey(sw.GroupName)] = "foreign"

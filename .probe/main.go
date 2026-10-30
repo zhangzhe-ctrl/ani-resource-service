@@ -10,8 +10,8 @@ import (
 	"os"
 	"time"
 
-	imagev1 "github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1"
 	"github.com/google/uuid"
+	imagev1 "github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"

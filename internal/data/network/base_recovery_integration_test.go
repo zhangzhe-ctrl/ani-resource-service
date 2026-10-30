@@ -43,7 +43,7 @@ func (r *baseRecoveryRuntime) construct(t *testing.T, repository *data.Postgres)
 		t.Fatal(err)
 	}
 	repository.UseEgressInfrastructure(provider)
-	if err := repository.ConfigureVPCCIDRPresets([]string{"10.42.0.0/16", "10.61.0.0/16", "10.62.0.0/16"}, provider); err != nil {
+	if err := repository.ConfigureVPCCIDRPresets([]string{"10.42.0.0/16", "10.61.0.0/16", "10.62.0.0/16"}); err != nil {
 		t.Fatal(err)
 	}
 	worker, err := biz.NewWorker(repository, provider, uuid.NewString(), baseRecoveryPolicy())

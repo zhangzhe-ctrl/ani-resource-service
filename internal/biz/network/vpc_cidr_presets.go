@@ -2,15 +2,8 @@ package biz
 
 import (
 	"context"
-	"net/netip"
 	"slices"
-	"time"
 )
-
-// PlatformCIDRFacts reads assigned/reserved networks, never aggregate routes.
-type PlatformCIDRFacts interface {
-	PlatformCIDRs(context.Context) ([]string, time.Time, error)
-}
 
 type VPCCIDRPresets struct{ cidrs []string }
 
@@ -35,25 +28,6 @@ func (p *VPCCIDRPresets) Values() []string {
 	return slices.Clone(p.cidrs)
 }
 func (p *VPCCIDRPresets) Allows(cidr string) bool { return p != nil && slices.Contains(p.cidrs, cidr) }
-func ValidateVPCPlatformCIDRs(cidr string, platform []string, observedAt, now time.Time) error {
-	if len(platform) == 0 || observedAt.IsZero() || observedAt.After(now) || now.Sub(observedAt) > time.Minute {
-		return Fail(DependencyUnavailable, "platform CIDR facts are unknown or expired")
-	}
-	wanted, err := netip.ParsePrefix(cidr)
-	if err != nil {
-		return Fail(InvalidArgument, "invalid VPC CIDR")
-	}
-	for _, value := range platform {
-		prefix, err := netip.ParsePrefix(value)
-		if err != nil || prefix != prefix.Masked() {
-			return Fail(DependencyUnavailable, "platform CIDR facts are invalid")
-		}
-		if wanted.Overlaps(prefix) {
-			return Fail(ResourceInUse, "VPC CIDR conflicts with a platform network")
-		}
-	}
-	return nil
-}
 func (n *Network) ListVPCCIDRPresets(ctx context.Context, tenant string) ([]string, error) {
 	if _, err := ParseTenant(tenant); err != nil {
 		return nil, err

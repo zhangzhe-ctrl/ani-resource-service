@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -153,7 +152,7 @@ func TestSubnetListTotalAcrossPagesAndParents(t *testing.T) {
 	}
 }
 
-func TestEgressListTotalsAndInventoryAuthorization(t *testing.T) {
+func TestEgressListTotalsAndPlatformAuthorization(t *testing.T) {
 	f := newEgressFixture(t)
 	for _, name := range []string{"alpha", "beta", "gamma"} {
 		f.eip(t, name)
@@ -183,8 +182,14 @@ func TestEgressListTotalsAndInventoryAuthorization(t *testing.T) {
 		t.Fatal(err)
 	}
 	listTotal(t, empty, 0)
-	device := f.platform(t, biz.PlatformIntent{Kind: "adopt_device", Name: "device", IdempotencyKey: "device", Device: &biz.DeviceConfig{DeviceName: "fixture0", InventoryFingerprint: strings.Repeat("1", 64)}})
-	f.platform(t, biz.PlatformIntent{Kind: "create_vlan", Name: "vlan", IdempotencyKey: "vlan", Vlan: &biz.VlanConfig{DeviceID: device.ID, VlanID: 0}})
+	f.p.UseEgressInfrastructure(&switchBoundary{})
+	sw, err := f.e.CreateVirtualSwitch(f.ctx, biz.VirtualSwitchIntent{Name: "list-totals", IdempotencyKey: "list-switch"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = f.e.CreatePlatform(f.ctx, biz.PlatformIntent{Kind: "create_vlan", Name: "vlan", IdempotencyKey: "vlan", Vlan: &biz.VlanConfig{ClusterID: "test-cluster", VirtualSwitchID: sw.ID, DeviceName: "fixture0", VlanID: 0}}); err != nil {
+		t.Fatal(err)
+	}
 	f.platform(t, biz.PlatformIntent{Kind: "create_egress_gateway", Name: "second-gateway", IdempotencyKey: "second-gateway"})
 	if _, err := f.e.CreatePlatform(f.ctx, intranetIntent("intranet", "172.20.0.0/24", "172.20.0.1")); err != nil {
 		t.Fatal(err)
@@ -215,16 +220,6 @@ func TestEgressListTotalsAndInventoryAuthorization(t *testing.T) {
 		t.Fatal(err)
 	}
 	listTotal(t, intranet, 1)
-	nodes, err := platform.ListNodeInterfaces(f.ctx, &networkv1.ListNodeInterfacesRequest{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	listTotal(t, nodes, 1)
-	nodes, err = platform.ListNodeInterfaces(f.ctx, &networkv1.ListNodeInterfacesRequest{NodeName: "absent"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	listTotal(t, nodes, 0)
 	if _, err = platform.ListPublicAddressPools(other, &networkv1.ListPublicAddressPoolsRequest{}); err == nil {
 		t.Fatal("tenant obtained platform count")
 	}

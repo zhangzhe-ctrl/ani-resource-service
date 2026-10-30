@@ -10,56 +10,53 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
 )
 
 func TestKCPlatformShutdownBeforePostPersistsNoWriteOutcome(t *testing.T) {
 	var fixture *egressFixture
-	var vlanID, name string
+	var gatewayID, name string
 	var stop context.CancelFunc
 	var armed, fired atomic.Bool
 	var posts atomic.Int32
 	faultError := make(chan error, 1)
-	f, api, _ := preManagedDeviceFixtureWithHandler(t, func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/vlannetworks") {
-				posts.Add(1)
-			}
-			if armed.Load() && r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/vlannetworks/"+name) {
-				checkCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-				var pending string
-				err := fixture.owner.QueryRow(checkCtx, "SELECT pending_action FROM network_platform_resources WHERE resource_id=$1", vlanID).Scan(&pending)
-				cancel()
-				if err != nil {
-					select {
-					case faultError <- err:
-					default:
-					}
-					http.Error(w, "test inspection failed", http.StatusInternalServerError)
-					return
+	f, api, _, _ := newEgressKCFixture(t, func(w http.ResponseWriter, r *http.Request, _ *controlled.Server) bool {
+		if r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/eipgateways") {
+			posts.Add(1)
+		}
+		if armed.Load() && r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/eipgateways/"+name) {
+			checkCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+			var pending string
+			err := fixture.owner.QueryRow(checkCtx, "SELECT pending_action FROM network_platform_resources WHERE resource_id=$1", gatewayID).Scan(&pending)
+			cancel()
+			if err != nil {
+				select {
+				case faultError <- err:
+				default:
 				}
-				if pending == "create" && armed.Swap(false) {
-					// This is EnsureEgress's GET after BeginMutation committed,
-					// before its POST. No simulated write outcome is injected.
-					fired.Store(true)
-					stop()
-					<-r.Context().Done()
-					return
-				}
+				http.Error(w, "test inspection failed", http.StatusInternalServerError)
+				return true
 			}
-			next.ServeHTTP(w, r)
-		})
+			if pending == "create" && armed.Swap(false) {
+				// This is EnsureEgress's GET after BeginMutation committed,
+				// before its POST. No simulated write outcome is injected.
+				fired.Store(true)
+				stop()
+				<-r.Context().Done()
+				return true
+			}
+		}
+		return false
 	})
 	fixture = f
-	inv, err := f.e.ListNodeInterfaces(f.ctx, "")
+	// Fixture bootstrap already created its own unrelated gateway. Count only
+	// the accepted resource whose actual KC pre-POST read is interrupted below.
+	posts.Store(0)
+	gateway, err := f.e.CreatePlatform(f.ctx, biz.PlatformIntent{Kind: "create_egress_gateway", Name: "shutdown-gateway", IdempotencyKey: "shutdown-gateway"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	device := f.platform(t, biz.PlatformIntent{Kind: "adopt_device", Name: "shutdown-device", IdempotencyKey: "shutdown-device", Device: &biz.DeviceConfig{DeviceName: "fixture0", InventoryFingerprint: inv.Fingerprint}})
-	vlan, err := f.e.CreatePlatform(f.ctx, biz.PlatformIntent{Kind: "create_vlan", Name: "shutdown-vlan", IdempotencyKey: "shutdown-vlan", Vlan: &biz.VlanConfig{DeviceID: device.ID, VlanID: 0}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	vlanID, name = vlan.ID, "vlan-"+vlan.ID[5:]
+	gatewayID, name = gateway.ID, strings.Replace(gateway.ID, "_", "-", 1)
 	ctx, cancel := context.WithCancel(f.ctx)
 	defer cancel()
 	stop = cancel
@@ -80,18 +77,18 @@ func TestKCPlatformShutdownBeforePostPersistsNoWriteOutcome(t *testing.T) {
 		t.Fatal("did not interrupt the actual adapter's pre-send GET")
 	}
 	var pending string
-	if e := f.owner.QueryRow(f.ctx, "SELECT pending_action FROM network_platform_resources WHERE resource_id=$1", vlan.ID).Scan(&pending); e != nil {
+	if e := f.owner.QueryRow(f.ctx, "SELECT pending_action FROM network_platform_resources WHERE resource_id=$1", gateway.ID).Scan(&pending); e != nil {
 		t.Fatal(e)
 	}
-	if err != nil || pending != "" || posts.Load() != 0 || api.Object("vlannetworks", "", name) != nil {
+	if err != nil || pending != "" || posts.Load() != 0 || api.Object("eipgateways", "", name) != nil {
 		t.Fatalf("pre-send shutdown left uncertain state: pending=%q posts=%d finish_error=%v", pending, posts.Load(), err)
 	}
 	f.drive(t, func() bool {
-		v, e := f.e.GetPlatform(f.ctx, "vlan", vlan.ID)
+		v, e := f.e.GetPlatform(f.ctx, "egress_gateway", gateway.ID)
 		return e == nil && v.State == biz.Available
 	})
-	v, err := f.e.GetPlatform(f.ctx, "vlan", vlan.ID)
-	if err != nil || v.LastOperationID != vlan.LastOperationID || posts.Load() != 1 {
+	v, err := f.e.GetPlatform(f.ctx, "egress_gateway", gateway.ID)
+	if err != nil || v.LastOperationID != gateway.LastOperationID || posts.Load() != 1 {
 		t.Fatal("retry lost operation identity or sent duplicate POST", v, posts.Load(), err)
 	}
 }
@@ -132,14 +129,13 @@ func TestPlatformCancellationPreservesDefinitiveMutationOutcome(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			f := newEgressFixture(t)
-			device := f.platform(t, biz.PlatformIntent{Kind: "adopt_device", Name: "cancellation-device", IdempotencyKey: "cancellation-device", Device: &biz.DeviceConfig{DeviceName: "fixture0", InventoryFingerprint: strings.Repeat("1", 64)}})
-			vlan, err := f.e.CreatePlatform(f.ctx, biz.PlatformIntent{Kind: "create_vlan", Name: "cancellation-vlan", IdempotencyKey: "cancellation-vlan", Vlan: &biz.VlanConfig{DeviceID: device.ID, VlanID: 0}})
+			gateway, err := f.e.CreatePlatform(f.ctx, biz.PlatformIntent{Kind: "create_egress_gateway", Name: "cancellation-gateway", IdempotencyKey: "cancellation-gateway"})
 			if err != nil {
 				t.Fatal(err)
 			}
 			ctx, cancel := context.WithCancel(f.ctx)
 			defer cancel()
-			provider := &cancelEgressCompletion{egressProvider: f.provider, resourceID: vlan.ID, cancel: cancel, failure: tc.failure, delay: tc.delay}
+			provider := &cancelEgressCompletion{egressProvider: f.provider, resourceID: gateway.ID, cancel: cancel, failure: tc.failure, delay: tc.delay}
 			policy := biz.DefaultWorkerPolicy()
 			policy.Lease, policy.RequestTimeout = time.Second, 200*time.Millisecond
 			policy.ObserveEvery, policy.RetryMin, policy.RetryMax = 10*time.Millisecond, time.Millisecond, 5*time.Millisecond
@@ -156,10 +152,10 @@ func TestPlatformCancellationPreservesDefinitiveMutationOutcome(t *testing.T) {
 				time.Sleep(2 * time.Millisecond)
 			}
 			if !provider.fired {
-				t.Fatal("did not reach accepted VLAN mutation")
+				t.Fatal("did not reach accepted gateway mutation")
 			}
 			var pending, uid string
-			if readErr := f.owner.QueryRow(f.ctx, "SELECT pending_action,provider_uid FROM network_platform_resources WHERE resource_id=$1", vlan.ID).Scan(&pending, &uid); readErr != nil {
+			if readErr := f.owner.QueryRow(f.ctx, "SELECT pending_action,provider_uid FROM network_platform_resources WHERE resource_id=$1", gateway.ID).Scan(&pending, &uid); readErr != nil {
 				t.Fatal(readErr)
 			}
 			if pending != tc.wantPending || uid != "" {
@@ -173,7 +169,7 @@ func TestPlatformCancellationPreservesDefinitiveMutationOutcome(t *testing.T) {
 					t.Fatalf("definitive outcome was not persisted: %v", err)
 				}
 				f.drive(t, func() bool {
-					v, e := f.e.GetPlatform(f.ctx, "vlan", vlan.ID)
+					v, e := f.e.GetPlatform(f.ctx, "egress_gateway", gateway.ID)
 					if e != nil {
 						t.Fatal(e)
 					}
@@ -182,8 +178,8 @@ func TestPlatformCancellationPreservesDefinitiveMutationOutcome(t *testing.T) {
 				if f.provider.creates != creates+1 {
 					t.Fatal("recovery did not create exactly one object")
 				}
-				v, e := f.e.GetPlatform(f.ctx, "vlan", vlan.ID)
-				if e != nil || v.LastOperationID != vlan.LastOperationID {
+				v, e := f.e.GetPlatform(f.ctx, "egress_gateway", gateway.ID)
+				if e != nil || v.LastOperationID != gateway.LastOperationID {
 					t.Fatal("recovery changed original operation", e)
 				}
 			} else {
@@ -195,7 +191,7 @@ func TestPlatformCancellationPreservesDefinitiveMutationOutcome(t *testing.T) {
 					}
 					time.Sleep(2 * time.Millisecond)
 				}
-				v, e := f.e.GetPlatform(f.ctx, "vlan", vlan.ID)
+				v, e := f.e.GetPlatform(f.ctx, "egress_gateway", gateway.ID)
 				if e != nil || v.Reason != biz.ProviderUnknown || f.provider.creates != creates {
 					t.Fatal("uncertain/fenced write was retried", v, e)
 				}

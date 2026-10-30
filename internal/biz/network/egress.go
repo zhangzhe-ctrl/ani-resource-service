@@ -471,14 +471,7 @@ func (e *Egress) CreatePlatform(ctx context.Context, i PlatformIntent) (Platform
 	i.Verification = nil
 	switch i.Kind {
 	case "adopt_device":
-		if i.Device == nil || i.Vlan != nil || i.Pool != nil || !regexp.MustCompile(`^[a-zA-Z0-9_.:-]{1,15}$`).MatchString(i.Device.DeviceName) || !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(i.Device.InventoryFingerprint) {
-			return PlatformResource{}, Fail(InvalidArgument, "device and inventory fingerprint are required")
-		}
-		d := *i.Device
-		d.Nodes = nil
-		i.Device = &d
-		// Inventory is collected/revalidated by the repository admission collaborator
-		// after replay lookup, and again at the provider mutation boundary.
+		return PlatformResource{}, Fail(InvalidArgument, "standalone device registration has been removed; provide device_name when creating a layer 2 network")
 	case "create_vlan":
 		if i.Vlan == nil || i.Device != nil || i.Pool != nil || i.Vlan.VlanID < 0 || i.Vlan.VlanID > 4094 {
 			return PlatformResource{}, Fail(InvalidArgument, "device_id and vlan_id 0..4094 are required")

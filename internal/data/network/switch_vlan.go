@@ -99,7 +99,7 @@ func (p *Postgres) acceptSwitchVlan(ctx context.Context, i biz.PlatformIntent, a
 			return biz.PlatformResource{}, databaseFailure(err)
 		}
 		if !sameSwitchDeviceIdentity(frozenDevice, proof.Inventory.Items) {
-			return biz.PlatformResource{}, biz.Fail(biz.ResourceBusy, "registered device membership or MAC changed")
+			return biz.PlatformResource{}, biz.Fail(biz.ResourceBusy, "registered device membership changed")
 		}
 	} else {
 		id, op := newEgressID("device"), uuid.NewString()
@@ -180,7 +180,7 @@ func sameSwitchDeviceIdentity(frozen, current []biz.NodeInterface) bool {
 	identities := map[string]biz.NodeInterface{}
 	for _, n := range frozen {
 		key := n.NodeUID + "/" + n.Name
-		if n.NodeUID == "" || n.Name == "" || n.MAC == "" || identities[key].NodeUID != "" {
+		if n.NodeUID == "" || n.NodeName == "" || n.Name == "" || identities[key].NodeUID != "" {
 			return false
 		}
 		identities[key] = n
@@ -188,7 +188,7 @@ func sameSwitchDeviceIdentity(frozen, current []biz.NodeInterface) bool {
 	for _, n := range current {
 		key := n.NodeUID + "/" + n.Name
 		old, ok := identities[key]
-		if !ok || n.NodeName != old.NodeName || n.MAC != old.MAC {
+		if !ok || n.NodeName != old.NodeName {
 			return false
 		}
 		delete(identities, key)

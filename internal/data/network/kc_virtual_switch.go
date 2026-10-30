@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
-	"net/netip"
 	"slices"
 	"strconv"
 	"strings"
@@ -47,7 +45,7 @@ func (p *KCProvider) VirtualSwitchInventory(ctx context.Context, cluster string,
 	if cluster == "" || cluster != p.repository.placement.ClusterID || (sw.ClusterID != "" && sw.ClusterID != cluster) || device == "" {
 		return biz.VirtualSwitchInventory{}, switchConflict()
 	}
-	nodes, maps, vlans, collected, err := p.nodeFactsObjects(ctx)
+	nodes, maps, vlans, collected, err := p.nodeNetworkObjects(ctx)
 	if err != nil {
 		return biz.VirtualSwitchInventory{}, err
 	}
@@ -66,15 +64,15 @@ func (p *KCProvider) VirtualSwitchInventory(ctx context.Context, cluster string,
 	return virtualSwitchInventory(sw, device, nodes, maps, vlans, daemons, cm, now, collected)
 }
 
-// Every allocated node is retained. A missing interface or facts object fails
-// the entire admission, rather than silently shrinking the switch membership.
+// Freeze every allocated node and the administrator's device intent. KCN owns
+// physical device validation and takeover; Resource only validates this binding.
 func virtualSwitchInventory(sw biz.VirtualSwitch, device string, nodes, maps, vlans, daemons []unstructured.Unstructured, config *unstructured.Unstructured, now, collected time.Time) (biz.VirtualSwitchInventory, error) {
 	return virtualSwitchInventoryMode(sw, device, nodes, maps, vlans, daemons, config, now, collected, true)
 }
 
-func virtualSwitchInventoryMode(sw biz.VirtualSwitch, device string, nodes, maps, vlans, daemons []unstructured.Unstructured, config *unstructured.Unstructured, now, collected time.Time, admission bool) (biz.VirtualSwitchInventory, error) {
+func virtualSwitchInventoryMode(sw biz.VirtualSwitch, device string, nodes, _, vlans, daemons []unstructured.Unstructured, config *unstructured.Unstructured, _, collected time.Time, _ bool) (biz.VirtualSwitchInventory, error) {
 	result := biz.VirtualSwitchInventory{Inventory: biz.InterfaceInventory{CollectedAt: collected}}
-	if config == nil || config.GetUID() == "" || config.GetResourceVersion() == "" || config.GetDeletionTimestamp() != nil || collected.IsZero() {
+	if device == "" || config == nil || config.GetUID() == "" || config.GetResourceVersion() == "" || config.GetDeletionTimestamp() != nil || collected.IsZero() {
 		return result, switchUnavailable()
 	}
 	if config.GetAnnotations()[adoptionMarker(device)] != "" {
@@ -88,12 +86,6 @@ func virtualSwitchInventoryMode(sw biz.VirtualSwitch, device string, nodes, maps
 			return result, switchConflict()
 		}
 	}
-	byUID := map[string][]unstructured.Unstructured{}
-	for _, m := range maps {
-		if m.GetNamespace() == kcSystemNamespace && m.GetLabels()[ownerLabel] == factsOwner {
-			byUID[m.GetLabels()[factsNodeLabel]] = append(byUID[m.GetLabels()[factsNodeLabel]], m)
-		}
-	}
 	for _, n := range nodes {
 		if n.GetLabels()[allocatedNodeLabel] != "true" {
 			continue
@@ -105,43 +97,7 @@ func virtualSwitchInventoryMode(sw biz.VirtualSwitch, device string, nodes, maps
 		if uid == "" || n.GetResourceVersion() == "" {
 			return result, switchConflict()
 		}
-		sources := byUID[uid]
-		if len(sources) != 1 {
-			return result, switchUnavailable()
-		}
-		cm := sources[0]
-		var doc NodeFactsDocument
-		if cm.GetUID() == "" || cm.GetResourceVersion() == "" || cm.GetDeletionTimestamp() != nil || json.Unmarshal([]byte(crString(&cm, "data", "facts.json")), &doc) != nil || doc.Version != 1 || doc.NodeName != n.GetName() || doc.NodeUID != uid || doc.CollectedAt.IsZero() || doc.CollectedAt.After(now) || now.Sub(doc.CollectedAt) > time.Minute {
-			return result, switchUnavailable()
-		}
-		if doc.CollectedAt.Before(result.Inventory.CollectedAt) {
-			result.Inventory.CollectedAt = doc.CollectedAt
-		}
-		var selected *biz.NodeInterface
-		seen := map[string]bool{}
-		for _, v := range doc.Interfaces {
-			if v.Name == "" || seen[v.Name] || v.NodeName != n.GetName() || v.NodeUID != uid {
-				return result, switchConflict()
-			}
-			seen[v.Name] = true
-			if v.Name == device {
-				copy := v
-				selected = &copy
-			}
-		}
-		if selected == nil {
-			return result, switchUnavailable()
-		}
-		v := *selected
-		v.ObservedAt = doc.CollectedAt
-		v.KCConfigUID = string(config.GetUID())
-		if admission && !switchPhysicalSafe(v) {
-			return result, switchConflict()
-		}
-		owned := sw.BindingID != "" && n.GetAnnotations()[VirtualSwitchOwnerKey(sw.GroupName)] == sw.BindingID && n.GetLabels()[virtualSwitchGroupPrefix+sw.GroupName] == "100"
-		if (v.OVSManaged || v.Master != "") && (!owned || (admission && !switchWiring(&n, v, sw.GroupName))) {
-			return result, switchConflict()
-		}
+		v := biz.NodeInterface{NodeName: n.GetName(), NodeUID: uid, Name: device}
 		for _, vlan := range vlans {
 			if crString(&vlan, "spec", "devName") != device {
 				continue
@@ -151,11 +107,9 @@ func virtualSwitchInventoryMode(sw biz.VirtualSwitch, device string, nodes, maps
 			}
 			v.VlanNetworkIDs = append(v.VlanNetworkIDs, vlan.GetLabels()[resourceLabel])
 		}
-		v.Selectable = true
-		v.UnavailableReasons = nil
 		slices.Sort(v.VlanNetworkIDs)
 		result.Inventory.Items = append(result.Inventory.Items, v)
-		result.Members = append(result.Members, biz.VirtualSwitchNode{NodeName: n.GetName(), NodeUID: uid, MAC: v.MAC, Priority: 100, Allocated: true, ResourceVersion: n.GetResourceVersion()})
+		result.Members = append(result.Members, biz.VirtualSwitchNode{NodeName: n.GetName(), NodeUID: uid, Priority: 100, Allocated: true, ResourceVersion: n.GetResourceVersion()})
 	}
 	if len(result.Members) == 0 {
 		return result, switchUnavailable()
@@ -181,17 +135,17 @@ func (p *KCProvider) virtualSwitchDeviceState(ctx context.Context, sw biz.Virtua
 	var collected time.Time
 	var err error
 	if view == nil {
-		nodes, maps, vlans, collected, err = p.nodeFactsObjects(ctx)
+		nodes, maps, vlans, collected, err = p.nodeNetworkObjects(ctx)
 		if err == nil {
 			daemons, err = p.listAll(ctx, pods)
 		}
 	} else {
 		// A dependent check must consume the caller's complete collection.
 		// Starting a second audit can invalidate the parent and starve its proof.
-		if p.observation == nil || !p.observation.valid(view, []string{"node-facts"}) || view.indices[pods] == nil {
+		if p.observation == nil || !p.observation.valid(view, []string{"node-network"}) || view.indices[pods] == nil {
 			return false, false, proof, errEgressAuditInvalid
 		}
-		nodes, maps, vlans, collected, err = nodeFactsFromView(view)
+		nodes, maps, vlans, collected, err = nodeNetworkFromView(view)
 		for _, raw := range view.indices[pods].List() {
 			o := raw.(*unstructured.Unstructured)
 			if o.GetNamespace() == kcSystemNamespace && o.GetLabels()["networking.kubercloud.com/app"] == "cni-ds" {
@@ -214,14 +168,25 @@ func (p *KCProvider) virtualSwitchDeviceState(ctx context.Context, sw biz.Virtua
 	if err != nil {
 		return false, false, proof, err
 	}
+	configured, wired, err := inspectVirtualSwitchDeviceState(sw, &current, device, nodes)
+	if err != nil {
+		return false, false, proof, err
+	}
+	proof = virtualSwitchObservationProof(sw, current.Inventory, collected)
+	// Include KCN's Node acknowledgement and binding ownership in this proof.
+	proof.Hash = contentHash([]string{proof.Hash, contentHash(nodes)})
+	return configured, wired, proof, nil
+}
+
+func inspectVirtualSwitchDeviceState(sw biz.VirtualSwitch, current *biz.VirtualSwitchInventory, device sqlcgen.NetworkDeviceAdoption, nodes []unstructured.Unstructured) (bool, bool, error) {
 	var frozen []biz.NodeInterface
-	if json.Unmarshal(device.NodeInventory, &frozen) != nil || len(frozen) != len(current.Inventory.Items) {
-		return false, false, proof, switchConflict()
+	if sw.BindingID == "" || json.Unmarshal(device.NodeInventory, &frozen) != nil || len(frozen) == 0 || len(frozen) != len(current.Inventory.Items) {
+		return false, false, switchConflict()
 	}
 	identities := map[string]biz.NodeInterface{}
 	for _, v := range frozen {
-		if identities[v.NodeUID].NodeUID != "" {
-			return false, false, proof, switchConflict()
+		if v.NodeUID == "" || v.NodeName == "" || v.Name != device.DeviceName || identities[v.NodeUID].NodeUID != "" {
+			return false, false, switchConflict()
 		}
 		identities[v.NodeUID] = v
 	}
@@ -232,21 +197,22 @@ func (p *KCProvider) virtualSwitchDeviceState(ctx context.Context, sw biz.Virtua
 	configured, wired := sw.BindingState == "configured", true
 	for _, v := range current.Inventory.Items {
 		expected, ok := identities[v.NodeUID]
-		if !ok || expected.NodeName != v.NodeName || expected.Name != v.Name || expected.MAC != v.MAC {
-			return false, false, proof, switchConflict()
+		if !ok || expected.NodeName != v.NodeName || expected.Name != v.Name {
+			return false, false, switchConflict()
 		}
 		n := byUID[v.NodeUID]
+		if n == nil || n.GetName() != v.NodeName {
+			return false, false, switchConflict()
+		}
 		owned := n.GetAnnotations()[VirtualSwitchOwnerKey(sw.GroupName)] == sw.BindingID && n.GetLabels()[virtualSwitchGroupPrefix+sw.GroupName] == "100"
-		idle := !v.OVSManaged && v.Master == ""
-		configured = configured && owned && switchPhysicalSafe(v) && (idle || switchWiring(n, v, sw.GroupName))
+		configured = configured && owned
 		wired = wired && owned && switchWiring(n, v, sw.GroupName)
 	}
-	proof = virtualSwitchObservationProof(sw, current.Inventory, collected)
-	return configured, wired && configured, proof, nil
+	return configured, wired && configured, nil
 }
 
 func virtualSwitchObservationProof(sw biz.VirtualSwitch, inventory biz.InterfaceInventory, collected time.Time) biz.ObservationProof {
-	// Keep physical-source freshness separate from the complete API read fence.
+	// This proves the complete KCN/Node collection, not physical NIC readiness.
 	return biz.ObservationProof{CollectedAt: inventory.CollectedAt, CollectionStartedAt: collected, Hash: contentHash(struct {
 		SwitchID, BindingID, Fingerprint string
 		Version                          int64
@@ -254,25 +220,8 @@ func virtualSwitchObservationProof(sw biz.VirtualSwitch, inventory biz.Interface
 	}{sw.ID, sw.BindingID, sw.MembershipFingerprint, sw.BindingVersion, inventory})}
 }
 
-func switchPhysicalSafe(v biz.NodeInterface) bool {
-	if v.Kind != "device" || v.MAC == "" || !v.LinkUp || !v.Carrier || v.Management || v.DefaultRoute {
-		return false
-	}
-	mac, err := net.ParseMAC(v.MAC)
-	if err != nil || len(mac) != 6 {
-		return false
-	}
-	for _, raw := range v.Addresses {
-		ip, err := netip.ParsePrefix(raw)
-		if err != nil || !ip.Addr().IsLinkLocalUnicast() {
-			return false
-		}
-	}
-	return true
-}
-
 func switchWiring(n *unstructured.Unstructured, v biz.NodeInterface, group string) bool {
-	return switchPhysicalSafe(v) && v.OVSManaged && v.Master == "ovs-system" && v.KCBridgeReady && slices.Contains(v.KCBridgeNetworks, group+"."+v.Name) && slices.Contains(strings.FieldsFunc(n.GetAnnotations()[virtualSwitchGroupPrefix+group], func(r rune) bool { return r == ',' || r == ' ' }), v.Name)
+	return n != nil && v.Name != "" && slices.Contains(strings.FieldsFunc(n.GetAnnotations()[virtualSwitchGroupPrefix+group], func(r rune) bool { return r == ',' || r == ' ' }), v.Name)
 }
 
 func nodeReady(n *unstructured.Unstructured) bool {
@@ -328,7 +277,7 @@ func validateSwitchMembers(sw biz.VirtualSwitch, nodes []unstructured.Unstructur
 		allocated := n.GetLabels()[allocatedNodeLabel] == "true"
 		_, hasLabel := n.GetLabels()[virtualSwitchGroupPrefix+sw.GroupName]
 		_, hasOwner := n.GetAnnotations()[VirtualSwitchOwnerKey(sw.GroupName)]
-		_, hasFeedback := n.GetAnnotations()[virtualSwitchGroupPrefix+sw.GroupName]
+		hasFeedback := strings.TrimSpace(n.GetAnnotations()[virtualSwitchGroupPrefix+sw.GroupName]) != ""
 		if hasLabel || hasOwner || hasFeedback {
 			m, ok := frozen[uid]
 			if !ok || !allocated || m.NodeName != n.GetName() || sw.BindingID == "" || n.GetAnnotations()[VirtualSwitchOwnerKey(sw.GroupName)] != sw.BindingID || n.GetLabels()[virtualSwitchGroupPrefix+sw.GroupName] != "100" {
@@ -337,6 +286,9 @@ func validateSwitchMembers(sw biz.VirtualSwitch, nodes []unstructured.Unstructur
 		}
 		if !allocated {
 			continue
+		}
+		if uid == "" || seen[uid] {
+			return switchConflict()
 		}
 		if len(frozen) > 0 {
 			m, ok := frozen[uid]
@@ -356,7 +308,7 @@ func (p *KCProvider) InspectVirtualSwitchNode(ctx context.Context, sw biz.Virtua
 	if sw.ClusterID != p.repository.placement.ClusterID || sw.BindingID == "" {
 		return member, switchConflict(fmt.Errorf("virtual switch %s cluster or binding identity invalid", sw.ID))
 	}
-	nodes, maps, _, collected, err := p.nodeFactsObjects(ctx)
+	nodes, _, _, collected, err := p.nodeNetworkObjects(ctx)
 	if err != nil {
 		return member, err
 	}
@@ -364,20 +316,9 @@ func (p *KCProvider) InspectVirtualSwitchNode(ctx context.Context, sw biz.Virtua
 		if err = validateSwitchMembers(sw, nodes); err != nil {
 			return member, switchConflict(fmt.Errorf("virtual switch %s frozen membership changed: %w", sw.ID, err))
 		}
-		daemons, err := p.listAll(ctx, pods)
-		if err != nil {
-			return member, err
-		}
 		now, err := p.repository.queries.DatabaseTime(ctx)
 		if err != nil {
 			return member, readFailure(err)
-		}
-		physicalAt, inspectErr := inspectFrozenSwitchPhysical(sw, nodes, maps, daemons, now)
-		if inspectErr != nil {
-			return member, inspectErr
-		}
-		if physicalAt.Before(collected) {
-			collected = physicalAt
 		}
 		if collected.IsZero() || collected.After(now) {
 			return member, switchUnavailable(fmt.Errorf("virtual switch %s has invalid observation time %s", sw.ID, collected))
@@ -398,11 +339,9 @@ func (p *KCProvider) InspectVirtualSwitchNode(ctx context.Context, sw biz.Virtua
 			if err != nil || sw.State != biz.Deleting || !current.DeleteFenced || current.Applied {
 				return current, err
 			}
-			devices, err := p.repository.queries.ListVirtualSwitchDevices(ctx, sqlcgen.ListVirtualSwitchDevicesParams{ClusterID: sw.ClusterID, SwitchID: sw.ID})
-			if err != nil {
-				return current, readFailure(err)
-			}
-			_, freshMaps, freshVlans, err := p.readFreshRetirementFacts(ctx)
+			// Confirm native VLAN absence from a fresh complete API read. No
+			// physical NIC or host OVS observation participates in product deletion.
+			freshVlans, err := p.listAll(ctx, kcVlans)
 			if err != nil {
 				return current, err
 			}
@@ -414,7 +353,7 @@ func (p *KCProvider) InspectVirtualSwitchNode(ctx context.Context, sw biz.Virtua
 			if err != nil {
 				return current, readFailure(err)
 			}
-			return inspectSwitchNodeCleanup(sw, current, freshNode, freshMaps, freshVlans, devices, now)
+			return inspectSwitchNodeCleanup(sw, current, freshNode, nil, freshVlans, nil, now)
 		}
 	}
 	return member, switchConflict(fmt.Errorf("virtual switch %s member node %s missing", sw.ID, member.NodeName))
@@ -434,67 +373,6 @@ func inspectSwitchNodeCleanup(sw biz.VirtualSwitch, member biz.VirtualSwitchNode
 		current.State = "unfencing"
 	}
 	return current, nil
-}
-
-func inspectFrozenSwitchPhysical(sw biz.VirtualSwitch, nodes, maps, daemons []unstructured.Unstructured, now time.Time) (time.Time, error) {
-	oldest := now
-	for _, member := range sw.Nodes {
-		var node *unstructured.Unstructured
-		for i := range nodes {
-			if string(nodes[i].GetUID()) == member.NodeUID && nodes[i].GetName() == member.NodeName {
-				node = &nodes[i]
-				break
-			}
-		}
-		if !nodeReady(node) {
-			return time.Time{}, switchUnavailable(fmt.Errorf("node not ready: %s", member.NodeName))
-		}
-		if node.GetAnnotations()["networking.kubercloud.com/chassis"] == "" || !switchDaemonReady(member.NodeName, daemons) {
-			return time.Time{}, switchUnavailable(fmt.Errorf("node %s chassis or CNI daemon not ready", member.NodeName))
-		}
-		found := 0
-		for _, cm := range maps {
-			if cm.GetNamespace() != kcSystemNamespace || cm.GetLabels()[ownerLabel] != factsOwner || cm.GetLabels()[factsNodeLabel] != member.NodeUID {
-				continue
-			}
-			found++
-			var doc NodeFactsDocument
-			if cm.GetUID() == "" || cm.GetResourceVersion() == "" || cm.GetDeletionTimestamp() != nil || json.Unmarshal([]byte(crString(&cm, "data", "facts.json")), &doc) != nil || doc.Version != 1 || doc.NodeName != member.NodeName || doc.NodeUID != member.NodeUID {
-				return time.Time{}, switchUnavailable(fmt.Errorf("node %s facts document or identity invalid", member.NodeName))
-			}
-			if doc.CollectedAt.IsZero() || doc.CollectedAt.After(now) {
-				return time.Time{}, switchUnavailable(fmt.Errorf("node %s facts time invalid: collected_at=%s now=%s", member.NodeName, doc.CollectedAt, now))
-			}
-			if now.Sub(doc.CollectedAt) > time.Minute {
-				return time.Time{}, switchUnavailable(fmt.Errorf("node facts expired: %s age=%s", member.NodeName, now.Sub(doc.CollectedAt)))
-			}
-			if doc.CollectedAt.Before(oldest) {
-				oldest = doc.CollectedAt
-			}
-			interfaces := 0
-			for _, v := range doc.Interfaces {
-				if v.MAC != member.MAC || v.Kind != "device" {
-					continue
-				}
-				interfaces++
-				if !switchPhysicalSafe(v) {
-					return time.Time{}, switchConflict(fmt.Errorf("physical interface unsafe: node %s interface %s link_up=%t carrier=%t management=%t default_route=%t", member.NodeName, v.Name, v.LinkUp, v.Carrier, v.Management, v.DefaultRoute))
-				}
-				if v.OVSManaged || v.Master != "" {
-					if node.GetAnnotations()[VirtualSwitchOwnerKey(sw.GroupName)] != sw.BindingID || node.GetLabels()[virtualSwitchGroupPrefix+sw.GroupName] != "100" || !switchWiring(node, v, sw.GroupName) {
-						return time.Time{}, switchConflict(fmt.Errorf("node %s interface %s virtual switch owner or wiring mismatch", member.NodeName, v.Name))
-					}
-				}
-			}
-			if interfaces != 1 {
-				return time.Time{}, switchConflict(fmt.Errorf("node %s expected one physical interface for MAC %s, found %d", member.NodeName, member.MAC, interfaces))
-			}
-		}
-		if found != 1 {
-			return time.Time{}, switchUnavailable(fmt.Errorf("node facts missing or duplicated: %s count=%d", member.NodeName, found))
-		}
-	}
-	return oldest, nil
 }
 
 func inspectSwitchNodeObject(sw biz.VirtualSwitch, member biz.VirtualSwitchNode, n *unstructured.Unstructured) (biz.VirtualSwitchNode, error) {
@@ -574,7 +452,7 @@ func (p *KCProvider) PatchVirtualSwitchNode(ctx context.Context, sw biz.VirtualS
 	}
 	durable := false
 	for _, saved := range current.Nodes {
-		if saved.NodeUID == member.NodeUID && saved.NodeName == member.NodeName && saved.MAC == member.MAC && saved.Prepared && saved.ResourceVersion == member.ResourceVersion && saved.OriginalPresent == member.OriginalPresent && saved.OriginalOwner == member.OriginalOwner && saved.OriginalValue == member.OriginalValue && (!deleting || (saved.DeleteFenced == member.DeleteFenced && saved.State == member.State)) {
+		if saved.NodeUID == member.NodeUID && saved.NodeName == member.NodeName && saved.Prepared && saved.ResourceVersion == member.ResourceVersion && saved.OriginalPresent == member.OriginalPresent && saved.OriginalOwner == member.OriginalOwner && saved.OriginalValue == member.OriginalValue && (!deleting || (saved.DeleteFenced == member.DeleteFenced && saved.State == member.State)) {
 			durable = true
 			break
 		}
@@ -657,7 +535,7 @@ func (p *KCProvider) patchVirtualSwitchDeletionNode(ctx context.Context, sw biz.
 			member.State = "cleaning"
 			return member, nil
 		}
-		// Only a persisted barrier plus fresh negative physical evidence may
+		// Only a persisted barrier plus fresh KCN release evidence may
 		// request this step. Unknown removal is recoverable from DeleteFenced.
 		patch = append(patch, map[string]any{"op": "test", "path": "/metadata/annotations/" + jsonPointerKey(fenceKey), "value": fenceValue}, map[string]any{"op": "remove", "path": "/metadata/annotations/" + jsonPointerKey(fenceKey)})
 	}
@@ -685,8 +563,10 @@ func (p *KCProvider) patchVirtualSwitchDeletionNode(ctx context.Context, sw biz.
 	return member, nil
 }
 
-func switchNodeCleanupConfirmed(sw biz.VirtualSwitch, member biz.VirtualSwitchNode, node *unstructured.Unstructured, maps, vlans []unstructured.Unstructured, devices []sqlcgen.NetworkDeviceAdoption, now time.Time) (bool, error) {
-	if node == nil || string(node.GetUID()) != member.NodeUID || len(devices) == 0 {
+// Completion releases Resource's logical binding after KCN has removed its
+// VLANs and node device acknowledgement. It does not assert physical OVS teardown.
+func switchNodeCleanupConfirmed(sw biz.VirtualSwitch, member biz.VirtualSwitchNode, node *unstructured.Unstructured, _, vlans []unstructured.Unstructured, _ []sqlcgen.NetworkDeviceAdoption, _ time.Time) (bool, error) {
+	if node == nil || node.GetName() != member.NodeName || string(node.GetUID()) != member.NodeUID || node.GetResourceVersion() == "" || node.GetDeletionTimestamp() != nil {
 		return false, switchUnavailable()
 	}
 	if _, present := node.GetLabels()[virtualSwitchGroupPrefix+sw.GroupName]; present {
@@ -702,71 +582,6 @@ func switchNodeCleanupConfirmed(sw biz.VirtualSwitch, member biz.VirtualSwitchNo
 	}
 	if strings.TrimSpace(node.GetAnnotations()[virtualSwitchGroupPrefix+sw.GroupName]) != "" {
 		return false, nil
-	}
-	sources := 0
-	var doc NodeFactsDocument
-	for _, cm := range maps {
-		if cm.GetNamespace() != kcSystemNamespace || cm.GetLabels()[ownerLabel] != factsOwner || cm.GetLabels()[factsNodeLabel] != member.NodeUID {
-			continue
-		}
-		sources++
-		if cm.GetUID() == "" || cm.GetResourceVersion() == "" || cm.GetDeletionTimestamp() != nil || json.Unmarshal([]byte(crString(&cm, "data", "facts.json")), &doc) != nil || doc.Version != 1 || doc.NodeName != member.NodeName || doc.NodeUID != member.NodeUID || doc.CollectedAt.IsZero() || doc.CollectedAt.After(now) || now.Sub(doc.CollectedAt) > time.Minute || !doc.OVSBridgeMappingsObserved {
-			return false, switchUnavailable()
-		}
-	}
-	if sources != 1 {
-		return false, switchUnavailable()
-	}
-	for network := range doc.OVSBridgeMappings {
-		if strings.HasPrefix(network, sw.GroupName+".") {
-			return false, nil
-		}
-	}
-	for _, device := range devices {
-		var accepted []biz.NodeInterface
-		if json.Unmarshal(device.NodeInventory, &accepted) != nil {
-			return false, switchConflict()
-		}
-		mac := ""
-		for _, v := range accepted {
-			if v.NodeUID == member.NodeUID && v.NodeName == member.NodeName && v.Name == device.DeviceName {
-				if mac != "" {
-					return false, switchConflict()
-				}
-				mac = v.MAC
-			}
-		}
-		if mac == "" {
-			return false, switchConflict()
-		}
-		found := 0
-		for _, v := range doc.Interfaces {
-			if v.Name != device.DeviceName {
-				continue
-			}
-			found++
-			if v.MAC != mac || v.NodeUID != member.NodeUID || v.NodeName != member.NodeName {
-				return false, switchConflict()
-			}
-			for _, network := range v.KCBridgeNetworks {
-				if strings.HasPrefix(network, sw.GroupName+".") {
-					return false, nil
-				}
-			}
-			if v.OVSManaged || v.Master != "" {
-				if !v.KCBridgeReady || v.Master != "ovs-system" || len(v.KCBridgeNetworks) == 0 {
-					return false, nil
-				}
-				for _, network := range v.KCBridgeNetworks {
-					if doc.OVSBridgeMappings[network] != "br-"+v.Name {
-						return false, nil
-					}
-				}
-			}
-		}
-		if found != 1 {
-			return false, switchUnavailable()
-		}
 	}
 	return true, nil
 }

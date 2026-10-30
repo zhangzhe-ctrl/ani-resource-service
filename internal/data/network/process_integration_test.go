@@ -18,8 +18,6 @@ import (
 
 	"github.com/google/uuid"
 	networkv1 "github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1"
-	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
-	data "github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
 	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
 	"github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv"
 	"google.golang.org/grpc"
@@ -245,7 +243,7 @@ func processVPCPresetConfig(t *testing.T, root string, presets ...string) string
 	return dir
 }
 
-// Only the existing external KC/NodeFacts boundary is controlled. The actual
+// Only the existing external Kubernetes boundary is controlled. The actual
 // adapter, preset admission, conflict checks and SQL remain production code.
 func seedProcessVPCPlatformFacts(t *testing.T, api *controlled.Server) func(*http.Request) {
 	t.Helper()
@@ -255,22 +253,9 @@ func seedProcessVPCPlatformFacts(t *testing.T, api *controlled.Server) func(*htt
 	api.Change("servicecidrs", map[string]any{"apiVersion": "networking.k8s.io/v1", "kind": "ServiceCIDR", "metadata": map[string]any{"name": "kubernetes", "uid": uuid.NewString()}, "spec": map[string]any{"cidrs": []any{"10.96.0.0/12"}}}, false)
 	api.Change("pods", map[string]any{"apiVersion": "v1", "kind": "Pod", "metadata": map[string]any{"name": "process-platform-controller", "namespace": "kcn-system", "uid": uuid.NewString(), "labels": map[string]any{"networking.kubercloud.com/app": "controller"}}, "spec": map[string]any{"containers": []any{map[string]any{"name": "controller", "command": []any{"/kcn/controller"}, "args": []any{"--default-subnet=kcn-default"}}}}}, false)
 	api.Change("subnets", map[string]any{"apiVersion": "networking.kubercloud.com/v1", "kind": "Subnet", "metadata": map[string]any{"namespace": "kcn-system", "name": "kcn-default", "uid": uuid.NewString()}, "spec": map[string]any{"type": "VPC", "cidrBlock": "10.16.0.0/16", "gateway": "kcn-cluster"}}, false)
-	cm := map[string]any{"apiVersion": "v1", "kind": "ConfigMap", "metadata": map[string]any{"namespace": "kcn-system", "name": "node-facts-" + nodeName, "uid": uuid.NewString(), "labels": map[string]any{"network.ani.io/managed-by": "ani-network-node-facts", "network.ani.io/node-uid": nodeUID}}}
-	renew := func() {
-		doc := data.NodeFactsDocument{Version: 1, NodeName: nodeName, NodeUID: nodeUID, CollectedAt: time.Now(), Interfaces: []biz.NodeInterface{{NodeName: nodeName, NodeUID: nodeUID, Name: "eth0", Kind: "device", Management: true, Addresses: []string{"172.16.101.10/24"}}}}
-		raw, err := json.Marshal(doc)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		// Each renewal uses its own map while concurrent worker reads occur.
-		value := map[string]any{"apiVersion": cm["apiVersion"], "kind": cm["kind"], "metadata": cm["metadata"], "data": map[string]any{"facts.json": string(raw)}}
-		api.Change("configmaps", value, false)
-	}
-	renew()
 	return func(r *http.Request) {
-		if r.Method == "GET" && (r.URL.Path == "/api/v1/configmaps" || r.URL.Path == "/api/v1/namespaces/kcn-system/configmaps") && r.URL.Query().Get("watch") != "true" {
-			renew()
+		if strings.Contains(r.URL.Query().Get("labelSelector"), "ani-network-node-facts") {
+			t.Error("process attempted to read removed node facts")
 		}
 	}
 }

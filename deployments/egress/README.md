@@ -10,59 +10,27 @@ any test or build script. No actor or tenant metadata header grants egress acces
 A trusted ingress must explicitly supply `biz.EgressCaller`; until that integration
 is installed, egress RPCs deny access. Controlled test injection is not IAM proof.
 
-## Node facts
+## Manually prepared interfaces
 
-Build the same source snapshot's binary and
-[NodeFacts.Dockerfile](NodeFacts.Dockerfile) on the task's authorized remote host;
-follow [remote execution](../../docs/remote-execution.md). Record the resulting
-image ID/digest and tool versions. The image includes `ovs-vsctl` from Debian's `openvswitch-switch`
-package and checks both required commands during the build; its entrypoint runs
-only the Network collector, not an OVS daemon.
-`scripts/render-node-facts --nodes nodes.json --image <image@sha256> --ovs-socket-uid <verified-uid>`
-renders manifests only, from the intended cluster's captured node UID inventory.
-The output creates one small probe per node, with a separate ServiceAccount that
-can GET only that Node and GET/PATCH only its precreated facts ConfigMap. It cannot
-write `kcn-config`, nodes, routes, or other probes' ConfigMaps. Node replacement
-requires a new reviewed manifest; an old collector fails closed on changed UID.
+Administrators prepare the interfaces and upstream VLAN connectivity on every
+target node, then enter the interface name when creating a
+[layer 2 network](../../docs/specs/kcn-v09-underlay-flow.md). Names such as `bond0`
+are accepted as user input; KCN determines whether the actual interface can be
+attached. Resource reserves the logical device slot, freezes Node UID membership,
+and lets its durable worker merge only its owned Node group label before creating
+the VlanNetwork. KCN owns interface configuration and takeover annotations.
 
-The probe enters the node network namespace via `hostNetwork`, reads `/sys`,
-`ip -j` link/address/IPv4+IPv6 route facts, and read-only OVS Interface listings.
-For OVS-managed physical devices it also reads the actual containing bridge,
-kc bridge external IDs and `ovn-bridge-mappings`. These prove existing kc wiring;
-the node's managed-device annotation alone is insufficient. The collector keeps
-the exact group network names in `KCBridgeNetworks`, and records a successful
-global mapping read with `ovs_bridge_mappings_observed`. An explicitly observed
-empty mapping is needed to prove physical cleanup; an omitted map or missing
-collector is insufficient. Update all target collectors before relying on these
-proofs; older documents cannot establish group wiring or final cleanup.
-The OVS socket path and numeric owner UID must match the actual nodes; read them
-with `stat -Lc '%u:%g:%a' /var/run/openvswitch/db.sock` before rendering. Select only
-nodes with the specified socket owner, or render separate groups. The collector
-runs as that UID and drops all Linux capabilities, without privileged mode or host
-PID access. Root with all capabilities dropped cannot connect to another UID's
-owner-writable socket. Do not change the shared socket's mode or add DAC override
-capabilities to bypass this check. Network mutations are absent from the
-collector's commands. Missing OVS facts do not
-imply an unused interface. Each collection has a 10-second deadline and runs at
-15-second intervals; failures leave the old collection timestamp unchanged.
-Network rejects facts older than 60 seconds, duplicate/missing sources, changed
-node UID, assigned non-link-local IPs, management/default-route interfaces
-(including their internal OVS bridge), virtual interfaces, foreign masters or
-bridges and incompatible VLAN occupancy. Correctly configured kc-managed devices
-can be registered through the existing platform API after complete verification;
-they retain their actual managed status and their existing physical configuration.
+Resource no longer deploys a host facts collector or requires a physical inventory
+approval, and it does not write `kcn-config` or legacy device-adoption markers.
+The shared ConfigMap and Node reads remain necessary for KCN observations and
+VPC address admission; Node patch remains necessary for owned group labels.
+Application ownership checks still protect other groups and device reservations.
 
-Applying the probe manifests only discovers facts. The current product flow is
-[create a virtual switch, then create a layer 2 network](../../docs/specs/kcn-v09-underlay-flow.md).
-Backend acceptance freezes full membership and reserves the device before its
-worker writes only the owned Node group label. KCN owns takeover annotations.
-The old Adopt entry point remains a compatibility/operations path; its
-UID/resourceVersion guarded registration does not rewrite `managedDevices` for a
-pre-managed device or overwrite a foreign binding. Exact legacy admission,
-observation and retirement rules live in
-[the specification](../../docs/specs/vpc-snat.md#41-underlay-的网卡发现与二层网络).
-Live deployment and physical verification require the current task's authorization;
-their actual status is recorded in the execution ledger.
+KCN feedback represents the configuration steps that KCN publishes. It does not
+prove upstream reachability, continuous link health, safe redrive after a stable
+configuration error, or physical bridge removal. The existing product flow keeps
+these boundaries explicit; this change does not add KCN retry or bridge teardown.
+Live deployment and acceptance results belong in the execution ledger.
 
 ## Platform default VPC egress
 

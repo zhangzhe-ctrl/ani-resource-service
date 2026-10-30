@@ -241,7 +241,8 @@ func (p *KCProvider) ensure(ctx context.Context, target biz.ProviderTarget) (biz
 		if err = q.LockPlatformCluster(ctx, sqlcgen.LockPlatformClusterParams{ClusterID: binding.ClusterID}); err != nil {
 			return biz.ProviderObservation{}, readFailure(err)
 		}
-		// Accepted requests survive later whitelist changes; conflict facts are rechecked immediately before first POST.
+		// Accepted requests survive later whitelist changes; accepted pool conflicts
+		// are rechecked immediately before the first POST without node probes.
 		if err = p.repository.validateVPCPlatformCIDR(ctx, q, target.CIDR); err != nil {
 			return biz.ProviderObservation{}, &biz.ProviderError{Kind: biz.ProviderTemporary, Cause: err}
 		}
