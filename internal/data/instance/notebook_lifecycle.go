@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/instance"
@@ -256,6 +257,9 @@ func (n *Notebook) VerifyRuntime(ctx context.Context, i biz.Instance, previous b
 		if err != nil {
 			return out, err
 		}
+	}
+	if i.SecurityGroupsInitialized && pod.GetAnnotations()[biz.SecurityGroupsAnnotation] != strings.Join(i.SecurityGroupNames, ",") {
+		return out, biz.ErrNetworkConflict
 	}
 	out.PodReady = runtimePodReady(pod)
 	return out, nil

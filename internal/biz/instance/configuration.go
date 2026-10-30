@@ -7,6 +7,9 @@ import (
 
 // ValidateConfiguration guards the current frozen configuration and decoded snapshots.
 func ValidateConfiguration(s Spec) error {
+	if ValidateSecurityGroupIDs(s.SecurityGroupIDs) != nil || (len(s.SecurityGroupIDs) > 0 && s.Network == nil) {
+		return ErrInvalid
+	}
 	if s.ContractVersion != 2 {
 		return ErrInvalid
 	}

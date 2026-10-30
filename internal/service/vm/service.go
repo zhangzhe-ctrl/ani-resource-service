@@ -32,18 +32,19 @@ type Config struct {
 type Service struct {
 	pb.UnimplementedVMServiceServer
 	console.UnimplementedVMConsoleServiceServer
-	repo        biz.Repository
-	compute     ComputeResolver
-	environment biz.EnvironmentPort
-	native      biz.NativePort
-	config      Config
-	media       map[string]*pb.MediaReference
-	addresses   AddressReader
-	logs        biz.LogPort
-	logMu       sync.Mutex
-	logTotal    int
-	logTenants  map[string]int
-	logVMs      map[string]int
+	repo           biz.Repository
+	compute        ComputeResolver
+	securityGroups biz.SecurityGroupPort
+	environment    biz.EnvironmentPort
+	native         biz.NativePort
+	config         Config
+	media          map[string]*pb.MediaReference
+	addresses      AddressReader
+	logs           biz.LogPort
+	logMu          sync.Mutex
+	logTotal       int
+	logTenants     map[string]int
+	logVMs         map[string]int
 }
 
 func (s *Service) SetAddressReader(r AddressReader) { s.addresses = r }
@@ -140,7 +141,15 @@ func (s *Service) ResolveCreateSpec(ctx context.Context, r *pb.ResolveCreateSpec
 	if e != nil {
 		return nil, rpcError(e)
 	}
-	spec := &pb.CreateSpec{Intent: intent, Compute: selection, ClusterId: s.config.ClusterID, Namespace: ns.Name, NamespaceUid: ns.UID, ServiceAccount: s.config.ServiceAccount, Storage: &pb.StoragePolicy{StorageClass: s.config.StorageClass, StorageClassUid: s.config.StorageClassUID, VolumeMode: "Block", AccessModes: []string{"ReadWriteOnce"}, BackendStorageClass: s.config.BackendStorageClass, MediaStorageClass: s.config.MediaStorageClass}, Media: media, Network: &pb.FrozenNetwork{VpcId: selectionNetwork.VPCID, SubnetId: selectionNetwork.SubnetID, NadName: selectionNetwork.NADName, NadUid: selectionNetwork.NADUID, NadConfigDigest: selectionNetwork.NADDigest}, Sockets: 1, Cores: uint32((selection.CpuMillis + 999) / 1000), Threads: 1, BootDevice: "SYSTEM_DISK", Dns: dns}
+	if len(r.Data.SecurityGroupIds) > 0 {
+		if s.securityGroups == nil {
+			return nil, rpcError(biz.ErrDependency)
+		}
+		if _, e = s.securityGroups.ResolveSecurityGroups(ctx, r.TenantId, selectionNetwork.VPCID, ns.Name, r.Data.SecurityGroupIds); e != nil {
+			return nil, rpcError(e)
+		}
+	}
+	spec := &pb.CreateSpec{SecurityGroupIds: append([]string(nil), r.Data.SecurityGroupIds...), Intent: intent, Compute: selection, ClusterId: s.config.ClusterID, Namespace: ns.Name, NamespaceUid: ns.UID, ServiceAccount: s.config.ServiceAccount, Storage: &pb.StoragePolicy{StorageClass: s.config.StorageClass, StorageClassUid: s.config.StorageClassUID, VolumeMode: "Block", AccessModes: []string{"ReadWriteOnce"}, BackendStorageClass: s.config.BackendStorageClass, MediaStorageClass: s.config.MediaStorageClass}, Media: media, Network: &pb.FrozenNetwork{VpcId: selectionNetwork.VPCID, SubnetId: selectionNetwork.SubnetID, NadName: selectionNetwork.NADName, NadUid: selectionNetwork.NADUID, NadConfigDigest: selectionNetwork.NADDigest}, Sockets: 1, Cores: uint32((selection.CpuMillis + 999) / 1000), Threads: 1, BootDevice: "SYSTEM_DISK", Dns: dns}
 	if media.Kind == "INSTALL_ISO" {
 		spec.BootDevice = "INSTALL_MEDIA"
 	}
@@ -179,7 +188,7 @@ func domainSpec(vmid string, p *pb.CreateSpec) (biz.Spec, error) {
 	if e != nil {
 		return biz.Spec{}, e
 	}
-	s := biz.Spec{Canonical: raw, Digest: digest, RequestDigest: request, Name: p.Intent.Name, PresetID: p.Compute.PresetId, SelectionDigest: p.Compute.SelectionDigest, ClusterID: p.ClusterId, Namespace: p.Namespace, NamespaceUID: p.NamespaceUid, ServiceAccount: p.ServiceAccount, StorageClass: p.Storage.StorageClass, StorageClassUID: p.Storage.StorageClassUid, BackendStorageClass: p.Storage.BackendStorageClass, MediaStorageClass: p.Storage.MediaStorageClass, CPUMillis: p.Compute.CpuMillis, MemoryMiB: p.Compute.MemoryMib, Cores: p.Cores, Media: domainSource(p.Media), Network: biz.NetworkSelection{VPCID: p.Network.VpcId, SubnetID: p.Network.SubnetId, NADName: p.Network.NadName, NADUID: p.Network.NadUid, NADDigest: p.Network.NadConfigDigest}, BootDevice: p.BootDevice, StartAfterCreate: p.Intent.GetStartAfterCreate()}
+	s := biz.Spec{SecurityGroupIDs: append([]string(nil), p.SecurityGroupIds...), Canonical: raw, Digest: digest, RequestDigest: request, Name: p.Intent.Name, PresetID: p.Compute.PresetId, SelectionDigest: p.Compute.SelectionDigest, ClusterID: p.ClusterId, Namespace: p.Namespace, NamespaceUID: p.NamespaceUid, ServiceAccount: p.ServiceAccount, StorageClass: p.Storage.StorageClass, StorageClassUID: p.Storage.StorageClassUid, BackendStorageClass: p.Storage.BackendStorageClass, MediaStorageClass: p.Storage.MediaStorageClass, CPUMillis: p.Compute.CpuMillis, MemoryMiB: p.Compute.MemoryMib, Cores: p.Cores, Media: domainSource(p.Media), Network: biz.NetworkSelection{VPCID: p.Network.VpcId, SubnetID: p.Network.SubnetId, NADName: p.Network.NadName, NADUID: p.Network.NadUid, NADDigest: p.Network.NadConfigDigest}, BootDevice: p.BootDevice, StartAfterCreate: p.Intent.GetStartAfterCreate()}
 	if p.DriverMedia != nil {
 		d := domainSource(p.DriverMedia)
 		s.Driver = &d
@@ -266,7 +275,10 @@ func wireVM(v biz.VM) (*pb.VirtualMachine, error) {
 	if e != nil {
 		return nil, rpcError(e)
 	}
-	out := &pb.VirtualMachine{Id: v.ID, Name: v.Name, Version: v.Version, OsFamily: v.Spec.Media.OSFamily, OsVersion: v.Spec.Media.OSVersion, FrozenSpec: spec, DesiredState: v.Desired, ObservedState: v.Observed, Reason: v.Reason, ObservedAt: observed(v.ObservedAt), LastOperationId: v.LastOperationID, Closing: v.Closing, BootDevice: v.Spec.BootDevice}
+	out := &pb.VirtualMachine{SecurityGroupIds: append([]string(nil), v.SecurityGroupIDs...), Id: v.ID, Name: v.Name, Version: v.Version, OsFamily: v.Spec.Media.OSFamily, OsVersion: v.Spec.Media.OSVersion, FrozenSpec: spec, DesiredState: v.Desired, ObservedState: v.Observed, Reason: v.Reason, ObservedAt: observed(v.ObservedAt), LastOperationId: v.LastOperationID, Closing: v.Closing, BootDevice: v.Spec.BootDevice}
+	if !v.SecurityGroupsInitialized {
+		out.SecurityGroupIds = append([]string(nil), v.Spec.SecurityGroupIDs...)
+	}
 	for _, d := range v.Disks {
 		if !d.Tombstone {
 			out.Disks = append(out.Disks, &pb.Disk{DiskId: d.ID, Role: d.Role, Name: d.Name, SizeGb: d.SizeGB, RequestedBytes: d.RequestedBytes, ObservedCapacityBytes: d.ObservedCapacityBytes, VolumeName: d.VolumeName, Serial: d.Serial, Attached: d.Attached, PreparationState: d.Preparation, Reason: d.Reason})
@@ -339,7 +351,7 @@ func (s *Service) LookupCommandReplay(ctx context.Context, r *pb.LookupCommandRe
 }
 func validAction(a string) bool {
 	switch a {
-	case "start", "stop", "restart", "force-stop", "create-disk", "attach-disk", "detach-disk", "delete-disk", "set-media", "eject-media", "set-boot", "create-snapshot", "delete-snapshot", "restore-snapshot":
+	case "start", "stop", "restart", "force-stop", "create-disk", "attach-disk", "detach-disk", "delete-disk", "set-media", "eject-media", "set-boot", "create-snapshot", "delete-snapshot", "restore-snapshot", "set-security-groups":
 		return true
 	}
 	return false
@@ -363,6 +375,11 @@ func (s *Service) command(ctx context.Context, m proto.Message, action string) (
 			return nil, rpcError(e)
 		}
 		return wireOp(o), nil
+	}
+	if action == "set-security-groups" {
+		if err := s.validateSecurityGroups(ctx, c, m.(*pb.SetSecurityGroupsRequest).SecurityGroupIds); err != nil {
+			return nil, rpcError(err)
+		}
 	}
 	if action == "force-stop" && !m.(*pb.ForceStopRequest).DestructiveConfirmation {
 		return nil, rpcError(biz.ErrInvalid)

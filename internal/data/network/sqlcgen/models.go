@@ -687,6 +687,58 @@ type NetworkResourceHistory struct {
 	LbID             *string
 }
 
+type NetworkSecurityGroup struct {
+	TenantID        string
+	SecurityGroupID string
+	Version         int64
+	State           string
+	Payload         []byte
+}
+
+type NetworkSecurityGroupIdempotency struct {
+	TenantID       string
+	Action         string
+	IdempotencyKey string
+	Fingerprint    string
+	Response       []byte
+}
+
+type NetworkSecurityGroupOperation struct {
+	TenantID    string
+	OperationID string
+	ActorRef    string
+	CallerRef   string
+	Intent      []byte
+	Payload     []byte
+}
+
+type NetworkSecurityGroupReconciliation struct {
+	TenantID         string
+	TargetType       string
+	TargetID         string
+	RequestedVersion int64
+	NextRunAt        time.Time
+	LeaseOwner       *string
+	LeaseUntil       *time.Time
+	LeaseEpoch       int64
+}
+
+type NetworkSecurityGroupReference struct {
+	TenantID        string
+	TargetType      string
+	TargetID        string
+	SecurityGroupID string
+	Released        bool
+}
+
+type NetworkSecurityGroupTarget struct {
+	TenantID   string
+	TargetType string
+	TargetID   string
+	Version    int64
+	Payload    []byte
+}
+
 type NetworkSnatBinding struct {
 	TenantID         string
 	SnatID           string

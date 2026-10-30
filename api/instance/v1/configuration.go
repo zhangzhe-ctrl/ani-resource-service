@@ -27,6 +27,9 @@ func ValidateInstanceConfiguration(d *CreateInstanceData) error {
 		}
 		paths = append(paths, m.MountPath)
 	}
+	if ValidateSecurityGroupIDs(d.SecurityGroupIds) != nil || (len(d.SecurityGroupIds) > 0 && d.Network == nil) {
+		return ErrInvalidBusiness
+	}
 	if d.Network != nil && (d.Network.VpcId == "" || d.Network.SubnetId == "") {
 		return ErrInvalidBusiness
 	}
@@ -52,7 +55,7 @@ func validateSpecConfiguration(s *CreateSpec) error {
 		return ErrInvalidBusiness
 	}
 	path := s.WorkspaceMountPath
-	d := &CreateInstanceData{WorkspaceMountPath: &path, Labels: s.Labels, Annotations: s.Annotations, Env: s.Env, Network: s.Network}
+	d := &CreateInstanceData{WorkspaceMountPath: &path, Labels: s.Labels, Annotations: s.Annotations, Env: s.Env, Network: s.Network, SecurityGroupIds: s.SecurityGroupIds}
 	for _, m := range s.VolumeMounts {
 		if m == nil || m.ClusterId != s.ClusterId || m.Namespace != s.Namespace || m.PvcUid == "" || m.Ownership != "borrowed" {
 			return ErrInvalidBusiness

@@ -47,6 +47,10 @@ func (s *Service) GetInstanceConfiguration(ctx context.Context, r *pb.GetInstanc
 		return nil, rpcError(e)
 	}
 	out := &pb.InstanceConfiguration{InstanceId: i.ID, InstanceContractVersion: i.Spec.ContractVersion, WorkspaceMountPath: i.Spec.WorkspaceMountPath, Labels: i.Spec.Labels, Annotations: i.Spec.Annotations}
+	out.SecurityGroupIds = append([]string(nil), i.SecurityGroupIDs...)
+	if !i.SecurityGroupsInitialized {
+		out.SecurityGroupIds = append([]string(nil), i.Spec.SecurityGroupIDs...)
+	}
 	out.Version = i.Version
 	out.AppliedMountVersion = i.AppliedMountVersion
 	if o := i.ActiveOperation; o != nil && o.Execution != nil && (o.Action == "attach-pvc" || o.Action == "detach-pvc") {

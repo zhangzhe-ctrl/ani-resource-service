@@ -78,6 +78,7 @@ type GuestInitialization struct {
 	PasswordSet                                            bool
 }
 type Spec struct {
+	SecurityGroupIDs                                                                  []string
 	Canonical                                                                         json.RawMessage
 	Digest, RequestDigest, Name, PresetID, SelectionDigest                            string
 	ClusterID, Namespace, NamespaceUID, ServiceAccount, StorageClass, StorageClassUID string
@@ -94,6 +95,8 @@ type Spec struct {
 	GuestInitialization                                                               *GuestInitialization
 }
 type VM struct {
+	SecurityGroupIDs, SecurityGroupNames       []string
+	SecurityGroupsInitialized                  bool
 	TenantID, ID, Name, CreateOperationID      string
 	Spec                                       Spec
 	Version                                    int64

@@ -11,6 +11,7 @@ import (
 // CommandIntent contains only client intent, never resolved PVC identity.
 type CommandIntent struct {
 	Action, InstanceID, PVCName, MountPath string
+	SecurityGroupIDs                       []string
 	ExpectedVersion                        int64
 	ReadOnly, RestartIfRunning             bool
 }
@@ -64,6 +65,15 @@ func ParseCommandIntent(action, instanceID string, canonical []byte) (CommandInt
 		if len(slots) != 7 || !decode(slots[3], &out.PVCName) || !decode(slots[4], &out.MountPath) || !decode(slots[5], &out.ReadOnly) || !decode(slots[6], &out.RestartIfRunning) {
 			return out, ErrInvalidBusiness
 		}
+	case "set-security-groups":
+		if len(slots) != 4 || !decode(slots[3], &out.SecurityGroupIDs) {
+			return out, ErrInvalidBusiness
+		}
+		expected, err := CanonicalSecurityGroupIntent(out.InstanceID, out.ExpectedVersion, out.SecurityGroupIDs)
+		if err != nil || !bytes.Equal(canonical, expected) {
+			return out, ErrInvalidBusiness
+		}
+		return out, nil
 	case "detach-pvc":
 		if len(slots) != 5 || !decode(slots[3], &out.MountPath) || !decode(slots[4], &out.RestartIfRunning) {
 			return out, ErrInvalidBusiness

@@ -624,7 +624,7 @@ func (p *Postgres) Finish(ctx context.Context, w biz.Work, progress biz.Progress
 		if i.Pending != nil || i.RecoveryFence != nil || (progress.Operation != nil && progress.Operation.State == "blocked") || i.Reason == "CREATE_RESULT_UNKNOWN" || i.Reason == "WORKSPACE_CREATE_RESULT_UNKNOWN" {
 			state = "blocked"
 		}
-		if _, e = tx.Exec(ctx, "UPDATE instance.instance_operations SET state=$3,reason=$4,execution=CASE WHEN $3='completed' AND execution IS NOT NULL THEN jsonb_set(execution,'{phase}',to_jsonb('done'::text)) ELSE execution END WHERE tenant_id=$1 AND operation_id=$2 AND state IN ('accepted','blocked') AND action NOT IN ('restart','attach-pvc','detach-pvc')", i.TenantID, i.LastOperationID, state, i.Reason); e != nil {
+		if _, e = tx.Exec(ctx, "UPDATE instance.instance_operations SET state=$3,reason=$4,execution=CASE WHEN $3='completed' AND execution IS NOT NULL THEN jsonb_set(execution,'{phase}',to_jsonb('done'::text)) ELSE execution END WHERE tenant_id=$1 AND operation_id=$2 AND state IN ('accepted','blocked') AND action NOT IN ('restart','attach-pvc','detach-pvc','set-security-groups')", i.TenantID, i.LastOperationID, state, i.Reason); e != nil {
 			return e
 		}
 	} else {

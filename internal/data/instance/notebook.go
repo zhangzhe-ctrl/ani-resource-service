@@ -145,6 +145,9 @@ func RenderNotebook(i biz.Instance) (*unstructured.Unstructured, error) {
 	for k, v := range s.Annotations {
 		ann[k] = v
 	}
+	if i.SecurityGroupsInitialized {
+		ann[biz.SecurityGroupsAnnotation] = strings.Join(i.SecurityGroupNames, ",")
+	}
 	if s.Network != nil {
 		ann["networking.kubercloud.com/subnet"] = i.Network.PrimaryNetworkRef
 	}

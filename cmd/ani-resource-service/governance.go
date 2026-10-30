@@ -151,7 +151,11 @@ func runGovernance(bc *conf.Bootstrap, logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	additional := []server.Stepper{attachmentWorker, switchWorker}
+	securityGroups, securityGroupWorker, err := wireSecurityGroups(repository, provider, instances, vms, policy)
+	if err != nil {
+		return err
+	}
+	additional := []server.Stepper{attachmentWorker, switchWorker, securityGroupWorker}
 	if vms != nil {
 		additional = append(additional, vms.worker)
 	}
@@ -170,6 +174,7 @@ func runGovernance(bc *conf.Bootstrap, logger *slog.Logger) error {
 		return err
 	}
 	networkv1.RegisterNetworkServiceServer(gs, networkService.NewNetworkService(networkUC, attachments))
+	networkv1.RegisterNetworkSecurityGroupServiceServer(gs, securityGroups)
 	networkv1.RegisterTenantEgressServiceServer(gs, networkService.NewTenantEgressService(egress))
 	networkv1.RegisterPlatformNetworkServiceServer(gs, networkService.NewPlatformNetworkService(egress))
 	networkv1.RegisterPlatformEIPServiceServer(gs, networkService.NewPlatformEIPService(egress))

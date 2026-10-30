@@ -292,6 +292,12 @@ func (p *Postgres) accept(ctx context.Context, c biz.Command, id, createID strin
 		if busy {
 			return biz.Operation{}, biz.ErrBusy
 		}
+		if c.Action == "set-security-groups" {
+			var intent biz.SecurityGroupIntent
+			if json.Unmarshal(c.Intent, &intent) != nil || biz.ValidateSecurityGroupIDs(intent.IDs) != nil {
+				return biz.Operation{}, biz.ErrInvalid
+			}
+		}
 		if e = biz.ValidateSnapshotCommand(v, c.Action, c.Intent); e != nil {
 			return biz.Operation{}, e
 		}

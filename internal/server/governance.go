@@ -96,6 +96,20 @@ var governanceReadMethods = map[string]struct{}{
 	"/network.v1.TenantEgressService/GetVPCSnatBinding":    {},
 	"/network.v1.TenantEgressService/SetVPCSnatEnabled":    {},
 	"/network.v1.TenantEgressService/DeleteVPCSnatBinding": {},
+	// Security groups: tenant rules, bindings and durable operation lookup.
+	"/network.v1.NetworkSecurityGroupService/CreateSecurityGroup":       {},
+	"/network.v1.NetworkSecurityGroupService/GetSecurityGroup":          {},
+	"/network.v1.NetworkSecurityGroupService/ListSecurityGroups":        {},
+	"/network.v1.NetworkSecurityGroupService/UpdateSecurityGroup":       {},
+	"/network.v1.NetworkSecurityGroupService/DeleteSecurityGroup":       {},
+	"/network.v1.NetworkSecurityGroupService/ListSecurityGroupRules":    {},
+	"/network.v1.NetworkSecurityGroupService/CreateSecurityGroupRule":   {},
+	"/network.v1.NetworkSecurityGroupService/UpdateSecurityGroupRule":   {},
+	"/network.v1.NetworkSecurityGroupService/DeleteSecurityGroupRule":   {},
+	"/network.v1.NetworkSecurityGroupService/ListSecurityGroupBindings": {},
+	"/network.v1.NetworkSecurityGroupService/SetEIPSecurityGroups":      {},
+	"/network.v1.NetworkSecurityGroupService/GetEIPSecurityGroups":      {},
+	"/network.v1.NetworkSecurityGroupService/GetSecurityGroupOperation": {},
 	// Load balancer domain: tenant LB read+write.
 	"/network.v1.TenantLoadBalancerService/CreateLoadBalancer":       {},
 	"/network.v1.TenantLoadBalancerService/GetLoadBalancer":          {},
@@ -388,6 +402,7 @@ func governanceUnary(readOnly bool) grpc.UnaryServerInterceptor {
 		// requires the trusted caller context.
 		needsCaller := strings.HasPrefix(info.FullMethod, "/network.v1.TenantEgressService/") ||
 			strings.HasPrefix(info.FullMethod, "/network.v1.TenantLoadBalancerService/") ||
+			strings.HasPrefix(info.FullMethod, "/network.v1.NetworkSecurityGroupService/") ||
 			info.FullMethod == "/network.v1.NetworkService/GetOperation"
 		if needsCaller {
 			caller := biz.EgressCaller{

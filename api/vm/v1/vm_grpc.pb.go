@@ -31,6 +31,7 @@ const (
 	VMService_Stop_FullMethodName                 = "/vm.v1.VMService/Stop"
 	VMService_ForceStop_FullMethodName            = "/vm.v1.VMService/ForceStop"
 	VMService_Restart_FullMethodName              = "/vm.v1.VMService/Restart"
+	VMService_SetSecurityGroups_FullMethodName    = "/vm.v1.VMService/SetSecurityGroups"
 	VMService_ListDisks_FullMethodName            = "/vm.v1.VMService/ListDisks"
 	VMService_CreateDisk_FullMethodName           = "/vm.v1.VMService/CreateDisk"
 	VMService_AttachDisk_FullMethodName           = "/vm.v1.VMService/AttachDisk"
@@ -69,6 +70,7 @@ type VMServiceClient interface {
 	Stop(ctx context.Context, in *ChangeVMRequest, opts ...grpc.CallOption) (*Operation, error)
 	ForceStop(ctx context.Context, in *ForceStopRequest, opts ...grpc.CallOption) (*Operation, error)
 	Restart(ctx context.Context, in *ChangeVMRequest, opts ...grpc.CallOption) (*Operation, error)
+	SetSecurityGroups(ctx context.Context, in *SetSecurityGroupsRequest, opts ...grpc.CallOption) (*Operation, error)
 	ListDisks(ctx context.Context, in *GetVMRequest, opts ...grpc.CallOption) (*ListDisksResponse, error)
 	CreateDisk(ctx context.Context, in *CreateDiskRequest, opts ...grpc.CallOption) (*Operation, error)
 	AttachDisk(ctx context.Context, in *DiskChangeRequest, opts ...grpc.CallOption) (*Operation, error)
@@ -202,6 +204,16 @@ func (c *vMServiceClient) Restart(ctx context.Context, in *ChangeVMRequest, opts
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Operation)
 	err := c.cc.Invoke(ctx, VMService_Restart_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vMServiceClient) SetSecurityGroups(ctx context.Context, in *SetSecurityGroupsRequest, opts ...grpc.CallOption) (*Operation, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Operation)
+	err := c.cc.Invoke(ctx, VMService_SetSecurityGroups_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -415,6 +427,7 @@ type VMServiceServer interface {
 	Stop(context.Context, *ChangeVMRequest) (*Operation, error)
 	ForceStop(context.Context, *ForceStopRequest) (*Operation, error)
 	Restart(context.Context, *ChangeVMRequest) (*Operation, error)
+	SetSecurityGroups(context.Context, *SetSecurityGroupsRequest) (*Operation, error)
 	ListDisks(context.Context, *GetVMRequest) (*ListDisksResponse, error)
 	CreateDisk(context.Context, *CreateDiskRequest) (*Operation, error)
 	AttachDisk(context.Context, *DiskChangeRequest) (*Operation, error)
@@ -476,6 +489,9 @@ func (UnimplementedVMServiceServer) ForceStop(context.Context, *ForceStopRequest
 }
 func (UnimplementedVMServiceServer) Restart(context.Context, *ChangeVMRequest) (*Operation, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Restart not implemented")
+}
+func (UnimplementedVMServiceServer) SetSecurityGroups(context.Context, *SetSecurityGroupsRequest) (*Operation, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetSecurityGroups not implemented")
 }
 func (UnimplementedVMServiceServer) ListDisks(context.Context, *GetVMRequest) (*ListDisksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListDisks not implemented")
@@ -746,6 +762,24 @@ func _VMService_Restart_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(VMServiceServer).Restart(ctx, req.(*ChangeVMRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VMService_SetSecurityGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetSecurityGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VMServiceServer).SetSecurityGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VMService_SetSecurityGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VMServiceServer).SetSecurityGroups(ctx, req.(*SetSecurityGroupsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1117,6 +1151,10 @@ var VMService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Restart",
 			Handler:    _VMService_Restart_Handler,
+		},
+		{
+			MethodName: "SetSecurityGroups",
+			Handler:    _VMService_SetSecurityGroups_Handler,
 		},
 		{
 			MethodName: "ListDisks",

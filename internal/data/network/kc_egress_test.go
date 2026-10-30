@@ -204,3 +204,20 @@ func TestKCNStringNotReadyNodesBlocksPrematureVLANAvailability(t *testing.T) {
 		})
 	}
 }
+
+func TestEIPSpecLeavesManagedSecurityGroupsToBindingWorker(t *testing.T) {
+	o := crFixture("EIP", "tenant-a", "eip")
+	o.Object["spec"] = map[string]any{"subnet": "kcn-system/pool", "ipVersion": "IPv4", "securityGroups": []any{"old"}}
+	core := map[string]any{"subnet": "kcn-system/pool", "ipVersion": "IPv4"}
+	if matchesEgressSpec(o, core, "eip") {
+		t.Fatal("unmanaged SG drift accepted")
+	}
+	core["securityGroups"] = []any{"next"}
+	if !matchesEgressSpec(o, core, "eip") {
+		t.Fatal("address worker rejected an in-flight SG transition")
+	}
+	o.Object["spec"].(map[string]any)["subnet"] = "kcn-system/foreign"
+	if matchesEgressSpec(o, core, "eip") {
+		t.Fatal("SG field ownership hid core address drift")
+	}
+}

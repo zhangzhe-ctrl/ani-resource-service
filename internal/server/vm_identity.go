@@ -11,6 +11,7 @@ import (
 )
 
 var vmGovernanceMethods = map[string]struct{}{
+	"/vm.v1.VMService/SetSecurityGroups": {},
 	"/vm.v1.VMService/GetDNSDefaults":    {},
 	"/vm.v1.VMService/ResolveCreateSpec": {}, "/vm.v1.VMService/AcceptCreate": {}, "/vm.v1.VMService/AcceptDelete": {},
 	"/vm.v1.VMService/ListVMs": {}, "/vm.v1.VMService/GetVM": {}, "/vm.v1.VMService/GetOperation": {}, "/vm.v1.VMService/LookupCommandReplay": {},

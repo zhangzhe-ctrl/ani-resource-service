@@ -8,10 +8,11 @@ import (
 )
 
 type Worker struct {
-	repo     Repository
-	provider Provider
-	owner    string
-	network  NetworkPort
+	repo           Repository
+	provider       Provider
+	owner          string
+	network        NetworkPort
+	securityGroups SecurityGroupPort
 }
 
 func NewWorker(r Repository, p Provider, owner string) (*Worker, error) {
@@ -28,6 +29,21 @@ func (w *Worker) Step(ctx context.Context) (bool, error) {
 		return false, err
 	}
 	i := work.Instance
+	if work.Operation != nil && work.Operation.Action == "set-security-groups" {
+		return w.stepSecurityGroups(ctx, *work)
+	}
+	if i.Desired != Deleted && !i.SecurityGroupsInitialized {
+		if len(i.Spec.SecurityGroupIDs) == 0 {
+			i.SecurityGroupsInitialized = true
+			i.SecurityGroupIDs = []string{}
+		} else {
+			p := Progress{Instance: i, Next: time.Millisecond}
+			if err := w.initializeSecurityGroups(ctx, &p.Instance); err != nil {
+				p.Instance.Reason = err.Error()
+			}
+			return true, w.repo.Finish(ctx, *work, p)
+		}
+	}
 	if work.Operation != nil && work.Operation.Action == "delete" && work.Operation.Execution == nil {
 		if repo, ok := w.repo.(LegacyDeleteRepository); ok {
 			return true, repo.InitializeLegacyDeleteExecution(ctx, *work)
@@ -273,6 +289,15 @@ func (w *Worker) Step(ctx context.Context) (bool, error) {
 			p.Instance.Reason = ErrInvalid.Error()
 			return true, w.repo.Finish(ctx, *work, p)
 		}
+		if w.securityGroups != nil {
+			if err := w.securityGroups.ReleaseSecurityGroupBinding(ctx, i.TenantID, "container", i.ID, i.Version); err != nil {
+				p.Instance.Reason = err.Error()
+				return true, w.repo.Finish(ctx, *work, p)
+			}
+		} else if len(i.SecurityGroupIDs) > 0 || len(i.Spec.SecurityGroupIDs) > 0 {
+			p.Instance.Reason = ErrNetworkUnavailable.Error()
+			return true, w.repo.Finish(ctx, *work, p)
+		}
 		completeOwnerCleanup(&p)
 		return true, w.repo.Finish(ctx, *work, p)
 	}
@@ -320,6 +345,12 @@ func (w *Worker) Step(ctx context.Context) (bool, error) {
 		p.Instance.Reason = ""
 		p.Next = 30 * time.Second
 	} else if !stopped && obs.PodReady && networkReady {
+		if w.securityGroups != nil && i.SecurityGroupsInitialized && i.SecurityGroupRevision == i.Version && len(i.SecurityGroupIDs) > 0 {
+			if err := w.securityGroups.ConfirmSecurityGroupBinding(ctx, i.TenantID, "container", i.ID, i.Version, i.SecurityGroupIDs); err != nil {
+				p.Instance.Reason = err.Error()
+				return true, w.repo.Finish(ctx, *work, p)
+			}
+		}
 		p.Instance.Observed = Running
 		p.Instance.Reason = ""
 		p.Next = 30 * time.Second

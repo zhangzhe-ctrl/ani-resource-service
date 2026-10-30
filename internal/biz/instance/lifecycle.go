@@ -50,6 +50,7 @@ type MountTemplateProof struct {
 	SafeStopped                                                              bool
 }
 type Execution struct {
+	SecurityGroupIDs        []string            `json:"security_group_ids,omitempty"`
 	SchemaVersion           int                 `json:"schema_version"`
 	Phase                   string              `json:"phase"`
 	PhaseSequence           int64               `json:"phase_sequence"`

@@ -1,5 +1,7 @@
 # ANI Resource 文档导航
 
+[租户安全组](specs/security-groups.md)：容器/VM/EIP 接入、默认仅入方向拒绝、持久当前配置及真实应用判定；实际结果见[执行状态](execution/status.md#security-groups-20261030)。
+
 GPU 容器实例 v1.5：[规格](specs/instance-mvp.md)、[实施计划](plans/instance-mvp-v1.5.md)、[运行与恢复](runbooks/instance-mvp-fedora.md)、[当前执行状态](execution/status.md#gpu-container-instance-mvp-v15)。本轮按用户调整只负责后端，前端接入交由专人。
 
 容器最终删除与退额：[2026-10-27 整改方案](plans/container-instance-release-without-acc-20261027.md)移除 Resource 对 ACC 释放确认的依赖，以完整 owner 清理事实和持久 outbox 复用 Gov 现有退额接口；正式行为见[实例规格 §10](specs/instance-mvp.md#10-完整释放及-gov-原账退额)，实际实施与验证只见[执行状态](execution/status.md#container-instance-owner-refund-2026-10-27)。

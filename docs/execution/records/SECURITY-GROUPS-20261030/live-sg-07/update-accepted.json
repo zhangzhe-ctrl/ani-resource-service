@@ -1,0 +1,98 @@
+{
+  "SecurityGroup": {
+    "ID": "sg_addbb830cff0492ebbe7170cb1a40676",
+    "Name": "sg-live-web",
+    "Description": "task-owned real KCN lifecycle",
+    "State": "provisioning",
+    "Reason": "",
+    "Version": 2,
+    "CreatedAt": "2026-10-30T14:25:50.617886+08:00",
+    "UpdatedAt": "2026-10-30T14:26:01.700114+08:00",
+    "ObservedAt": "2026-10-30T14:26:00.689413+08:00",
+    "ObservationStale": false,
+    "LastOperationID": "c7922559-dd32-45a7-9e13-6bf829bf9d95",
+    "TenantID": "7fb9392b-e094-49d7-840e-37f22b417ec3",
+    "ClusterID": "5277649d-e28d-4a0a-ae76-8354365c63bc",
+    "Namespace": "sg-live-7fb9392b-e094-49d7-840e-37f22b417ec3",
+    "ProviderName": "ani-sg-addbb830cff0492ebbe7170cb1a40676",
+    "ProviderUID": "ba11de1d-754e-4cc8-8707-7ac29a548161",
+    "BindingID": "3625b0e7-31b1-4d59-be52-d450b378463a",
+    "Rules": [
+      {
+        "ID": "sgr_0053cd354ca644feb47493548bd4ca7d",
+        "Direction": "ingress",
+        "Protocol": "tcp",
+        "Action": "allow",
+        "Description": "",
+        "Priority": 3000,
+        "IsDefault": false,
+        "RemoteAddresses": [
+          "192.0.2.0/24"
+        ],
+        "PortRanges": [
+          {
+            "Min": 443,
+            "Max": 443
+          }
+        ]
+      },
+      {
+        "ID": "sgr_default_ingress_drop",
+        "Direction": "ingress",
+        "Protocol": "all",
+        "Action": "drop",
+        "Description": "",
+        "Priority": 1,
+        "IsDefault": true,
+        "RemoteAddresses": null,
+        "PortRanges": null
+      }
+    ],
+    "BoundResourceCount": 0
+  },
+  "Rule": {
+    "ID": "sgr_0053cd354ca644feb47493548bd4ca7d",
+    "Direction": "ingress",
+    "Protocol": "tcp",
+    "Action": "allow",
+    "Description": "",
+    "Priority": 3000,
+    "IsDefault": false,
+    "RemoteAddresses": [
+      "192.0.2.0/24"
+    ],
+    "PortRanges": [
+      {
+        "Min": 443,
+        "Max": 443
+      }
+    ]
+  },
+  "Binding": {
+    "TenantID": "",
+    "TargetType": "",
+    "TargetID": "",
+    "VPCID": "",
+    "Namespace": "",
+    "State": "",
+    "Reason": "",
+    "LastOperationID": "",
+    "SecurityGroupIDs": null,
+    "AppliedSecurityGroupIDs": null,
+    "Version": 0,
+    "ObservedAt": null
+  },
+  "Operation": {
+    "ID": "c7922559-dd32-45a7-9e13-6bf829bf9d95",
+    "TenantID": "7fb9392b-e094-49d7-840e-37f22b417ec3",
+    "ResourceID": "sg_addbb830cff0492ebbe7170cb1a40676",
+    "ResourceType": "security_group",
+    "Kind": "update_security_group",
+    "State": "queued",
+    "Reason": "",
+    "CreatedAt": "2026-10-30T14:26:01.700114+08:00",
+    "UpdatedAt": "2026-10-30T14:26:01.700114+08:00",
+    "CompletedAt": null,
+    "NextAttemptAt": null
+  }
+}

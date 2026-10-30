@@ -31,6 +31,7 @@ const (
 	InstanceService_Start_FullMethodName                      = "/instance.v1.InstanceService/Start"
 	InstanceService_Stop_FullMethodName                       = "/instance.v1.InstanceService/Stop"
 	InstanceService_Restart_FullMethodName                    = "/instance.v1.InstanceService/Restart"
+	InstanceService_SetSecurityGroups_FullMethodName          = "/instance.v1.InstanceService/SetSecurityGroups"
 	InstanceService_AttachPVC_FullMethodName                  = "/instance.v1.InstanceService/AttachPVC"
 	InstanceService_DetachPVC_FullMethodName                  = "/instance.v1.InstanceService/DetachPVC"
 	InstanceService_ListInstanceMountablePVCs_FullMethodName  = "/instance.v1.InstanceService/ListInstanceMountablePVCs"
@@ -60,6 +61,7 @@ type InstanceServiceClient interface {
 	Start(ctx context.Context, in *ChangeInstanceRequest, opts ...grpc.CallOption) (*OperationResponse, error)
 	Stop(ctx context.Context, in *ChangeInstanceRequest, opts ...grpc.CallOption) (*OperationResponse, error)
 	Restart(ctx context.Context, in *ChangeInstanceRequest, opts ...grpc.CallOption) (*OperationResponse, error)
+	SetSecurityGroups(ctx context.Context, in *SetSecurityGroupsRequest, opts ...grpc.CallOption) (*OperationResponse, error)
 	AttachPVC(ctx context.Context, in *AttachPVCRequest, opts ...grpc.CallOption) (*OperationResponse, error)
 	DetachPVC(ctx context.Context, in *DetachPVCRequest, opts ...grpc.CallOption) (*OperationResponse, error)
 	ListInstanceMountablePVCs(ctx context.Context, in *ListInstanceMountablePVCsRequest, opts ...grpc.CallOption) (*ListMountablePVCsResponse, error)
@@ -198,6 +200,16 @@ func (c *instanceServiceClient) Restart(ctx context.Context, in *ChangeInstanceR
 	return out, nil
 }
 
+func (c *instanceServiceClient) SetSecurityGroups(ctx context.Context, in *SetSecurityGroupsRequest, opts ...grpc.CallOption) (*OperationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(OperationResponse)
+	err := c.cc.Invoke(ctx, InstanceService_SetSecurityGroups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *instanceServiceClient) AttachPVC(ctx context.Context, in *AttachPVCRequest, opts ...grpc.CallOption) (*OperationResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(OperationResponse)
@@ -306,6 +318,7 @@ type InstanceServiceServer interface {
 	Start(context.Context, *ChangeInstanceRequest) (*OperationResponse, error)
 	Stop(context.Context, *ChangeInstanceRequest) (*OperationResponse, error)
 	Restart(context.Context, *ChangeInstanceRequest) (*OperationResponse, error)
+	SetSecurityGroups(context.Context, *SetSecurityGroupsRequest) (*OperationResponse, error)
 	AttachPVC(context.Context, *AttachPVCRequest) (*OperationResponse, error)
 	DetachPVC(context.Context, *DetachPVCRequest) (*OperationResponse, error)
 	ListInstanceMountablePVCs(context.Context, *ListInstanceMountablePVCsRequest) (*ListMountablePVCsResponse, error)
@@ -357,6 +370,9 @@ func (UnimplementedInstanceServiceServer) Stop(context.Context, *ChangeInstanceR
 }
 func (UnimplementedInstanceServiceServer) Restart(context.Context, *ChangeInstanceRequest) (*OperationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Restart not implemented")
+}
+func (UnimplementedInstanceServiceServer) SetSecurityGroups(context.Context, *SetSecurityGroupsRequest) (*OperationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetSecurityGroups not implemented")
 }
 func (UnimplementedInstanceServiceServer) AttachPVC(context.Context, *AttachPVCRequest) (*OperationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AttachPVC not implemented")
@@ -597,6 +613,24 @@ func _InstanceService_Restart_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InstanceService_SetSecurityGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetSecurityGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).SetSecurityGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_SetSecurityGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).SetSecurityGroups(ctx, req.(*SetSecurityGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _InstanceService_AttachPVC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AttachPVCRequest)
 	if err := dec(in); err != nil {
@@ -805,6 +839,10 @@ var InstanceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Restart",
 			Handler:    _InstanceService_Restart_Handler,
+		},
+		{
+			MethodName: "SetSecurityGroups",
+			Handler:    _InstanceService_SetSecurityGroups_Handler,
 		},
 		{
 			MethodName: "AttachPVC",

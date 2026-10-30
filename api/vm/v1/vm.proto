@@ -19,6 +19,7 @@ service VMService {
   rpc Stop(ChangeVMRequest) returns (Operation);
   rpc ForceStop(ForceStopRequest) returns (Operation);
   rpc Restart(ChangeVMRequest) returns (Operation);
+  rpc SetSecurityGroups(SetSecurityGroupsRequest) returns (Operation);
   rpc ListDisks(GetVMRequest) returns (ListDisksResponse);
   rpc CreateDisk(CreateDiskRequest) returns (Operation);
   rpc AttachDisk(DiskChangeRequest) returns (Operation);
@@ -41,6 +42,10 @@ service VMService {
 }
 
 message NetworkSelection { string vpc_id = 1; string subnet_id = 2; }
+message SetSecurityGroupsRequest {
+  string tenant_id = 1; string vm_id = 2; int64 expected_version = 3;
+  string idempotency_key = 4; repeated string security_group_ids = 5 [json_name = "security_group_ids"];
+}
 message InitialDataDisk { string client_disk_key = 1; string name = 2; int64 size_gb = 3; }
 message CreateVMData {
   string name = 1;
@@ -53,6 +58,7 @@ message CreateVMData {
   optional bool start_after_create = 8;
   GuestInitialization guest_initialization = 9;
   DNSSelection dns = 10;
+  repeated string security_group_ids = 11 [json_name = "security_group_ids"];
 }
 // Omitted/empty mode means PLATFORM_DEFAULT. CUSTOM accepts IP addresses only.
 message DNSSelection { string mode = 1; repeated string nameservers = 2; }
@@ -95,6 +101,7 @@ message CreateSpec {
   uint32 sockets = 11; uint32 cores = 12; uint32 threads = 13;
   string boot_device = 14;
   FrozenDNS dns = 15;
+  repeated string security_group_ids = 16 [json_name = "security_group_ids"];
 }
 message ResolveCreateSpecRequest {
   string tenant_id = 1; CreateVMData data = 2;
@@ -175,6 +182,7 @@ message VirtualMachine {
   string reason = 9; string observed_at = 10; repeated CurrentAddress addresses = 11;
   string last_operation_id = 12; bool closing = 13; repeated Disk disks = 14;
   repeated MediaState media = 15; string boot_device = 16;
+  repeated string security_group_ids = 17 [json_name = "security_group_ids"];
 }
 message Operation {
   string id = 1; string vm_id = 2; string action = 3; int64 intent_version = 4;

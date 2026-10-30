@@ -10,16 +10,17 @@ import (
 )
 
 type Worker struct {
-	repo    Repository
-	native  NativePort
-	network NetworkPort
+	repo           Repository
+	native         NativePort
+	network        NetworkPort
+	securityGroups SecurityGroupPort
 }
 
 func NewWorker(r Repository, n NativePort, network NetworkPort) (*Worker, error) {
 	if r == nil || n == nil || network == nil {
 		return nil, ErrInvalid
 	}
-	return &Worker{r, n, network}, nil
+	return &Worker{repo: r, native: n, network: network}, nil
 }
 func (w *Worker) RunOnce(ctx context.Context) error {
 	o, v, e := w.repo.Claim(ctx, uuid.NewString(), 30*time.Second)
@@ -79,6 +80,8 @@ func (w *Worker) advance(ctx context.Context, o *Operation, v *VM) error {
 		return w.power(ctx, o, v)
 	case "create-disk", "attach-disk", "detach-disk", "delete-disk":
 		return w.disk(ctx, o, v)
+	case "set-security-groups":
+		return w.setSecurityGroups(ctx, o, v)
 	case "set-media", "eject-media", "set-boot":
 		return w.media(ctx, o, v)
 	case "create-snapshot", "delete-snapshot", "restore-snapshot":
@@ -88,6 +91,13 @@ func (w *Worker) advance(ctx context.Context, o *Operation, v *VM) error {
 	}
 }
 func (w *Worker) create(ctx context.Context, o *Operation, v *VM) error {
+	if !v.SecurityGroupsInitialized {
+		if len(v.Spec.SecurityGroupIDs) > 0 {
+			return w.initializeSecurityGroups(ctx, v)
+		}
+		v.SecurityGroupsInitialized = true
+		v.SecurityGroupIDs = []string{}
+	}
 	if e := InitializeMedia(v); e != nil {
 		return e
 	}
@@ -161,6 +171,15 @@ func (w *Worker) create(ctx context.Context, o *Operation, v *VM) error {
 	return w.power(ctx, o, v)
 }
 func (w *Worker) power(ctx context.Context, o *Operation, v *VM) error {
+	if v.SecurityGroupsInitialized && len(v.SecurityGroupIDs) > 0 {
+		provider, ok := w.native.(SecurityGroupNativePort)
+		if !ok {
+			return ErrDependency
+		}
+		if err := provider.SetSecurityGroups(ctx, *v, v.SecurityGroupNames); err != nil {
+			return err
+		}
+	}
 	x, e := w.native.Observe(ctx, *v)
 	if e != nil {
 		return e
@@ -363,6 +382,13 @@ func (w *Worker) remove(ctx context.Context, o *Operation, v *VM) error {
 	}
 	if !done {
 		return nil
+	}
+	if w.securityGroups != nil {
+		if err := w.securityGroups.ReleaseSecurityGroupBinding(ctx, v.TenantID, "vm", v.ID, v.Version); err != nil {
+			return err
+		}
+	} else if len(v.SecurityGroupIDs) > 0 || len(v.Spec.SecurityGroupIDs) > 0 {
+		return ErrDependency
 	}
 	o.State = "succeeded"
 	o.Pending = nil

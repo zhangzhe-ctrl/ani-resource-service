@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"net/netip"
 	"reflect"
 	"regexp"
@@ -321,6 +322,29 @@ func (p *KCProvider) resolveEgress(ctx context.Context, t biz.ProviderTarget) (e
 			r.switchDevice = device
 		}
 	}
+	if t.Kind == "eip" {
+		row, e := p.repository.queries.GetSecurityGroupTarget(ctx, sqlcgen.GetSecurityGroupTargetParams{TenantID: t.TenantID, TargetType: "eip", TargetID: t.ResourceID})
+		if e == nil {
+			binding, e := sgTarget(row)
+			if e != nil {
+				return r, e
+			}
+			names := []any{}
+			for _, id := range binding.SecurityGroupIDs {
+				group, e := p.repository.GetSecurityGroup(ctx, t.TenantID, id)
+				if e != nil {
+					return r, e
+				}
+				if group.Namespace != r.binding.Namespace {
+					return r, &biz.ProviderError{Kind: biz.ProviderConflict}
+				}
+				names = append(names, group.ProviderName)
+			}
+			r.spec["securityGroups"] = names
+		} else if !errors.Is(e, pgx.ErrNoRows) {
+			return r, readFailure(e)
+		}
+	}
 	return r, nil
 }
 func renderPublicPool(c sqlcgen.NetworkPublicPool, gateway, vlan string) map[string]any {
@@ -409,6 +433,12 @@ func matchesEgressSpec(o *unstructured.Unstructured, expected map[string]any, ki
 	actual, _, _ := unstructured.NestedMap(o.Object, "spec")
 	for k, want := range expected {
 		got, ok := actual[k]
+		// A persisted SG target gives its own worker ownership of this field.
+		// An address reconcile may race the accepted SG transition; its core
+		// allocation checks must not classify the previous SG list as drift.
+		if kind == "eip" && k == "securityGroups" {
+			continue
+		}
 		if kind == "snat" && k == "disable" {
 			continue
 		}

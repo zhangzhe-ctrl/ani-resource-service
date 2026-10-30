@@ -199,6 +199,9 @@ func ValidateUserIntent(d *CreateVMData) error {
 	if d == nil || hasUnknown(d.ProtoReflect()) || strings.TrimSpace(d.Name) == "" || utf8.RuneCountInString(d.Name) > 128 || !validUUID(d.PresetId) || d.MediaKey == "" || !validSize(d.SystemDiskSizeGb) || d.StartAfterCreate == nil || d.Network == nil || !vpcIDPattern.MatchString(d.Network.VpcId) || !subnetIDPattern.MatchString(d.Network.SubnetId) {
 		return ErrInvalidRequest
 	}
+	if ValidateSecurityGroupIDs(d.SecurityGroupIds) != nil {
+		return ErrInvalidRequest
+	}
 	if d.SourceKind != "DISK_IMAGE" && d.SourceKind != "INSTALL_ISO" {
 		return ErrInvalidRequest
 	}
@@ -256,6 +259,9 @@ func ValidateCreateSpec(s *CreateSpec) error {
 	if s == nil || hasUnknown(s.ProtoReflect()) || ValidateUserIntent(s.Intent) != nil || compute.ValidateSelection(s.Compute) != nil || !validUUID(s.ClusterId) || !validName(s.Namespace) || s.NamespaceUid == "" || !validName(s.ServiceAccount) || s.Storage == nil || s.Network == nil || validateMedia(s.Media) != nil {
 		return ErrInvalidRequest
 	}
+	if ValidateSecurityGroupIDs(s.SecurityGroupIds) != nil || !slices.Equal(s.SecurityGroupIds, s.Intent.SecurityGroupIds) {
+		return ErrInvalidRequest
+	}
 	if e := validateFrozenDNS(s); e != nil {
 		return e
 	}
@@ -310,8 +316,8 @@ var canonicalFields = map[protoreflect.FullName][]string{
 // Optional extensions are omitted at their default value, preserving accepted
 // v1 bytes for payloads which predate guest initialization or DNS selection.
 var canonicalOptionalFields = map[protoreflect.FullName][]string{
-	"vm.v1.CreateVMData":   {"guest_initialization", "dns"},
-	"vm.v1.CreateSpec":     {"dns"},
+	"vm.v1.CreateVMData":   {"guest_initialization", "dns", "security_group_ids"},
+	"vm.v1.CreateSpec":     {"dns", "security_group_ids"},
 	"vm.v1.MediaReference": {"initialization_capability", "initialization_verified"},
 }
 
@@ -455,7 +461,7 @@ func CanonicalCommandIntent(m proto.Message) ([]byte, error) {
 	switch m.(type) {
 	case *ChangeVMRequest, *ForceStopRequest, *CreateDiskRequest, *DiskChangeRequest,
 		*SetMediaRequest, *EjectMediaRequest, *SetBootDeviceRequest, *SnapshotCreateRequest,
-		*SnapshotChangeRequest, *RestoreSnapshotRequest:
+		*SnapshotChangeRequest, *RestoreSnapshotRequest, *SetSecurityGroupsRequest:
 	default:
 		return nil, ErrInvalidRequest
 	}

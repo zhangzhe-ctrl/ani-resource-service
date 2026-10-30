@@ -28,15 +28,16 @@ type Placement struct {
 }
 
 type Postgres struct {
-	vmNetworks           biz.VMNetworkResolver
-	vmAddressFreshness   time.Duration
-	vpcCIDRPresets       *biz.VPCCIDRPresets
-	baseFreshness        time.Duration
-	workTurn             atomic.Uint64
-	egressInfrastructure biz.EgressInfrastructure
-	pool                 *pgxpool.Pool
-	queries              *sqlcgen.Queries
-	placement            Placement
+	securityGroupObserver biz.SecurityGroupConsumerObserver
+	vmNetworks            biz.VMNetworkResolver
+	vmAddressFreshness    time.Duration
+	vpcCIDRPresets        *biz.VPCCIDRPresets
+	baseFreshness         time.Duration
+	workTurn              atomic.Uint64
+	egressInfrastructure  biz.EgressInfrastructure
+	pool                  *pgxpool.Pool
+	queries               *sqlcgen.Queries
+	placement             Placement
 }
 
 func OpenPostgres(ctx context.Context, dsn string, placement Placement) (*Postgres, error) {

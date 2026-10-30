@@ -132,6 +132,7 @@ type Spec struct {
 	WorkspaceMountPath                                     string
 	VolumeMounts                                           []VolumeMount
 	Network                                                *NetworkSelection
+	SecurityGroupIDs                                       []string
 	Labels, Annotations                                    map[string]string
 	Env                                                    []EnvVar
 	InstanceKind                                           string `json:"instance_kind"`
@@ -171,6 +172,7 @@ type Delete struct {
 }
 
 type Command struct {
+	SecurityGroupIDs                                    []string
 	CanonicalIntent                                     []byte
 	Mount                                               *VolumeMount
 	MountPath                                           string
@@ -191,6 +193,9 @@ type Operation struct {
 	CreatedAt                                                         time.Time
 }
 type Instance struct {
+	SecurityGroupIDs, SecurityGroupNames                               []string
+	SecurityGroupsInitialized                                          bool
+	SecurityGroupRevision                                              int64
 	CurrentMounts                                                      []VolumeMount `json:"-"`
 	MountsInitialized                                                  bool          `json:"-"`
 	AppliedMountVersion                                                int64         `json:"-"`

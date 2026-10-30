@@ -1,0 +1,214 @@
+{
+  "captured_at": "2026-10-30T06:26:01.698653891Z",
+  "operation": {
+    "ID": "886cafa8-a0fa-46b7-a535-9c9da9393e67",
+    "TenantID": "7fb9392b-e094-49d7-840e-37f22b417ec3",
+    "ResourceID": "sg_addbb830cff0492ebbe7170cb1a40676",
+    "ResourceType": "security_group",
+    "Kind": "create_security_group",
+    "State": "succeeded",
+    "Reason": "",
+    "CreatedAt": "2026-10-30T14:25:50.617886+08:00",
+    "UpdatedAt": "2026-10-30T14:26:00.689413+08:00",
+    "CompletedAt": "2026-10-30T14:26:00.689413+08:00",
+    "NextAttemptAt": null
+  },
+  "provider_object": {
+    "apiVersion": "networking.kubercloud.com/v1",
+    "kind": "SecurityGroup",
+    "metadata": {
+      "creationTimestamp": "2026-10-30T06:25:05Z",
+      "finalizers": [
+        "networking.kubercloud.com/finalizer"
+      ],
+      "generation": 1,
+      "labels": {
+        "network.ani.io/binding-id": "3625b0e7-31b1-4d59-be52-d450b378463a",
+        "network.ani.io/managed-by": "ani-network-service",
+        "network.ani.io/resource-id": "sg_addbb830cff0492ebbe7170cb1a40676",
+        "network.ani.io/tenant-id": "7fb9392b-e094-49d7-840e-37f22b417ec3"
+      },
+      "managedFields": [
+        {
+          "apiVersion": "networking.kubercloud.com/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:labels": {
+                ".": {},
+                "f:network.ani.io/binding-id": {},
+                "f:network.ani.io/managed-by": {},
+                "f:network.ani.io/resource-id": {},
+                "f:network.ani.io/tenant-id": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:allowSameGroupTraffic": {},
+              "f:egressRules": {},
+              "f:ingressRules": {}
+            }
+          },
+          "manager": "ani-network-service",
+          "operation": "Update",
+          "time": "2026-10-30T06:25:05Z"
+        },
+        {
+          "apiVersion": "networking.kubercloud.com/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:finalizers": {
+                ".": {},
+                "v:\"networking.kubercloud.com/finalizer\"": {}
+              }
+            }
+          },
+          "manager": "kc-networking-controller",
+          "operation": "Update",
+          "time": "2026-10-30T06:25:05Z"
+        },
+        {
+          "apiVersion": "networking.kubercloud.com/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:status": {
+              ".": {},
+              "f:allowSameGroupTraffic": {},
+              "f:conditions": {
+                ".": {},
+                "k:{\"type\":\"Ready\"}": {
+                  ".": {},
+                  "f:lastTransitionTime": {},
+                  "f:message": {},
+                  "f:reason": {},
+                  "f:status": {},
+                  "f:type": {}
+                },
+                "k:{\"type\":\"Valid\"}": {
+                  ".": {},
+                  "f:lastTransitionTime": {},
+                  "f:message": {},
+                  "f:reason": {},
+                  "f:status": {},
+                  "f:type": {}
+                }
+              },
+              "f:egressMd5": {},
+              "f:ingressMd5": {},
+              "f:observedGeneration": {}
+            }
+          },
+          "manager": "kc-networking-controller",
+          "operation": "Update",
+          "subresource": "status",
+          "time": "2026-10-30T06:25:05Z"
+        }
+      ],
+      "name": "ani-sg-addbb830cff0492ebbe7170cb1a40676",
+      "namespace": "sg-live-7fb9392b-e094-49d7-840e-37f22b417ec3",
+      "resourceVersion": "82915689",
+      "uid": "ba11de1d-754e-4cc8-8707-7ac29a548161"
+    },
+    "spec": {
+      "allowSameGroupTraffic": false,
+      "egressRules": [],
+      "ingressRules": [
+        {
+          "action": "allow",
+          "ipVersion": "IPv4",
+          "portRanges": [
+            {
+              "max": 80,
+              "min": 80
+            }
+          ],
+          "priority": 3000,
+          "protocol": "tcp",
+          "remoteAddresses": [
+            "192.0.2.0/24"
+          ]
+        },
+        {
+          "action": "drop",
+          "ipVersion": "IPv4",
+          "priority": 1,
+          "protocol": "all"
+        }
+      ]
+    },
+    "status": {
+      "allowSameGroupTraffic": false,
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-10-30T06:25:05Z",
+          "message": "",
+          "reason": "Valid",
+          "status": "True",
+          "type": "Valid"
+        },
+        {
+          "lastTransitionTime": "2026-10-30T06:25:05Z",
+          "message": "",
+          "reason": "Ready",
+          "status": "True",
+          "type": "Ready"
+        }
+      ],
+      "egressMd5": "d751713988987e9331980363e24189ce",
+      "ingressMd5": "c7c103eb118d4b533ff81920a2e8d001",
+      "observedGeneration": 1
+    }
+  },
+  "resource": {
+    "ID": "sg_addbb830cff0492ebbe7170cb1a40676",
+    "Name": "sg-live-web",
+    "Description": "task-owned real KCN lifecycle",
+    "State": "available",
+    "Reason": "",
+    "Version": 1,
+    "CreatedAt": "2026-10-30T14:25:50.617886+08:00",
+    "UpdatedAt": "2026-10-30T14:26:00.689413+08:00",
+    "ObservedAt": "2026-10-30T14:26:00.689413+08:00",
+    "ObservationStale": false,
+    "LastOperationID": "886cafa8-a0fa-46b7-a535-9c9da9393e67",
+    "TenantID": "7fb9392b-e094-49d7-840e-37f22b417ec3",
+    "ClusterID": "5277649d-e28d-4a0a-ae76-8354365c63bc",
+    "Namespace": "sg-live-7fb9392b-e094-49d7-840e-37f22b417ec3",
+    "ProviderName": "ani-sg-addbb830cff0492ebbe7170cb1a40676",
+    "ProviderUID": "ba11de1d-754e-4cc8-8707-7ac29a548161",
+    "BindingID": "3625b0e7-31b1-4d59-be52-d450b378463a",
+    "Rules": [
+      {
+        "ID": "sgr_0053cd354ca644feb47493548bd4ca7d",
+        "Direction": "ingress",
+        "Protocol": "tcp",
+        "Action": "allow",
+        "Description": "",
+        "Priority": 3000,
+        "IsDefault": false,
+        "RemoteAddresses": [
+          "192.0.2.0/24"
+        ],
+        "PortRanges": [
+          {
+            "Min": 80,
+            "Max": 80
+          }
+        ]
+      },
+      {
+        "ID": "sgr_default_ingress_drop",
+        "Direction": "ingress",
+        "Protocol": "all",
+        "Action": "drop",
+        "Description": "",
+        "Priority": 1,
+        "IsDefault": true,
+        "RemoteAddresses": null,
+        "PortRanges": null
+      }
+    ],
+    "BoundResourceCount": 0
+  }
+}

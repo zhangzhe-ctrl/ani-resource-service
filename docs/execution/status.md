@@ -1,5 +1,12 @@
 # Network 执行状态
 
+## Security Groups (20261030)
+
+**代码/Fedora 门禁与真实 PG：PASS；受控 HTTP/mTLS/EIP、容器纵向：PASS；真实 KCN SG 生命周期：PASS。** 基于 Resource main `a4bb202`，新增租户安全组/规则/绑定/操作及持久引用，容器（CPU/GPU）和 VM 创建/更换选择、EIP 独立版本化绑定已接线；默认仅入方向 all/drop，出方向不添加 drop。容器真实 Service/Instance/Network/Image PG 完成创建选组→热更→清空→删除，后台三轮仍保持原 Pod UID；Gov HTTP 的身份/权限/套餐→mTLS→Res PG/worker/EIP 全链在 Kubernetes 边界替身下通过。10～12 的真实 KCN 创建/规则更新/删除及任务 namespace 清理通过，未修改 KCN。
+
+最终 `make verify` PASS；运行源码清单、具体命令、修复与证据见[本轮记录](records/SECURITY-GROUPS-20261030/README.md)。Console 已落 Fedora 原 `feat/governance-api` 工作区并保留既有 dirty，lint/格式/typecheck PASS；图索引错链检测未记 PASS。**共享服务部署、目录/角色/RBAC 应用、真实 EIP/VNic 流量及真实容器/VM/浏览器全链 NOT_RUN。** KCN 实际镜像与本地源码 commit 的构建对应关系未证实；SDK 正式固定与发布由配套 Governance 变更负责，受控 joint.work 联测不作为正式依赖证据。
+
+
 ## 2026-10-30：NodeFacts 拆除
 
 **追加废弃接口清理：代码/生成/测试、10～12 成对发布与 Boss 复验均 PASS。** Resource `0a9f1bea` 已删除五个旧发现/登记/查询/退出 RPC 及消息、注册、专属白名单和旧过滤器/独立事务/退出 worker；Governance `88c5a113` 同步删除 HTTP/DTO/转发/权限种子并正式固定新 Res SDK。历史 migration 与逻辑资源占用保留，Proto 旧编号/name reserved，旧指纹重放兼容。Fedora `make verify`、113.841 秒定向真实 PG、Gov 完整 API 生成/相关单测/vet/build、12.789 秒真实 Gov→Res/PG 联测通过。集群精确清理五条旧目录及专属权限后，成对更新 Resource `0d508e20…`、Gov `b472ac3d…`，实际新镜像 1/1 Ready，Gov Casbin 已重载。11 项实际 DB/KCN 检查通过，Boss 二层/公网池可用、默认出口 `.192` 观测有效，网卡发现目录 0 条。代码分别在 [Resource #28](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/28)、[Governance #73](https://github.com/zhangzhe-ctrl/ani-governance/pull/73)，原表单修复为 [Boss #6](https://github.com/bykenkk/ani-boss-console/pull/6)。追加失败/修复、正式来源和发布/页面证据仍归于[同一执行记录](records/NODEFACTS-REMOVAL-20261030/README.md#废弃接口与旧代码清理2026-10-30-追加)。实际 Pod 出网流量 NOT_RUN。

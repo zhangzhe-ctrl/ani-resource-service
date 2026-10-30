@@ -1,0 +1,88 @@
+syntax = "proto3";
+package network.v1;
+option go_package = "github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1;networkv1";
+
+import "google/protobuf/timestamp.proto";
+import "network/v1/network.proto";
+
+// Tenant-owned product IDs are resolved to provider names only by Resource.
+service NetworkSecurityGroupService {
+  rpc CreateSecurityGroup(CreateSecurityGroupRequest) returns (CreateSecurityGroupResponse);
+  rpc GetSecurityGroup(GetSecurityGroupRequest) returns (GetSecurityGroupResponse);
+  rpc ListSecurityGroups(ListSecurityGroupsRequest) returns (ListSecurityGroupsResponse);
+  rpc UpdateSecurityGroup(UpdateSecurityGroupRequest) returns (UpdateSecurityGroupResponse);
+  rpc DeleteSecurityGroup(DeleteSecurityGroupRequest) returns (DeleteSecurityGroupResponse);
+  rpc ListSecurityGroupRules(ListSecurityGroupRulesRequest) returns (ListSecurityGroupRulesResponse);
+  rpc CreateSecurityGroupRule(CreateSecurityGroupRuleRequest) returns (CreateSecurityGroupRuleResponse);
+  rpc UpdateSecurityGroupRule(UpdateSecurityGroupRuleRequest) returns (UpdateSecurityGroupRuleResponse);
+  rpc DeleteSecurityGroupRule(DeleteSecurityGroupRuleRequest) returns (DeleteSecurityGroupRuleResponse);
+  rpc ListSecurityGroupBindings(ListSecurityGroupBindingsRequest) returns (ListSecurityGroupBindingsResponse);
+  rpc SetEIPSecurityGroups(SetEIPSecurityGroupsRequest) returns (SetEIPSecurityGroupsResponse);
+  rpc GetEIPSecurityGroups(GetEIPSecurityGroupsRequest) returns (GetEIPSecurityGroupsResponse);
+  rpc GetSecurityGroupOperation(GetSecurityGroupOperationRequest) returns (GetSecurityGroupOperationResponse);
+}
+message SecurityGroupPortRange { int32 min = 1; int32 max = 2; }
+message SecurityGroupRule {
+  string id = 1;
+  string direction = 2;
+  string protocol = 3;
+  repeated string remote_addresses = 4;
+  repeated SecurityGroupPortRange port_ranges = 5;
+  string action = 6;
+  int32 priority = 7;
+  string description = 8;
+  bool is_default = 9;
+}
+message SecurityGroup {
+  string id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  string description = 4;
+  string state = 5;
+  string reason = 6;
+  int64 version = 7;
+  repeated SecurityGroupRule rules = 8;
+  string last_operation_id = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  google.protobuf.Timestamp observed_at = 12;
+  int64 bound_resource_count = 13;
+}
+message SecurityGroupBinding {
+  string target_type = 1;
+  string target_id = 2;
+  repeated string security_group_ids = 3;
+  repeated string applied_security_group_ids = 4;
+  string state = 5;
+  string reason = 6;
+  int64 version = 7;
+  string last_operation_id = 8;
+  google.protobuf.Timestamp observed_at = 9;
+}
+message CreateSecurityGroupRequest { string target_tenant_id = 1; string name = 2; string description = 3; string idempotency_key = 4; repeated SecurityGroupRule rules = 5; }
+message GetSecurityGroupRequest { string target_tenant_id = 1; string security_group_id = 2; }
+message GetSecurityGroupResponse { SecurityGroup security_group = 1; }
+message ListSecurityGroupsRequest { string target_tenant_id = 1; uint32 page = 2; uint32 page_size = 3; string name = 4; string state = 5; }
+message ListSecurityGroupsResponse { repeated SecurityGroup items = 1; int64 total = 2; }
+message UpdateSecurityGroupRequest { string target_tenant_id = 1; string security_group_id = 2; string name = 3; string description = 4; int64 expected_version = 5; string idempotency_key = 6; }
+message DeleteSecurityGroupRequest { string target_tenant_id = 1; string security_group_id = 2; }
+message CreateSecurityGroupResponse { SecurityGroup security_group = 1; SecurityGroupRule rule = 2; Operation operation = 3; }
+message UpdateSecurityGroupResponse { SecurityGroup security_group = 1; SecurityGroupRule rule = 2; Operation operation = 3; }
+message DeleteSecurityGroupResponse { SecurityGroup security_group = 1; SecurityGroupRule rule = 2; Operation operation = 3; }
+message CreateSecurityGroupRuleResponse { SecurityGroup security_group = 1; SecurityGroupRule rule = 2; Operation operation = 3; }
+message UpdateSecurityGroupRuleResponse { SecurityGroup security_group = 1; SecurityGroupRule rule = 2; Operation operation = 3; }
+message DeleteSecurityGroupRuleResponse { SecurityGroup security_group = 1; SecurityGroupRule rule = 2; Operation operation = 3; }
+message ListSecurityGroupRulesRequest { string target_tenant_id = 1; string security_group_id = 2; string direction = 3; }
+message ListSecurityGroupRulesResponse { repeated SecurityGroupRule items = 1; int64 total = 2; int64 version = 3; }
+message CreateSecurityGroupRuleRequest { string target_tenant_id = 1; string security_group_id = 2; SecurityGroupRule rule = 3; int64 expected_version = 4; string idempotency_key = 5; }
+message UpdateSecurityGroupRuleRequest { string target_tenant_id = 1; string security_group_id = 2; string rule_id = 3; SecurityGroupRule rule = 4; int64 expected_version = 5; string idempotency_key = 6; }
+message DeleteSecurityGroupRuleRequest { string target_tenant_id = 1; string security_group_id = 2; string rule_id = 3; }
+message ListSecurityGroupBindingsRequest { string target_tenant_id = 1; string security_group_id = 2; uint32 page = 3; uint32 page_size = 4; string target_type = 5; }
+message ListSecurityGroupBindingsResponse { repeated SecurityGroupBinding items = 1; int64 total = 2; }
+message SetEIPSecurityGroupsRequest { string target_tenant_id = 1; string eip_id = 2; repeated string security_group_ids = 3; int64 expected_version = 4; string idempotency_key = 5; }
+message GetEIPSecurityGroupsRequest { string target_tenant_id = 1; string eip_id = 2; }
+message SetEIPSecurityGroupsResponse { SecurityGroupBinding binding = 1; Operation operation = 2; }
+message GetSecurityGroupOperationRequest { string target_tenant_id = 1; string operation_id = 2; }
+
+message GetEIPSecurityGroupsResponse { SecurityGroupBinding binding = 1; Operation operation = 2; }
+message GetSecurityGroupOperationResponse { Operation operation = 1; }

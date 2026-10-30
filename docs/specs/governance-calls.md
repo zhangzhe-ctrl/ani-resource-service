@@ -41,6 +41,19 @@ Sandbox 条目定义 Resource RPC 合同和精确接收方 allowlist。Governanc
 | `/network.v1.TenantEgressService/GetVPCSnatBinding` | 查询 |
 | `/network.v1.TenantEgressService/SetVPCSnatEnabled` | 原键及 expected_version |
 | `/network.v1.TenantEgressService/DeleteVPCSnatBinding` | 资源删除 |
+| `/network.v1.NetworkSecurityGroupService/CreateSecurityGroup` | 原键 |
+| `/network.v1.NetworkSecurityGroupService/GetSecurityGroup` | 查询 |
+| `/network.v1.NetworkSecurityGroupService/ListSecurityGroups` | 查询 |
+| `/network.v1.NetworkSecurityGroupService/UpdateSecurityGroup` | 原键及 expected_version |
+| `/network.v1.NetworkSecurityGroupService/DeleteSecurityGroup` | 资源删除，保留引用保护 |
+| `/network.v1.NetworkSecurityGroupService/ListSecurityGroupRules` | 查询，按方向筛选 |
+| `/network.v1.NetworkSecurityGroupService/CreateSecurityGroupRule` | 原键及 expected_version |
+| `/network.v1.NetworkSecurityGroupService/UpdateSecurityGroupRule` | 原键及 expected_version |
+| `/network.v1.NetworkSecurityGroupService/DeleteSecurityGroupRule` | 资源/规则身份幂等删除 |
+| `/network.v1.NetworkSecurityGroupService/ListSecurityGroupBindings` | 查询 |
+| `/network.v1.NetworkSecurityGroupService/GetEIPSecurityGroups` | 查询绑定配置版本 |
+| `/network.v1.NetworkSecurityGroupService/SetEIPSecurityGroups` | 原键及绑定 expected_version |
+| `/network.v1.NetworkSecurityGroupService/GetSecurityGroupOperation` | 查询 |
 | `/network.v1.TenantLoadBalancerService/CreateLoadBalancer` | 原键 |
 | `/network.v1.TenantLoadBalancerService/GetLoadBalancer` | 查询 |
 | `/network.v1.TenantLoadBalancerService/ListLoadBalancers` | 查询 |
@@ -70,6 +83,8 @@ Sandbox 条目定义 Resource RPC 合同和精确接收方 allowlist。Governanc
 | `/instance.v1.InstanceService/DetachPVC` | 当前 mount_path + 显式 restart_if_running；原键 + expected_version |
 | `/instance.v1.InstanceService/ListInstanceMountablePVCs` | 持久实例 placement 的只读候选；删除 guard 活跃时不可选 |
 | `/instance.v1.InstanceService/LookupCommandReplay` | 当前授权后只读原命令 ACK；固定 canonical 数组、无 Kubernetes 解析、无副作用 |
+| `/instance.v1.InstanceService/SetSecurityGroups` | 原键及 expected_version，持久操作 |
+| `/vm.v1.VMService/SetSecurityGroups` | 原键及 expected_version，持久操作 |
 | `/instance.v1.InstanceService/GetInstance` | 查询 |
 | `/instance.v1.InstanceService/ResolveInstanceMetricScope` | 仅持久化范围读取；历史查询不要求当前运行对象 |
 | `/instance.v1.InstanceService/ListInstances` | page/page_size，默认1/20、最大100，items/total；同RR快照Count/List |
@@ -129,3 +144,7 @@ TRAINING供普通训练与微调共享，INFERENCE只声明公共提供方支持
 日志开流前及 HTTP 开流后分别 GET 同名 Pod 确认 UID；完成后才发送 READY，之后 DATA bytes / END / ERROR。流不跟随替换Pod；观察到变化时以 POD_CHANGED 结束。普通 Kubernetes client 保留15秒整体超时，独立日志client取消整体超时但保留15秒开流等待、10分钟连接期限及逐层取消。单帧16KiB、有界256KiB、发送等待10秒，进程/租户/实例100/10/3并发上限，可经受管 Service.LogLimits 调整。最小只读权限见 [诊断RBAC](../../deployments/instance/README.md)。
 
 静态详情/列表独立读取数据库快照，集群故障只影响诊断读取；诊断不 Patch/Update、不签名、不调用占额/usage或清理。runtime/events 的安全字段、null与事件截断语义见 [实例合同](instance-mvp.md)。Kubernetes GET/LIST单元测试及HTTP pods/log适配测试与真实集群/公开SSE验收分开记录。
+
+## 租户安全组
+
+上述安全组方法使用现有受信租户委托，不允许平台或 owner 范围借用。容器和 VM 创建请求中的 `security_group_ids` 与后续独立 SetSecurityGroups 均在 Resource 核对租户、placement 及组状态；绑定更换不修改不可变 CREATE 意图。规则默认值、应用证据和旧引用释放见[安全组合同](security-groups.md)。

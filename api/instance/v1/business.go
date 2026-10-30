@@ -61,6 +61,9 @@ func CanonicalBusinessPayloadVersion(m proto.Message, version uint32) ([]byte, e
 		value["labels"] = nonNilMap(v.Labels)
 		value["annotations"] = nonNilMap(v.Annotations)
 		value["env"] = wireEnv(v.Env)
+		if len(v.SecurityGroupIds) > 0 {
+			value["security_group_ids"] = v.SecurityGroupIds
+		}
 
 	case *CreateSpec:
 		if ContractVersion(v.InstanceContractVersion) != version {
@@ -81,6 +84,9 @@ func CanonicalBusinessPayloadVersion(m proto.Message, version uint32) ([]byte, e
 		value["labels"] = nonNilMap(v.Labels)
 		value["annotations"] = nonNilMap(v.Annotations)
 		value["env"] = wireEnv(v.Env)
+		if len(v.SecurityGroupIds) > 0 {
+			value["security_group_ids"] = v.SecurityGroupIds
+		}
 
 	default:
 		return nil, errors.New("unsupported instance business message")

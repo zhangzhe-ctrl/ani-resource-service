@@ -35,6 +35,7 @@ type Service struct {
 	logTenants, logInstances map[string]int
 	images                   biz.ImageResolver
 	environment              biz.EnvironmentValidator
+	securityGroups           biz.SecurityGroupPort
 	network                  biz.NetworkPort
 	volumes                  biz.VolumeResolver
 	config                   Config
@@ -153,6 +154,15 @@ func (s *Service) ResolveCreateSpec(ctx context.Context, r *pb.ResolveCreateSpec
 	}
 	c := s.config
 	out := &pb.CreateSpec{Name: r.Data.Name, ImageId: r.Data.ImageId, ImageScope: r.Data.ImageScope, PresetId: r.Data.PresetId, InstanceKind: biz.KindContainer, ComputeType: preset.ComputeType, ImageReference: image.Reference, Cpu: fmt.Sprintf("%dm", preset.CPUMillis), Memory: fmt.Sprintf("%dMi", preset.MemoryMiB), ClusterId: c.ClusterID, Namespace: ns, ServiceAccount: c.ServiceAccount, StorageClass: c.StorageClass, WorkspaceSize: c.WorkspaceSize, Shell: c.Shell, Uid: c.UID, Gid: c.GID, Scheduling: scheduling, PresetName: preset.Name, PresetCode: preset.Code, GpuSelection: wireReference(preset.GPU)}
+	out.SecurityGroupIds = append([]string(nil), r.Data.SecurityGroupIds...)
+	if len(out.SecurityGroupIds) > 0 {
+		if s.securityGroups == nil || r.Data.Network == nil {
+			return nil, rpcError(biz.ErrNetworkUnavailable)
+		}
+		if _, err := s.securityGroups.ResolveSecurityGroups(ctx, r.TenantId, r.Data.Network.VpcId, ns, out.SecurityGroupIds); err != nil {
+			return nil, rpcError(err)
+		}
+	}
 	out.InstanceContractVersion = version
 	out.WorkspaceMountPath = "/workspace"
 	if r.Data.WorkspaceMountPath != nil {
@@ -230,7 +240,7 @@ func (s *Service) AcceptCreate(ctx context.Context, r *pb.AcceptCreateRequest) (
 	if image < 1 {
 		return nil, rpcError(biz.ErrInvalid)
 	}
-	spec := biz.Spec{InstanceKind: f.InstanceKind, ComputeType: f.ComputeType, Name: f.Name, ImageID: f.ImageId, ImageScope: f.ImageScope, ImageReference: f.ImageReference, ImageDigest: f.ImageReference[image+1:], PresetID: f.PresetId, PresetName: f.PresetName, PresetCode: f.PresetCode, Scheduling: domainScheduling(f.Scheduling), CPU: f.Cpu, Memory: f.Memory, UID: f.Uid, GID: f.Gid, Shell: f.Shell, ServiceAccount: f.ServiceAccount, StorageClass: f.StorageClass, WorkspaceSize: f.WorkspaceSize, ClusterID: f.ClusterId, Namespace: f.Namespace, NotebookName: "instance-" + c.ResourceId, PVCName: "workspace-" + c.ResourceId}
+	spec := biz.Spec{SecurityGroupIDs: append([]string(nil), f.SecurityGroupIds...), InstanceKind: f.InstanceKind, ComputeType: f.ComputeType, Name: f.Name, ImageID: f.ImageId, ImageScope: f.ImageScope, ImageReference: f.ImageReference, ImageDigest: f.ImageReference[image+1:], PresetID: f.PresetId, PresetName: f.PresetName, PresetCode: f.PresetCode, Scheduling: domainScheduling(f.Scheduling), CPU: f.Cpu, Memory: f.Memory, UID: f.Uid, GID: f.Gid, Shell: f.Shell, ServiceAccount: f.ServiceAccount, StorageClass: f.StorageClass, WorkspaceSize: f.WorkspaceSize, ClusterID: f.ClusterId, Namespace: f.Namespace, NotebookName: "instance-" + c.ResourceId, PVCName: "workspace-" + c.ResourceId}
 	spec.ContractVersion = f.InstanceContractVersion
 	spec.WorkspaceMountPath = f.WorkspaceMountPath
 	spec.Labels = f.Labels
@@ -288,6 +298,10 @@ func wire(i biz.Instance) *pb.Instance {
 	out.AppliedMountVersion = i.AppliedMountVersion
 	if i.ActiveOperation != nil && !biz.TerminalOperation(i.ActiveOperation.State) {
 		out.ActiveOperationId = i.ActiveOperation.ID
+	}
+	out.SecurityGroupIds = append([]string(nil), i.SecurityGroupIDs...)
+	if !i.SecurityGroupsInitialized {
+		out.SecurityGroupIds = append([]string(nil), i.Spec.SecurityGroupIDs...)
 	}
 	out.NetworkState = "not_requested"
 	out.NetworkCleaned = true

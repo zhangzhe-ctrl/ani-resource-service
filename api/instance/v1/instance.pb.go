@@ -129,7 +129,7 @@ func (x InstanceLogFrame_Kind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use InstanceLogFrame_Kind.Descriptor instead.
 func (InstanceLogFrame_Kind) EnumDescriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{37, 0}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{38, 0}
 }
 
 type SchedulingOptions struct {
@@ -197,6 +197,7 @@ type CreateInstanceData struct {
 	Labels             map[string]string      `protobuf:"bytes,10,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Annotations        map[string]string      `protobuf:"bytes,11,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Env                []*InstanceEnvVar      `protobuf:"bytes,12,rep,name=env,proto3" json:"env,omitempty"`
+	SecurityGroupIds   []string               `protobuf:"bytes,13,rep,name=security_group_ids,proto3" json:"security_group_ids,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -304,6 +305,13 @@ func (x *CreateInstanceData) GetAnnotations() map[string]string {
 func (x *CreateInstanceData) GetEnv() []*InstanceEnvVar {
 	if x != nil {
 		return x.Env
+	}
+	return nil
+}
+
+func (x *CreateInstanceData) GetSecurityGroupIds() []string {
+	if x != nil {
+		return x.SecurityGroupIds
 	}
 	return nil
 }
@@ -789,6 +797,7 @@ type InstanceConfiguration struct {
 	Version                 int64                  `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
 	AppliedMountVersion     int64                  `protobuf:"varint,10,opt,name=applied_mount_version,proto3" json:"applied_mount_version,omitempty"`
 	PendingChange           *PendingMountChange    `protobuf:"bytes,11,opt,name=pending_change,proto3" json:"pending_change,omitempty"`
+	SecurityGroupIds        []string               `protobuf:"bytes,12,rep,name=security_group_ids,proto3" json:"security_group_ids,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -896,6 +905,13 @@ func (x *InstanceConfiguration) GetAppliedMountVersion() int64 {
 func (x *InstanceConfiguration) GetPendingChange() *PendingMountChange {
 	if x != nil {
 		return x.PendingChange
+	}
+	return nil
+}
+
+func (x *InstanceConfiguration) GetSecurityGroupIds() []string {
+	if x != nil {
+		return x.SecurityGroupIds
 	}
 	return nil
 }
@@ -1227,6 +1243,7 @@ type CreateSpec struct {
 	Labels                  map[string]string    `protobuf:"bytes,28,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Annotations             map[string]string    `protobuf:"bytes,29,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Env                     []*InstanceEnvVar    `protobuf:"bytes,30,rep,name=env,proto3" json:"env,omitempty"`
+	SecurityGroupIds        []string             `protobuf:"bytes,31,rep,name=security_group_ids,proto3" json:"security_group_ids,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -1467,6 +1484,13 @@ func (x *CreateSpec) GetAnnotations() map[string]string {
 func (x *CreateSpec) GetEnv() []*InstanceEnvVar {
 	if x != nil {
 		return x.Env
+	}
+	return nil
+}
+
+func (x *CreateSpec) GetSecurityGroupIds() []string {
+	if x != nil {
+		return x.SecurityGroupIds
 	}
 	return nil
 }
@@ -1735,6 +1759,82 @@ func (x *ChangeInstanceRequest) GetExpectedVersion() int64 {
 	return 0
 }
 
+type SetSecurityGroupsRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	TenantId         string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	InstanceId       string                 `protobuf:"bytes,2,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	ExpectedVersion  int64                  `protobuf:"varint,3,opt,name=expected_version,json=expectedVersion,proto3" json:"expected_version,omitempty"`
+	IdempotencyKey   string                 `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	SecurityGroupIds []string               `protobuf:"bytes,5,rep,name=security_group_ids,proto3" json:"security_group_ids,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SetSecurityGroupsRequest) Reset() {
+	*x = SetSecurityGroupsRequest{}
+	mi := &file_instance_v1_instance_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetSecurityGroupsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetSecurityGroupsRequest) ProtoMessage() {}
+
+func (x *SetSecurityGroupsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_instance_v1_instance_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetSecurityGroupsRequest.ProtoReflect.Descriptor instead.
+func (*SetSecurityGroupsRequest) Descriptor() ([]byte, []int) {
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *SetSecurityGroupsRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *SetSecurityGroupsRequest) GetInstanceId() string {
+	if x != nil {
+		return x.InstanceId
+	}
+	return ""
+}
+
+func (x *SetSecurityGroupsRequest) GetExpectedVersion() int64 {
+	if x != nil {
+		return x.ExpectedVersion
+	}
+	return 0
+}
+
+func (x *SetSecurityGroupsRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+func (x *SetSecurityGroupsRequest) GetSecurityGroupIds() []string {
+	if x != nil {
+		return x.SecurityGroupIds
+	}
+	return nil
+}
+
 type AttachPVCRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	TenantId         string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
@@ -1751,7 +1851,7 @@ type AttachPVCRequest struct {
 
 func (x *AttachPVCRequest) Reset() {
 	*x = AttachPVCRequest{}
-	mi := &file_instance_v1_instance_proto_msgTypes[18]
+	mi := &file_instance_v1_instance_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1763,7 +1863,7 @@ func (x *AttachPVCRequest) String() string {
 func (*AttachPVCRequest) ProtoMessage() {}
 
 func (x *AttachPVCRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[18]
+	mi := &file_instance_v1_instance_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1776,7 +1876,7 @@ func (x *AttachPVCRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AttachPVCRequest.ProtoReflect.Descriptor instead.
 func (*AttachPVCRequest) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{18}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *AttachPVCRequest) GetTenantId() string {
@@ -1849,7 +1949,7 @@ type DetachPVCRequest struct {
 
 func (x *DetachPVCRequest) Reset() {
 	*x = DetachPVCRequest{}
-	mi := &file_instance_v1_instance_proto_msgTypes[19]
+	mi := &file_instance_v1_instance_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1861,7 +1961,7 @@ func (x *DetachPVCRequest) String() string {
 func (*DetachPVCRequest) ProtoMessage() {}
 
 func (x *DetachPVCRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[19]
+	mi := &file_instance_v1_instance_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1874,7 +1974,7 @@ func (x *DetachPVCRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DetachPVCRequest.ProtoReflect.Descriptor instead.
 func (*DetachPVCRequest) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{19}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *DetachPVCRequest) GetTenantId() string {
@@ -1932,7 +2032,7 @@ type ListInstanceMountablePVCsRequest struct {
 
 func (x *ListInstanceMountablePVCsRequest) Reset() {
 	*x = ListInstanceMountablePVCsRequest{}
-	mi := &file_instance_v1_instance_proto_msgTypes[20]
+	mi := &file_instance_v1_instance_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1944,7 +2044,7 @@ func (x *ListInstanceMountablePVCsRequest) String() string {
 func (*ListInstanceMountablePVCsRequest) ProtoMessage() {}
 
 func (x *ListInstanceMountablePVCsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[20]
+	mi := &file_instance_v1_instance_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1957,7 +2057,7 @@ func (x *ListInstanceMountablePVCsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListInstanceMountablePVCsRequest.ProtoReflect.Descriptor instead.
 func (*ListInstanceMountablePVCsRequest) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{20}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ListInstanceMountablePVCsRequest) GetTenantId() string {
@@ -2008,7 +2108,7 @@ type LookupCommandReplayRequest struct {
 
 func (x *LookupCommandReplayRequest) Reset() {
 	*x = LookupCommandReplayRequest{}
-	mi := &file_instance_v1_instance_proto_msgTypes[21]
+	mi := &file_instance_v1_instance_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2020,7 +2120,7 @@ func (x *LookupCommandReplayRequest) String() string {
 func (*LookupCommandReplayRequest) ProtoMessage() {}
 
 func (x *LookupCommandReplayRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[21]
+	mi := &file_instance_v1_instance_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2033,7 +2133,7 @@ func (x *LookupCommandReplayRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LookupCommandReplayRequest.ProtoReflect.Descriptor instead.
 func (*LookupCommandReplayRequest) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{21}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *LookupCommandReplayRequest) GetTenantId() string {
@@ -2080,7 +2180,7 @@ type MountConfiguration struct {
 
 func (x *MountConfiguration) Reset() {
 	*x = MountConfiguration{}
-	mi := &file_instance_v1_instance_proto_msgTypes[22]
+	mi := &file_instance_v1_instance_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2092,7 +2192,7 @@ func (x *MountConfiguration) String() string {
 func (*MountConfiguration) ProtoMessage() {}
 
 func (x *MountConfiguration) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[22]
+	mi := &file_instance_v1_instance_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2105,7 +2205,7 @@ func (x *MountConfiguration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MountConfiguration.ProtoReflect.Descriptor instead.
 func (*MountConfiguration) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{22}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *MountConfiguration) GetVolumeMounts() []*VolumeMount {
@@ -2127,7 +2227,7 @@ type PendingMountChange struct {
 
 func (x *PendingMountChange) Reset() {
 	*x = PendingMountChange{}
-	mi := &file_instance_v1_instance_proto_msgTypes[23]
+	mi := &file_instance_v1_instance_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2139,7 +2239,7 @@ func (x *PendingMountChange) String() string {
 func (*PendingMountChange) ProtoMessage() {}
 
 func (x *PendingMountChange) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[23]
+	mi := &file_instance_v1_instance_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2152,7 +2252,7 @@ func (x *PendingMountChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PendingMountChange.ProtoReflect.Descriptor instead.
 func (*PendingMountChange) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{23}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *PendingMountChange) GetOperationId() string {
@@ -2193,7 +2293,7 @@ type OperationResponse struct {
 
 func (x *OperationResponse) Reset() {
 	*x = OperationResponse{}
-	mi := &file_instance_v1_instance_proto_msgTypes[24]
+	mi := &file_instance_v1_instance_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2205,7 +2305,7 @@ func (x *OperationResponse) String() string {
 func (*OperationResponse) ProtoMessage() {}
 
 func (x *OperationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[24]
+	mi := &file_instance_v1_instance_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2218,7 +2318,7 @@ func (x *OperationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperationResponse.ProtoReflect.Descriptor instead.
 func (*OperationResponse) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{24}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *OperationResponse) GetDurableOwnerAck() *v11.DurableOwnerAck {
@@ -2245,7 +2345,7 @@ type GetInstanceRequest struct {
 
 func (x *GetInstanceRequest) Reset() {
 	*x = GetInstanceRequest{}
-	mi := &file_instance_v1_instance_proto_msgTypes[25]
+	mi := &file_instance_v1_instance_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2257,7 +2357,7 @@ func (x *GetInstanceRequest) String() string {
 func (*GetInstanceRequest) ProtoMessage() {}
 
 func (x *GetInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[25]
+	mi := &file_instance_v1_instance_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2270,7 +2370,7 @@ func (x *GetInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetInstanceRequest.ProtoReflect.Descriptor instead.
 func (*GetInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{25}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *GetInstanceRequest) GetTenantId() string {
@@ -2302,7 +2402,7 @@ type ListInstancesRequest struct {
 
 func (x *ListInstancesRequest) Reset() {
 	*x = ListInstancesRequest{}
-	mi := &file_instance_v1_instance_proto_msgTypes[26]
+	mi := &file_instance_v1_instance_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2314,7 +2414,7 @@ func (x *ListInstancesRequest) String() string {
 func (*ListInstancesRequest) ProtoMessage() {}
 
 func (x *ListInstancesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[26]
+	mi := &file_instance_v1_instance_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2327,7 +2427,7 @@ func (x *ListInstancesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListInstancesRequest.ProtoReflect.Descriptor instead.
 func (*ListInstancesRequest) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{26}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ListInstancesRequest) GetTenantId() string {
@@ -2389,7 +2489,7 @@ type ListInstancesResponse struct {
 
 func (x *ListInstancesResponse) Reset() {
 	*x = ListInstancesResponse{}
-	mi := &file_instance_v1_instance_proto_msgTypes[27]
+	mi := &file_instance_v1_instance_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2401,7 +2501,7 @@ func (x *ListInstancesResponse) String() string {
 func (*ListInstancesResponse) ProtoMessage() {}
 
 func (x *ListInstancesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[27]
+	mi := &file_instance_v1_instance_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2414,7 +2514,7 @@ func (x *ListInstancesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListInstancesResponse.ProtoReflect.Descriptor instead.
 func (*ListInstancesResponse) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{27}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *ListInstancesResponse) GetItems() []*Instance {
@@ -2464,13 +2564,14 @@ type Instance struct {
 	ActiveOperationId        string                 `protobuf:"bytes,31,opt,name=active_operation_id,json=activeOperationId,proto3" json:"active_operation_id,omitempty"`
 	ExecutionRunState        string                 `protobuf:"bytes,32,opt,name=execution_run_state,json=executionRunState,proto3" json:"execution_run_state,omitempty"`
 	AppliedMountVersion      int64                  `protobuf:"varint,33,opt,name=applied_mount_version,json=appliedMountVersion,proto3" json:"applied_mount_version,omitempty"`
+	SecurityGroupIds         []string               `protobuf:"bytes,34,rep,name=security_group_ids,proto3" json:"security_group_ids,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
 
 func (x *Instance) Reset() {
 	*x = Instance{}
-	mi := &file_instance_v1_instance_proto_msgTypes[28]
+	mi := &file_instance_v1_instance_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2482,7 +2583,7 @@ func (x *Instance) String() string {
 func (*Instance) ProtoMessage() {}
 
 func (x *Instance) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[28]
+	mi := &file_instance_v1_instance_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2495,7 +2596,7 @@ func (x *Instance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Instance.ProtoReflect.Descriptor instead.
 func (*Instance) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{28}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *Instance) GetId() string {
@@ -2715,6 +2816,13 @@ func (x *Instance) GetAppliedMountVersion() int64 {
 	return 0
 }
 
+func (x *Instance) GetSecurityGroupIds() []string {
+	if x != nil {
+		return x.SecurityGroupIds
+	}
+	return nil
+}
+
 type EnvironmentSource struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -2725,7 +2833,7 @@ type EnvironmentSource struct {
 
 func (x *EnvironmentSource) Reset() {
 	*x = EnvironmentSource{}
-	mi := &file_instance_v1_instance_proto_msgTypes[29]
+	mi := &file_instance_v1_instance_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2737,7 +2845,7 @@ func (x *EnvironmentSource) String() string {
 func (*EnvironmentSource) ProtoMessage() {}
 
 func (x *EnvironmentSource) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[29]
+	mi := &file_instance_v1_instance_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2750,7 +2858,7 @@ func (x *EnvironmentSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnvironmentSource.ProtoReflect.Descriptor instead.
 func (*EnvironmentSource) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{29}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *EnvironmentSource) GetName() string {
@@ -2779,7 +2887,7 @@ type RuntimeMount struct {
 
 func (x *RuntimeMount) Reset() {
 	*x = RuntimeMount{}
-	mi := &file_instance_v1_instance_proto_msgTypes[30]
+	mi := &file_instance_v1_instance_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2791,7 +2899,7 @@ func (x *RuntimeMount) String() string {
 func (*RuntimeMount) ProtoMessage() {}
 
 func (x *RuntimeMount) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[30]
+	mi := &file_instance_v1_instance_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2804,7 +2912,7 @@ func (x *RuntimeMount) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RuntimeMount.ProtoReflect.Descriptor instead.
 func (*RuntimeMount) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{30}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *RuntimeMount) GetName() string {
@@ -2853,7 +2961,7 @@ type RuntimePod struct {
 
 func (x *RuntimePod) Reset() {
 	*x = RuntimePod{}
-	mi := &file_instance_v1_instance_proto_msgTypes[31]
+	mi := &file_instance_v1_instance_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2865,7 +2973,7 @@ func (x *RuntimePod) String() string {
 func (*RuntimePod) ProtoMessage() {}
 
 func (x *RuntimePod) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[31]
+	mi := &file_instance_v1_instance_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2878,7 +2986,7 @@ func (x *RuntimePod) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RuntimePod.ProtoReflect.Descriptor instead.
 func (*RuntimePod) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{31}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *RuntimePod) GetName() string {
@@ -2961,7 +3069,7 @@ type RuntimeStatefulSet struct {
 
 func (x *RuntimeStatefulSet) Reset() {
 	*x = RuntimeStatefulSet{}
-	mi := &file_instance_v1_instance_proto_msgTypes[32]
+	mi := &file_instance_v1_instance_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2973,7 +3081,7 @@ func (x *RuntimeStatefulSet) String() string {
 func (*RuntimeStatefulSet) ProtoMessage() {}
 
 func (x *RuntimeStatefulSet) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[32]
+	mi := &file_instance_v1_instance_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2986,7 +3094,7 @@ func (x *RuntimeStatefulSet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RuntimeStatefulSet.ProtoReflect.Descriptor instead.
 func (*RuntimeStatefulSet) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{32}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *RuntimeStatefulSet) GetDesiredReplicas() int32 {
@@ -3016,7 +3124,7 @@ type InstanceRuntime struct {
 
 func (x *InstanceRuntime) Reset() {
 	*x = InstanceRuntime{}
-	mi := &file_instance_v1_instance_proto_msgTypes[33]
+	mi := &file_instance_v1_instance_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3028,7 +3136,7 @@ func (x *InstanceRuntime) String() string {
 func (*InstanceRuntime) ProtoMessage() {}
 
 func (x *InstanceRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[33]
+	mi := &file_instance_v1_instance_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3041,7 +3149,7 @@ func (x *InstanceRuntime) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstanceRuntime.ProtoReflect.Descriptor instead.
 func (*InstanceRuntime) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{33}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *InstanceRuntime) GetInstanceId() string {
@@ -3092,7 +3200,7 @@ type InstanceEvent struct {
 
 func (x *InstanceEvent) Reset() {
 	*x = InstanceEvent{}
-	mi := &file_instance_v1_instance_proto_msgTypes[34]
+	mi := &file_instance_v1_instance_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3104,7 +3212,7 @@ func (x *InstanceEvent) String() string {
 func (*InstanceEvent) ProtoMessage() {}
 
 func (x *InstanceEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[34]
+	mi := &file_instance_v1_instance_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3117,7 +3225,7 @@ func (x *InstanceEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstanceEvent.ProtoReflect.Descriptor instead.
 func (*InstanceEvent) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{34}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *InstanceEvent) GetType() string {
@@ -3167,7 +3275,7 @@ type InstanceEvents struct {
 
 func (x *InstanceEvents) Reset() {
 	*x = InstanceEvents{}
-	mi := &file_instance_v1_instance_proto_msgTypes[35]
+	mi := &file_instance_v1_instance_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3179,7 +3287,7 @@ func (x *InstanceEvents) String() string {
 func (*InstanceEvents) ProtoMessage() {}
 
 func (x *InstanceEvents) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[35]
+	mi := &file_instance_v1_instance_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3192,7 +3300,7 @@ func (x *InstanceEvents) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstanceEvents.ProtoReflect.Descriptor instead.
 func (*InstanceEvents) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{35}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *InstanceEvents) GetPodUid() string {
@@ -3235,7 +3343,7 @@ type StreamInstanceLogsRequest struct {
 
 func (x *StreamInstanceLogsRequest) Reset() {
 	*x = StreamInstanceLogsRequest{}
-	mi := &file_instance_v1_instance_proto_msgTypes[36]
+	mi := &file_instance_v1_instance_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3247,7 +3355,7 @@ func (x *StreamInstanceLogsRequest) String() string {
 func (*StreamInstanceLogsRequest) ProtoMessage() {}
 
 func (x *StreamInstanceLogsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[36]
+	mi := &file_instance_v1_instance_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3260,7 +3368,7 @@ func (x *StreamInstanceLogsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamInstanceLogsRequest.ProtoReflect.Descriptor instead.
 func (*StreamInstanceLogsRequest) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{36}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *StreamInstanceLogsRequest) GetTenantId() string {
@@ -3302,7 +3410,7 @@ type InstanceLogFrame struct {
 
 func (x *InstanceLogFrame) Reset() {
 	*x = InstanceLogFrame{}
-	mi := &file_instance_v1_instance_proto_msgTypes[37]
+	mi := &file_instance_v1_instance_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3314,7 +3422,7 @@ func (x *InstanceLogFrame) String() string {
 func (*InstanceLogFrame) ProtoMessage() {}
 
 func (x *InstanceLogFrame) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[37]
+	mi := &file_instance_v1_instance_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3327,7 +3435,7 @@ func (x *InstanceLogFrame) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstanceLogFrame.ProtoReflect.Descriptor instead.
 func (*InstanceLogFrame) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{37}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *InstanceLogFrame) GetKind() InstanceLogFrame_Kind {
@@ -3361,7 +3469,7 @@ type GetOperationRequest struct {
 
 func (x *GetOperationRequest) Reset() {
 	*x = GetOperationRequest{}
-	mi := &file_instance_v1_instance_proto_msgTypes[38]
+	mi := &file_instance_v1_instance_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3373,7 +3481,7 @@ func (x *GetOperationRequest) String() string {
 func (*GetOperationRequest) ProtoMessage() {}
 
 func (x *GetOperationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[38]
+	mi := &file_instance_v1_instance_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3386,7 +3494,7 @@ func (x *GetOperationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOperationRequest.ProtoReflect.Descriptor instead.
 func (*GetOperationRequest) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{38}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *GetOperationRequest) GetTenantId() string {
@@ -3423,7 +3531,7 @@ type Operation struct {
 
 func (x *Operation) Reset() {
 	*x = Operation{}
-	mi := &file_instance_v1_instance_proto_msgTypes[39]
+	mi := &file_instance_v1_instance_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3435,7 +3543,7 @@ func (x *Operation) String() string {
 func (*Operation) ProtoMessage() {}
 
 func (x *Operation) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[39]
+	mi := &file_instance_v1_instance_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3448,7 +3556,7 @@ func (x *Operation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Operation.ProtoReflect.Descriptor instead.
 func (*Operation) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{39}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *Operation) GetId() string {
@@ -3546,7 +3654,7 @@ type ResolveTerminalTargetRequest struct {
 
 func (x *ResolveTerminalTargetRequest) Reset() {
 	*x = ResolveTerminalTargetRequest{}
-	mi := &file_instance_v1_instance_proto_msgTypes[40]
+	mi := &file_instance_v1_instance_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3558,7 +3666,7 @@ func (x *ResolveTerminalTargetRequest) String() string {
 func (*ResolveTerminalTargetRequest) ProtoMessage() {}
 
 func (x *ResolveTerminalTargetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[40]
+	mi := &file_instance_v1_instance_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3571,7 +3679,7 @@ func (x *ResolveTerminalTargetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveTerminalTargetRequest.ProtoReflect.Descriptor instead.
 func (*ResolveTerminalTargetRequest) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{40}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *ResolveTerminalTargetRequest) GetTenantId() string {
@@ -3609,7 +3717,7 @@ type InstanceMetricScope struct {
 
 func (x *InstanceMetricScope) Reset() {
 	*x = InstanceMetricScope{}
-	mi := &file_instance_v1_instance_proto_msgTypes[41]
+	mi := &file_instance_v1_instance_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3621,7 +3729,7 @@ func (x *InstanceMetricScope) String() string {
 func (*InstanceMetricScope) ProtoMessage() {}
 
 func (x *InstanceMetricScope) ProtoReflect() protoreflect.Message {
-	mi := &file_instance_v1_instance_proto_msgTypes[41]
+	mi := &file_instance_v1_instance_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3634,7 +3742,7 @@ func (x *InstanceMetricScope) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstanceMetricScope.ProtoReflect.Descriptor instead.
 func (*InstanceMetricScope) Descriptor() ([]byte, []int) {
-	return file_instance_v1_instance_proto_rawDescGZIP(), []int{41}
+	return file_instance_v1_instance_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *InstanceMetricScope) GetTenantId() string {
@@ -3686,7 +3794,7 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\x12COLOCATE_PREFERRED\x10\x02\x12\x14\n" +
 	"\x10SPREAD_PREFERRED\x10\x03B\x10\n" +
 	"\x0e_pod_placementB\x16\n" +
-	"\x14_priority_class_name\"\xe5\x05\n" +
+	"\x14_priority_class_name\"\x95\x06\n" +
 	"\x12CreateInstanceData\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x19\n" +
 	"\bimage_id\x18\x02 \x01(\tR\aimageId\x12\x1f\n" +
@@ -3702,7 +3810,8 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\x06labels\x18\n" +
 	" \x03(\v2+.instance.v1.CreateInstanceData.LabelsEntryR\x06labels\x12R\n" +
 	"\vannotations\x18\v \x03(\v20.instance.v1.CreateInstanceData.AnnotationsEntryR\vannotations\x12-\n" +
-	"\x03env\x18\f \x03(\v2\x1b.instance.v1.InstanceEnvVarR\x03env\x1a9\n" +
+	"\x03env\x18\f \x03(\v2\x1b.instance.v1.InstanceEnvVarR\x03env\x12.\n" +
+	"\x12security_group_ids\x18\r \x03(\tR\x12security_group_ids\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a>\n" +
@@ -3751,7 +3860,7 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\x12unavailable_reason\x18\a \x01(\tR\x12unavailable_reason\"b\n" +
 	"\x19ListMountablePVCsResponse\x12/\n" +
 	"\x05items\x18\x01 \x03(\v2\x19.instance.v1.MountablePVCR\x05items\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x03R\x05total\"\x86\x06\n" +
+	"\x05total\x18\x02 \x01(\x03R\x05total\"\xb6\x06\n" +
 	"\x15InstanceConfiguration\x12 \n" +
 	"\vinstance_id\x18\x01 \x01(\tR\vinstance_id\x12<\n" +
 	"\x19instance_contract_version\x18\x02 \x01(\rR\x19instance_contract_version\x122\n" +
@@ -3764,7 +3873,8 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\aversion\x18\t \x01(\x03R\aversion\x124\n" +
 	"\x15applied_mount_version\x18\n" +
 	" \x01(\x03R\x15applied_mount_version\x12G\n" +
-	"\x0epending_change\x18\v \x01(\v2\x1f.instance.v1.PendingMountChangeR\x0epending_change\x1a9\n" +
+	"\x0epending_change\x18\v \x01(\v2\x1f.instance.v1.PendingMountChangeR\x0epending_change\x12.\n" +
+	"\x12security_group_ids\x18\f \x03(\tR\x12security_group_ids\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a>\n" +
@@ -3806,8 +3916,7 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\x04data\x18\x02 \x01(\v2\x1f.instance.v1.CreateInstanceDataR\x04data\x12\x1c\n" +
 	"\tnamespace\x18\x03 \x01(\tR\tnamespace\x12O\n" +
 	"\x13scheduling_defaults\x18\x04 \x01(\v2\x1e.instance.v1.SchedulingOptionsR\x12schedulingDefaults\x12<\n" +
-	"\x19instance_contract_version\x18\x05 \x01(\rR\x19instance_contract_version\"\xfb\n" +
-	"\n" +
+	"\x19instance_contract_version\x18\x05 \x01(\rR\x19instance_contract_version\"\xab\v\n" +
 	"\n" +
 	"CreateSpec\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
@@ -3844,7 +3953,8 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\anetwork\x18\x1b \x01(\v2\x1d.instance.v1.NetworkSelectionR\anetwork\x12;\n" +
 	"\x06labels\x18\x1c \x03(\v2#.instance.v1.CreateSpec.LabelsEntryR\x06labels\x12J\n" +
 	"\vannotations\x18\x1d \x03(\v2(.instance.v1.CreateSpec.AnnotationsEntryR\vannotations\x12-\n" +
-	"\x03env\x18\x1e \x03(\v2\x1b.instance.v1.InstanceEnvVarR\x03env\x1a9\n" +
+	"\x03env\x18\x1e \x03(\v2\x1b.instance.v1.InstanceEnvVarR\x03env\x12.\n" +
+	"\x12security_group_ids\x18\x1f \x03(\tR\x12security_group_ids\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a>\n" +
@@ -3871,7 +3981,14 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
 	"instanceId\x12'\n" +
 	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\x12)\n" +
-	"\x10expected_version\x18\x04 \x01(\x03R\x0fexpectedVersion\"\xa9\x02\n" +
+	"\x10expected_version\x18\x04 \x01(\x03R\x0fexpectedVersion\"\xdc\x01\n" +
+	"\x18SetSecurityGroupsRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1f\n" +
+	"\vinstance_id\x18\x02 \x01(\tR\n" +
+	"instanceId\x12)\n" +
+	"\x10expected_version\x18\x03 \x01(\x03R\x0fexpectedVersion\x12'\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\x12.\n" +
+	"\x12security_group_ids\x18\x05 \x03(\tR\x12security_group_ids\"\xa9\x02\n" +
 	"\x10AttachPVCRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
@@ -3930,7 +4047,8 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\x04name\x18\t \x01(\tR\x04nameJ\x04\b\x02\x10\x03J\x04\b\x03\x10\x04R\bafter_id\"o\n" +
 	"\x15ListInstancesResponse\x12+\n" +
 	"\x05items\x18\x01 \x03(\v2\x15.instance.v1.InstanceR\x05items\x12\x14\n" +
-	"\x05total\x18\x03 \x01(\x03R\x05totalJ\x04\b\x02\x10\x03R\rnext_after_id\"\xe7\t\n" +
+	"\x05total\x18\x03 \x01(\x03R\x05totalJ\x04\b\x02\x10\x03R\rnext_after_id\"\x97\n" +
+	"\n" +
 	"\bInstance\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -3965,7 +4083,8 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\x1avolume_references_released\x18\x1e \x01(\bR\x18volumeReferencesReleased\x12.\n" +
 	"\x13active_operation_id\x18\x1f \x01(\tR\x11activeOperationId\x12.\n" +
 	"\x13execution_run_state\x18  \x01(\tR\x11executionRunState\x122\n" +
-	"\x15applied_mount_version\x18! \x01(\x03R\x13appliedMountVersionJ\x04\b\n" +
+	"\x15applied_mount_version\x18! \x01(\x03R\x13appliedMountVersion\x12.\n" +
+	"\x12security_group_ids\x18\" \x03(\tR\x12security_group_idsJ\x04\b\n" +
 	"\x10\vJ\x04\b\x10\x10\x11R\x0epreset_versionR\rinstance_type\"H\n" +
 	"\x11EnvironmentSource\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
@@ -4066,7 +4185,7 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\n" +
 	"cluster_id\x18\x03 \x01(\tR\tclusterId\x12\x1c\n" +
 	"\tnamespace\x18\x04 \x01(\tR\tnamespace\x12%\n" +
-	"\x0econtainer_name\x18\x05 \x01(\tR\rcontainerName2\xdf\r\n" +
+	"\x0econtainer_name\x18\x05 \x01(\tR\rcontainerName2\xbb\x0e\n" +
 	"\x0fInstanceService\x12S\n" +
 	"\x12GetInstanceRuntime\x12\x1f.instance.v1.GetInstanceRequest\x1a\x1c.instance.v1.InstanceRuntime\x12R\n" +
 	"\x12ListInstanceEvents\x12\x1f.instance.v1.GetInstanceRequest\x1a\x1b.instance.v1.InstanceEvents\x12]\n" +
@@ -4078,7 +4197,8 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\fAcceptDelete\x12 .instance.v1.AcceptDeleteRequest\x1a\x1e.instance.v1.OperationResponse\x12K\n" +
 	"\x05Start\x12\".instance.v1.ChangeInstanceRequest\x1a\x1e.instance.v1.OperationResponse\x12J\n" +
 	"\x04Stop\x12\".instance.v1.ChangeInstanceRequest\x1a\x1e.instance.v1.OperationResponse\x12M\n" +
-	"\aRestart\x12\".instance.v1.ChangeInstanceRequest\x1a\x1e.instance.v1.OperationResponse\x12J\n" +
+	"\aRestart\x12\".instance.v1.ChangeInstanceRequest\x1a\x1e.instance.v1.OperationResponse\x12Z\n" +
+	"\x11SetSecurityGroups\x12%.instance.v1.SetSecurityGroupsRequest\x1a\x1e.instance.v1.OperationResponse\x12J\n" +
 	"\tAttachPVC\x12\x1d.instance.v1.AttachPVCRequest\x1a\x1e.instance.v1.OperationResponse\x12J\n" +
 	"\tDetachPVC\x12\x1d.instance.v1.DetachPVCRequest\x1a\x1e.instance.v1.OperationResponse\x12r\n" +
 	"\x19ListInstanceMountablePVCs\x12-.instance.v1.ListInstanceMountablePVCsRequest\x1a&.instance.v1.ListMountablePVCsResponse\x12^\n" +
@@ -4102,7 +4222,7 @@ func file_instance_v1_instance_proto_rawDescGZIP() []byte {
 }
 
 var file_instance_v1_instance_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_instance_v1_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 48)
+var file_instance_v1_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 49)
 var file_instance_v1_instance_proto_goTypes = []any{
 	(SchedulingOptions_PodPlacement)(0),      // 0: instance.v1.SchedulingOptions.PodPlacement
 	(InstanceLogFrame_Kind)(0),               // 1: instance.v1.InstanceLogFrame.Kind
@@ -4124,133 +4244,136 @@ var file_instance_v1_instance_proto_goTypes = []any{
 	(*AcceptCreateRequest)(nil),              // 17: instance.v1.AcceptCreateRequest
 	(*AcceptDeleteRequest)(nil),              // 18: instance.v1.AcceptDeleteRequest
 	(*ChangeInstanceRequest)(nil),            // 19: instance.v1.ChangeInstanceRequest
-	(*AttachPVCRequest)(nil),                 // 20: instance.v1.AttachPVCRequest
-	(*DetachPVCRequest)(nil),                 // 21: instance.v1.DetachPVCRequest
-	(*ListInstanceMountablePVCsRequest)(nil), // 22: instance.v1.ListInstanceMountablePVCsRequest
-	(*LookupCommandReplayRequest)(nil),       // 23: instance.v1.LookupCommandReplayRequest
-	(*MountConfiguration)(nil),               // 24: instance.v1.MountConfiguration
-	(*PendingMountChange)(nil),               // 25: instance.v1.PendingMountChange
-	(*OperationResponse)(nil),                // 26: instance.v1.OperationResponse
-	(*GetInstanceRequest)(nil),               // 27: instance.v1.GetInstanceRequest
-	(*ListInstancesRequest)(nil),             // 28: instance.v1.ListInstancesRequest
-	(*ListInstancesResponse)(nil),            // 29: instance.v1.ListInstancesResponse
-	(*Instance)(nil),                         // 30: instance.v1.Instance
-	(*EnvironmentSource)(nil),                // 31: instance.v1.EnvironmentSource
-	(*RuntimeMount)(nil),                     // 32: instance.v1.RuntimeMount
-	(*RuntimePod)(nil),                       // 33: instance.v1.RuntimePod
-	(*RuntimeStatefulSet)(nil),               // 34: instance.v1.RuntimeStatefulSet
-	(*InstanceRuntime)(nil),                  // 35: instance.v1.InstanceRuntime
-	(*InstanceEvent)(nil),                    // 36: instance.v1.InstanceEvent
-	(*InstanceEvents)(nil),                   // 37: instance.v1.InstanceEvents
-	(*StreamInstanceLogsRequest)(nil),        // 38: instance.v1.StreamInstanceLogsRequest
-	(*InstanceLogFrame)(nil),                 // 39: instance.v1.InstanceLogFrame
-	(*GetOperationRequest)(nil),              // 40: instance.v1.GetOperationRequest
-	(*Operation)(nil),                        // 41: instance.v1.Operation
-	(*ResolveTerminalTargetRequest)(nil),     // 42: instance.v1.ResolveTerminalTargetRequest
-	(*InstanceMetricScope)(nil),              // 43: instance.v1.InstanceMetricScope
-	nil,                                      // 44: instance.v1.CreateInstanceData.LabelsEntry
-	nil,                                      // 45: instance.v1.CreateInstanceData.AnnotationsEntry
-	nil,                                      // 46: instance.v1.InstanceConfiguration.LabelsEntry
-	nil,                                      // 47: instance.v1.InstanceConfiguration.AnnotationsEntry
-	nil,                                      // 48: instance.v1.CreateSpec.LabelsEntry
-	nil,                                      // 49: instance.v1.CreateSpec.AnnotationsEntry
-	(v1.SupplyMode)(0),                       // 50: accelerator.v1.SupplyMode
-	(*v1.GpuExecution)(nil),                  // 51: accelerator.v1.GpuExecution
-	(*v1.GpuDisplay)(nil),                    // 52: accelerator.v1.GpuDisplay
-	(*v11.DurableOwnerAck)(nil),              // 53: accelerator.command.v1.DurableOwnerAck
-	(*timestamppb.Timestamp)(nil),            // 54: google.protobuf.Timestamp
-	(*v12.TerminalTarget)(nil),               // 55: instance.terminal.v1.TerminalTarget
+	(*SetSecurityGroupsRequest)(nil),         // 20: instance.v1.SetSecurityGroupsRequest
+	(*AttachPVCRequest)(nil),                 // 21: instance.v1.AttachPVCRequest
+	(*DetachPVCRequest)(nil),                 // 22: instance.v1.DetachPVCRequest
+	(*ListInstanceMountablePVCsRequest)(nil), // 23: instance.v1.ListInstanceMountablePVCsRequest
+	(*LookupCommandReplayRequest)(nil),       // 24: instance.v1.LookupCommandReplayRequest
+	(*MountConfiguration)(nil),               // 25: instance.v1.MountConfiguration
+	(*PendingMountChange)(nil),               // 26: instance.v1.PendingMountChange
+	(*OperationResponse)(nil),                // 27: instance.v1.OperationResponse
+	(*GetInstanceRequest)(nil),               // 28: instance.v1.GetInstanceRequest
+	(*ListInstancesRequest)(nil),             // 29: instance.v1.ListInstancesRequest
+	(*ListInstancesResponse)(nil),            // 30: instance.v1.ListInstancesResponse
+	(*Instance)(nil),                         // 31: instance.v1.Instance
+	(*EnvironmentSource)(nil),                // 32: instance.v1.EnvironmentSource
+	(*RuntimeMount)(nil),                     // 33: instance.v1.RuntimeMount
+	(*RuntimePod)(nil),                       // 34: instance.v1.RuntimePod
+	(*RuntimeStatefulSet)(nil),               // 35: instance.v1.RuntimeStatefulSet
+	(*InstanceRuntime)(nil),                  // 36: instance.v1.InstanceRuntime
+	(*InstanceEvent)(nil),                    // 37: instance.v1.InstanceEvent
+	(*InstanceEvents)(nil),                   // 38: instance.v1.InstanceEvents
+	(*StreamInstanceLogsRequest)(nil),        // 39: instance.v1.StreamInstanceLogsRequest
+	(*InstanceLogFrame)(nil),                 // 40: instance.v1.InstanceLogFrame
+	(*GetOperationRequest)(nil),              // 41: instance.v1.GetOperationRequest
+	(*Operation)(nil),                        // 42: instance.v1.Operation
+	(*ResolveTerminalTargetRequest)(nil),     // 43: instance.v1.ResolveTerminalTargetRequest
+	(*InstanceMetricScope)(nil),              // 44: instance.v1.InstanceMetricScope
+	nil,                                      // 45: instance.v1.CreateInstanceData.LabelsEntry
+	nil,                                      // 46: instance.v1.CreateInstanceData.AnnotationsEntry
+	nil,                                      // 47: instance.v1.InstanceConfiguration.LabelsEntry
+	nil,                                      // 48: instance.v1.InstanceConfiguration.AnnotationsEntry
+	nil,                                      // 49: instance.v1.CreateSpec.LabelsEntry
+	nil,                                      // 50: instance.v1.CreateSpec.AnnotationsEntry
+	(v1.SupplyMode)(0),                       // 51: accelerator.v1.SupplyMode
+	(*v1.GpuExecution)(nil),                  // 52: accelerator.v1.GpuExecution
+	(*v1.GpuDisplay)(nil),                    // 53: accelerator.v1.GpuDisplay
+	(*v11.DurableOwnerAck)(nil),              // 54: accelerator.command.v1.DurableOwnerAck
+	(*timestamppb.Timestamp)(nil),            // 55: google.protobuf.Timestamp
+	(*v12.TerminalTarget)(nil),               // 56: instance.terminal.v1.TerminalTarget
 }
 var file_instance_v1_instance_proto_depIdxs = []int32{
 	0,  // 0: instance.v1.SchedulingOptions.pod_placement:type_name -> instance.v1.SchedulingOptions.PodPlacement
 	2,  // 1: instance.v1.CreateInstanceData.scheduling:type_name -> instance.v1.SchedulingOptions
 	4,  // 2: instance.v1.CreateInstanceData.volume_mounts:type_name -> instance.v1.VolumeMount
 	7,  // 3: instance.v1.CreateInstanceData.network:type_name -> instance.v1.NetworkSelection
-	44, // 4: instance.v1.CreateInstanceData.labels:type_name -> instance.v1.CreateInstanceData.LabelsEntry
-	45, // 5: instance.v1.CreateInstanceData.annotations:type_name -> instance.v1.CreateInstanceData.AnnotationsEntry
+	45, // 4: instance.v1.CreateInstanceData.labels:type_name -> instance.v1.CreateInstanceData.LabelsEntry
+	46, // 5: instance.v1.CreateInstanceData.annotations:type_name -> instance.v1.CreateInstanceData.AnnotationsEntry
 	6,  // 6: instance.v1.CreateInstanceData.env:type_name -> instance.v1.InstanceEnvVar
 	9,  // 7: instance.v1.ListMountablePVCsResponse.items:type_name -> instance.v1.MountablePVC
 	4,  // 8: instance.v1.InstanceConfiguration.volume_mounts:type_name -> instance.v1.VolumeMount
 	7,  // 9: instance.v1.InstanceConfiguration.network:type_name -> instance.v1.NetworkSelection
-	46, // 10: instance.v1.InstanceConfiguration.labels:type_name -> instance.v1.InstanceConfiguration.LabelsEntry
-	47, // 11: instance.v1.InstanceConfiguration.annotations:type_name -> instance.v1.InstanceConfiguration.AnnotationsEntry
+	47, // 10: instance.v1.InstanceConfiguration.labels:type_name -> instance.v1.InstanceConfiguration.LabelsEntry
+	48, // 11: instance.v1.InstanceConfiguration.annotations:type_name -> instance.v1.InstanceConfiguration.AnnotationsEntry
 	6,  // 12: instance.v1.InstanceConfiguration.env:type_name -> instance.v1.InstanceEnvVar
-	25, // 13: instance.v1.InstanceConfiguration.pending_change:type_name -> instance.v1.PendingMountChange
-	50, // 14: instance.v1.GpuPresetReference.mode:type_name -> accelerator.v1.SupplyMode
-	50, // 15: instance.v1.GpuSummary.mode:type_name -> accelerator.v1.SupplyMode
+	26, // 13: instance.v1.InstanceConfiguration.pending_change:type_name -> instance.v1.PendingMountChange
+	51, // 14: instance.v1.GpuPresetReference.mode:type_name -> accelerator.v1.SupplyMode
+	51, // 15: instance.v1.GpuSummary.mode:type_name -> accelerator.v1.SupplyMode
 	3,  // 16: instance.v1.ResolveCreateSpecRequest.data:type_name -> instance.v1.CreateInstanceData
 	2,  // 17: instance.v1.ResolveCreateSpecRequest.scheduling_defaults:type_name -> instance.v1.SchedulingOptions
 	2,  // 18: instance.v1.CreateSpec.scheduling:type_name -> instance.v1.SchedulingOptions
-	51, // 19: instance.v1.CreateSpec.gpu_execution:type_name -> accelerator.v1.GpuExecution
-	52, // 20: instance.v1.CreateSpec.gpu_display:type_name -> accelerator.v1.GpuDisplay
+	52, // 19: instance.v1.CreateSpec.gpu_execution:type_name -> accelerator.v1.GpuExecution
+	53, // 20: instance.v1.CreateSpec.gpu_display:type_name -> accelerator.v1.GpuDisplay
 	12, // 21: instance.v1.CreateSpec.gpu_selection:type_name -> instance.v1.GpuPresetReference
 	5,  // 22: instance.v1.CreateSpec.volume_mounts:type_name -> instance.v1.FrozenVolumeMount
 	7,  // 23: instance.v1.CreateSpec.network:type_name -> instance.v1.NetworkSelection
-	48, // 24: instance.v1.CreateSpec.labels:type_name -> instance.v1.CreateSpec.LabelsEntry
-	49, // 25: instance.v1.CreateSpec.annotations:type_name -> instance.v1.CreateSpec.AnnotationsEntry
+	49, // 24: instance.v1.CreateSpec.labels:type_name -> instance.v1.CreateSpec.LabelsEntry
+	50, // 25: instance.v1.CreateSpec.annotations:type_name -> instance.v1.CreateSpec.AnnotationsEntry
 	6,  // 26: instance.v1.CreateSpec.env:type_name -> instance.v1.InstanceEnvVar
 	16, // 27: instance.v1.AcceptCreateRequest.context:type_name -> instance.v1.CommandContext
 	15, // 28: instance.v1.AcceptCreateRequest.spec:type_name -> instance.v1.CreateSpec
 	16, // 29: instance.v1.AcceptDeleteRequest.context:type_name -> instance.v1.CommandContext
 	4,  // 30: instance.v1.MountConfiguration.volume_mounts:type_name -> instance.v1.VolumeMount
-	24, // 31: instance.v1.PendingMountChange.target_configuration:type_name -> instance.v1.MountConfiguration
-	53, // 32: instance.v1.OperationResponse.durable_owner_ack:type_name -> accelerator.command.v1.DurableOwnerAck
-	30, // 33: instance.v1.ListInstancesResponse.items:type_name -> instance.v1.Instance
-	54, // 34: instance.v1.Instance.created_at:type_name -> google.protobuf.Timestamp
+	25, // 31: instance.v1.PendingMountChange.target_configuration:type_name -> instance.v1.MountConfiguration
+	54, // 32: instance.v1.OperationResponse.durable_owner_ack:type_name -> accelerator.command.v1.DurableOwnerAck
+	31, // 33: instance.v1.ListInstancesResponse.items:type_name -> instance.v1.Instance
+	55, // 34: instance.v1.Instance.created_at:type_name -> google.protobuf.Timestamp
 	13, // 35: instance.v1.Instance.gpu_summary:type_name -> instance.v1.GpuSummary
 	2,  // 36: instance.v1.Instance.scheduling:type_name -> instance.v1.SchedulingOptions
-	31, // 37: instance.v1.RuntimePod.environment_sources:type_name -> instance.v1.EnvironmentSource
-	32, // 38: instance.v1.RuntimePod.mounts:type_name -> instance.v1.RuntimeMount
-	54, // 39: instance.v1.InstanceRuntime.observed_at:type_name -> google.protobuf.Timestamp
-	33, // 40: instance.v1.InstanceRuntime.pod:type_name -> instance.v1.RuntimePod
-	34, // 41: instance.v1.InstanceRuntime.stateful_set:type_name -> instance.v1.RuntimeStatefulSet
-	54, // 42: instance.v1.InstanceEvent.last_occurred_at:type_name -> google.protobuf.Timestamp
-	54, // 43: instance.v1.InstanceEvents.observed_at:type_name -> google.protobuf.Timestamp
-	36, // 44: instance.v1.InstanceEvents.events:type_name -> instance.v1.InstanceEvent
+	32, // 37: instance.v1.RuntimePod.environment_sources:type_name -> instance.v1.EnvironmentSource
+	33, // 38: instance.v1.RuntimePod.mounts:type_name -> instance.v1.RuntimeMount
+	55, // 39: instance.v1.InstanceRuntime.observed_at:type_name -> google.protobuf.Timestamp
+	34, // 40: instance.v1.InstanceRuntime.pod:type_name -> instance.v1.RuntimePod
+	35, // 41: instance.v1.InstanceRuntime.stateful_set:type_name -> instance.v1.RuntimeStatefulSet
+	55, // 42: instance.v1.InstanceEvent.last_occurred_at:type_name -> google.protobuf.Timestamp
+	55, // 43: instance.v1.InstanceEvents.observed_at:type_name -> google.protobuf.Timestamp
+	37, // 44: instance.v1.InstanceEvents.events:type_name -> instance.v1.InstanceEvent
 	1,  // 45: instance.v1.InstanceLogFrame.kind:type_name -> instance.v1.InstanceLogFrame.Kind
-	24, // 46: instance.v1.Operation.target_configuration:type_name -> instance.v1.MountConfiguration
-	27, // 47: instance.v1.InstanceService.GetInstanceRuntime:input_type -> instance.v1.GetInstanceRequest
-	27, // 48: instance.v1.InstanceService.ListInstanceEvents:input_type -> instance.v1.GetInstanceRequest
-	38, // 49: instance.v1.InstanceService.StreamInstanceLogs:input_type -> instance.v1.StreamInstanceLogsRequest
+	25, // 46: instance.v1.Operation.target_configuration:type_name -> instance.v1.MountConfiguration
+	28, // 47: instance.v1.InstanceService.GetInstanceRuntime:input_type -> instance.v1.GetInstanceRequest
+	28, // 48: instance.v1.InstanceService.ListInstanceEvents:input_type -> instance.v1.GetInstanceRequest
+	39, // 49: instance.v1.InstanceService.StreamInstanceLogs:input_type -> instance.v1.StreamInstanceLogsRequest
 	8,  // 50: instance.v1.InstanceService.ListMountablePVCs:input_type -> instance.v1.ListMountablePVCsRequest
-	27, // 51: instance.v1.InstanceService.GetInstanceConfiguration:input_type -> instance.v1.GetInstanceRequest
+	28, // 51: instance.v1.InstanceService.GetInstanceConfiguration:input_type -> instance.v1.GetInstanceRequest
 	14, // 52: instance.v1.InstanceService.ResolveCreateSpec:input_type -> instance.v1.ResolveCreateSpecRequest
 	17, // 53: instance.v1.InstanceService.AcceptCreate:input_type -> instance.v1.AcceptCreateRequest
 	18, // 54: instance.v1.InstanceService.AcceptDelete:input_type -> instance.v1.AcceptDeleteRequest
 	19, // 55: instance.v1.InstanceService.Start:input_type -> instance.v1.ChangeInstanceRequest
 	19, // 56: instance.v1.InstanceService.Stop:input_type -> instance.v1.ChangeInstanceRequest
 	19, // 57: instance.v1.InstanceService.Restart:input_type -> instance.v1.ChangeInstanceRequest
-	20, // 58: instance.v1.InstanceService.AttachPVC:input_type -> instance.v1.AttachPVCRequest
-	21, // 59: instance.v1.InstanceService.DetachPVC:input_type -> instance.v1.DetachPVCRequest
-	22, // 60: instance.v1.InstanceService.ListInstanceMountablePVCs:input_type -> instance.v1.ListInstanceMountablePVCsRequest
-	23, // 61: instance.v1.InstanceService.LookupCommandReplay:input_type -> instance.v1.LookupCommandReplayRequest
-	27, // 62: instance.v1.InstanceService.GetInstance:input_type -> instance.v1.GetInstanceRequest
-	27, // 63: instance.v1.InstanceService.ResolveInstanceMetricScope:input_type -> instance.v1.GetInstanceRequest
-	28, // 64: instance.v1.InstanceService.ListInstances:input_type -> instance.v1.ListInstancesRequest
-	40, // 65: instance.v1.InstanceService.GetOperation:input_type -> instance.v1.GetOperationRequest
-	42, // 66: instance.v1.InstanceService.ResolveTerminalTarget:input_type -> instance.v1.ResolveTerminalTargetRequest
-	35, // 67: instance.v1.InstanceService.GetInstanceRuntime:output_type -> instance.v1.InstanceRuntime
-	37, // 68: instance.v1.InstanceService.ListInstanceEvents:output_type -> instance.v1.InstanceEvents
-	39, // 69: instance.v1.InstanceService.StreamInstanceLogs:output_type -> instance.v1.InstanceLogFrame
-	10, // 70: instance.v1.InstanceService.ListMountablePVCs:output_type -> instance.v1.ListMountablePVCsResponse
-	11, // 71: instance.v1.InstanceService.GetInstanceConfiguration:output_type -> instance.v1.InstanceConfiguration
-	15, // 72: instance.v1.InstanceService.ResolveCreateSpec:output_type -> instance.v1.CreateSpec
-	26, // 73: instance.v1.InstanceService.AcceptCreate:output_type -> instance.v1.OperationResponse
-	26, // 74: instance.v1.InstanceService.AcceptDelete:output_type -> instance.v1.OperationResponse
-	26, // 75: instance.v1.InstanceService.Start:output_type -> instance.v1.OperationResponse
-	26, // 76: instance.v1.InstanceService.Stop:output_type -> instance.v1.OperationResponse
-	26, // 77: instance.v1.InstanceService.Restart:output_type -> instance.v1.OperationResponse
-	26, // 78: instance.v1.InstanceService.AttachPVC:output_type -> instance.v1.OperationResponse
-	26, // 79: instance.v1.InstanceService.DetachPVC:output_type -> instance.v1.OperationResponse
-	10, // 80: instance.v1.InstanceService.ListInstanceMountablePVCs:output_type -> instance.v1.ListMountablePVCsResponse
-	26, // 81: instance.v1.InstanceService.LookupCommandReplay:output_type -> instance.v1.OperationResponse
-	30, // 82: instance.v1.InstanceService.GetInstance:output_type -> instance.v1.Instance
-	43, // 83: instance.v1.InstanceService.ResolveInstanceMetricScope:output_type -> instance.v1.InstanceMetricScope
-	29, // 84: instance.v1.InstanceService.ListInstances:output_type -> instance.v1.ListInstancesResponse
-	41, // 85: instance.v1.InstanceService.GetOperation:output_type -> instance.v1.Operation
-	55, // 86: instance.v1.InstanceService.ResolveTerminalTarget:output_type -> instance.terminal.v1.TerminalTarget
-	67, // [67:87] is the sub-list for method output_type
-	47, // [47:67] is the sub-list for method input_type
+	20, // 58: instance.v1.InstanceService.SetSecurityGroups:input_type -> instance.v1.SetSecurityGroupsRequest
+	21, // 59: instance.v1.InstanceService.AttachPVC:input_type -> instance.v1.AttachPVCRequest
+	22, // 60: instance.v1.InstanceService.DetachPVC:input_type -> instance.v1.DetachPVCRequest
+	23, // 61: instance.v1.InstanceService.ListInstanceMountablePVCs:input_type -> instance.v1.ListInstanceMountablePVCsRequest
+	24, // 62: instance.v1.InstanceService.LookupCommandReplay:input_type -> instance.v1.LookupCommandReplayRequest
+	28, // 63: instance.v1.InstanceService.GetInstance:input_type -> instance.v1.GetInstanceRequest
+	28, // 64: instance.v1.InstanceService.ResolveInstanceMetricScope:input_type -> instance.v1.GetInstanceRequest
+	29, // 65: instance.v1.InstanceService.ListInstances:input_type -> instance.v1.ListInstancesRequest
+	41, // 66: instance.v1.InstanceService.GetOperation:input_type -> instance.v1.GetOperationRequest
+	43, // 67: instance.v1.InstanceService.ResolveTerminalTarget:input_type -> instance.v1.ResolveTerminalTargetRequest
+	36, // 68: instance.v1.InstanceService.GetInstanceRuntime:output_type -> instance.v1.InstanceRuntime
+	38, // 69: instance.v1.InstanceService.ListInstanceEvents:output_type -> instance.v1.InstanceEvents
+	40, // 70: instance.v1.InstanceService.StreamInstanceLogs:output_type -> instance.v1.InstanceLogFrame
+	10, // 71: instance.v1.InstanceService.ListMountablePVCs:output_type -> instance.v1.ListMountablePVCsResponse
+	11, // 72: instance.v1.InstanceService.GetInstanceConfiguration:output_type -> instance.v1.InstanceConfiguration
+	15, // 73: instance.v1.InstanceService.ResolveCreateSpec:output_type -> instance.v1.CreateSpec
+	27, // 74: instance.v1.InstanceService.AcceptCreate:output_type -> instance.v1.OperationResponse
+	27, // 75: instance.v1.InstanceService.AcceptDelete:output_type -> instance.v1.OperationResponse
+	27, // 76: instance.v1.InstanceService.Start:output_type -> instance.v1.OperationResponse
+	27, // 77: instance.v1.InstanceService.Stop:output_type -> instance.v1.OperationResponse
+	27, // 78: instance.v1.InstanceService.Restart:output_type -> instance.v1.OperationResponse
+	27, // 79: instance.v1.InstanceService.SetSecurityGroups:output_type -> instance.v1.OperationResponse
+	27, // 80: instance.v1.InstanceService.AttachPVC:output_type -> instance.v1.OperationResponse
+	27, // 81: instance.v1.InstanceService.DetachPVC:output_type -> instance.v1.OperationResponse
+	10, // 82: instance.v1.InstanceService.ListInstanceMountablePVCs:output_type -> instance.v1.ListMountablePVCsResponse
+	27, // 83: instance.v1.InstanceService.LookupCommandReplay:output_type -> instance.v1.OperationResponse
+	31, // 84: instance.v1.InstanceService.GetInstance:output_type -> instance.v1.Instance
+	44, // 85: instance.v1.InstanceService.ResolveInstanceMetricScope:output_type -> instance.v1.InstanceMetricScope
+	30, // 86: instance.v1.InstanceService.ListInstances:output_type -> instance.v1.ListInstancesResponse
+	42, // 87: instance.v1.InstanceService.GetOperation:output_type -> instance.v1.Operation
+	56, // 88: instance.v1.InstanceService.ResolveTerminalTarget:output_type -> instance.terminal.v1.TerminalTarget
+	68, // [68:89] is the sub-list for method output_type
+	47, // [47:68] is the sub-list for method input_type
 	47, // [47:47] is the sub-list for extension type_name
 	47, // [47:47] is the sub-list for extension extendee
 	0,  // [0:47] is the sub-list for field type_name
@@ -4263,16 +4386,16 @@ func file_instance_v1_instance_proto_init() {
 	}
 	file_instance_v1_instance_proto_msgTypes[0].OneofWrappers = []any{}
 	file_instance_v1_instance_proto_msgTypes[1].OneofWrappers = []any{}
-	file_instance_v1_instance_proto_msgTypes[32].OneofWrappers = []any{}
-	file_instance_v1_instance_proto_msgTypes[34].OneofWrappers = []any{}
+	file_instance_v1_instance_proto_msgTypes[33].OneofWrappers = []any{}
 	file_instance_v1_instance_proto_msgTypes[35].OneofWrappers = []any{}
+	file_instance_v1_instance_proto_msgTypes[36].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_instance_v1_instance_proto_rawDesc), len(file_instance_v1_instance_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   48,
+			NumMessages:   49,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

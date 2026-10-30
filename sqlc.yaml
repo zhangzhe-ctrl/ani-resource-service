@@ -41,6 +41,7 @@ sql:
       - migrations/0020_managed_pool_gateway.sql
       - migrations/0021_optional_public_pool_verification.sql
       - migrations/0022_default_egress_eip_identity.sql
+      - migrations/0023_security_groups.sql
     queries: internal/data/network/queries
     gen:
       go:

@@ -154,7 +154,11 @@ func buildApp(bc *conf.Bootstrap, logger *slog.Logger) (*kratos.App, error) {
 	if err != nil {
 		return nil, err
 	}
-	additional := []server.Stepper{attachmentWorker, switchWorker}
+	securityGroups, securityGroupWorker, err := wireSecurityGroups(repository, provider, instances, vms, policy)
+	if err != nil {
+		return nil, err
+	}
+	additional := []server.Stepper{attachmentWorker, switchWorker, securityGroupWorker}
 	if vms != nil {
 		additional = append(additional, vms.worker)
 	}
@@ -179,6 +183,7 @@ func buildApp(bc *conf.Bootstrap, logger *slog.Logger) (*kratos.App, error) {
 	storagev1.RegisterStorageServiceServer(grpcServer, storageComponents.service)
 	storageRecovery = storageComponents.worker
 	networkv1.RegisterNetworkServiceServer(grpcServer, service.NewNetworkService(network, attachments))
+	networkv1.RegisterNetworkSecurityGroupServiceServer(grpcServer, securityGroups)
 	repository.UseEgressInfrastructure(provider)
 	egress, err := biz.NewEgress(repository, provider, biz.ContextEgressAuthorization{}, key, policy.StaleAfter, time.Now)
 	if err != nil {

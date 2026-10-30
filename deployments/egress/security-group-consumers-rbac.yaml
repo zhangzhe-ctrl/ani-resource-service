@@ -1,0 +1,17 @@
+# Additional mutation permissions for the existing Instance/VM runtime identity.
+# Bind from the deployment to its actual ServiceAccount. Existing owner CRUD,
+# namespace checks and diagnostic read permissions remain separately managed.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ani-resource-security-group-consumers
+rules:
+  - apiGroups: [kubeflow.org]
+    resources: [notebooks]
+    verbs: [patch]
+  - apiGroups: [kubevirt.io]
+    resources: [virtualmachines, virtualmachineinstances]
+    verbs: [patch]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [patch]

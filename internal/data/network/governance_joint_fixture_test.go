@@ -45,7 +45,11 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 	}
 	controller := &lbControllerFixture{}
 	switchBoundary := &networkJointSwitchBoundary{}
+	securityGroupBoundary := &networkJointSecurityGroupBoundary{}
 	f := newLBAdmissionFixture(t, func(w http.ResponseWriter, r *http.Request, api *controlled.Server) bool {
+		if securityGroupBoundary.http(w, r, api) {
+			return true
+		}
 		if switchBoundary.http(w, r, api) {
 			return true
 		}
@@ -128,6 +132,8 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.f.w = worker
+	f.f.p.UseSecurityGroupObserver(provider)
+	securityGroupWorker := biz.NewSecurityGroupWorker(f.f.p, provider, uuid.NewString(), policy)
 	attachmentWorker := networkJointBackendObserver(t, f, provider, policy)
 	aggregates := wireNetworkJointAggregates(t, f, provider, policy)
 	ca, cert, key, clientCert, clientKey := networkJointCertificates(t, dir)
@@ -141,6 +147,7 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 	}
 	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)), grpc.UnaryInterceptor(runtime.GovernanceUnary()), grpc.StreamInterceptor(runtime.DenyGovernanceStreams))
 	networkv1.RegisterNetworkServiceServer(server, service.NewNetworkService(f.f.n))
+	networkv1.RegisterNetworkSecurityGroupServiceServer(server, service.NewNetworkSecurityGroupService(biz.NewSecurityGroups(f.f.p)))
 	networkv1.RegisterTenantEgressServiceServer(server, service.NewTenantEgressService(f.f.e))
 	networkv1.RegisterPlatformNetworkServiceServer(server, service.NewPlatformNetworkService(f.f.e))
 	networkv1.RegisterPlatformDefaultEgressServiceServer(server, aggregates.defaultService)
@@ -166,7 +173,7 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 				return
 			case <-ticker.C:
 				switchBoundary.refresh(f.api)
-				for _, stepper := range append([]runtime.Stepper{worker, attachmentWorker}, aggregates.steppers...) {
+				for _, stepper := range append([]runtime.Stepper{worker, attachmentWorker, securityGroupWorker}, aggregates.steppers...) {
 					if _, err := stepper.Step(workerCtx); err != nil && workerCtx.Err() == nil {
 						stepping <- err
 						return
@@ -306,7 +313,7 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 	// references to deleted pool history; it closes allocation and retires the
 	// pool slot. Do not erase those records outside the production contract.
 	var active int
-	if err = f.f.owner.QueryRow(f.f.ctx, `SELECT (SELECT count(*) FROM network_vpcs WHERE state<>'deleted')+(SELECT count(*) FROM network_subnets WHERE state<>'deleted')+(SELECT count(*) FROM network_eips WHERE state<>'deleted')+(SELECT count(*) FROM network_snat_bindings WHERE state<>'deleted')+(SELECT count(*) FROM network_load_balancers WHERE state<>'deleted')+(SELECT count(*) FROM network_attachments WHERE state<>'released')+(SELECT count(*) FROM network_platform_resources WHERE kind<>'device' AND state<>'deleted')+(SELECT count(*) FROM network_virtual_switches WHERE state<>'deleted')+(SELECT count(*) FROM network_default_vpc_egresses WHERE state<>'deleted')`).Scan(&active); err != nil {
+	if err = f.f.owner.QueryRow(f.f.ctx, `SELECT (SELECT count(*) FROM network_vpcs WHERE state<>'deleted')+(SELECT count(*) FROM network_subnets WHERE state<>'deleted')+(SELECT count(*) FROM network_eips WHERE state<>'deleted')+(SELECT count(*) FROM network_snat_bindings WHERE state<>'deleted')+(SELECT count(*) FROM network_load_balancers WHERE state<>'deleted')+(SELECT count(*) FROM network_attachments WHERE state<>'released')+(SELECT count(*) FROM network_platform_resources WHERE kind<>'device' AND state<>'deleted')+(SELECT count(*) FROM network_virtual_switches WHERE state<>'deleted')+(SELECT count(*) FROM network_default_vpc_egresses WHERE state<>'deleted')+(SELECT count(*) FROM network_security_groups WHERE state<>'deleted')+(SELECT count(*) FROM network_security_group_references WHERE NOT released)`).Scan(&active); err != nil {
 		t.Fatal(err)
 	}
 	if active != 0 {
