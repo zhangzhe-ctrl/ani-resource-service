@@ -41,7 +41,7 @@ PG 实际命令：
 - 删除仅给 Resource 开放 `kcn-config get/patch` 的旧 `ani-network-device-adoption` Role/RoleBinding，确认无其他绑定引用，见 `legacy-adoption-rbac-removal.json`。保留共享读观察与 Node 组写权限；KCN 配置未改。
 - 采集器及旧权限移除后，03:13:05 和 03:13:39 UTC 两次只读 DB 采样仍持续续证。后一次 VLAN `available`/4.13 秒、公网池及 gateway `available`/2.84 秒、默认出口 `.192` 为 `available/ready/succeeded`/10.07 秒，`applied_enabled=true`，无 pending/unknown。KCN 原对象 UID 保持，EIP/Snat Bound，三节点组反馈 `ens35`。不据此声称已验证实际出网流量。
 
-## Boss 验收（默认出口删除通过，后续删除待确认）
+## Boss 删除与原参数重建验收：PASS
 
 原配置已在 Fedora 私有 run 中保存，凭据不进入源码或本记录。当前原链：`ani-public → ens35/VLAN0 → 172.16.102.0/24 → kcn-system/kcn-cluster`；上游 `.1`、OVN `.2`、分配窗口 `.192..207`、默认出口 `.192`。无租户 EIP/SNAT/base-connectivity 依赖。保留系统 VPC。
 
@@ -49,4 +49,18 @@ PG 实际命令：
 
 Boss 原表单拒绝 OVN `.2` 位于分配窗口外，无法原参数重建。用户授权基于最新 `feat/governance-api@d0e89ea4f8b7188ee4b4e7d38ef9a24a91ca9ec7` 修复；提交 `0f30a3eb954803744f13d0df16c63bd40237b6fb`，在 Fedora 启动 `http://172.16.101.31:31083/`，API 代理到 `http://172.16.101.10:30082`。前端只调整 OVN 窗口约束、按窗口内网关计数和三处说明；原参数输出 16 个可分配 IP。Fedora Corepack pnpm 8.6.11 的 18 项定向测试、lint、fmt:check、build 通过。GitNexus NOT_RUN：用户明确许可本次绕过，核对后端源码与固定差异。未更新共享 Boss 部署。
 
-已从 Fedora Boss 真实登录并删除原默认出口。页面随后显示“未配置”，原 KCN EIP/Snat 均不存在，见 `default-egress-deleted-kcn.json`。原公网池仍在，二层网络及交换机未删除。当前停在 Boss“删除公有网络”的“删除后不可恢复”确认框（`boss-delete-confirm.jpg`）；因浏览器操作规则要求对不可恢复删除在执行时确认，已请求用户确认公网池、二层网络与交换机的后续删除和原参数重建。在确认返回前不继续这些删除。删除/重建完整业务验收仍为 **not_verified**，不得称已完成。
+已从 Fedora Boss 真实登录并删除原默认出口，页面显示“未配置”，原 KCN EIP/Snat 不存在，见 `default-egress-deleted-kcn.json`。随后在“不可恢复”确认框按浏览器规则请求执行时确认；用户明确回复“确认继续删除并原参数重建”，继续完成公网池、二层网络和交换机删除。旧 VLAN 与交换机操作均 succeeded，三节点旧组 label、feedback、owner、fence 全部清除，旧内部设备 retired，见 `boss-original-chain-deleted.json` 及 `boss-original-switch-deleted.jpg`。
+
+重建动作均从 Fedora Boss 页面完成：创建同名 `ani-public`，手填原网卡 `ens35` 与 VLAN `0`，创建同名二层网络；再填写原公网 CIDR、`.192..207`、上游 `.1`、OVN `.2`。确认页显示 16 个可分配 IP，见 `boss-original-pool-parameters.jpg`。最后从“平台组件出网”选择新池，恢复系统 VPC 默认 EIP/SNAT。
+
+最终于 **2026-10-30 11:29:26（Asia/Shanghai）** 从实际 Res 数据库与 KCN 只读核对：
+
+- 新交换机 `vsw_465db8e141bb421f977b4b5dabaed23b` 为 available/configured；新 VLAN `vlan_e36c8849f3034c31a1c55571ff845558` 为 available/succeeded，三节点新 binding 与 `ens35` 接管反馈一致。新冻结节点 MAC 为空，未借用旧物理快照。
+- 新池 `pool_1c5c2bebf286440fa7ed5006c2256021` 及平台托管网关 `egw_01601cbe1387407182e9ba11ff7a2b79` 均 available/succeeded，KCN underlay Ready。
+- 新默认出口 `dve_0b031929127b402aa53b1fbb4dffb54d` 为 available/ready/succeeded，地址 **172.16.102.192**，AppliedEnabled=true，无 pending/unknown。原公网参数与有效分配窗口保持；业务 ID 按新建正常重新分配。
+- KCN EIP/Snat 均 Bound，Snat disable=false。系统 VPC 原 UID 保持；租户分配仍关闭，没有设置默认租户公网池。
+- 原 NodeFacts 21 个对象逐项 GET 均不存在，collector Pod 数为 0。此前专用 adoption Role/Binding 也已移除。
+
+最终证据为 `boss-recreated-chain-final.json`、`boss-recreated-layer2.jpg` 和 `boss-recreated-default-egress.jpg`。这是实际 Boss → Gov → Res → PostgreSQL/worker → KCN 的删除、重建、接管与状态闭环，不是受控边界 fixture。**本轮未另做 Pod 出网流量复测（NOT_RUN）**。
+
+原独立网关为 `managed_gateway=false`，按既有所有权规则保留，未把它冒充 NodeFacts 残留或强行删除。新页面公网池使用当前合同的平台受管网关，确认页明确展示“由平台自动创建和管理”。KCN 桥拆除逻辑未修改；本次删除与同网卡/VLAN 重建已实际通过。

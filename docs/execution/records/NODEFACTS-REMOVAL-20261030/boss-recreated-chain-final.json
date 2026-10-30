@@ -1,0 +1,467 @@
+{
+  "status": "PASS",
+  "checked_at_utc": "2026-10-30T03:29:26.139163+00:00",
+  "server": "https://172.16.101.10:6443",
+  "cluster_uid": "5277649d-e28d-4a0a-ae76-8354365c63bc",
+  "source_image_digest": "sha256:eb1f7995e1d95815ef542c9ea87c5aca4b4b2824c776b744439aa5a1d8af68fe",
+  "old_ids": {
+    "switch": "vsw_0014e5b421284cbfbacb509cdb9cf470",
+    "vlan": "vlan_1027ace223cb4339a32121709654d1d4",
+    "pool": "pool_bb811753b25a4fe598dff9cedf5afd1d",
+    "default_egress": "dve_36b8b4bcec3d4396ae3d5e03dea9466b",
+    "internal_device": "device_fa4f32ecc4ba49c0b5df2801e54882d7"
+  },
+  "new_ids": {
+    "switch": "vsw_465db8e141bb421f977b4b5dabaed23b",
+    "vlan": "vlan_e36c8849f3034c31a1c55571ff845558",
+    "pool": "pool_1c5c2bebf286440fa7ed5006c2256021",
+    "managed_gateway": "egw_01601cbe1387407182e9ba11ff7a2b79",
+    "default_egress": "dve_0b031929127b402aa53b1fbb4dffb54d",
+    "internal_device": "device_be6049ebf4324017af6e515ebf246ad9"
+  },
+  "expected_parameters": {
+    "switch_name": "ani-public",
+    "vlan_name": "cluster-public-ens35-res-20261022",
+    "pool_name": "cluster-public-102-res-20261022",
+    "cluster_id": "0fcdb8b1-22bf-4528-af59-82843dc88f21",
+    "device_name": "ens35",
+    "vlan_id": 0,
+    "cidr": "172.16.102.0/24",
+    "usable_first": "172.16.102.192",
+    "usable_last": "172.16.102.207",
+    "ovn_gateway": "172.16.102.2",
+    "upstream_gateway": "172.16.102.1"
+  },
+  "checks": {
+    "cluster_identity": true,
+    "platform_fresh_available_succeeded": true,
+    "switch_configured": true,
+    "default_egress_fresh_ready": true,
+    "address_restored": true,
+    "native_vlan_ready": true,
+    "native_pool_underlay_ready": true,
+    "native_managed_gateway_ready": true,
+    "native_eip_snat_bound": true,
+    "default_vpc_uid_preserved": true,
+    "tenant_allocation_closed": true,
+    "three_node_new_binding_ack": true,
+    "nodefacts_objects_absent": true,
+    "original_parameters": true
+  },
+  "database": {
+    "pool": {
+      "id": "pool_1c5c2bebf286440fa7ed5006c2256021",
+      "cidr": "172.16.102.0/24",
+      "mode": "underlay",
+      "retired": false,
+      "gateway_id": "egw_01601cbe1387407182e9ba11ff7a2b79",
+      "excluded_ips": [
+        "172.16.102.0..172.16.102.191",
+        "172.16.102.1",
+        "172.16.102.2",
+        "172.16.102.208..172.16.102.255"
+      ],
+      "ovn_gateway_ip": "172.16.102.2",
+      "managed_gateway": true,
+      "vlan_network_id": "vlan_e36c8849f3034c31a1c55571ff845558",
+      "allocation_enabled": false,
+      "upstream_gateway_ip": "172.16.102.1"
+    },
+    "platform": [
+      {
+        "id": "vlan_e36c8849f3034c31a1c55571ff845558",
+        "kind": "vlan",
+        "name": "cluster-public-ens35-res-20261022",
+        "state": "available",
+        "reason": "",
+        "age_seconds": 11.092264,
+        "observed_at": "2026-10-30T03:28:29.209038+00:00",
+        "completed_at": "2026-10-30T03:25:13.577728+00:00",
+        "operation_id": "373ba4dd-c456-4e59-a657-043d4a39ca56",
+        "provider_uid": "cbea55e1-ac7e-41a0-b90a-4fe1888b6a8d",
+        "provider_name": "vlan-e36c8849f3034c31a1c55571ff845558",
+        "pending_action": "",
+        "operation_state": "succeeded"
+      },
+      {
+        "id": "egw_01601cbe1387407182e9ba11ff7a2b79",
+        "kind": "egress_gateway",
+        "name": "egw_01601cbe1387407182e9ba11ff7a2b79",
+        "state": "available",
+        "reason": "",
+        "age_seconds": 15.320984,
+        "observed_at": "2026-10-30T03:28:24.98038+00:00",
+        "completed_at": "2026-10-30T03:26:06.594569+00:00",
+        "operation_id": "3c43627d-4942-4e3c-87e0-e61279400625",
+        "provider_uid": "8622cf33-dc41-4d94-88fd-57c122c0e59a",
+        "provider_name": "egw-01601cbe1387407182e9ba11ff7a2b79",
+        "pending_action": "",
+        "operation_state": "succeeded"
+      },
+      {
+        "id": "pool_1c5c2bebf286440fa7ed5006c2256021",
+        "kind": "public_pool",
+        "name": "cluster-public-102-res-20261022",
+        "state": "available",
+        "reason": "",
+        "age_seconds": 2.632699,
+        "observed_at": "2026-10-30T03:28:37.668681+00:00",
+        "completed_at": "2026-10-30T03:26:28.151501+00:00",
+        "operation_id": "b9f0c24a-6b4b-4746-bb58-83b614e35558",
+        "provider_uid": "622a19bf-2fef-42c4-b4b5-1e14054c159c",
+        "provider_name": "pool-1c5c2bebf286440fa7ed5006c2256021",
+        "pending_action": "",
+        "operation_state": "succeeded"
+      }
+    ],
+    "database_time": "2026-10-30T03:28:40.301224+00:00",
+    "default_egress": {
+      "id": "dve_0b031929127b402aa53b1fbb4dffb54d",
+      "name": "kcn-cluster-egress",
+      "phase": "ready",
+      "state": "available",
+      "eip_id": "eip_0ea4c1660bd845c898ca6819eb178855",
+      "reason": "",
+      "address": "172.16.102.192",
+      "pool_id": "pool_1c5c2bebf286440fa7ed5006c2256021",
+      "age_seconds": 6.640268,
+      "observed_at": "2026-10-30T03:28:33.661312+00:00",
+      "operation_id": "cf01f84a-d894-4f37-803f-2c560bf901c3",
+      "pending_action": "",
+      "applied_enabled": true,
+      "default_vpc_uid": "d0235860-f51a-4e63-8f4f-1ca1b34bc04f",
+      "operation_state": "succeeded",
+      "pending_unknown": false,
+      "eip_provider_uid": "7ccbce42-2173-424d-a43e-a82f4e9f29e5",
+      "eip_provider_name": "ani-default-eip-0b031929127b402aa53b1fbb4dffb54d",
+      "snat_provider_uid": "dee82a1b-c837-4e1a-b73c-fb1ae842c2f4",
+      "snat_provider_name": "ani-default-snat-0b031929127b402aa53b1fbb4dffb54d"
+    },
+    "virtual_switch": {
+      "id": "vsw_465db8e141bb421f977b4b5dabaed23b",
+      "name": "ani-public",
+      "nodes": [
+        {
+          "MAC": "",
+          "State": "applied",
+          "Reason": "",
+          "Applied": true,
+          "NodeUID": "201e41ac-c50d-4c77-b118-72d1ed93e111",
+          "Unknown": false,
+          "NodeName": "ani-01",
+          "Prepared": true,
+          "Priority": 100,
+          "Allocated": true,
+          "DeleteFenced": false,
+          "OriginalOwner": "",
+          "OriginalValue": "",
+          "LastObservedAt": "2026-10-30T03:28:34.911223Z",
+          "OriginalPresent": false,
+          "ResourceVersion": "82380512"
+        },
+        {
+          "MAC": "",
+          "State": "applied",
+          "Reason": "",
+          "Applied": true,
+          "NodeUID": "73564fa7-98ad-45d4-9576-be59f6d5d245",
+          "Unknown": false,
+          "NodeName": "ani-02",
+          "Prepared": true,
+          "Priority": 100,
+          "Allocated": true,
+          "DeleteFenced": false,
+          "OriginalOwner": "",
+          "OriginalValue": "",
+          "LastObservedAt": "2026-10-30T03:28:34.911223Z",
+          "OriginalPresent": false,
+          "ResourceVersion": "82382979"
+        },
+        {
+          "MAC": "",
+          "State": "applied",
+          "Reason": "",
+          "Applied": true,
+          "NodeUID": "af992ed9-cbe1-4f64-8fac-7433808bfab2",
+          "Unknown": false,
+          "NodeName": "ani-03",
+          "Prepared": true,
+          "Priority": 100,
+          "Allocated": true,
+          "DeleteFenced": false,
+          "OriginalOwner": "",
+          "OriginalValue": "",
+          "LastObservedAt": "2026-10-30T03:28:34.911223Z",
+          "OriginalPresent": false,
+          "ResourceVersion": "82384218"
+        }
+      ],
+      "state": "available",
+      "reason": "",
+      "binding_id": "5597bcb6-6464-472d-a30c-2f8c5f826f42",
+      "binding_state": "configured",
+      "operation_state": "succeeded"
+    },
+    "retained_unmanaged_gateway": {
+      "id": "egw_d6d865fccf9946bb90a8a171975be566",
+      "state": "available",
+      "provider_uid": "bba756ac-4918-49ae-a0b8-8bdbe6fea243"
+    },
+    "tenant_default_public_pools": []
+  },
+  "kcn_objects": [
+    {
+      "kind": "VlanNetwork",
+      "name": "vlan-e36c8849f3034c31a1c55571ff845558",
+      "uid": "cbea55e1-ac7e-41a0-b90a-4fe1888b6a8d",
+      "generation": 1,
+      "deletion_timestamp": null,
+      "spec": {
+        "devName": "ens35",
+        "vClusterName": "ani-public",
+        "vlanID": 0
+      },
+      "status": {
+        "conditions": [
+          {
+            "lastTransitionTime": "2026-10-30T03:25:08Z",
+            "message": "",
+            "reason": "Valid",
+            "status": "True",
+            "type": "Valid"
+          },
+          {
+            "lastTransitionTime": "2026-10-30T03:25:08Z",
+            "message": "",
+            "reason": "Initialized",
+            "status": "True",
+            "type": "Initialized"
+          }
+        ],
+        "subnet": "kcn-system/pool-1c5c2bebf286440fa7ed5006c2256021",
+        "topoVersion": "b31739576e95e1f55b670501009f5ac6"
+      }
+    },
+    {
+      "kind": "EIPGateway",
+      "name": "egw-01601cbe1387407182e9ba11ff7a2b79",
+      "uid": "8622cf33-dc41-4d94-88fd-57c122c0e59a",
+      "generation": 1,
+      "deletion_timestamp": null,
+      "spec": {
+        "egressType": "Host",
+        "scope": "Public"
+      },
+      "status": {
+        "boundResources": {
+          "router": "gw.egw-01601cbe1387407182e9ba11ff7a2b79"
+        },
+        "conditions": [
+          {
+            "lastTransitionTime": "2026-10-30T03:26:04Z",
+            "message": "",
+            "reason": "Valid",
+            "status": "True",
+            "type": "Valid"
+          },
+          {
+            "lastTransitionTime": "2026-10-30T03:26:04Z",
+            "message": "",
+            "reason": "Initialized",
+            "status": "True",
+            "type": "Initialized"
+          },
+          {
+            "lastTransitionTime": "2026-10-30T03:26:04Z",
+            "message": "",
+            "reason": "Ready",
+            "status": "True",
+            "type": "Ready"
+          }
+        ],
+        "localIP": "100.64.0.9",
+        "subnets": {
+          "kcn-system/pool-1c5c2bebf286440fa7ed5006c2256021": "172.16.102.0/24"
+        }
+      }
+    },
+    {
+      "kind": "Subnet",
+      "name": "pool-1c5c2bebf286440fa7ed5006c2256021",
+      "uid": "622a19bf-2fef-42c4-b4b5-1e14054c159c",
+      "generation": 1,
+      "deletion_timestamp": null,
+      "spec": {
+        "allowedNamespaces": {
+          "from": "All"
+        },
+        "cidrBlock": "172.16.102.0/24",
+        "enableDHCP": false,
+        "excludeIPs": [
+          "172.16.102.0..172.16.102.191",
+          "172.16.102.1",
+          "172.16.102.2",
+          "172.16.102.208..172.16.102.255"
+        ],
+        "gateway": "egw-01601cbe1387407182e9ba11ff7a2b79",
+        "gatewayIP": "172.16.102.2",
+        "ipVersion": "IPv4",
+        "natOutgoing": false,
+        "type": "Public",
+        "underlayConfig": {
+          "gatewayIP": "172.16.102.1",
+          "vlanNetwork": "vlan-e36c8849f3034c31a1c55571ff845558"
+        }
+      },
+      "status": {
+        "boundResources": {
+          "gatewayPort": "gw.egw-01601cbe1387407182e9ba11ff7a2b79-kcn-system.pool-1c5c2bebf286440fa7ed5006c2256021",
+          "switch": "kcn-system.pool-1c5c2bebf286440fa7ed5006c2256021"
+        },
+        "conditions": [
+          {
+            "lastTransitionTime": "2026-10-30T03:26:16Z",
+            "message": "",
+            "reason": "Initialized",
+            "status": "True",
+            "type": "Initialized"
+          },
+          {
+            "lastTransitionTime": "2026-10-30T03:26:16Z",
+            "message": "",
+            "reason": "Valid",
+            "status": "True",
+            "type": "Valid"
+          },
+          {
+            "lastTransitionTime": "2026-10-30T03:26:16Z",
+            "message": "",
+            "reason": "Ready",
+            "status": "True",
+            "type": "Ready"
+          }
+        ],
+        "gatewayMac": "fa:00:3d:19:82:e3",
+        "observedGeneration": 1,
+        "underlayState": {
+          "chassisNode": "ani-02,ani-01",
+          "ready": true,
+          "vlanNetwork": "vlan-e36c8849f3034c31a1c55571ff845558"
+        },
+        "v4availableIPrange": "172.16.102.193-172.16.102.207",
+        "v4availableIPs": 15,
+        "v4usingIPrange": "172.16.102.192",
+        "v4usingIPs": 1
+      }
+    },
+    {
+      "kind": "EIP",
+      "name": "ani-default-eip-0b031929127b402aa53b1fbb4dffb54d",
+      "uid": "7ccbce42-2173-424d-a43e-a82f4e9f29e5",
+      "generation": 2,
+      "deletion_timestamp": null,
+      "spec": {
+        "ipAddress": "172.16.102.192",
+        "ipVersion": "IPv4",
+        "subnet": "kcn-system/pool-1c5c2bebf286440fa7ed5006c2256021"
+      },
+      "status": {
+        "boundResource": {
+          "disabled": false,
+          "nodeName": "ani-01",
+          "observedGeneration": 1,
+          "resource": "ani-default-snat-0b031929127b402aa53b1fbb4dffb54d",
+          "resourceType": "Snat",
+          "vpc": "kcn-system/kcn-cluster"
+        },
+        "conditions": [
+          {
+            "lastTransitionTime": "2026-10-30T03:27:27Z",
+            "message": "",
+            "reason": "Initialized",
+            "status": "True",
+            "type": "Initialized"
+          },
+          {
+            "lastTransitionTime": "2026-10-30T03:27:27Z",
+            "message": "",
+            "reason": "Valid",
+            "status": "True",
+            "type": "Valid"
+          }
+        ],
+        "gateway": "egw-01601cbe1387407182e9ba11ff7a2b79",
+        "phase": "Bound"
+      }
+    },
+    {
+      "kind": "Snat",
+      "name": "ani-default-snat-0b031929127b402aa53b1fbb4dffb54d",
+      "uid": "dee82a1b-c837-4e1a-b73c-fb1ae842c2f4",
+      "generation": 1,
+      "deletion_timestamp": null,
+      "spec": {
+        "disable": false,
+        "eip": "ani-default-eip-0b031929127b402aa53b1fbb4dffb54d",
+        "vpc": "kcn-cluster"
+      },
+      "status": {
+        "conditions": [
+          {
+            "lastTransitionTime": "2026-10-30T03:27:42Z",
+            "message": "",
+            "reason": "Valid",
+            "status": "True",
+            "type": "Valid"
+          }
+        ],
+        "eipAddress": "172.16.102.192",
+        "phase": "Bound"
+      }
+    }
+  ],
+  "protected_default_vpc": {
+    "name": "kcn-cluster",
+    "namespace": "kcn-system",
+    "uid": "d0235860-f51a-4e63-8f4f-1ca1b34bc04f",
+    "deletion_timestamp": null
+  },
+  "node_acknowledgements": [
+    {
+      "name": "ani-01",
+      "uid": "201e41ac-c50d-4c77-b118-72d1ed93e111",
+      "label": "100",
+      "device_ack": "ens35",
+      "owner": "5597bcb6-6464-472d-a30c-2f8c5f826f42",
+      "temporary_fence_present": false
+    },
+    {
+      "name": "ani-02",
+      "uid": "73564fa7-98ad-45d4-9576-be59f6d5d245",
+      "label": "100",
+      "device_ack": "ens35",
+      "owner": "5597bcb6-6464-472d-a30c-2f8c5f826f42",
+      "temporary_fence_present": false
+    },
+    {
+      "name": "ani-03",
+      "uid": "af992ed9-cbe1-4f64-8fac-7433808bfab2",
+      "label": "100",
+      "device_ack": "ens35",
+      "owner": "5597bcb6-6464-472d-a30c-2f8c5f826f42",
+      "temporary_fence_present": false
+    }
+  ],
+  "nodefacts_cleanup": {
+    "expected_absent_objects": 21,
+    "verified_absent_objects": 21,
+    "remaining_objects": [],
+    "collector_pod_count": 0
+  },
+  "unmanaged_gateway_retention": {
+    "id": "egw_d6d865fccf9946bb90a8a171975be566",
+    "reason": "Original pool used an explicitly supplied, unmanaged gateway; deleting that pool does not own deletion of this gateway. New pool owns its separate managed gateway."
+  },
+  "traffic_validation": "NOT_RUN in this receipt; parent performs traffic validation separately",
+  "mutation_scope": "No Kubernetes or database mutations; final receipt is the only filesystem write"
+}

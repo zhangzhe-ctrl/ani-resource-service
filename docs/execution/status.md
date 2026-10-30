@@ -2,9 +2,9 @@
 
 ## 2026-10-30：NodeFacts 拆除
 
-**代码/Fedora：PASS；10～12 Res 更新与采集器移除：PASS；Boss 完整删除/原参数重建：not_verified（确认待返回）。** 基于 main `f60752b`，创建、持续观察、删除及 VPC 白名单路径已移除 NodeFacts 前置，保留权限、持久化、永久幂等、逻辑占用及 Node UID/组写入屏障，并修正 KCN `notReadyNodes` 字符串解析。未修改 KCN 或桥拆除。Fedora `make verify` 和定向真实 PG 网络/恢复用例通过；新镜像 `eb1f7995…` 已部署到 `.10/.11/.12`，collector 21 个精确对象及旧 adoption 专用 Role/Binding 已删除。移除后原 VLAN、池及默认出口仍持续 fresh/available。
+**代码/Fedora：PASS；10～12 Res 更新与采集器移除：PASS；Boss 删除/原参数重建与 KCN 接管：PASS。** 基于 main `f60752b`，创建、持续观察、删除及 VPC 白名单路径已移除 NodeFacts 前置，保留权限、持久化、永久幂等、逻辑占用及 Node UID/组写入屏障，并修正 KCN `notReadyNodes` 字符串解析。未修改 KCN 或桥拆除。Fedora `make verify` 和定向真实 PG 网络/恢复用例通过；新镜像 `eb1f7995…` 已部署到 `.10/.11/.12`，collector 21 个精确对象及旧 adoption 专用 Role/Binding 已删除。
 
-已修复 Gov 默认出口读取的 API 目录缺项，未增加角色权限；Boss 基于最新 `feat/governance-api@d0e89ea4` 修复 OVN 可在分配窗口外的合法原参数，Fedora 页面 `172.16.101.31:31083` 连接 10 集群。用户明确许可本次跳过不可用 GitNexus；前端行为测试、lint、格式和构建通过。Boss 已真实删除原默认出口，KCN EIP/Snat 已回收；现停在原公网池“删除后不可恢复”确认框，依浏览器规则已请求执行时确认，尚未删除公网池/二层/交换机或重建。系统 VPC 保持。所有范围、失败/中断、来源和页面证据见[唯一执行记录](records/NODEFACTS-REMOVAL-20261030/README.md)。
+已修复 Gov 默认出口读取的 API 目录缺项，未增加角色权限；Boss 基于最新 `feat/governance-api@d0e89ea4` 修复 OVN 可在分配窗口外的合法原参数，Fedora 页面 `172.16.101.31:31083` 连接 10 集群。用户明确许可本次跳过不可用 GitNexus；前端行为测试、lint、格式和构建通过。经用户执行时确认，已从 Boss 删除原默认出口、公网池、二层网络及交换机，再按原 `ani-public/ens35/VLAN0`、`172.16.102.0/24`、分配窗口 `.192..207`、上游 `.1`、OVN `.2` 重建。页面二层、公网池及默认出口均可用，出口恢复 `.192`；11:29:26（Asia/Shanghai）实际 DB/KCN 核对 fresh/available/succeeded，三节点新 binding 接管 ens35，EIP/Snat Bound，collector Pod 为 0，原系统 VPC UID 保持。旧独立 unmanaged gateway 按所有权保留，新池使用受管网关；实际 Pod 出网流量复测 NOT_RUN。所有范围、失败/中断、来源和页面证据见[唯一执行记录](records/NODEFACTS-REMOVAL-20261030/README.md)。
 
 ## Public Network Managed Gateway (2026-10-27)
 

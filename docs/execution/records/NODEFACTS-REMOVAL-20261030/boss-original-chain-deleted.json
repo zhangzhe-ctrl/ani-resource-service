@@ -1,0 +1,137 @@
+{
+  "status": "PASS",
+  "captured_at_utc": "2026-10-30T03:24:25.121482+00:00",
+  "cluster_uid": "5277649d-e28d-4a0a-ae76-8354365c63bc",
+  "server": "https://172.16.101.10:6443",
+  "scope": "Original VLAN and ani-public switch deletion; unmanaged gateway intentionally retained by ownership",
+  "assertions": {
+    "vlan_deleted": true,
+    "switch_deleted": true,
+    "native_vlan_absent": true,
+    "internal_device_retired": true,
+    "three_nodes_clean": true
+  },
+  "database": {
+    "vlan": {
+      "id": "vlan_1027ace223cb4339a32121709654d1d4",
+      "state": "deleted",
+      "reason": "",
+      "completed_at": "2026-10-30T03:22:14.741827+00:00",
+      "operation_id": "a1e6c7d9-3375-46c3-8ee4-978399a5ce3e",
+      "operation_kind": "delete_vlan",
+      "pending_action": "",
+      "operation_state": "succeeded",
+      "operation_reason": ""
+    },
+    "database_time": "2026-10-30T03:23:40.558467+00:00",
+    "virtual_switch": {
+      "id": "vsw_0014e5b421284cbfbacb509cdb9cf470",
+      "name": "ani-public",
+      "nodes": [
+        {
+          "MAC": "00:0c:29:e2:f0:2b",
+          "State": "cleaned",
+          "Reason": "",
+          "Applied": false,
+          "NodeUID": "201e41ac-c50d-4c77-b118-72d1ed93e111",
+          "Unknown": false,
+          "NodeName": "ani-01",
+          "Prepared": true,
+          "Priority": 100,
+          "Allocated": true,
+          "DeleteFenced": true,
+          "OriginalOwner": "",
+          "OriginalValue": "",
+          "LastObservedAt": "2026-10-30T03:22:50.399159Z",
+          "OriginalPresent": false,
+          "ResourceVersion": "82368809"
+        },
+        {
+          "MAC": "00:0c:29:1a:5a:19",
+          "State": "cleaned",
+          "Reason": "",
+          "Applied": false,
+          "NodeUID": "73564fa7-98ad-45d4-9576-be59f6d5d245",
+          "Unknown": false,
+          "NodeName": "ani-02",
+          "Prepared": true,
+          "Priority": 100,
+          "Allocated": true,
+          "DeleteFenced": true,
+          "OriginalOwner": "",
+          "OriginalValue": "",
+          "LastObservedAt": "2026-10-30T03:22:50.399159Z",
+          "OriginalPresent": false,
+          "ResourceVersion": "82369309"
+        },
+        {
+          "MAC": "00:0c:29:e9:32:4f",
+          "State": "cleaned",
+          "Reason": "",
+          "Applied": false,
+          "NodeUID": "af992ed9-cbe1-4f64-8fac-7433808bfab2",
+          "Unknown": false,
+          "NodeName": "ani-03",
+          "Prepared": true,
+          "Priority": 100,
+          "Allocated": true,
+          "DeleteFenced": true,
+          "OriginalOwner": "",
+          "OriginalValue": "",
+          "LastObservedAt": "2026-10-30T03:22:50.399159Z",
+          "OriginalPresent": false,
+          "ResourceVersion": "82369566"
+        }
+      ],
+      "state": "deleted",
+      "reason": "",
+      "completed_at": "2026-10-30T03:23:32.163913+00:00",
+      "operation_id": "bb2f31a2-7a88-4886-8c19-da47e837f53c",
+      "binding_state": "cleaned",
+      "operation_kind": "delete_virtual_switch",
+      "operation_state": "succeeded",
+      "operation_reason": ""
+    },
+    "internal_device": {
+      "id": "device_fa4f32ecc4ba49c0b5df2801e54882d7",
+      "retired": true,
+      "switch_binding_id": "9933e2c7-72bc-4064-8a0f-a53b67ee0adf",
+      "virtual_switch_id": "vsw_0014e5b421284cbfbacb509cdb9cf470",
+      "registration_version": 2
+    }
+  },
+  "nodes": [
+    {
+      "name": "ani-01",
+      "uid": "201e41ac-c50d-4c77-b118-72d1ed93e111",
+      "group_label_present": false,
+      "group_feedback_present": false,
+      "owner_present": false,
+      "fence_present": false,
+      "group_label": null,
+      "group_feedback": null
+    },
+    {
+      "name": "ani-02",
+      "uid": "73564fa7-98ad-45d4-9576-be59f6d5d245",
+      "group_label_present": false,
+      "group_feedback_present": false,
+      "owner_present": false,
+      "fence_present": false,
+      "group_label": null,
+      "group_feedback": null
+    },
+    {
+      "name": "ani-03",
+      "uid": "af992ed9-cbe1-4f64-8fac-7433808bfab2",
+      "group_label_present": false,
+      "group_feedback_present": false,
+      "owner_present": false,
+      "fence_present": false,
+      "group_label": null,
+      "group_feedback": null
+    }
+  ],
+  "native_vlan": null,
+  "mutation": "None; read-only Kubernetes and PostgreSQL SELECT; this receipt is the only filesystem write"
+}
