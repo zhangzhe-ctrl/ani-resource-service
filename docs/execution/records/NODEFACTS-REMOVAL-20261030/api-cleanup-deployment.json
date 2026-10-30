@@ -1,0 +1,93 @@
+{
+  "automatic_rollback": "NOT_RUN",
+  "build_inputs_sha256": "8ae4a7e6017e85bfde5ed51ee5480c09428c56020ae95b8739d48a11f6e33d09",
+  "cluster_uid": "5277649d-e28d-4a0a-ae76-8354365c63bc",
+  "finished_at": "2026-10-30T04:57:49.193669+00:00",
+  "mode": "execute",
+  "order": [
+    "ani-governance",
+    "ani-resource-service"
+  ],
+  "patch_requests_sent": 2,
+  "patches_confirmed": 2,
+  "result": "PASS",
+  "services": [
+    {
+      "available_replicas": 1,
+      "desired_replicas": 1,
+      "generation": 154,
+      "name": "ani-governance",
+      "namespace": "ani-system",
+      "new_image": "172.16.101.10:30003/icn-01a15337-release/ani-governance@sha256:b472ac3daba6eff5fceacc41e2bf882dabf1ab83435bc4407d47093dcc72b8ac",
+      "observed_generation": 154,
+      "old_generation": 153,
+      "old_image": "172.16.101.10:30003/icn-01a15337-release/eight-gov@sha256:ea7bb2448918e0c20c318694227bcc71299f715f05a3f2896be5250ddcc160ea",
+      "patch_outcome": "CONFIRMED",
+      "patch_resource_version": "81957362",
+      "patched_generation": 154,
+      "policy_cache_refresh": {
+        "mode": "new_process_startup_ResetPolicies",
+        "pods": [
+          {
+            "engine": "casbin",
+            "pod": "ani-governance-6f4c95489f-ll87t",
+            "startup_reload_verified": true
+          }
+        ],
+        "verified": true
+      },
+      "preflight_resource_version": "81957362",
+      "ready_and_runtime_image_verified": true,
+      "ready_replicas": 1,
+      "runtime_pods": [
+        {
+          "image_id": "172.16.101.10:30003/icn-01a15337-release/ani-governance@sha256:b472ac3daba6eff5fceacc41e2bf882dabf1ab83435bc4407d47093dcc72b8ac",
+          "pod": "ani-governance-6f4c95489f-ll87t",
+          "ready": true
+        }
+      ],
+      "source_annotations": {
+        "ani.io/formal-source-commit": "88c5a11362835498f68da390d02d2bcebd072518",
+        "ani.io/release": "remove-nodefacts-api-20261030",
+        "ani.io/source-manifest-sha256": "23e95d3dcc078af2388c012ad660eece315354bc5734a73ae4fc65923be6fa4b",
+        "ani.io/source-revision": "23e95d3dcc078af2388c012ad660eece315354bc5734a73ae4fc65923be6fa4b"
+      },
+      "status": "READY",
+      "uid": "8a843c44-5a82-4e48-a92e-a3c28c665c67"
+    },
+    {
+      "available_replicas": 1,
+      "desired_replicas": 1,
+      "generation": 50,
+      "name": "ani-resource-service",
+      "namespace": "ani-system",
+      "new_image": "172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:0d508e2000d1d3238c3569a076ebc7a4f38ff2537368bfa5dccb0f6ab9d0ece9",
+      "observed_generation": 50,
+      "old_generation": 49,
+      "old_image": "172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:eb1f7995e1d95815ef542c9ea87c5aca4b4b2824c776b744439aa5a1d8af68fe",
+      "patch_outcome": "CONFIRMED",
+      "patch_resource_version": "82332562",
+      "patched_generation": 50,
+      "preflight_resource_version": "82332562",
+      "ready_and_runtime_image_verified": true,
+      "ready_replicas": 1,
+      "runtime_pods": [
+        {
+          "image_id": "172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:0d508e2000d1d3238c3569a076ebc7a4f38ff2537368bfa5dccb0f6ab9d0ece9",
+          "pod": "ani-resource-service-589b954d99-fvpg4",
+          "ready": true
+        }
+      ],
+      "source_annotations": {
+        "ani.io/formal-source-commit": "0a9f1bea326c728e6a056d0c09630ed1e3815c6a",
+        "ani.io/release": "remove-nodefacts-api-20261030",
+        "ani.io/source-manifest-sha256": "2b28b43c354415b57f31a9467370f3026f7a51673e643fa9c5f6d513248e0fcb",
+        "ani.io/source-revision": "2b28b43c354415b57f31a9467370f3026f7a51673e643fa9c5f6d513248e0fcb"
+      },
+      "status": "READY",
+      "uid": "e17f1f9e-e406-452f-838d-85062a6e860a"
+    }
+  ],
+  "stage": "complete",
+  "started_at": "2026-10-30T04:57:20.885573+00:00"
+}

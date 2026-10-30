@@ -64,3 +64,34 @@ Boss 原表单拒绝 OVN `.2` 位于分配窗口外，无法原参数重建。�
 最终证据为 `boss-recreated-chain-final.json`、`boss-recreated-layer2.jpg` 和 `boss-recreated-default-egress.jpg`。这是实际 Boss → Gov → Res → PostgreSQL/worker → KCN 的删除、重建、接管与状态闭环，不是受控边界 fixture。**本轮未另做 Pod 出网流量复测（NOT_RUN）**。
 
 原独立网关为 `managed_gateway=false`，按既有所有权规则保留，未把它冒充 NodeFacts 残留或强行删除。新页面公网池使用当前合同的平台受管网关，确认页明确展示“由平台自动创建和管理”。KCN 桥拆除逻辑未修改；本次删除与同网卡/VLAN 重建已实际通过。
+
+## 废弃接口与旧代码清理（2026-10-30 追加）
+
+用户指出返回“已移除”的兼容接口和旧过滤器仍在，继续要求清理。Resource 提交 `0a9f1bea326c728e6a056d0c09630ed1e3815c6a` 移除节点网卡发现、独立设备登记/查询、退出/退出查询五个 RPC、消息、服务注册及治理方法白名单；删除 `FilterNodeInterfaces`、独立登记事务和退出 worker/Provider/SQL 查询。旧 Proto 字段编号和名称 reserved，历史 migration 不重写。交换机内部设备仍保留逻辑身份/占用，节点只含 NodeName、NodeUID、Name；物理快照旧字段由 JSON decoder 忽略。
+
+保持旧池/网关/旧 VLAN 的 v1 指纹编码（含历史 null Device 槽）和当前 v2 指纹，新增固定 hash、旧快照兼容以及实际 gRPC 旧方法不分发的回归。新业务类型不再暴露物理事实；原数据库指纹列和内部 operation 标签继续用于逻辑身份与既有约束，不是 NodeFacts 运行依赖。
+
+Fedora 独占 run `ani-resource-service-runs/remove-nodefacts-api-20261030`；925 个测试源码文件，生成后清单 SHA-256 `f52614b676432b357fe68e3fd9818ac9ad8c8b939d226e068760ca8d522850a0`，已逐文件核对本地与远端一致。`make verify` 日志完整通过，并进入后续定向 PostgreSQL 回归，后者 PASS（113.841 秒，任务 PG 容器已回收）。SSH 复用连接回传中断导致外层终端返回 255，随后通过独立连接恢复完整日志，未把连接错误记作业务测试失败，也未重跑已经通过的检查。
+
+Governance 提交 `88c5a11362835498f68da390d02d2bcebd072518` 同步删除 HTTP 路由、专属 DTO/转发/权限映射及目录种子，使用正式 Resource SDK `v0.0.0-20261030040700-0a9f1bea326c`。通过标准 Go VCS 获取并核对完整 Origin.Hash、module/go.mod checksum；先前官方 zip/sumdb 连接 EOF 与错误代理端点均保留失败记录。最终启用 Go HTTP/1.1 并使用官方 sum.golang.google.cn 校验服务后下载通过；标准 `go list -m -json module@完整SHA` 单独提供 Origin，`go mod download -json` 在已缓存依赖上未提供此可选字段。
+
+完整 `make api`、auth/service/data 定向单测、vet、服务构建均 PASS。真实 Gov HTTP/JWT/Casbin → mTLS → 实际 Resource/独立 PostgreSQL/worker 联测 PASS（12.789 秒）：保留权限拒绝，验证二层创建/接管/引用阻止/删除、公网与内网地址池、默认出口和五个旧 HTTP 路径无副作用。Kubernetes/KCN 是这组联测的外部边界 fixture。先前两次联测分别发现 fixture 缺少已存在的 EIP 权限种子，以及仍要求已删除 `mac` 字段的旧断言；已补种子、去重共用权限 grant，并改为断言 MAC 不存在，其余业务断言保留。最初全文件 gofmt 带来的 22 个无关格式改动已按原始字节恢复，未混入提交。最终 2698 文件的源码清单 SHA-256 `80ec47216a8be879b5f8f2c73b0cc492054c21565ad8122b64499c39828a5f9a`，本地与 Fedora 逐文件一致。结果与失败记录见 [验证收据](api-cleanup-verification.json)及[核心测试日志](api-cleanup-test-excerpts.log)。
+
+10～12 的 Gov 目录按固定行快照、引用检查与事务锁，精确删除 5 API、5 权限映射、10 专属角色 grant 和 5 专属权限；不改历史、菜单、计划、通用策略或其他角色权限。公开[目录清理收据](api-cleanup-catalog-cleanup.jsonl)保留实际计数，完整行恢复快照只存 Fedora 私有目录。Boss API 管理按 `node-interfaces` 搜索已为 0 条，见 `boss-node-interfaces-removed.jpg`。
+
+本次跨仓变更为 [Resource #28](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/28) 和 [Governance #73](https://github.com/zhangzhe-ctrl/ani-governance/pull/73)，原 Boss 表单修复为 [Boss #6](https://github.com/bykenkk/ani-boss-console/pull/6)。成对镜像、集群更新和最终页面复核的结果见下文；不把上述受控联测当作集群验收。
+
+### 废弃接口清理后的成对发布与 Boss 复验：PASS
+
+Fedora 使用 Go 1.26.10、CGO=0、并行度 2 和既有共享重任务锁构建两服务，分别限制 Resource 1536MiB、Governance 3GiB；复用固定 distroless 基础镜像，私有 Harbor 推送与回读 digest 均通过。[成对构建收据](api-cleanup-image-pair.json)记录实际正式提交、临时远端 Git 快照、编译预算与镜像身份。镜像构建源码清单额外包含生成器、fault-build 和 Python cache 等忽略产物，因此清单格式/文件数与测试源码清单不同；[逐文件对照收据](api-cleanup-source-match.json)确认全部 925/2698 个测试源码内容一致，额外产物逐项列出，运行镜像上下文仅包含服务二进制、Dockerfile 和 notices。
+
+| 服务 | 正式源码提交 | 部署镜像 digest | generation |
+|---|---|---|---|
+| Resource | `0a9f1bea326c728e6a056d0c09630ed1e3815c6a` | `sha256:0d508e2000d1d3238c3569a076ebc7a4f38ff2537368bfa5dccb0f6ab9d0ece9` | 50 |
+| Governance | `88c5a11362835498f68da390d02d2bcebd072518` | `sha256:b472ac3daba6eff5fceacc41e2bf882dabf1ab83435bc4407d47093dcc72b8ac` | 154 |
+
+限定三节点 UID/IP、cluster UID、两 Deployment UID 和旧镜像，使用新 resourceVersion 的 JSON Patch 条件更新；先 Gov 后 Res，仅修改 server image 与来源注解。两次 patch 结果均 confirmed，两服务均 1/1 Ready，实际 Pod imageID 与预期 digest 完全一致；Gov 新进程启动已成功 ResetPolicies/Casbin 重载。未改配置、replicas、KCN 或 Boss 共享部署，见[部署收据](api-cleanup-deployment.json)。
+
+最终[实际 DB/KCN 只读核验](api-cleanup-live-acceptance.json)的 11 项检查全部通过：旧 API 目录 0 条、collector 及配套对象 0 个，原交换机、VLAN、池、默认出口 ID/关系保持，三节点组仍 ACK `ens35`；VLAN/public pool 观测未过期且 available/succeeded，默认出口 `.192` 为 available/ready/succeeded、AppliedEnabled=true、pending_unknown=false。KCN 对象 UID 保持，pool Ready，EIP/Snat Bound，系统 VPC 原 UID 保持。年龄按 DB 时钟测量并累计本次 I/O 耗时，读取不会续期。
+
+新版发布后从 Fedora Boss 实际重新加载：API 管理搜索 `node-interfaces` 为 0 条；二层 `cluster-public-ens35-res-20261022` 和公网池 `cluster-public-102-res-20261022` 均可用。打开“平台组件出网”，显示原 `kcn-system/kcn-cluster`、出口 **172.16.102.192**、状态“可用”、观测“有效”。页面证据为 `boss-node-interfaces-removed.jpg`、`api-cleanup-boss-layer2.jpg` 和 `api-cleanup-boss-default-egress.jpg`。本追加轮没有再次删除已恢复业务链；原删除/同参数重建的真实 Boss 验收见上节，**实际 Pod 出网流量仍为 NOT_RUN**。

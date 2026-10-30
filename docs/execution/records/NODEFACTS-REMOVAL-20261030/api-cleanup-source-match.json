@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "resource_files": 925,
+  "resource_tested_manifest_sha256": "f52614b676432b357fe68e3fd9818ac9ad8c8b939d226e068760ca8d522850a0",
+  "governance_source_files": 2698,
+  "governance_tested_manifest_sha256": "80ec47216a8be879b5f8f2c73b0cc492054c21565ad8122b64499c39828a5f9a",
+  "build_manifest_additional_generated_artifacts": {
+    "resource": [
+      ".tools",
+      ".work/fault-build/manifest.json",
+      ".work/fault-build/network-internal-biz-network-network.go",
+      ".work/fault-build/network-internal-biz-network-worker.go",
+      ".work/fault-build/network-internal-data-network-kc_observation.go",
+      ".work/fault-build/network-internal-server-worker.go",
+      ".work/fault-build/network-main",
+      ".work/fault-build/network-overlay.json",
+      "scripts/__pycache__/net05a-adapt.cpython-314.pyc"
+    ],
+    "governance": [
+      "tools/bin/gow",
+      "tools/bin/protoc-gen-go-redact"
+    ]
+  },
+  "note": "Build manifests include file sizes and ignored tools/fault-build/cache artifacts; all tested source contents match exactly. Runtime image contexts contain only service binary, Dockerfile and notices. Ignored artifacts are not production build inputs."
+}

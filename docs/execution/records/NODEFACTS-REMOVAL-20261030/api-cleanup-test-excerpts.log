@@ -1,0 +1,129 @@
+# Public selected verification excerpts; full original log hashes identify the retained Fedora artifacts.
+# These are isolated test results, separate from production deployment/business acceptance.
+
+## /home/chabking/workspace/ani-resource-service-runs/remove-nodefacts-api-20261030/verify-01.log
+sha256=0d2f41c9b9b5fb70b0dd3dc1f65515a7cee036a7f3087989b99a7ebad80b10de
+L20: go mod tidy -diff
+L21: go test -count=1 ./...
+L33: ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network	0.015s
+L43: ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	0.182s
+L48: ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/server	2.252s
+L52: ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network	0.009s
+L72: go vet ./...
+L73: go build -trimpath ./...
+L74: go mod verify
+L75: all modules verified
+L76: git diff --check
+
+## /home/chabking/workspace/ani-resource-service-runs/remove-nodefacts-api-20261030/integration-01.log
+sha256=1b0fe5c9aebe923a82a740d007a440a82e90786d02930b7e7c6d9e33ba9425d8
+L86: --- PASS: TestSwitchLogicalDeviceIdentityIgnoresHistoricalPhysicalSnapshot (0.00s)
+L126: --- PASS: TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe (0.00s)
+L136: --- PASS: TestVirtualSwitchAdmissionAcceptsKCNManagedDeviceWithoutLegacyOwner (0.00s)
+L138: --- PASS: TestVirtualSwitchWiringUsesExactKCNDeviceAcknowledgement (0.00s)
+L140: --- PASS: TestVirtualSwitchObservationProofUsesCompleteKCNCollection (0.00s)
+L142: --- PASS: TestVirtualSwitchDeviceStateWaitsForEveryNodeAndIgnoresStoredMAC (0.00s)
+L155: --- PASS: TestEgressPostgresLifecycleIsolationAndPermanentReplay (1.08s)
+L193: --- PASS: TestVirtualSwitchDurableTwoStepAcceptanceAndRecovery (0.71s)
+L198: --- PASS: TestVirtualSwitchDeleteWaitsForOldClaimLeaseExpiry (20.69s)
+L204: --- PASS: TestVPCCIDRPresetsMainFlow (3.03s)
+L210: === RUN   TestPlatformCancellationPreservesDefinitiveMutationOutcome/definitive_pre_send_failure
+L211: === RUN   TestPlatformCancellationPreservesDefinitiveMutationOutcome/uncertain_send_remains_pending
+L212: === RUN   TestPlatformCancellationPreservesDefinitiveMutationOutcome/expired_lease_cannot_clear_pending
+L213: --- PASS: TestPlatformCancellationPreservesDefinitiveMutationOutcome (5.49s)
+L214:     --- PASS: TestPlatformCancellationPreservesDefinitiveMutationOutcome/definitive_pre_send_failure (0.64s)
+L215:     --- PASS: TestPlatformCancellationPreservesDefinitiveMutationOutcome/uncertain_send_remains_pending (1.87s)
+L216:     --- PASS: TestPlatformCancellationPreservesDefinitiveMutationOutcome/expired_lease_cannot_clear_pending (2.99s)
+L217: PASS
+L218: ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	113.841s
+L219: removed task container=82846c7eb17048aeb7acd5f5e769cad8b08f2783fd43438f77a864af8c6fc075
+
+## /home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/driver-05.log
+sha256=5a23fe0bc1e8089ce37371a0164bbbb3e33e524d7422e30f11ec515ba15dae5b
+L1: PASS_FORMAL_RESOURCE_SDK v0.0.0-20261030040700-0a9f1bea326c 0a9f1bea326c728e6a056d0c09630ed1e3815c6a
+L2: PASS_GOV_PINNED_API_GENERATION
+L3: PASS_GOV_AUTH_SERVICE_DATA_TESTS
+L4: PASS_GOV_BUILD_VET
+
+## /home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/generate-05.log
+sha256=cc67e52b71c25017674ada267362142875873d23673965b0d8532adc44142c08
+L61: post-processed the OpenAPI document with scripts/finalize-aksk-openapi.py
+L62: staged generation ok: 6 to write, 30 unchanged hand-written kept, 470 staged files under 6 managed roots [api/gen/go:418 api/quota/gen/go:2 app/admin/service/cmd/server/assets:3 pkg/localdeps/go-crud/api/gen/go:1 pkg/localdeps/go-wind-toolkit/protoc-gen-go-redact:29 pkg/localdeps/kratos-bootstrap/api/gen/go:17]
+L63:   updated: api/gen/go/admin/service/v1/i_platform_network.pb.go
+L64:   updated: api/gen/go/admin/service/v1/i_platform_network_grpc.pb.go
+L65:   updated: api/gen/go/admin/service/v1/i_platform_network_http.pb.go
+L66:   updated: api/gen/go/catalog/service/v1/platform_network.pb.go
+L67:   updated: api/gen/go/catalog/service/v1/platform_network.pb.validate.go
+L68:   updated: app/admin/service/cmd/server/assets/openapi.yaml
+
+## /home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/targeted-05.log
+sha256=e88151729342edda39402193373364c1c6dc2bdc4cb8921499bf98813efbce9a
+L1: ok  	go-wind-admin/pkg/middleware/auth	0.030s
+L2: ok  	go-wind-admin/app/admin/service/internal/service	23.707s
+L3: ok  	go-wind-admin/app/admin/service/internal/data	29.972s
+
+## /home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/joint-05.log
+sha256=9cad302991f6c5b6794ccc351eec33683c90ab1e754acb8ceeade055c0dabe7b
+L24: Network Governance/real Resource joint fixture pg=c00c199d818123d751873fe0a769cbe6e71181bf54ffdabe449617afea8e998e redis=a22b0a4ae066a9b0e60d9b91fabe97f24d5b45defa1458c0b6bb6cdce945c6af
+L25: === RUN   TestNetworkJointHTTP
+L26:     network_joint_http_test.go:177:
+L27:         	Error Trace:	/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/source-01/app/admin/service/internal/service/network_joint_http_test.go:177
+L28:         	Error:      	Received unexpected error:
+L29:         	            	ent: permission not found
+L30:         	Test:       	TestNetworkJointHTTP
+L31:     network_joint_fixture_test.go:91: Resource fixture pid=917024 exit=0; product and infrastructure cleanup pass
+L32: --- FAIL: TestNetworkJointHTTP (4.86s)
+L33: FAIL
+L34: FAIL	go-wind-admin/app/admin/service/internal/service	4.929s
+L35: FAIL
+L36: removed Network Governance fixture=a22b0a4ae066a9b0e60d9b91fabe97f24d5b45defa1458c0b6bb6cdce945c6af
+L37: removed Network Governance fixture=c00c199d818123d751873fe0a769cbe6e71181bf54ffdabe449617afea8e998e
+
+## /home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/joint-06.log
+sha256=c2557119b7e161a77a44d6dbd4db86f092a89eaaa37e593f6f7276d6bfea6332
+L160:     network_joint_http_test.go:942:
+L161:         	Error Trace:	/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/source-01/app/admin/service/internal/service/network_joint_http_test.go:942
+L162:         	Error:      	Should NOT be empty, but was <nil>
+L163:         	Test:       	TestNetworkJointHTTP/platform_network/layer2_lifecycle
+L164: === RUN   TestNetworkJointHTTP/platform_network/retired_device_routes
+L300: --- FAIL: TestNetworkJointHTTP (12.06s)
+L301:     --- FAIL: TestNetworkJointHTTP/platform_network (4.54s)
+L311:         --- FAIL: TestNetworkJointHTTP/platform_network/layer2_lifecycle (0.26s)
+L321: FAIL
+L322: FAIL	go-wind-admin/app/admin/service/internal/service	12.109s
+L323: FAIL
+
+## /home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/joint-07.log
+sha256=4b6213f75548a2a68b4f54fff6ae7e8c7e4d5b75f4b63385a068a05ee7168015
+L331: === NAME  TestNetworkJointHTTP
+L332:     network_joint_http_test.go:305: HTTP compensation: no active task resources
+L333:     network_joint_fixture_test.go:91: Resource fixture pid=940038 exit=0; product and infrastructure cleanup pass
+L334: --- PASS: TestNetworkJointHTTP (12.73s)
+L335:     --- PASS: TestNetworkJointHTTP/platform_network (5.48s)
+L336:         --- PASS: TestNetworkJointHTTP/platform_network/denials (0.45s)
+L337:             --- PASS: TestNetworkJointHTTP/platform_network/denials/CreateVirtualSwitch (0.07s)
+L338:             --- PASS: TestNetworkJointHTTP/platform_network/denials/GetVirtualSwitch (0.06s)
+L339:             --- PASS: TestNetworkJointHTTP/platform_network/denials/ListVirtualSwitches (0.06s)
+L340:             --- PASS: TestNetworkJointHTTP/platform_network/denials/DeleteVirtualSwitch (0.06s)
+L341:             --- PASS: TestNetworkJointHTTP/platform_network/denials/CreateDefaultVPCEgress (0.05s)
+L342:             --- PASS: TestNetworkJointHTTP/platform_network/denials/GetDefaultVPCEgress (0.06s)
+L343:             --- PASS: TestNetworkJointHTTP/platform_network/denials/DeleteDefaultVPCEgress (0.05s)
+L344:         --- PASS: TestNetworkJointHTTP/platform_network/gateway_vertical_flow (0.32s)
+L345:         --- PASS: TestNetworkJointHTTP/platform_network/layer2_lifecycle (1.75s)
+L346:         --- PASS: TestNetworkJointHTTP/platform_network/retired_device_routes (0.00s)
+L347:         --- PASS: TestNetworkJointHTTP/platform_network/default_vpc_egress_lifecycle (1.27s)
+L348:         --- PASS: TestNetworkJointHTTP/platform_network/address_pool_lifecycles (1.66s)
+L349:             --- PASS: TestNetworkJointHTTP/platform_network/address_pool_lifecycles/public (0.81s)
+L350:             --- PASS: TestNetworkJointHTTP/platform_network/address_pool_lifecycles/intranet (0.86s)
+L351:         --- PASS: TestNetworkJointHTTP/platform_network/public-address-pools (0.00s)
+L352:         --- PASS: TestNetworkJointHTTP/platform_network/intranet-address-pools (0.01s)
+L353:         --- PASS: TestNetworkJointHTTP/platform_network/vlan-networks (0.00s)
+L354:         --- PASS: TestNetworkJointHTTP/platform_network/capabilities (0.01s)
+L355: PASS
+L356: ok  	go-wind-admin/app/admin/service/internal/service	12.789s
+L357: removed Network Governance fixture=da6bbf332e5793b7a194797f2340922929170e5b127e5cd0217538ff9a2c0ea6
+L358: removed Network Governance fixture=410a1b811556f571c7dd9036a34a645dbf4d692f94c92cc3a0deb384fbfab3de
+
+## /home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/driver-07.log
+sha256=83d435d2ded49532a561333bfbcd2eecb6a057e674f65eb23a78c50c81d2e72c
+L1: PASS_GOV_REAL_RESOURCE_JOINT_PLATFORM_FLOW

@@ -1,0 +1,57 @@
+{
+  "status": "PASS",
+  "governance_verification_exit": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/verify-07.exit",
+  "resource": {
+    "status": "PASS",
+    "repository": "172.16.101.10:30003/icn-01a15337-release/ani-resource-service",
+    "version": "nodefacts-api-20261030-2b28b43c3544",
+    "digest": "sha256:0d508e2000d1d3238c3569a076ebc7a4f38ff2537368bfa5dccb0f6ab9d0ece9",
+    "reference": "172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:0d508e2000d1d3238c3569a076ebc7a4f38ff2537368bfa5dccb0f6ab9d0ece9",
+    "source_manifest_sha256": "2b28b43c354415b57f31a9467370f3026f7a51673e643fa9c5f6d513248e0fcb",
+    "source_identity": {
+      "source_path": "/home/chabking/workspace/ani-resource-service-runs/remove-nodefacts-api-20261030/source-01",
+      "source_snapshot_git_head": "fb6c5760235a6718aac478cc707b035f5d39a024",
+      "formal_source_commit": "0a9f1bea326c728e6a056d0c09630ed1e3815c6a",
+      "source_manifest_sha256": "2b28b43c354415b57f31a9467370f3026f7a51673e643fa9c5f6d513248e0fcb",
+      "version": "nodefacts-api-20261030-2b28b43c3544",
+      "go": "go1.26.10",
+      "cgo_enabled": false,
+      "goos": "linux",
+      "goarch": "amd64",
+      "gomaxprocs": 2,
+      "goflags": "-p=2",
+      "gomemlimit": "1536MiB",
+      "gomodcache": "/home/chabking/workspace/ani-resource-service-runs/container-restart-pvc-20261028/modcache",
+      "base_image": "localhost/ani-distroless-static-debian12:formal-20261018",
+      "base_image_id": "sha256:26a84c9340fe960d00022bbe71702e7c42af7716324f156d3660c1b2910ebb8b",
+      "buildvcs": false
+    }
+  },
+  "governance": {
+    "status": "PASS",
+    "repository": "172.16.101.10:30003/icn-01a15337-release/ani-governance",
+    "version": "nodefacts-api-20261030-23e95d3dcc07",
+    "digest": "sha256:b472ac3daba6eff5fceacc41e2bf882dabf1ab83435bc4407d47093dcc72b8ac",
+    "reference": "172.16.101.10:30003/icn-01a15337-release/ani-governance@sha256:b472ac3daba6eff5fceacc41e2bf882dabf1ab83435bc4407d47093dcc72b8ac",
+    "source_manifest_sha256": "23e95d3dcc078af2388c012ad660eece315354bc5734a73ae4fc65923be6fa4b",
+    "source_identity": {
+      "source_path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/source-01",
+      "source_snapshot_git_head": "b713b08960cccc7ee9f722474beb92b5847e4a62",
+      "formal_source_commit": "88c5a11362835498f68da390d02d2bcebd072518",
+      "source_manifest_sha256": "23e95d3dcc078af2388c012ad660eece315354bc5734a73ae4fc65923be6fa4b",
+      "version": "nodefacts-api-20261030-23e95d3dcc07",
+      "go": "go1.26.10",
+      "cgo_enabled": false,
+      "goos": "linux",
+      "goarch": "amd64",
+      "gomaxprocs": 2,
+      "goflags": "-p=2",
+      "gomemlimit": "3GiB",
+      "gomodcache": "/home/chabking/go/pkg/mod",
+      "base_image": "localhost/ani-distroless-static-debian12:formal-20261018",
+      "base_image_id": "sha256:26a84c9340fe960d00022bbe71702e7c42af7716324f156d3660c1b2910ebb8b",
+      "buildvcs": false
+    }
+  },
+  "deployment": "NOT_RUN"
+}

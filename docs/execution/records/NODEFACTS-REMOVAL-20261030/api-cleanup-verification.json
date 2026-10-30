@@ -1,0 +1,250 @@
+{
+  "schema": "ani.nodefacts-api-cleanup.verification.v1",
+  "recorded_at": "2026-10-30T04:47:50.025509+00:00",
+  "execution_host": "fedora",
+  "scope": "Resource verification and isolated PostgreSQL/Redis Governance-to-real-Resource integration; production paired-image/business acceptance is separate.",
+  "source": {
+    "resource_run": "/home/chabking/workspace/ani-resource-service-runs/remove-nodefacts-api-20261030",
+    "governance_run": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030",
+    "resource_initial_snapshot": {
+      "head": "dda39e13738af4e45b357fd2539b69e779f29e32",
+      "files": 929,
+      "manifest_sha256": "cee3f48bd9ca26f06da9c0c80b938f205780878fd33873d96ef2a2593bd8c7b1",
+      "archive_sha256": "f610796c7403706072fb617a5892b015a8c3c2d3caccf70b60fff186d7af51d4"
+    },
+    "governance_initial_snapshot": {
+      "head": "a863ebc1639491bf4cf5c0acc02b0dbe9275a5ad",
+      "files": 2698,
+      "manifest_sha256": "da0bdd49aa3208032f5e7d5d8938b4534ce62965ea693fb5a3867c69c4203c8c",
+      "archive_sha256": "143eb153a3d71fd225be6840d4a6de759c080d3630c05499db2ff790b301475f"
+    },
+    "initial_snapshot_note": "These identities describe transferred input archives, before generation and the documented joint-fixture corrections; they are not final-image manifests.",
+    "governance_resource_sdk": {
+      "module": "github.com/zhangzhe-ctrl/ani-resource-service",
+      "version": "v0.0.0-20261030040700-0a9f1bea326c",
+      "commit": "0a9f1bea326c728e6a056d0c09630ed1e3815c6a",
+      "sum": "h1:T8CCaIq/rpW8fhwk3x286Nw8wE3PuDIrXCB5yqLJksA=",
+      "go_mod_sum": "h1:iKr1O5uZilyGT0CIQv4X4Yu8/nomK5Qt77ax+O8HjR4=",
+      "local_replace": false
+    }
+  },
+  "results": [
+    {
+      "service": "resource",
+      "stage": "generate-01",
+      "result": "PASS",
+      "evidence": "generate-01.log: pinned buf/sqlc, protobuf/sqlc/go generation and formatter completed; verify-01 followed."
+    },
+    {
+      "service": "resource",
+      "stage": "verify-01",
+      "result": "PASS",
+      "command": "make verify",
+      "exit_code": null,
+      "exit_code_note": "No separate exit-code file was persisted; complete log ends with git diff --check after tests, vet, build, module verification.",
+      "covered": [
+        "source/boundary checks",
+        "network fault build",
+        "go mod tidy -diff",
+        "go test -count=1 ./...",
+        "go vet ./...",
+        "go build -trimpath ./...",
+        "go mod verify",
+        "git diff --check"
+      ]
+    },
+    {
+      "service": "resource",
+      "stage": "integration-01",
+      "result": "PASS",
+      "suite": "networkintegration-tagged internal/data/network suite",
+      "exit_code": null,
+      "exit_code_note": "No separate exit-code file was persisted; test package PASS and task PostgreSQL cleanup are logged.",
+      "duration_seconds": 113.841,
+      "covered": [
+        "logical switch admission without physical NodeFacts probe",
+        "logical Node UID/device identity and exact KCN acknowledgement",
+        "every-node observation and stale/invalid evidence handling",
+        "VLAN/switch admission, deletion fencing and lease recovery",
+        "egress lifecycle, authorization, concurrency and replay",
+        "VPC CIDR presets"
+      ]
+    },
+    {
+      "service": "governance",
+      "stage": "verify-05 generation",
+      "result": "PASS",
+      "command": "make api",
+      "evidence": "PASS_GOV_PINNED_API_GENERATION; staged generation completed."
+    },
+    {
+      "service": "governance",
+      "stage": "verify-05 unit",
+      "result": "PASS",
+      "command": "go test -mod=readonly -count=1 ./pkg/middleware/auth ./app/admin/service/internal/service ./app/admin/service/internal/data",
+      "evidence": "All three packages ok; PASS_GOV_AUTH_SERVICE_DATA_TESTS."
+    },
+    {
+      "service": "governance",
+      "stage": "verify-05 vet/build",
+      "result": "PASS",
+      "commands": [
+        "go vet ./pkg/middleware/auth ./app/admin/service/internal/service ./app/admin/service/internal/data",
+        "go build -mod=readonly -trimpath -o \"$run/server\" ./app/admin/service/cmd/server"
+      ],
+      "evidence": "Both logs are empty, with subsequent PASS_GOV_BUILD_VET marker."
+    },
+    {
+      "service": "governance",
+      "stage": "verify-05 joint",
+      "result": "FAIL",
+      "driver_exit_code": 1,
+      "reason": "Fixture permission seeding missed a retained platform operation; ent: permission not found.",
+      "correction": "Seed the current retained PlatformNetworkOperations permissions and include the retained platform-EIP permission seed; preserve actual permission lookup/grant checks."
+    },
+    {
+      "service": "governance",
+      "stage": "verify-06 joint",
+      "result": "FAIL",
+      "driver_exit_code": 1,
+      "reason": "Obsolete layer2 fixture required a nonempty node.mac although this API field was removed.",
+      "correction": "Assert mac is absent; retain node_uid, priority=100 and applied state assertions."
+    },
+    {
+      "service": "governance",
+      "stage": "verify-07 joint",
+      "result": "PASS",
+      "driver_exit_code": 0,
+      "command": "./scripts/network-joint-integration",
+      "duration_seconds": 12.789,
+      "covered": [
+        "actual Gov HTTP/auth -> Resource gRPC/use cases/database",
+        "platform operation denials",
+        "gateway vertical flow",
+        "layer2 creation, binding, VLAN and deletion lifecycle",
+        "five retired device HTTP paths rejected with no admitted resources/operations",
+        "default VPC egress lifecycle",
+        "public/intranet address pool lifecycles",
+        "retained platform reads"
+      ],
+      "boundary": "Isolated PostgreSQL/Redis and a controlled Kubernetes/KCN API fixture; no live-cluster CNI or physical bridge deletion claim.",
+      "retired_http_status_note": "Joint fixture expects 400 from the existing unknown-route policy; this is not a claim that production unknown methods return Unimplemented."
+    }
+  ],
+  "catalog_cleanup": {
+    "result": "APPLIED",
+    "receipt": "api-cleanup-catalog-cleanup.jsonl",
+    "api_ids": [
+      268,
+      269,
+      281,
+      345,
+      346
+    ],
+    "permission_ids": [
+      493,
+      494,
+      495,
+      542,
+      543
+    ],
+    "api_rows_deleted": 5,
+    "permission_api_rows_deleted": 5,
+    "role_grant_rows_deleted": 10,
+    "permission_rows_deleted": 5,
+    "history_rows_changed": 0,
+    "menu_plan_policy_rows_changed": 0,
+    "shared_permission_refs_observed": false
+  },
+  "production_paired_image_and_business_acceptance": {
+    "result": "NOT_RECORDED_HERE",
+    "note": "See the separate paired deployment and final read-only business receipts after deployment."
+  },
+  "original_artifacts": [
+    {
+      "path": "/home/chabking/workspace/ani-resource-service-runs/remove-nodefacts-api-20261030/generate-01.log",
+      "bytes": 2129,
+      "sha256": "692f78e9382893417b9179ae1fb6ee8c95a6272d7ebf0290c158ab958a20704e"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-resource-service-runs/remove-nodefacts-api-20261030/verify-01.log",
+      "bytes": 6418,
+      "sha256": "0d2f41c9b9b5fb70b0dd3dc1f65515a7cee036a7f3087989b99a7ebad80b10de"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-resource-service-runs/remove-nodefacts-api-20261030/integration-01.log",
+      "bytes": 19639,
+      "sha256": "1b0fe5c9aebe923a82a740d007a440a82e90786d02930b7e7c6d9e33ba9425d8"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/driver-05.log",
+      "bytes": 184,
+      "sha256": "5a23fe0bc1e8089ce37371a0164bbbb3e33e524d7422e30f11ec515ba15dae5b"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/generate-05.log",
+      "bytes": 8967,
+      "sha256": "cc67e52b71c25017674ada267362142875873d23673965b0d8532adc44142c08"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/targeted-05.log",
+      "bytes": 167,
+      "sha256": "e88151729342edda39402193373364c1c6dc2bdc4cb8921499bf98813efbce9a"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/vet-05.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/build-05.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/joint-05.log",
+      "bytes": 2792,
+      "sha256": "9cad302991f6c5b6794ccc351eec33683c90ab1e754acb8ceeade055c0dabe7b"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/joint-06.log",
+      "bytes": 37585,
+      "sha256": "c2557119b7e161a77a44d6dbd4db86f092a89eaaa37e593f6f7276d6bfea6332"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/joint-07.log",
+      "bytes": 41964,
+      "sha256": "4b6213f75548a2a68b4f54fff6ae7e8c7e4d5b75f4b63385a068a05ee7168015"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/driver-07.log",
+      "bytes": 43,
+      "sha256": "83d435d2ded49532a561333bfbcd2eecb6a057e674f65eb23a78c50c81d2e72c"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/verify-05.exit",
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/verify-06.exit",
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-governance-runs/remove-nodefacts-api-20261030/verify-07.exit",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "/home/chabking/workspace/ani-resource-service-runs/remove-nodefacts-api-20261030/catalog-cleanup-result.jsonl",
+      "bytes": 1724,
+      "sha256": "c1e68f7a4cf1d8cd2ef07c19619bb21419240eb2baf4b9b0d1fe2b572f72f501"
+    }
+  ],
+  "public_artifacts": {
+    "test_excerpts": "api-cleanup-test-excerpts.log",
+    "catalog_receipt": "api-cleanup-catalog-cleanup.jsonl",
+    "sanitization": "Selected core test/command lines only; ANSI removed and credential/token/URL-signature patterns redacted. No Secret, kubeconfig, DSN or full physical inventory copied."
+  }
+}
