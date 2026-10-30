@@ -671,6 +671,9 @@
     },
     "stopped-guest.png": {
       "sha256": "4ffdafa66b686476726cc0a20524ce777647f9af74e7a5b1955ed2cc02af52d8"
+    },
+    "actual-5173-vm-actions-restored.png": {
+      "sha256": "30015eecb3d35e811a3a12763af1cb4523b832b88dc7c3a172e984d719150311"
     }
   },
   "drivers": {
@@ -712,5 +715,102 @@
         "readyReplicas": 1
       }
     ]
+  },
+  "consoleActual5173": {
+    "sourceHead": "3e8ea111a5924da389a70001a2151117b5fb17b1",
+    "sourceDirectory": "/home/chabking/task-runs/eip-public-workflow-20261030/console/baseline-a418211/source",
+    "vitePID": 1496468,
+    "proxy": "http://172.16.101.10:30085",
+    "files": [
+      {
+        "path": "src/api/vms/types.ts",
+        "before": "e83914ff65c3b4988d5ffa67e7cad346391753a20689594d4324caaed79de527",
+        "after": "5e8a98387d12cc4bfc7dd896ba8f4203ae4e001903dd8a83f51ef7a9ea21bd68"
+      },
+      {
+        "path": "src/components/vms/VmDetailPage/VmConfiguration/index.tsx",
+        "before": null,
+        "after": "d9395f04d4574f084dff88f8047d12cffd2224faa0f0e631e24651b7306db528"
+      },
+      {
+        "path": "src/components/vms/VmDetailPage/VmGuestInfo/index.tsx",
+        "before": null,
+        "after": "28443938f0230d74efe6a1703d4309f6e81216c004c6500457a5e0adaacef8bc"
+      },
+      {
+        "path": "src/components/vms/VmDetailPage/VmMediaDevices/index.tsx",
+        "before": "daf7f5073556ba94daf83cf0a4c99beeadebe335afb936664e0db82a471b3b60",
+        "after": "7e62c7da3c0aeb22c3205326ce0e1c5fbe93f277293ba8f1f044b1afcbdfed4d"
+      },
+      {
+        "path": "src/components/vms/VmDetailPage/VmNetwork/index.tsx",
+        "before": null,
+        "after": "643467d629a128ebb16e3c85662037647d6feabf5acd567d6fca08763aea2edd"
+      },
+      {
+        "path": "src/components/vms/VmDetailPage/VmSnapshots/index.tsx",
+        "before": "db9370668bae2fb10ff59393d082be42d5d656fe87462d18a225eeefd11f53d1",
+        "after": "9491f9fba0b8a34a22727b78ac3c2c331e79c4d8612da4d6dc00aa801f1e28ec"
+      },
+      {
+        "path": "src/components/vms/VmDetailPage/index.tsx",
+        "before": "d18280c5c823db3019e9ad2eda1d452e5a09c953155569f0680684889064cd1a",
+        "after": "cb6aa33f0a49d2bbecb99a9b52a8ac555be2a3758ec3d4a91422679372c1d490"
+      },
+      {
+        "path": "src/components/vms/VmSetBootDeviceModal/index.tsx",
+        "before": "e347791a3bcc80e60757d3e1ad70e36494e507c2e9cc14869471b3144bcddea2",
+        "after": "f8c1cea265ea4ac86d0f0439461e318b2102cb3f5a32ed42e227a0018a1f3fcd"
+      },
+      {
+        "path": "src/components/vms/VmSetMediaModal/index.tsx",
+        "before": "cf89940ff9f96a6aa50e0413f98c1fdd006e82c16544060053b3b85065c513d1",
+        "after": "e41440b50e3ee1527078221fa76be7f674e12027e80bf1acbb95a4e99d844897"
+      },
+      {
+        "path": "src/components/vms/VmSnapshotDetailModal/index.tsx",
+        "before": "a97089519ec45b536d042d8b8fe08fcc6b87496dfb60d7a7c29cdba248908340",
+        "after": "7065b74cc5462fabdde807de3085d8fc7f13dd49222e3e82e59e79fa033fc16b"
+      }
+    ],
+    "verification": {
+      "changedFileLint": "PASS",
+      "lint": "PASS",
+      "fmt": "PASS",
+      "fmtCheck": "PASS",
+      "typecheck": "PASS",
+      "diffCheck": "PASS",
+      "gitNexusChangedFiles": 10,
+      "gitNexusChangedSymbols": 33,
+      "gitNexusRisk": "medium",
+      "gitNexusIndexLimitation": "process extraction uses existing entry-point and branching caps; global analyzer truncation retained; not claimed as complete call-graph coverage",
+      "actualBrowser": "PASS at http://172.16.101.31:5173; normal login; stopped VM actual API; configuration, network and media views",
+      "vitePIDUnchanged": 1496468,
+      "onlyVMFilesChanged": true,
+      "sourceCommitAndOtherFeaturesPreserved": true,
+      "fileStoragePlaceholderRemoved": true,
+      "vmDisksComponentUnchanged": true,
+      "observedExistingDisks": [
+        {
+          "name": "system",
+          "sizeGb": 30,
+          "attached": true
+        },
+        {
+          "name": "data-1",
+          "sizeGb": 10,
+          "attached": true
+        }
+      ],
+      "diskBusinessMutationPerformed": false,
+      "existingDiskActionsObserved": [
+        "挂载",
+        "卸载",
+        "删除"
+      ],
+      "browserTabKeptForUser": true,
+      "cloudVolumePlaceholderMenusRestoredPerUser": true,
+      "sourceReusedPreviouslyPassingChecks": true
+    }
   }
 }
