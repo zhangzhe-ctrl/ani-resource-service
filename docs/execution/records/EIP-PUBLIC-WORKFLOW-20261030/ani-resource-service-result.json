@@ -1,0 +1,8 @@
+{
+  "deployment_uid": "e17f1f9e-e406-452f-838d-85062a6e860a",
+  "image": "172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:fc83a89c25e75d898b68c6681f2bf1db48027507ce2edbaa3a6cd973093a8b56",
+  "pod": "ani-resource-service-84d757cb96-5bptz",
+  "pod_uid": "0092ba0d-f36f-4aa6-bc98-9b6280493146",
+  "ready": true,
+  "restart_count": 0
+}

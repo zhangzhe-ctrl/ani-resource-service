@@ -2,9 +2,9 @@
 
 ## Public EIP Workflow (20261030)
 
-**Resource 代码/生成、make verify 与真实 PG + 受控 KCN 主链：PASS；跨服务 HTTP、真实集群与流量：本记录尚未验收。** 基于 main `bf1b034`，公网绑定/再启用独立验证 VPC 自身 Provider UID、实际/观察代次、Ready 和新鲜度，不要求基础 Intranet EIP/SNAT 存在或正常，也不读取聚合 available 作为门禁；保留 EIP、池、归属和并发保护。迁移 0024 新增未知默认 Provider 事实，须经真实观察补齐。VPC Get/List 返回同快照 `public_egress`，EIP 目标增加真实 `vpc_id`；EIP 初始安全组与地址在同一事务受理，更换沿用已有独立配置版本。
+**代码/生成、make verify、真实 PG 与受控 KCN HTTP/mTLS 主链：PASS；10 集群无基础网络的公网 EIP 分配/绑定/启停/解绑：PASS。** 基于 main `bf1b034`，公网绑定/再启用独立验证 VPC 自身 Provider UID、实际/观察代次、Ready 和新鲜度，不要求基础 Intranet EIP/SNAT 存在或正常，也不读取聚合 available 作为门禁；保留 EIP、池、归属和并发保护。迁移 0024 新增未知默认 Provider 事实，须经真实观察补齐。VPC Get/List 返回同快照 `public_egress`，EIP 目标增加真实 `vpc_id`；EIP 初始安全组与地址在同一事务受理，更换沿用已有独立配置版本。
 
-Fedora 定向 PG 15.658 秒通过无基础网络完整启停/解绑、基础故障独立出网配置、代次/UID/时效/未决写/删除负例、原子 SG 回滚/重放、旧迁移与平台库存/LB claim 回归。Kubernetes/KCN 为外部 HTTP 边界替身；未修改 KCN。实际命令与固定源码见[唯一记录](records/EIP-PUBLIC-WORKFLOW-20261030/README.md)。
+Fedora 定向 PG 15.658 秒通过无基础网络完整启停/解绑、基础故障独立出网配置、代次/UID/时效/未决写/删除负例、原子 SG 回滚/重放、旧迁移与平台库存/LB claim 回归。受控测试的 Kubernetes/KCN 为外部 HTTP 边界替身；另已发布 10 集群并完成真实公网生命周期与两侧投影。初始/更换 SG 意图及真实 KCN 成员更新通过，但旧 KCN 不输出成功 EIP Ready，非空 SG 最终 applied 状态未验收；用户将在新代码集群复测，保留正常校验、停止旧集群诊断。公网池已按授权启用并设默认保留，浏览器与真实流量 NOT_RUN；未修改 KCN。实际命令与固定源码见[唯一记录](records/EIP-PUBLIC-WORKFLOW-20261030/README.md)。
 
 ## Security Groups (20261030)
 

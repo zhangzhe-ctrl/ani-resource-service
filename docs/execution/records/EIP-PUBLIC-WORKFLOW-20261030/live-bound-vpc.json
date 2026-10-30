@@ -1,0 +1,30 @@
+{
+  "id": "vpc_f1fcd7ec549843cdb6adbe0dde65cc10",
+  "name": "eip-live-no-base-20261030",
+  "description": "task-owned EIP independent public flow",
+  "cidr": "10.73.0.0/16",
+  "state": "available",
+  "reason": "",
+  "created_at": "2026-10-30T07:58:37.393066Z",
+  "updated_at": "2026-10-30T08:30:02.890625Z",
+  "version": "90",
+  "observed_at": "2026-10-30T08:30:02.659846Z",
+  "observation_stale": false,
+  "last_operation_id": "9ecb556b-a911-407e-83db-d54c30e41072",
+  "subnet_count": "0",
+  "public_egress": {
+    "binding_id": "snat_59038e6ee9624d17815208324a4a9ed4",
+    "eip_id": "eip_b651666e73bd447ca85fa7dd0ace350f",
+    "eip_address": "172.16.102.193",
+    "binding_state": "bound",
+    "state": "available",
+    "reason": "",
+    "reason_message": "",
+    "desired_enabled": true,
+    "applied_enabled": true,
+    "observed_at": "2026-10-30T08:30:00.202865Z",
+    "observation_stale": false,
+    "version": "2",
+    "last_operation_id": "57e4c37e-06bc-4a0f-808a-df3cd91f8622"
+  }
+}
