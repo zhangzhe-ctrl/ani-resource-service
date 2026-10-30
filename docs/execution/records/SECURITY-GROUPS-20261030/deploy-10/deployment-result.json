@@ -1,0 +1,24 @@
+{
+  "cluster_uid": "5277649d-e28d-4a0a-ae76-8354365c63bc",
+  "deployments": [
+    {
+      "name": "ani-resource-service",
+      "source": "84d2cee378106a4cb7d0fbb3fc765c50e07c4120",
+      "image": "172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:bb2db160486d1585cdaca936c109e0e6ca183ee70ab5eaef983b5ba350e1ddd5",
+      "pod": "ani-resource-service-69995d4dbc-qs298",
+      "pod_uid": "ab8fc93b-b81b-4052-953c-bfb8dd1d9d7e",
+      "ready": true,
+      "restart_count": 0
+    },
+    {
+      "name": "ani-governance",
+      "source": "6cb83f385ce7d2b66e40004c0c1394ad530d73bf",
+      "image": "172.16.101.10:30003/icn-01a15337-release/ani-governance@sha256:d6b131d5d6d5d00b255ae4180ad45613223593befb387eada7a307dd24a9719e",
+      "pod": "ani-governance-597f56686d-2mtd2",
+      "pod_uid": "d41c76f7-f3f5-4288-9750-8dc05207da43",
+      "ready": true,
+      "restart_count": 0
+    }
+  ],
+  "console_http_status": 200
+}

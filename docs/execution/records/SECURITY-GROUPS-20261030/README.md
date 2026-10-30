@@ -27,6 +27,16 @@
 
 Console 代码已落在 Fedora 原 `feat/governance-api@ad70a4f2` dirty 工作区，原 VM/存储改动保留；功能补丁 SHA256 `ce4ceb487418fb280748d910e21cf034ab4ebffea5ec5d2b04655ea34c1f3a20`。lint/格式/typecheck PASS；GitNexus 检测有明显索引错链并返回 critical，未记 PASS。未生产构建、未操作 dev。
 
-共享 Resource/Gov 部署、权限目录/角色授权与 RBAC 应用：NOT_RUN。真实 EIP/VNic 成员规则与包过滤、真实容器/VM 全业务创建及浏览器验收：NOT_RUN。真实 SG 生命周期与受控 EIP/容器链不能替代这些验收。
+共享 Resource/Gov 部署、权限目录/租户 A 管理员角色授权与 RBAC 应用：PASS，见下文。真实 EIP/VNic 成员规则与包过滤、真实容器/VM 全业务创建及浏览器验收：NOT_RUN。真实 SG 生命周期与受控 EIP/容器链不能替代这些验收。
 
 合入最新 main 的列表合同后，全仓 tidy 暴露两份历史 Go overlay 被当作当前 module 源码扫描。归档内容原字节保留，文件名更为 `.go.txt`，复现脚本改读文本；历史 JSON/日志中的原执行路径保持时点事实，重放旧命令时先从文本恢复原输入文件名。该归档修复不引入旧 Inference/Model SDK 运行依赖。
+
+## 10 集群部署与真实租户链（2026-10-30）
+
+用户明确授权更新服务后，在 Fedora 构建并通过正常 Harbor TLS 发布固定提交：Resource `84d2cee378106a4cb7d0fbb3fc765c50e07c4120`、Governance `6cb83f385ce7d2b66e40004c0c1394ad530d73bf`。Gov 正式 SDK 为 `v0.0.0-20261030064014-84d2cee37810`，无 replace/go.work。目标 API `172.16.101.10:6443`，写前核对 cluster UID `5277649d-e28d-4a0a-ae76-8354365c63bc`、三节点 `.10/.11/.12`；[最终回执](deploy-10/deployment-result.json)绑定两实际镜像 digest、源提交、Pod UID、Ready 与 restart=0。
+
+先备份 Network DB 和 Gov 目录/授权表到 Fedora 任务私有目录，再执行 Network 0023 [迁移](deploy-10/sg-network-migrate-84d2cee.log)、补齐 Resource 精确 SG/EIP/Pod/Notebook/VM patch [RBAC](deploy-10/rbac-result.json)，仅替换两个 Deployment 镜像，保留其他 Pod 运行配置。Gov `sync-apis --dry-run` 审核后同步目录，再执行仓库 SG [权限登记 SQL](deploy-10/permissions-sync.log)，不删除旧 API。首次真实 tenant-a/admin 查询403；只为原有 NETWORK/INSTANCE/VIRTUAL_MACHINE 套餐及对应管理权限的 tenant1/role3 `tenant:manager` 增加15项本功能权限，原DENY/OFF冲突则拒绝，未改其他角色或套餐；[回执](deploy-10/tenant-a-permissions.log)。Gov 新Pod重载策略后同一真实会话查询200。
+
+真实 HTTP JWT→Gov鉴权/套餐→mTLS→Res PG/worker→现有 KCN [全链 PASS](deploy-10/smoke-result.json)：创建 SG 并等 available、只读默认行删除400、增加 TCP/22 allow priority10、删除自定义规则、删除 SG、KCN对象消失；[原始接口日志](deploy-10/smoke.log)。[创建读回](deploy-10/smoke-kcn-created.json)只含 ingress all/drop priority1、egressRules=[]、组内互信false；[更新读回](deploy-10/smoke-kcn-rule-added.json)同UID且generation/observedGeneration均2、Valid/Ready=True。测试驱动最初等DELETE后404，而产品保留deleted快照；更正驱动为deleted终态并独立核实KCN对象已无，不改产品行为。测试SG已清理，未操作已有业务资源，KCN未修改。
+
+Console仍运行于 Fedora原 `feat/governance-api` 工作区，`http://172.16.101.31:5173/security-groups` 返回200，代理继续连接已升级的10集群Gov `:30085`。完整浏览器操作、真实EIP/VNic成员及流量、真实容器/VM新建/更换仍NOT_RUN。

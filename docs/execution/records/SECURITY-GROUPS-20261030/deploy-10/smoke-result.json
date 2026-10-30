@@ -1,0 +1,15 @@
+{
+  "result": "PASS",
+  "security_group_id": "sg_a5fd85d093e44c95b3654cd25a26d64d",
+  "checks": [
+    "authenticated tenant API",
+    "real PG persistence and worker",
+    "real KCN default ingress drop only",
+    "default rule immutable",
+    "create TCP allow rule",
+    "KCN same UID new generation",
+    "delete rule",
+    "delete group",
+    "KCN cleanup"
+  ]
+}

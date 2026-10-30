@@ -4,7 +4,7 @@
 
 **代码/Fedora 门禁与真实 PG：PASS；受控 HTTP/mTLS/EIP、容器纵向：PASS；真实 KCN SG 生命周期：PASS。** 基于 Resource main `a4bb202`，交付前合入 `9fc934e` 的实例列表合同，新增租户安全组/规则/绑定/操作及持久引用，容器（CPU/GPU）和 VM 创建/更换选择、EIP 独立版本化绑定已接线；默认仅入方向 all/drop，出方向不添加 drop。容器真实 Service/Instance/Network/Image PG 完成创建选组→热更→清空→删除，后台三轮仍保持原 Pod UID；Gov HTTP 的身份/权限/套餐→mTLS→Res PG/worker/EIP 全链在 Kubernetes 边界替身下通过。10～12 的真实 KCN 创建/规则更新/删除及任务 namespace 清理通过，未修改 KCN。
 
-最终 `make verify` PASS；运行源码清单、具体命令、修复与证据见[本轮记录](records/SECURITY-GROUPS-20261030/README.md)。Console 已落 Fedora 原 `feat/governance-api` 工作区并保留既有 dirty，lint/格式/typecheck PASS；图索引错链检测未记 PASS。**共享服务部署、目录/角色/RBAC 应用、真实 EIP/VNic 流量及真实容器/VM/浏览器全链 NOT_RUN。** KCN 实际镜像与本地源码 commit 的构建对应关系未证实；SDK 正式固定与发布由配套 Governance 变更负责，受控 joint.work 联测不作为正式依赖证据。
+最终 `make verify` PASS；运行源码清单、具体命令、修复与证据见[本轮记录](records/SECURITY-GROUPS-20261030/README.md)。Console 已落 Fedora 原 `feat/governance-api` 工作区并保留既有 dirty，lint/格式/typecheck PASS；图索引错链检测未记 PASS。**10 集群 Resource/Governance 部署、迁移、目录/租户 A 管理员角色/RBAC 应用及真实登录→SG/规则增删→KCN 收敛与清理 PASS；真实 EIP/VNic 流量及真实容器/VM/浏览器全链 NOT_RUN。** KCN 实际镜像与本地源码 commit 的构建对应关系未证实；SDK 正式固定与发布由配套 Governance 变更负责，受控 joint.work 联测不作为正式依赖证据。
 
 
 ## 2026-10-30：NodeFacts 拆除

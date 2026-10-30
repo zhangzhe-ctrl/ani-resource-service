@@ -1,0 +1,55 @@
+{
+  "apiVersion": "networking.kubercloud.com/v1",
+  "kind": "SecurityGroup",
+  "metadata": {
+    "creationTimestamp": "2026-10-30T07:07:23Z",
+    "finalizers": [
+      "networking.kubercloud.com/finalizer"
+    ],
+    "generation": 1,
+    "labels": {
+      "network.ani.io/binding-id": "e80ccb1e-3645-498d-8694-af42fdc171a4",
+      "network.ani.io/managed-by": "ani-network-service",
+      "network.ani.io/resource-id": "sg_a5fd85d093e44c95b3654cd25a26d64d",
+      "network.ani.io/tenant-id": "46936e6b-3a3b-4868-8d88-6833665abb70"
+    },
+    "name": "ani-sg-a5fd85d093e44c95b3654cd25a26d64d",
+    "namespace": "tenant-46936e6b-3a3b-4868-8d88-6833665abb70",
+    "resourceVersion": "83043171",
+    "uid": "1142be1a-e842-4aae-a530-c252bf36a237"
+  },
+  "spec": {
+    "allowSameGroupTraffic": false,
+    "egressRules": [],
+    "ingressRules": [
+      {
+        "action": "drop",
+        "ipVersion": "IPv4",
+        "priority": 1,
+        "protocol": "all"
+      }
+    ]
+  },
+  "status": {
+    "allowSameGroupTraffic": false,
+    "conditions": [
+      {
+        "lastTransitionTime": "2026-10-30T07:07:23Z",
+        "message": "",
+        "reason": "Valid",
+        "status": "True",
+        "type": "Valid"
+      },
+      {
+        "lastTransitionTime": "2026-10-30T07:07:23Z",
+        "message": "",
+        "reason": "Ready",
+        "status": "True",
+        "type": "Ready"
+      }
+    ],
+    "egressMd5": "d751713988987e9331980363e24189ce",
+    "ingressMd5": "b79f817c08a95f4e3752cebd6e87c679",
+    "observedGeneration": 1
+  }
+}
