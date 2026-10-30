@@ -127,3 +127,18 @@ func TestPlatformFingerprintsRetainAcceptedV1AndSwitchV2Encoding(t *testing.T) {
 		t.Fatal("server-generated binding facts changed v2 replay identity")
 	}
 }
+
+func TestCreateEIPLegacyReplayFingerprintWithoutSecurityGroups(t *testing.T) {
+	intent := EgressIntent{TenantID: "tenant", Kind: "create_eip", Name: "eip", IdempotencyKey: "ignored"}
+	if got := intent.Fingerprint(); got != "5e019ff9fdc1228f41e5f3f870c774c2f1ef4943db70b09d8370375cf45d5b4e" {
+		t.Fatal("legacy create EIP fingerprint changed", got)
+	}
+	intent.SecurityGroupIDs = []string{}
+	if got := intent.Fingerprint(); got != "5e019ff9fdc1228f41e5f3f870c774c2f1ef4943db70b09d8370375cf45d5b4e" {
+		t.Fatal("empty initial SG list changed legacy replay", got)
+	}
+	intent.SecurityGroupIDs = []string{"sg_11111111111111111111111111111111"}
+	if intent.Fingerprint() == "5e019ff9fdc1228f41e5f3f870c774c2f1ef4943db70b09d8370375cf45d5b4e" {
+		t.Fatal("initial security group selection missing from replay identity")
+	}
+}

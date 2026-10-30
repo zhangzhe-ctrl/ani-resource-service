@@ -20,9 +20,12 @@ SELECT * FROM network_eips WHERE tenant_id=$1 AND eip_id=$2 FOR UPDATE;
 SELECT sqlc.embed(e),coalesce(c.snat_id,'')::text AS binding_id,
  coalesce(c.state,'unbound')::text AS binding_state,
  coalesce(c.target_kind,'')::text AS binding_target_kind,
- coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id
+ coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id,
+ coalesce(sn.vpc_id,lb.vpc_id,'')::text AS binding_vpc_id
 FROM network_eips e LEFT JOIN network_eip_claims c
  ON c.tenant_id=e.tenant_id AND c.eip_id=e.eip_id AND c.released_at IS NULL
+LEFT JOIN network_snat_bindings sn ON sn.tenant_id=c.tenant_id AND sn.snat_id=c.snat_id
+LEFT JOIN network_load_balancers lb ON lb.tenant_id=c.tenant_id AND lb.lb_id=c.lb_id
 WHERE e.tenant_id=$1 AND e.eip_id=$2 AND e.scope='public' AND e.managed_by='tenant';
 
 -- Worker-only lookup includes system addresses and uses the same claim projection.
@@ -30,18 +33,24 @@ WHERE e.tenant_id=$1 AND e.eip_id=$2 AND e.scope='public' AND e.managed_by='tena
 SELECT sqlc.embed(e),coalesce(c.snat_id,'')::text AS binding_id,
  coalesce(c.state,'unbound')::text AS binding_state,
  coalesce(c.target_kind,'')::text AS binding_target_kind,
- coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id
+ coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id,
+ coalesce(sn.vpc_id,lb.vpc_id,'')::text AS binding_vpc_id
 FROM network_eips e LEFT JOIN network_eip_claims c
  ON c.tenant_id=e.tenant_id AND c.eip_id=e.eip_id AND c.released_at IS NULL
+LEFT JOIN network_snat_bindings sn ON sn.tenant_id=c.tenant_id AND sn.snat_id=c.snat_id
+LEFT JOIN network_load_balancers lb ON lb.tenant_id=c.tenant_id AND lb.lb_id=c.lb_id
 WHERE e.tenant_id=$1 AND e.eip_id=$2;
 
 -- name: ListEIPs :many
 SELECT sqlc.embed(e),coalesce(c.snat_id,'')::text AS binding_id,
  coalesce(c.state,'unbound')::text AS binding_state,
  coalesce(c.target_kind,'')::text AS binding_target_kind,
- coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id
+ coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id,
+ coalesce(sn.vpc_id,lb.vpc_id,'')::text AS binding_vpc_id
 FROM network_eips e LEFT JOIN network_eip_claims c
  ON c.tenant_id=e.tenant_id AND c.eip_id=e.eip_id AND c.released_at IS NULL
+LEFT JOIN network_snat_bindings sn ON sn.tenant_id=c.tenant_id AND sn.snat_id=c.snat_id
+LEFT JOIN network_load_balancers lb ON lb.tenant_id=c.tenant_id AND lb.lb_id=c.lb_id
 WHERE e.tenant_id=sqlc.arg(tenant_id) AND e.scope='public' AND e.managed_by='tenant'
  AND (sqlc.arg(name_filter)::text='' OR e.name=sqlc.arg(name_filter))
  AND ((sqlc.arg(state_filter)::text='' AND e.state<>'deleted') OR e.state=sqlc.arg(state_filter))

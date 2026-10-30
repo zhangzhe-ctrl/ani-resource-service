@@ -58,9 +58,12 @@ func (q *Queries) CountPlatformEIPs(ctx context.Context, arg CountPlatformEIPsPa
 const getPlatformEIP = `-- name: GetPlatformEIP :one
 SELECT e.tenant_id, e.eip_id, e.cluster_id, e.namespace, e.name, e.description, e.pool_id, e.pool_revision, e.address, e.state, e.reason, e.version, e.created_at, e.updated_at, e.observed_at, e.last_operation_id, e.scope, e.managed_by, e.system_owner_vpc,p.name AS pool_name,
  coalesce(c.snat_id,'')::text AS binding_id,coalesce(c.state,'unbound')::text AS binding_state,
- coalesce(c.target_kind,'')::text AS binding_target_kind,coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id
+ coalesce(c.target_kind,'')::text AS binding_target_kind,coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id,
+ coalesce(sn.vpc_id,lb.vpc_id,'')::text AS binding_vpc_id
 FROM network_eips e JOIN network_platform_resources p ON p.cluster_id=e.cluster_id AND p.resource_id=e.pool_id
 LEFT JOIN network_eip_claims c ON c.tenant_id=e.tenant_id AND c.eip_id=e.eip_id AND c.released_at IS NULL
+LEFT JOIN network_snat_bindings sn ON sn.tenant_id=c.tenant_id AND sn.snat_id=c.snat_id
+LEFT JOIN network_load_balancers lb ON lb.tenant_id=c.tenant_id AND lb.lb_id=c.lb_id
 WHERE e.cluster_id=$1 AND e.eip_id=$2
 `
 
@@ -76,6 +79,7 @@ type GetPlatformEIPRow struct {
 	BindingState      string
 	BindingTargetKind string
 	BindingTargetID   string
+	BindingVpcID      string
 }
 
 func (q *Queries) GetPlatformEIP(ctx context.Context, arg GetPlatformEIPParams) (GetPlatformEIPRow, error) {
@@ -106,6 +110,7 @@ func (q *Queries) GetPlatformEIP(ctx context.Context, arg GetPlatformEIPParams) 
 		&i.BindingState,
 		&i.BindingTargetKind,
 		&i.BindingTargetID,
+		&i.BindingVpcID,
 	)
 	return i, err
 }
@@ -257,9 +262,12 @@ func (q *Queries) ListPlatformSystemEIPsByIDs(ctx context.Context, arg ListPlatf
 const listPlatformTenantEIPsByIDs = `-- name: ListPlatformTenantEIPsByIDs :many
 SELECT e.tenant_id, e.eip_id, e.cluster_id, e.namespace, e.name, e.description, e.pool_id, e.pool_revision, e.address, e.state, e.reason, e.version, e.created_at, e.updated_at, e.observed_at, e.last_operation_id, e.scope, e.managed_by, e.system_owner_vpc,p.name AS pool_name,
  coalesce(c.snat_id,'')::text AS binding_id,coalesce(c.state,'unbound')::text AS binding_state,
- coalesce(c.target_kind,'')::text AS binding_target_kind,coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id
+ coalesce(c.target_kind,'')::text AS binding_target_kind,coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id,
+ coalesce(sn.vpc_id,lb.vpc_id,'')::text AS binding_vpc_id
 FROM network_eips e JOIN network_platform_resources p ON p.cluster_id=e.cluster_id AND p.resource_id=e.pool_id
 LEFT JOIN network_eip_claims c ON c.tenant_id=e.tenant_id AND c.eip_id=e.eip_id AND c.released_at IS NULL
+LEFT JOIN network_snat_bindings sn ON sn.tenant_id=c.tenant_id AND sn.snat_id=c.snat_id
+LEFT JOIN network_load_balancers lb ON lb.tenant_id=c.tenant_id AND lb.lb_id=c.lb_id
 WHERE e.cluster_id=$1 AND e.eip_id=ANY($2::text[])
 `
 
@@ -275,6 +283,7 @@ type ListPlatformTenantEIPsByIDsRow struct {
 	BindingState      string
 	BindingTargetKind string
 	BindingTargetID   string
+	BindingVpcID      string
 }
 
 func (q *Queries) ListPlatformTenantEIPsByIDs(ctx context.Context, arg ListPlatformTenantEIPsByIDsParams) ([]ListPlatformTenantEIPsByIDsRow, error) {
@@ -311,6 +320,7 @@ func (q *Queries) ListPlatformTenantEIPsByIDs(ctx context.Context, arg ListPlatf
 			&i.BindingState,
 			&i.BindingTargetKind,
 			&i.BindingTargetID,
+			&i.BindingVpcID,
 		); err != nil {
 			return nil, err
 		}

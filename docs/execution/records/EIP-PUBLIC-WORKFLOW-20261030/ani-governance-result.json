@@ -1,0 +1,8 @@
+{
+  "deployment_uid": "8a843c44-5a82-4e48-a92e-a3c28c665c67",
+  "image": "172.16.101.10:30003/icn-01a15337-release/ani-governance@sha256:f30ac3983eb2a5f28c4efbe5ecbd3e710686b466c6f99b26ceaaee0faa9b289d",
+  "pod": "ani-governance-866f7bbc94-pvbm6",
+  "pod_uid": "b6561b9f-33a6-46ef-823c-911af0298204",
+  "ready": true,
+  "restart_count": 0
+}

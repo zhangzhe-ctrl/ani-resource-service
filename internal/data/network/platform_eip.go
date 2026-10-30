@@ -8,10 +8,10 @@ import (
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
 )
 
-func platformEIP(row sqlcgen.NetworkEip, poolName, bindingID, bindingState, targetKind, targetID string) biz.PlatformEIP {
+func platformEIP(row sqlcgen.NetworkEip, poolName, bindingID, bindingState, targetKind, targetID, vpcID string) biz.PlatformEIP {
 	v := biz.PlatformEIP{EIP: eipResource(row), PoolID: row.PoolID, PoolName: poolName, ClusterID: row.ClusterID}
 	v.BindingID, v.BindingState = bindingID, bindingState
-	v.BindingTarget = eipBindingTarget(targetKind, targetID, bindingState)
+	v.BindingTarget = eipBindingTarget(targetKind, targetID, bindingState, vpcID)
 	return v
 }
 func platformSystemEIP(row sqlcgen.NetworkDefaultVpcEgress, poolName string) biz.PlatformEIP {
@@ -50,7 +50,7 @@ func (p *Postgres) ListPlatformEIPs(ctx context.Context, f biz.PlatformEIPFilter
 	}
 	byID := make(map[string]biz.PlatformEIP, len(rows))
 	for _, r := range tenantRows {
-		v := platformEIP(r.NetworkEip, r.PoolName, r.BindingID, r.BindingState, r.BindingTargetKind, r.BindingTargetID)
+		v := platformEIP(r.NetworkEip, r.PoolName, r.BindingID, r.BindingState, r.BindingTargetKind, r.BindingTargetID, r.BindingVpcID)
 		byID[v.ID] = v
 	}
 	for _, r := range systemRows {
@@ -77,5 +77,5 @@ func (p *Postgres) GetPlatformEIP(ctx context.Context, id string) (biz.PlatformE
 	if err != nil {
 		return biz.PlatformEIP{}, databaseFailure(err)
 	}
-	return platformEIP(r.NetworkEip, r.PoolName, r.BindingID, r.BindingState, r.BindingTargetKind, r.BindingTargetID), nil
+	return platformEIP(r.NetworkEip, r.PoolName, r.BindingID, r.BindingState, r.BindingTargetKind, r.BindingTargetID, r.BindingVpcID), nil
 }

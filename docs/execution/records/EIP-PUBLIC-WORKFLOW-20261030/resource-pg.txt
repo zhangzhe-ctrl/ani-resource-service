@@ -1,0 +1,51 @@
+127.0.0.1:5432 - accepting connections
+PostgreSQL image=docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 container=9ba8ed4d455c790bf1a18d10d857c5613fcdbb5ecc9f546092f97e9d402fa861
+=== RUN   TestBaseSchemaEmptyMigrationAndRuntimeRole
+--- PASS: TestBaseSchemaEmptyMigrationAndRuntimeRole (0.68s)
+=== RUN   TestBaseSchemaLegacyPublicUpgradePreservesDurableFactsAndReplay
+--- PASS: TestBaseSchemaLegacyPublicUpgradePreservesDurableFactsAndReplay (0.55s)
+=== RUN   TestEgressKCAdapterSharedObservationLifecycleAndDrift
+--- PASS: TestEgressKCAdapterSharedObservationLifecycleAndDrift (1.78s)
+=== RUN   TestLBConcurrentSNATClaimBothArrivalOrders
+=== RUN   TestLBConcurrentSNATClaimBothArrivalOrders/lb
+=== RUN   TestLBConcurrentSNATClaimBothArrivalOrders/snat
+--- PASS: TestLBConcurrentSNATClaimBothArrivalOrders (3.17s)
+    --- PASS: TestLBConcurrentSNATClaimBothArrivalOrders/lb (1.64s)
+    --- PASS: TestLBConcurrentSNATClaimBothArrivalOrders/snat (1.53s)
+=== RUN   TestNET05AMigrationUpgradesAllThreeHistoricalChecksums
+--- PASS: TestNET05AMigrationUpgradesAllThreeHistoricalChecksums (0.56s)
+=== RUN   TestPlatformEIPInventoryAndOwnerRelease
+--- PASS: TestPlatformEIPInventoryAndOwnerRelease (0.69s)
+=== RUN   TestPlatformEIPReleaseRetainsClaimAndSystemProtection
+--- PASS: TestPlatformEIPReleaseRetainsClaimAndSystemProtection (0.73s)
+=== RUN   TestPublicEIPWorkflowOwnVPCReadyWithoutBase
+--- PASS: TestPublicEIPWorkflowOwnVPCReadyWithoutBase (1.44s)
+=== RUN   TestPublicEIPWorkflowDegradedBaseDoesNotBlockPublic
+--- PASS: TestPublicEIPWorkflowDegradedBaseDoesNotBlockPublic (2.00s)
+=== RUN   TestPublicEIPWorkflowAdmissionKeepsProviderFences
+=== RUN   TestPublicEIPWorkflowAdmissionKeepsProviderFences/not-ready
+=== RUN   TestPublicEIPWorkflowAdmissionKeepsProviderFences/stale
+=== RUN   TestPublicEIPWorkflowAdmissionKeepsProviderFences/uid-changed
+=== RUN   TestPublicEIPWorkflowAdmissionKeepsProviderFences/provider-generation-unapplied
+=== RUN   TestPublicEIPWorkflowAdmissionKeepsProviderFences/pending-mutation
+=== RUN   TestPublicEIPWorkflowAdmissionKeepsProviderFences/deleting
+--- PASS: TestPublicEIPWorkflowAdmissionKeepsProviderFences (0.84s)
+    --- PASS: TestPublicEIPWorkflowAdmissionKeepsProviderFences/not-ready (0.01s)
+    --- PASS: TestPublicEIPWorkflowAdmissionKeepsProviderFences/stale (0.01s)
+    --- PASS: TestPublicEIPWorkflowAdmissionKeepsProviderFences/uid-changed (0.01s)
+    --- PASS: TestPublicEIPWorkflowAdmissionKeepsProviderFences/provider-generation-unapplied (0.00s)
+    --- PASS: TestPublicEIPWorkflowAdmissionKeepsProviderFences/pending-mutation (0.01s)
+    --- PASS: TestPublicEIPWorkflowAdmissionKeepsProviderFences/deleting (0.01s)
+=== RUN   TestPublicEIPWorkflowCreateSecurityGroupsAtomicAndReplay
+--- PASS: TestPublicEIPWorkflowCreateSecurityGroupsAtomicAndReplay (0.67s)
+=== RUN   TestSecurityGroupsPostgresLifecycleRulesAndPermanentReplay
+--- PASS: TestSecurityGroupsPostgresLifecycleRulesAndPermanentReplay (0.56s)
+=== RUN   TestSecurityGroupsPostgresConsumerReferenceRevisionFence
+--- PASS: TestSecurityGroupsPostgresConsumerReferenceRevisionFence (0.61s)
+=== RUN   TestSecurityGroupsPostgresUnboundEIPBindingVersionsAndDeleteProtection
+--- PASS: TestSecurityGroupsPostgresUnboundEIPBindingVersionsAndDeleteProtection (0.76s)
+=== RUN   TestSubnetMigrationUpgradesNET01WithoutChangingDurableFacts
+--- PASS: TestSubnetMigrationUpgradesNET01WithoutChangingDurableFacts (0.56s)
+PASS
+ok  	github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network	15.658s
+removed task container=9ba8ed4d455c790bf1a18d10d857c5613fcdbb5ecc9f546092f97e9d402fa861

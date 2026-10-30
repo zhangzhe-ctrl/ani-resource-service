@@ -1,5 +1,11 @@
 # Network 执行状态
 
+## Public EIP Workflow (20261030)
+
+**代码/生成、make verify、真实 PG 与受控 KCN HTTP/mTLS 主链：PASS；10 集群无基础网络的公网 EIP 分配/绑定/启停/解绑：PASS。** 基于 main `bf1b034`，公网绑定/再启用独立验证 VPC 自身 Provider UID、实际/观察代次、Ready 和新鲜度，不要求基础 Intranet EIP/SNAT 存在或正常，也不读取聚合 available 作为门禁；保留 EIP、池、归属和并发保护。迁移 0024 新增未知默认 Provider 事实，须经真实观察补齐。VPC Get/List 返回同快照 `public_egress`，EIP 目标增加真实 `vpc_id`；EIP 初始安全组与地址在同一事务受理，更换沿用已有独立配置版本。
+
+Fedora 定向 PG 15.658 秒通过无基础网络完整启停/解绑、基础故障独立出网配置、代次/UID/时效/未决写/删除负例、原子 SG 回滚/重放、旧迁移与平台库存/LB claim 回归。受控测试的 Kubernetes/KCN 为外部 HTTP 边界替身；另已发布 10 集群并完成真实公网生命周期与两侧投影。初始/更换 SG 意图及真实 KCN 成员更新通过，但旧 KCN 不输出成功 EIP Ready，非空 SG 最终 applied 状态未验收；用户将在新代码集群复测，保留正常校验、停止旧集群诊断。公网池已按授权启用并设默认保留，浏览器与真实流量 NOT_RUN；未修改 KCN。实际命令与固定源码见[唯一记录](records/EIP-PUBLIC-WORKFLOW-20261030/README.md)。
+
 ## Security Groups (20261030)
 
 **代码/Fedora 门禁与真实 PG：PASS；受控 HTTP/mTLS/EIP、容器纵向：PASS；真实 KCN SG 生命周期：PASS。** 基于 Resource main `a4bb202`，交付前合入 `9fc934e` 的实例列表合同，新增租户安全组/规则/绑定/操作及持久引用，容器（CPU/GPU）和 VM 创建/更换选择、EIP 独立版本化绑定已接线；默认仅入方向 all/drop，出方向不添加 drop。容器真实 Service/Instance/Network/Image PG 完成创建选组→热更→清空→删除，后台三轮仍保持原 Pod UID；Gov HTTP 的身份/权限/套餐→mTLS→Res PG/worker/EIP 全链在 Kubernetes 边界替身下通过。10～12 的真实 KCN 创建/规则更新/删除及任务 namespace 清理通过，未修改 KCN。

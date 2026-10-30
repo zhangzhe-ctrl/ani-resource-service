@@ -493,8 +493,10 @@ type VPC struct {
 	SubnetCount      int64                `protobuf:"varint,14,opt,name=subnet_count,json=subnetCount,proto3" json:"subnet_count,omitempty"`
 	ReasonMessage    string               `protobuf:"bytes,15,opt,name=reason_message,json=reasonMessage,proto3" json:"reason_message,omitempty"`
 	BaseConnectivity *VPCBaseConnectivity `protobuf:"bytes,16,opt,name=base_connectivity,json=baseConnectivity,proto3" json:"base_connectivity,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Same-snapshot active public claim; absent only when no public binding exists.
+	PublicEgress  *VPCPublicEgress `protobuf:"bytes,17,opt,name=public_egress,json=publicEgress,proto3" json:"public_egress,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *VPC) Reset() {
@@ -639,6 +641,155 @@ func (x *VPC) GetBaseConnectivity() *VPCBaseConnectivity {
 	return nil
 }
 
+func (x *VPC) GetPublicEgress() *VPCPublicEgress {
+	if x != nil {
+		return x.PublicEgress
+	}
+	return nil
+}
+
+// Read-only projection of the existing public SNAT and exclusive EIP claim.
+// Disabled egress remains bound. Stale evidence never implies an unbound EIP.
+type VPCPublicEgress struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	BindingId        string                 `protobuf:"bytes,1,opt,name=binding_id,json=bindingId,proto3" json:"binding_id,omitempty"`
+	EipId            string                 `protobuf:"bytes,2,opt,name=eip_id,json=eipId,proto3" json:"eip_id,omitempty"`
+	EipAddress       string                 `protobuf:"bytes,3,opt,name=eip_address,json=eipAddress,proto3" json:"eip_address,omitempty"`
+	BindingState     string                 `protobuf:"bytes,4,opt,name=binding_state,json=bindingState,proto3" json:"binding_state,omitempty"`
+	State            ResourceState          `protobuf:"varint,5,opt,name=state,proto3,enum=network.v1.ResourceState" json:"state,omitempty"`
+	Reason           string                 `protobuf:"bytes,6,opt,name=reason,proto3" json:"reason,omitempty"`
+	ReasonMessage    string                 `protobuf:"bytes,7,opt,name=reason_message,json=reasonMessage,proto3" json:"reason_message,omitempty"`
+	DesiredEnabled   bool                   `protobuf:"varint,8,opt,name=desired_enabled,json=desiredEnabled,proto3" json:"desired_enabled,omitempty"`
+	AppliedEnabled   *bool                  `protobuf:"varint,9,opt,name=applied_enabled,json=appliedEnabled,proto3,oneof" json:"applied_enabled,omitempty"`
+	ObservedAt       *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=observed_at,json=observedAt,proto3" json:"observed_at,omitempty"`
+	ObservationStale bool                   `protobuf:"varint,11,opt,name=observation_stale,json=observationStale,proto3" json:"observation_stale,omitempty"`
+	Version          int64                  `protobuf:"varint,12,opt,name=version,proto3" json:"version,omitempty"`
+	LastOperationId  string                 `protobuf:"bytes,13,opt,name=last_operation_id,json=lastOperationId,proto3" json:"last_operation_id,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *VPCPublicEgress) Reset() {
+	*x = VPCPublicEgress{}
+	mi := &file_network_v1_network_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VPCPublicEgress) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VPCPublicEgress) ProtoMessage() {}
+
+func (x *VPCPublicEgress) ProtoReflect() protoreflect.Message {
+	mi := &file_network_v1_network_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VPCPublicEgress.ProtoReflect.Descriptor instead.
+func (*VPCPublicEgress) Descriptor() ([]byte, []int) {
+	return file_network_v1_network_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *VPCPublicEgress) GetBindingId() string {
+	if x != nil {
+		return x.BindingId
+	}
+	return ""
+}
+
+func (x *VPCPublicEgress) GetEipId() string {
+	if x != nil {
+		return x.EipId
+	}
+	return ""
+}
+
+func (x *VPCPublicEgress) GetEipAddress() string {
+	if x != nil {
+		return x.EipAddress
+	}
+	return ""
+}
+
+func (x *VPCPublicEgress) GetBindingState() string {
+	if x != nil {
+		return x.BindingState
+	}
+	return ""
+}
+
+func (x *VPCPublicEgress) GetState() ResourceState {
+	if x != nil {
+		return x.State
+	}
+	return ResourceState_RESOURCE_STATE_UNSPECIFIED
+}
+
+func (x *VPCPublicEgress) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *VPCPublicEgress) GetReasonMessage() string {
+	if x != nil {
+		return x.ReasonMessage
+	}
+	return ""
+}
+
+func (x *VPCPublicEgress) GetDesiredEnabled() bool {
+	if x != nil {
+		return x.DesiredEnabled
+	}
+	return false
+}
+
+func (x *VPCPublicEgress) GetAppliedEnabled() bool {
+	if x != nil && x.AppliedEnabled != nil {
+		return *x.AppliedEnabled
+	}
+	return false
+}
+
+func (x *VPCPublicEgress) GetObservedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ObservedAt
+	}
+	return nil
+}
+
+func (x *VPCPublicEgress) GetObservationStale() bool {
+	if x != nil {
+		return x.ObservationStale
+	}
+	return false
+}
+
+func (x *VPCPublicEgress) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *VPCPublicEgress) GetLastOperationId() string {
+	if x != nil {
+		return x.LastOperationId
+	}
+	return ""
+}
+
 // Read-only system dependency summary. Internal EIP/SNAT IDs, placement and
 // address-pool selection are deliberately not tenant-configurable or exposed.
 type VPCBaseConnectivity struct {
@@ -656,7 +807,7 @@ type VPCBaseConnectivity struct {
 
 func (x *VPCBaseConnectivity) Reset() {
 	*x = VPCBaseConnectivity{}
-	mi := &file_network_v1_network_proto_msgTypes[1]
+	mi := &file_network_v1_network_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -668,7 +819,7 @@ func (x *VPCBaseConnectivity) String() string {
 func (*VPCBaseConnectivity) ProtoMessage() {}
 
 func (x *VPCBaseConnectivity) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[1]
+	mi := &file_network_v1_network_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -681,7 +832,7 @@ func (x *VPCBaseConnectivity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VPCBaseConnectivity.ProtoReflect.Descriptor instead.
 func (*VPCBaseConnectivity) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{1}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *VPCBaseConnectivity) GetState() string {
@@ -739,7 +890,7 @@ type Operation struct {
 
 func (x *Operation) Reset() {
 	*x = Operation{}
-	mi := &file_network_v1_network_proto_msgTypes[2]
+	mi := &file_network_v1_network_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -751,7 +902,7 @@ func (x *Operation) String() string {
 func (*Operation) ProtoMessage() {}
 
 func (x *Operation) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[2]
+	mi := &file_network_v1_network_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -764,7 +915,7 @@ func (x *Operation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Operation.ProtoReflect.Descriptor instead.
 func (*Operation) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{2}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Operation) GetId() string {
@@ -863,7 +1014,7 @@ type Attribution struct {
 
 func (x *Attribution) Reset() {
 	*x = Attribution{}
-	mi := &file_network_v1_network_proto_msgTypes[3]
+	mi := &file_network_v1_network_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -875,7 +1026,7 @@ func (x *Attribution) String() string {
 func (*Attribution) ProtoMessage() {}
 
 func (x *Attribution) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[3]
+	mi := &file_network_v1_network_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -888,7 +1039,7 @@ func (x *Attribution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Attribution.ProtoReflect.Descriptor instead.
 func (*Attribution) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{3}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Attribution) GetActor() string {
@@ -926,7 +1077,7 @@ type CreateVPCRequest struct {
 
 func (x *CreateVPCRequest) Reset() {
 	*x = CreateVPCRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[4]
+	mi := &file_network_v1_network_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -938,7 +1089,7 @@ func (x *CreateVPCRequest) String() string {
 func (*CreateVPCRequest) ProtoMessage() {}
 
 func (x *CreateVPCRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[4]
+	mi := &file_network_v1_network_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -951,7 +1102,7 @@ func (x *CreateVPCRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateVPCRequest.ProtoReflect.Descriptor instead.
 func (*CreateVPCRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{4}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CreateVPCRequest) GetTenantId() string {
@@ -1005,7 +1156,7 @@ type CreateVPCResponse struct {
 
 func (x *CreateVPCResponse) Reset() {
 	*x = CreateVPCResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[5]
+	mi := &file_network_v1_network_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1017,7 +1168,7 @@ func (x *CreateVPCResponse) String() string {
 func (*CreateVPCResponse) ProtoMessage() {}
 
 func (x *CreateVPCResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[5]
+	mi := &file_network_v1_network_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1030,7 +1181,7 @@ func (x *CreateVPCResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateVPCResponse.ProtoReflect.Descriptor instead.
 func (*CreateVPCResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{5}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CreateVPCResponse) GetVpc() *VPC {
@@ -1050,7 +1201,7 @@ type GetVPCRequest struct {
 
 func (x *GetVPCRequest) Reset() {
 	*x = GetVPCRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[6]
+	mi := &file_network_v1_network_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1062,7 +1213,7 @@ func (x *GetVPCRequest) String() string {
 func (*GetVPCRequest) ProtoMessage() {}
 
 func (x *GetVPCRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[6]
+	mi := &file_network_v1_network_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1075,7 +1226,7 @@ func (x *GetVPCRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetVPCRequest.ProtoReflect.Descriptor instead.
 func (*GetVPCRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{6}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetVPCRequest) GetTenantId() string {
@@ -1101,7 +1252,7 @@ type GetVPCResponse struct {
 
 func (x *GetVPCResponse) Reset() {
 	*x = GetVPCResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[7]
+	mi := &file_network_v1_network_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1113,7 +1264,7 @@ func (x *GetVPCResponse) String() string {
 func (*GetVPCResponse) ProtoMessage() {}
 
 func (x *GetVPCResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[7]
+	mi := &file_network_v1_network_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1126,7 +1277,7 @@ func (x *GetVPCResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetVPCResponse.ProtoReflect.Descriptor instead.
 func (*GetVPCResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{7}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetVPCResponse) GetVpc() *VPC {
@@ -1155,7 +1306,7 @@ type ListVPCsRequest struct {
 
 func (x *ListVPCsRequest) Reset() {
 	*x = ListVPCsRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[8]
+	mi := &file_network_v1_network_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1167,7 +1318,7 @@ func (x *ListVPCsRequest) String() string {
 func (*ListVPCsRequest) ProtoMessage() {}
 
 func (x *ListVPCsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[8]
+	mi := &file_network_v1_network_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1180,7 +1331,7 @@ func (x *ListVPCsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListVPCsRequest.ProtoReflect.Descriptor instead.
 func (*ListVPCsRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{8}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListVPCsRequest) GetTenantId() string {
@@ -1245,7 +1396,7 @@ type ListVPCsResponse struct {
 
 func (x *ListVPCsResponse) Reset() {
 	*x = ListVPCsResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[9]
+	mi := &file_network_v1_network_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1257,7 +1408,7 @@ func (x *ListVPCsResponse) String() string {
 func (*ListVPCsResponse) ProtoMessage() {}
 
 func (x *ListVPCsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[9]
+	mi := &file_network_v1_network_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1270,7 +1421,7 @@ func (x *ListVPCsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListVPCsResponse.ProtoReflect.Descriptor instead.
 func (*ListVPCsResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{9}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ListVPCsResponse) GetItems() []*VPC {
@@ -1304,7 +1455,7 @@ type DeleteVPCRequest struct {
 
 func (x *DeleteVPCRequest) Reset() {
 	*x = DeleteVPCRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[10]
+	mi := &file_network_v1_network_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1316,7 +1467,7 @@ func (x *DeleteVPCRequest) String() string {
 func (*DeleteVPCRequest) ProtoMessage() {}
 
 func (x *DeleteVPCRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[10]
+	mi := &file_network_v1_network_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1329,7 +1480,7 @@ func (x *DeleteVPCRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteVPCRequest.ProtoReflect.Descriptor instead.
 func (*DeleteVPCRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{10}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *DeleteVPCRequest) GetTenantId() string {
@@ -1355,7 +1506,7 @@ type DeleteVPCResponse struct {
 
 func (x *DeleteVPCResponse) Reset() {
 	*x = DeleteVPCResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[11]
+	mi := &file_network_v1_network_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1367,7 +1518,7 @@ func (x *DeleteVPCResponse) String() string {
 func (*DeleteVPCResponse) ProtoMessage() {}
 
 func (x *DeleteVPCResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[11]
+	mi := &file_network_v1_network_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1380,7 +1531,7 @@ func (x *DeleteVPCResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteVPCResponse.ProtoReflect.Descriptor instead.
 func (*DeleteVPCResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{11}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *DeleteVPCResponse) GetVpc() *VPC {
@@ -1400,7 +1551,7 @@ type GetOperationRequest struct {
 
 func (x *GetOperationRequest) Reset() {
 	*x = GetOperationRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[12]
+	mi := &file_network_v1_network_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1412,7 +1563,7 @@ func (x *GetOperationRequest) String() string {
 func (*GetOperationRequest) ProtoMessage() {}
 
 func (x *GetOperationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[12]
+	mi := &file_network_v1_network_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1425,7 +1576,7 @@ func (x *GetOperationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOperationRequest.ProtoReflect.Descriptor instead.
 func (*GetOperationRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{12}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetOperationRequest) GetTenantId() string {
@@ -1451,7 +1602,7 @@ type GetOperationResponse struct {
 
 func (x *GetOperationResponse) Reset() {
 	*x = GetOperationResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[13]
+	mi := &file_network_v1_network_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1463,7 +1614,7 @@ func (x *GetOperationResponse) String() string {
 func (*GetOperationResponse) ProtoMessage() {}
 
 func (x *GetOperationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[13]
+	mi := &file_network_v1_network_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1476,7 +1627,7 @@ func (x *GetOperationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOperationResponse.ProtoReflect.Descriptor instead.
 func (*GetOperationResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{13}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetOperationResponse) GetOperation() *Operation {
@@ -1512,7 +1663,7 @@ type Subnet struct {
 
 func (x *Subnet) Reset() {
 	*x = Subnet{}
-	mi := &file_network_v1_network_proto_msgTypes[14]
+	mi := &file_network_v1_network_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1524,7 +1675,7 @@ func (x *Subnet) String() string {
 func (*Subnet) ProtoMessage() {}
 
 func (x *Subnet) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[14]
+	mi := &file_network_v1_network_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1537,7 +1688,7 @@ func (x *Subnet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Subnet.ProtoReflect.Descriptor instead.
 func (*Subnet) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{14}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Subnet) GetId() string {
@@ -1682,7 +1833,7 @@ type CreateSubnetRequest struct {
 
 func (x *CreateSubnetRequest) Reset() {
 	*x = CreateSubnetRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[15]
+	mi := &file_network_v1_network_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1694,7 +1845,7 @@ func (x *CreateSubnetRequest) String() string {
 func (*CreateSubnetRequest) ProtoMessage() {}
 
 func (x *CreateSubnetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[15]
+	mi := &file_network_v1_network_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1707,7 +1858,7 @@ func (x *CreateSubnetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSubnetRequest.ProtoReflect.Descriptor instead.
 func (*CreateSubnetRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{15}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *CreateSubnetRequest) GetTenantId() string {
@@ -1775,7 +1926,7 @@ type CreateSubnetResponse struct {
 
 func (x *CreateSubnetResponse) Reset() {
 	*x = CreateSubnetResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[16]
+	mi := &file_network_v1_network_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1787,7 +1938,7 @@ func (x *CreateSubnetResponse) String() string {
 func (*CreateSubnetResponse) ProtoMessage() {}
 
 func (x *CreateSubnetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[16]
+	mi := &file_network_v1_network_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1800,7 +1951,7 @@ func (x *CreateSubnetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSubnetResponse.ProtoReflect.Descriptor instead.
 func (*CreateSubnetResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{16}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *CreateSubnetResponse) GetSubnet() *Subnet {
@@ -1820,7 +1971,7 @@ type GetSubnetRequest struct {
 
 func (x *GetSubnetRequest) Reset() {
 	*x = GetSubnetRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[17]
+	mi := &file_network_v1_network_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1832,7 +1983,7 @@ func (x *GetSubnetRequest) String() string {
 func (*GetSubnetRequest) ProtoMessage() {}
 
 func (x *GetSubnetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[17]
+	mi := &file_network_v1_network_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1845,7 +1996,7 @@ func (x *GetSubnetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSubnetRequest.ProtoReflect.Descriptor instead.
 func (*GetSubnetRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{17}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *GetSubnetRequest) GetTenantId() string {
@@ -1871,7 +2022,7 @@ type GetSubnetResponse struct {
 
 func (x *GetSubnetResponse) Reset() {
 	*x = GetSubnetResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[18]
+	mi := &file_network_v1_network_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1883,7 +2034,7 @@ func (x *GetSubnetResponse) String() string {
 func (*GetSubnetResponse) ProtoMessage() {}
 
 func (x *GetSubnetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[18]
+	mi := &file_network_v1_network_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1896,7 +2047,7 @@ func (x *GetSubnetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSubnetResponse.ProtoReflect.Descriptor instead.
 func (*GetSubnetResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{18}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *GetSubnetResponse) GetSubnet() *Subnet {
@@ -1920,7 +2071,7 @@ type ListSubnetsRequest struct {
 
 func (x *ListSubnetsRequest) Reset() {
 	*x = ListSubnetsRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[19]
+	mi := &file_network_v1_network_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1932,7 +2083,7 @@ func (x *ListSubnetsRequest) String() string {
 func (*ListSubnetsRequest) ProtoMessage() {}
 
 func (x *ListSubnetsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[19]
+	mi := &file_network_v1_network_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1945,7 +2096,7 @@ func (x *ListSubnetsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSubnetsRequest.ProtoReflect.Descriptor instead.
 func (*ListSubnetsRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{19}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ListSubnetsRequest) GetTenantId() string {
@@ -2001,7 +2152,7 @@ type ListSubnetsResponse struct {
 
 func (x *ListSubnetsResponse) Reset() {
 	*x = ListSubnetsResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[20]
+	mi := &file_network_v1_network_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2013,7 +2164,7 @@ func (x *ListSubnetsResponse) String() string {
 func (*ListSubnetsResponse) ProtoMessage() {}
 
 func (x *ListSubnetsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[20]
+	mi := &file_network_v1_network_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2026,7 +2177,7 @@ func (x *ListSubnetsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSubnetsResponse.ProtoReflect.Descriptor instead.
 func (*ListSubnetsResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{20}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ListSubnetsResponse) GetItems() []*Subnet {
@@ -2060,7 +2211,7 @@ type DeleteSubnetRequest struct {
 
 func (x *DeleteSubnetRequest) Reset() {
 	*x = DeleteSubnetRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[21]
+	mi := &file_network_v1_network_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2072,7 +2223,7 @@ func (x *DeleteSubnetRequest) String() string {
 func (*DeleteSubnetRequest) ProtoMessage() {}
 
 func (x *DeleteSubnetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[21]
+	mi := &file_network_v1_network_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2085,7 +2236,7 @@ func (x *DeleteSubnetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSubnetRequest.ProtoReflect.Descriptor instead.
 func (*DeleteSubnetRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{21}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *DeleteSubnetRequest) GetTenantId() string {
@@ -2111,7 +2262,7 @@ type DeleteSubnetResponse struct {
 
 func (x *DeleteSubnetResponse) Reset() {
 	*x = DeleteSubnetResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[22]
+	mi := &file_network_v1_network_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2123,7 +2274,7 @@ func (x *DeleteSubnetResponse) String() string {
 func (*DeleteSubnetResponse) ProtoMessage() {}
 
 func (x *DeleteSubnetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[22]
+	mi := &file_network_v1_network_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2136,7 +2287,7 @@ func (x *DeleteSubnetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSubnetResponse.ProtoReflect.Descriptor instead.
 func (*DeleteSubnetResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{22}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *DeleteSubnetResponse) GetSubnet() *Subnet {
@@ -2159,7 +2310,7 @@ type PodPrimaryPlan struct {
 
 func (x *PodPrimaryPlan) Reset() {
 	*x = PodPrimaryPlan{}
-	mi := &file_network_v1_network_proto_msgTypes[23]
+	mi := &file_network_v1_network_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2171,7 +2322,7 @@ func (x *PodPrimaryPlan) String() string {
 func (*PodPrimaryPlan) ProtoMessage() {}
 
 func (x *PodPrimaryPlan) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[23]
+	mi := &file_network_v1_network_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2184,7 +2335,7 @@ func (x *PodPrimaryPlan) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PodPrimaryPlan.ProtoReflect.Descriptor instead.
 func (*PodPrimaryPlan) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{23}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *PodPrimaryPlan) GetFormatVersion() int32 {
@@ -2226,7 +2377,7 @@ type VMNetworkExpectation struct {
 
 func (x *VMNetworkExpectation) Reset() {
 	*x = VMNetworkExpectation{}
-	mi := &file_network_v1_network_proto_msgTypes[24]
+	mi := &file_network_v1_network_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2238,7 +2389,7 @@ func (x *VMNetworkExpectation) String() string {
 func (*VMNetworkExpectation) ProtoMessage() {}
 
 func (x *VMNetworkExpectation) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[24]
+	mi := &file_network_v1_network_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2251,7 +2402,7 @@ func (x *VMNetworkExpectation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VMNetworkExpectation.ProtoReflect.Descriptor instead.
 func (*VMNetworkExpectation) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{24}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *VMNetworkExpectation) GetNadName() string {
@@ -2290,7 +2441,7 @@ type VMPrimaryPlan struct {
 
 func (x *VMPrimaryPlan) Reset() {
 	*x = VMPrimaryPlan{}
-	mi := &file_network_v1_network_proto_msgTypes[25]
+	mi := &file_network_v1_network_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2302,7 +2453,7 @@ func (x *VMPrimaryPlan) String() string {
 func (*VMPrimaryPlan) ProtoMessage() {}
 
 func (x *VMPrimaryPlan) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[25]
+	mi := &file_network_v1_network_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2315,7 +2466,7 @@ func (x *VMPrimaryPlan) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VMPrimaryPlan.ProtoReflect.Descriptor instead.
 func (*VMPrimaryPlan) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{25}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *VMPrimaryPlan) GetFormatVersion() int32 {
@@ -2379,7 +2530,7 @@ type VMCurrentAddress struct {
 
 func (x *VMCurrentAddress) Reset() {
 	*x = VMCurrentAddress{}
-	mi := &file_network_v1_network_proto_msgTypes[26]
+	mi := &file_network_v1_network_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2391,7 +2542,7 @@ func (x *VMCurrentAddress) String() string {
 func (*VMCurrentAddress) ProtoMessage() {}
 
 func (x *VMCurrentAddress) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[26]
+	mi := &file_network_v1_network_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2404,7 +2555,7 @@ func (x *VMCurrentAddress) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VMCurrentAddress.ProtoReflect.Descriptor instead.
 func (*VMCurrentAddress) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{26}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *VMCurrentAddress) GetNicName() string {
@@ -2448,7 +2599,7 @@ type AttachmentLabels struct {
 
 func (x *AttachmentLabels) Reset() {
 	*x = AttachmentLabels{}
-	mi := &file_network_v1_network_proto_msgTypes[27]
+	mi := &file_network_v1_network_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2460,7 +2611,7 @@ func (x *AttachmentLabels) String() string {
 func (*AttachmentLabels) ProtoMessage() {}
 
 func (x *AttachmentLabels) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[27]
+	mi := &file_network_v1_network_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2473,7 +2624,7 @@ func (x *AttachmentLabels) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AttachmentLabels.ProtoReflect.Descriptor instead.
 func (*AttachmentLabels) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{27}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *AttachmentLabels) GetTenantId() string {
@@ -2524,7 +2675,7 @@ type WorkloadReference struct {
 
 func (x *WorkloadReference) Reset() {
 	*x = WorkloadReference{}
-	mi := &file_network_v1_network_proto_msgTypes[28]
+	mi := &file_network_v1_network_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2536,7 +2687,7 @@ func (x *WorkloadReference) String() string {
 func (*WorkloadReference) ProtoMessage() {}
 
 func (x *WorkloadReference) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[28]
+	mi := &file_network_v1_network_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2549,7 +2700,7 @@ func (x *WorkloadReference) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkloadReference.ProtoReflect.Descriptor instead.
 func (*WorkloadReference) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{28}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *WorkloadReference) GetApiVersion() string {
@@ -2597,7 +2748,7 @@ type ControllerReference struct {
 
 func (x *ControllerReference) Reset() {
 	*x = ControllerReference{}
-	mi := &file_network_v1_network_proto_msgTypes[29]
+	mi := &file_network_v1_network_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2609,7 +2760,7 @@ func (x *ControllerReference) String() string {
 func (*ControllerReference) ProtoMessage() {}
 
 func (x *ControllerReference) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[29]
+	mi := &file_network_v1_network_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2622,7 +2773,7 @@ func (x *ControllerReference) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ControllerReference.ProtoReflect.Descriptor instead.
 func (*ControllerReference) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{29}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ControllerReference) GetReference() *WorkloadReference {
@@ -2649,7 +2800,7 @@ type PodReference struct {
 
 func (x *PodReference) Reset() {
 	*x = PodReference{}
-	mi := &file_network_v1_network_proto_msgTypes[30]
+	mi := &file_network_v1_network_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2661,7 +2812,7 @@ func (x *PodReference) String() string {
 func (*PodReference) ProtoMessage() {}
 
 func (x *PodReference) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[30]
+	mi := &file_network_v1_network_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2674,7 +2825,7 @@ func (x *PodReference) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PodReference.ProtoReflect.Descriptor instead.
 func (*PodReference) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{30}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *PodReference) GetReference() *WorkloadReference {
@@ -2727,7 +2878,7 @@ type Attachment struct {
 
 func (x *Attachment) Reset() {
 	*x = Attachment{}
-	mi := &file_network_v1_network_proto_msgTypes[31]
+	mi := &file_network_v1_network_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2739,7 +2890,7 @@ func (x *Attachment) String() string {
 func (*Attachment) ProtoMessage() {}
 
 func (x *Attachment) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[31]
+	mi := &file_network_v1_network_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2752,7 +2903,7 @@ func (x *Attachment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Attachment.ProtoReflect.Descriptor instead.
 func (*Attachment) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{31}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *Attachment) GetId() string {
@@ -2964,7 +3115,7 @@ type PrepareAttachmentRequest struct {
 
 func (x *PrepareAttachmentRequest) Reset() {
 	*x = PrepareAttachmentRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[32]
+	mi := &file_network_v1_network_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2976,7 +3127,7 @@ func (x *PrepareAttachmentRequest) String() string {
 func (*PrepareAttachmentRequest) ProtoMessage() {}
 
 func (x *PrepareAttachmentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[32]
+	mi := &file_network_v1_network_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2989,7 +3140,7 @@ func (x *PrepareAttachmentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrepareAttachmentRequest.ProtoReflect.Descriptor instead.
 func (*PrepareAttachmentRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{32}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *PrepareAttachmentRequest) GetTenantId() string {
@@ -3086,7 +3237,7 @@ type GetAttachmentRequest struct {
 
 func (x *GetAttachmentRequest) Reset() {
 	*x = GetAttachmentRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[33]
+	mi := &file_network_v1_network_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3098,7 +3249,7 @@ func (x *GetAttachmentRequest) String() string {
 func (*GetAttachmentRequest) ProtoMessage() {}
 
 func (x *GetAttachmentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[33]
+	mi := &file_network_v1_network_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3111,7 +3262,7 @@ func (x *GetAttachmentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAttachmentRequest.ProtoReflect.Descriptor instead.
 func (*GetAttachmentRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{33}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *GetAttachmentRequest) GetTenantId() string {
@@ -3144,7 +3295,7 @@ type ConfirmAttachmentRequest struct {
 
 func (x *ConfirmAttachmentRequest) Reset() {
 	*x = ConfirmAttachmentRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[34]
+	mi := &file_network_v1_network_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3156,7 +3307,7 @@ func (x *ConfirmAttachmentRequest) String() string {
 func (*ConfirmAttachmentRequest) ProtoMessage() {}
 
 func (x *ConfirmAttachmentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[34]
+	mi := &file_network_v1_network_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3169,7 +3320,7 @@ func (x *ConfirmAttachmentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfirmAttachmentRequest.ProtoReflect.Descriptor instead.
 func (*ConfirmAttachmentRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{34}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ConfirmAttachmentRequest) GetTenantId() string {
@@ -3240,7 +3391,7 @@ type ReleaseAttachmentRequest struct {
 
 func (x *ReleaseAttachmentRequest) Reset() {
 	*x = ReleaseAttachmentRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[35]
+	mi := &file_network_v1_network_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3252,7 +3403,7 @@ func (x *ReleaseAttachmentRequest) String() string {
 func (*ReleaseAttachmentRequest) ProtoMessage() {}
 
 func (x *ReleaseAttachmentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[35]
+	mi := &file_network_v1_network_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3265,7 +3416,7 @@ func (x *ReleaseAttachmentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseAttachmentRequest.ProtoReflect.Descriptor instead.
 func (*ReleaseAttachmentRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{35}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ReleaseAttachmentRequest) GetTenantId() string {
@@ -3305,7 +3456,7 @@ type PrepareAttachmentResponse struct {
 
 func (x *PrepareAttachmentResponse) Reset() {
 	*x = PrepareAttachmentResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[36]
+	mi := &file_network_v1_network_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3317,7 +3468,7 @@ func (x *PrepareAttachmentResponse) String() string {
 func (*PrepareAttachmentResponse) ProtoMessage() {}
 
 func (x *PrepareAttachmentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[36]
+	mi := &file_network_v1_network_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3330,7 +3481,7 @@ func (x *PrepareAttachmentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrepareAttachmentResponse.ProtoReflect.Descriptor instead.
 func (*PrepareAttachmentResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{36}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *PrepareAttachmentResponse) GetAttachment() *Attachment {
@@ -3349,7 +3500,7 @@ type GetAttachmentResponse struct {
 
 func (x *GetAttachmentResponse) Reset() {
 	*x = GetAttachmentResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[37]
+	mi := &file_network_v1_network_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3361,7 +3512,7 @@ func (x *GetAttachmentResponse) String() string {
 func (*GetAttachmentResponse) ProtoMessage() {}
 
 func (x *GetAttachmentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[37]
+	mi := &file_network_v1_network_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3374,7 +3525,7 @@ func (x *GetAttachmentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAttachmentResponse.ProtoReflect.Descriptor instead.
 func (*GetAttachmentResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{37}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *GetAttachmentResponse) GetAttachment() *Attachment {
@@ -3393,7 +3544,7 @@ type ConfirmAttachmentResponse struct {
 
 func (x *ConfirmAttachmentResponse) Reset() {
 	*x = ConfirmAttachmentResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[38]
+	mi := &file_network_v1_network_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3405,7 +3556,7 @@ func (x *ConfirmAttachmentResponse) String() string {
 func (*ConfirmAttachmentResponse) ProtoMessage() {}
 
 func (x *ConfirmAttachmentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[38]
+	mi := &file_network_v1_network_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3418,7 +3569,7 @@ func (x *ConfirmAttachmentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfirmAttachmentResponse.ProtoReflect.Descriptor instead.
 func (*ConfirmAttachmentResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{38}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *ConfirmAttachmentResponse) GetAttachment() *Attachment {
@@ -3437,7 +3588,7 @@ type ReleaseAttachmentResponse struct {
 
 func (x *ReleaseAttachmentResponse) Reset() {
 	*x = ReleaseAttachmentResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[39]
+	mi := &file_network_v1_network_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3449,7 +3600,7 @@ func (x *ReleaseAttachmentResponse) String() string {
 func (*ReleaseAttachmentResponse) ProtoMessage() {}
 
 func (x *ReleaseAttachmentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[39]
+	mi := &file_network_v1_network_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3462,7 +3613,7 @@ func (x *ReleaseAttachmentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseAttachmentResponse.ProtoReflect.Descriptor instead.
 func (*ReleaseAttachmentResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{39}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *ReleaseAttachmentResponse) GetAttachment() *Attachment {
@@ -3487,7 +3638,7 @@ type GetSubmissionRequest struct {
 
 func (x *GetSubmissionRequest) Reset() {
 	*x = GetSubmissionRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[40]
+	mi := &file_network_v1_network_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3499,7 +3650,7 @@ func (x *GetSubmissionRequest) String() string {
 func (*GetSubmissionRequest) ProtoMessage() {}
 
 func (x *GetSubmissionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[40]
+	mi := &file_network_v1_network_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3512,7 +3663,7 @@ func (x *GetSubmissionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSubmissionRequest.ProtoReflect.Descriptor instead.
 func (*GetSubmissionRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{40}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *GetSubmissionRequest) GetProtocolVersion() int32 {
@@ -3591,7 +3742,7 @@ type GetSubmissionResponse struct {
 
 func (x *GetSubmissionResponse) Reset() {
 	*x = GetSubmissionResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[41]
+	mi := &file_network_v1_network_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3603,7 +3754,7 @@ func (x *GetSubmissionResponse) String() string {
 func (*GetSubmissionResponse) ProtoMessage() {}
 
 func (x *GetSubmissionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[41]
+	mi := &file_network_v1_network_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3616,7 +3767,7 @@ func (x *GetSubmissionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSubmissionResponse.ProtoReflect.Descriptor instead.
 func (*GetSubmissionResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{41}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *GetSubmissionResponse) GetProtocolVersion() int32 {
@@ -3761,7 +3912,7 @@ type ListVPCCIDRPresetsRequest struct {
 
 func (x *ListVPCCIDRPresetsRequest) Reset() {
 	*x = ListVPCCIDRPresetsRequest{}
-	mi := &file_network_v1_network_proto_msgTypes[42]
+	mi := &file_network_v1_network_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3773,7 +3924,7 @@ func (x *ListVPCCIDRPresetsRequest) String() string {
 func (*ListVPCCIDRPresetsRequest) ProtoMessage() {}
 
 func (x *ListVPCCIDRPresetsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[42]
+	mi := &file_network_v1_network_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3786,7 +3937,7 @@ func (x *ListVPCCIDRPresetsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListVPCCIDRPresetsRequest.ProtoReflect.Descriptor instead.
 func (*ListVPCCIDRPresetsRequest) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{42}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *ListVPCCIDRPresetsRequest) GetTenantId() string {
@@ -3805,7 +3956,7 @@ type ListVPCCIDRPresetsResponse struct {
 
 func (x *ListVPCCIDRPresetsResponse) Reset() {
 	*x = ListVPCCIDRPresetsResponse{}
-	mi := &file_network_v1_network_proto_msgTypes[43]
+	mi := &file_network_v1_network_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3817,7 +3968,7 @@ func (x *ListVPCCIDRPresetsResponse) String() string {
 func (*ListVPCCIDRPresetsResponse) ProtoMessage() {}
 
 func (x *ListVPCCIDRPresetsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_network_v1_network_proto_msgTypes[43]
+	mi := &file_network_v1_network_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3830,7 +3981,7 @@ func (x *ListVPCCIDRPresetsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListVPCCIDRPresetsResponse.ProtoReflect.Descriptor instead.
 func (*ListVPCCIDRPresetsResponse) Descriptor() ([]byte, []int) {
-	return file_network_v1_network_proto_rawDescGZIP(), []int{43}
+	return file_network_v1_network_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *ListVPCCIDRPresetsResponse) GetCidrs() []string {
@@ -3845,7 +3996,7 @@ var File_network_v1_network_proto protoreflect.FileDescriptor
 const file_network_v1_network_proto_rawDesc = "" +
 	"\n" +
 	"\x18network/v1/network.proto\x12\n" +
-	"network.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x83\x05\n" +
+	"network.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc5\x05\n" +
 	"\x03VPC\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x12\n" +
@@ -3866,7 +4017,27 @@ const file_network_v1_network_proto_rawDesc = "" +
 	"\x11last_operation_id\x18\r \x01(\tR\x0flastOperationId\x12!\n" +
 	"\fsubnet_count\x18\x0e \x01(\x03R\vsubnetCount\x12%\n" +
 	"\x0ereason_message\x18\x0f \x01(\tR\rreasonMessage\x12L\n" +
-	"\x11base_connectivity\x18\x10 \x01(\v2\x1f.network.v1.VPCBaseConnectivityR\x10baseConnectivity\"\xd4\x01\n" +
+	"\x11base_connectivity\x18\x10 \x01(\v2\x1f.network.v1.VPCBaseConnectivityR\x10baseConnectivity\x12@\n" +
+	"\rpublic_egress\x18\x11 \x01(\v2\x1b.network.v1.VPCPublicEgressR\fpublicEgress\"\x98\x04\n" +
+	"\x0fVPCPublicEgress\x12\x1d\n" +
+	"\n" +
+	"binding_id\x18\x01 \x01(\tR\tbindingId\x12\x15\n" +
+	"\x06eip_id\x18\x02 \x01(\tR\x05eipId\x12\x1f\n" +
+	"\veip_address\x18\x03 \x01(\tR\n" +
+	"eipAddress\x12#\n" +
+	"\rbinding_state\x18\x04 \x01(\tR\fbindingState\x12/\n" +
+	"\x05state\x18\x05 \x01(\x0e2\x19.network.v1.ResourceStateR\x05state\x12\x16\n" +
+	"\x06reason\x18\x06 \x01(\tR\x06reason\x12%\n" +
+	"\x0ereason_message\x18\a \x01(\tR\rreasonMessage\x12'\n" +
+	"\x0fdesired_enabled\x18\b \x01(\bR\x0edesiredEnabled\x12,\n" +
+	"\x0fapplied_enabled\x18\t \x01(\bH\x00R\x0eappliedEnabled\x88\x01\x01\x12;\n" +
+	"\vobserved_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"observedAt\x12+\n" +
+	"\x11observation_stale\x18\v \x01(\bR\x10observationStale\x12\x18\n" +
+	"\aversion\x18\f \x01(\x03R\aversion\x12*\n" +
+	"\x11last_operation_id\x18\r \x01(\tR\x0flastOperationIdB\x12\n" +
+	"\x10_applied_enabled\"\xd4\x01\n" +
 	"\x13VPCBaseConnectivity\x12\x14\n" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12;\n" +
@@ -4282,7 +4453,7 @@ func file_network_v1_network_proto_rawDescGZIP() []byte {
 }
 
 var file_network_v1_network_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_network_v1_network_proto_msgTypes = make([]protoimpl.MessageInfo, 44)
+var file_network_v1_network_proto_msgTypes = make([]protoimpl.MessageInfo, 45)
 var file_network_v1_network_proto_goTypes = []any{
 	(ResourceState)(0),                 // 0: network.v1.ResourceState
 	(OperationState)(0),                // 1: network.v1.OperationState
@@ -4291,143 +4462,147 @@ var file_network_v1_network_proto_goTypes = []any{
 	(AttachmentState)(0),               // 4: network.v1.AttachmentState
 	(SubmissionState)(0),               // 5: network.v1.SubmissionState
 	(*VPC)(nil),                        // 6: network.v1.VPC
-	(*VPCBaseConnectivity)(nil),        // 7: network.v1.VPCBaseConnectivity
-	(*Operation)(nil),                  // 8: network.v1.Operation
-	(*Attribution)(nil),                // 9: network.v1.Attribution
-	(*CreateVPCRequest)(nil),           // 10: network.v1.CreateVPCRequest
-	(*CreateVPCResponse)(nil),          // 11: network.v1.CreateVPCResponse
-	(*GetVPCRequest)(nil),              // 12: network.v1.GetVPCRequest
-	(*GetVPCResponse)(nil),             // 13: network.v1.GetVPCResponse
-	(*ListVPCsRequest)(nil),            // 14: network.v1.ListVPCsRequest
-	(*ListVPCsResponse)(nil),           // 15: network.v1.ListVPCsResponse
-	(*DeleteVPCRequest)(nil),           // 16: network.v1.DeleteVPCRequest
-	(*DeleteVPCResponse)(nil),          // 17: network.v1.DeleteVPCResponse
-	(*GetOperationRequest)(nil),        // 18: network.v1.GetOperationRequest
-	(*GetOperationResponse)(nil),       // 19: network.v1.GetOperationResponse
-	(*Subnet)(nil),                     // 20: network.v1.Subnet
-	(*CreateSubnetRequest)(nil),        // 21: network.v1.CreateSubnetRequest
-	(*CreateSubnetResponse)(nil),       // 22: network.v1.CreateSubnetResponse
-	(*GetSubnetRequest)(nil),           // 23: network.v1.GetSubnetRequest
-	(*GetSubnetResponse)(nil),          // 24: network.v1.GetSubnetResponse
-	(*ListSubnetsRequest)(nil),         // 25: network.v1.ListSubnetsRequest
-	(*ListSubnetsResponse)(nil),        // 26: network.v1.ListSubnetsResponse
-	(*DeleteSubnetRequest)(nil),        // 27: network.v1.DeleteSubnetRequest
-	(*DeleteSubnetResponse)(nil),       // 28: network.v1.DeleteSubnetResponse
-	(*PodPrimaryPlan)(nil),             // 29: network.v1.PodPrimaryPlan
-	(*VMNetworkExpectation)(nil),       // 30: network.v1.VMNetworkExpectation
-	(*VMPrimaryPlan)(nil),              // 31: network.v1.VMPrimaryPlan
-	(*VMCurrentAddress)(nil),           // 32: network.v1.VMCurrentAddress
-	(*AttachmentLabels)(nil),           // 33: network.v1.AttachmentLabels
-	(*WorkloadReference)(nil),          // 34: network.v1.WorkloadReference
-	(*ControllerReference)(nil),        // 35: network.v1.ControllerReference
-	(*PodReference)(nil),               // 36: network.v1.PodReference
-	(*Attachment)(nil),                 // 37: network.v1.Attachment
-	(*PrepareAttachmentRequest)(nil),   // 38: network.v1.PrepareAttachmentRequest
-	(*GetAttachmentRequest)(nil),       // 39: network.v1.GetAttachmentRequest
-	(*ConfirmAttachmentRequest)(nil),   // 40: network.v1.ConfirmAttachmentRequest
-	(*ReleaseAttachmentRequest)(nil),   // 41: network.v1.ReleaseAttachmentRequest
-	(*PrepareAttachmentResponse)(nil),  // 42: network.v1.PrepareAttachmentResponse
-	(*GetAttachmentResponse)(nil),      // 43: network.v1.GetAttachmentResponse
-	(*ConfirmAttachmentResponse)(nil),  // 44: network.v1.ConfirmAttachmentResponse
-	(*ReleaseAttachmentResponse)(nil),  // 45: network.v1.ReleaseAttachmentResponse
-	(*GetSubmissionRequest)(nil),       // 46: network.v1.GetSubmissionRequest
-	(*GetSubmissionResponse)(nil),      // 47: network.v1.GetSubmissionResponse
-	(*ListVPCCIDRPresetsRequest)(nil),  // 48: network.v1.ListVPCCIDRPresetsRequest
-	(*ListVPCCIDRPresetsResponse)(nil), // 49: network.v1.ListVPCCIDRPresetsResponse
-	(*timestamppb.Timestamp)(nil),      // 50: google.protobuf.Timestamp
+	(*VPCPublicEgress)(nil),            // 7: network.v1.VPCPublicEgress
+	(*VPCBaseConnectivity)(nil),        // 8: network.v1.VPCBaseConnectivity
+	(*Operation)(nil),                  // 9: network.v1.Operation
+	(*Attribution)(nil),                // 10: network.v1.Attribution
+	(*CreateVPCRequest)(nil),           // 11: network.v1.CreateVPCRequest
+	(*CreateVPCResponse)(nil),          // 12: network.v1.CreateVPCResponse
+	(*GetVPCRequest)(nil),              // 13: network.v1.GetVPCRequest
+	(*GetVPCResponse)(nil),             // 14: network.v1.GetVPCResponse
+	(*ListVPCsRequest)(nil),            // 15: network.v1.ListVPCsRequest
+	(*ListVPCsResponse)(nil),           // 16: network.v1.ListVPCsResponse
+	(*DeleteVPCRequest)(nil),           // 17: network.v1.DeleteVPCRequest
+	(*DeleteVPCResponse)(nil),          // 18: network.v1.DeleteVPCResponse
+	(*GetOperationRequest)(nil),        // 19: network.v1.GetOperationRequest
+	(*GetOperationResponse)(nil),       // 20: network.v1.GetOperationResponse
+	(*Subnet)(nil),                     // 21: network.v1.Subnet
+	(*CreateSubnetRequest)(nil),        // 22: network.v1.CreateSubnetRequest
+	(*CreateSubnetResponse)(nil),       // 23: network.v1.CreateSubnetResponse
+	(*GetSubnetRequest)(nil),           // 24: network.v1.GetSubnetRequest
+	(*GetSubnetResponse)(nil),          // 25: network.v1.GetSubnetResponse
+	(*ListSubnetsRequest)(nil),         // 26: network.v1.ListSubnetsRequest
+	(*ListSubnetsResponse)(nil),        // 27: network.v1.ListSubnetsResponse
+	(*DeleteSubnetRequest)(nil),        // 28: network.v1.DeleteSubnetRequest
+	(*DeleteSubnetResponse)(nil),       // 29: network.v1.DeleteSubnetResponse
+	(*PodPrimaryPlan)(nil),             // 30: network.v1.PodPrimaryPlan
+	(*VMNetworkExpectation)(nil),       // 31: network.v1.VMNetworkExpectation
+	(*VMPrimaryPlan)(nil),              // 32: network.v1.VMPrimaryPlan
+	(*VMCurrentAddress)(nil),           // 33: network.v1.VMCurrentAddress
+	(*AttachmentLabels)(nil),           // 34: network.v1.AttachmentLabels
+	(*WorkloadReference)(nil),          // 35: network.v1.WorkloadReference
+	(*ControllerReference)(nil),        // 36: network.v1.ControllerReference
+	(*PodReference)(nil),               // 37: network.v1.PodReference
+	(*Attachment)(nil),                 // 38: network.v1.Attachment
+	(*PrepareAttachmentRequest)(nil),   // 39: network.v1.PrepareAttachmentRequest
+	(*GetAttachmentRequest)(nil),       // 40: network.v1.GetAttachmentRequest
+	(*ConfirmAttachmentRequest)(nil),   // 41: network.v1.ConfirmAttachmentRequest
+	(*ReleaseAttachmentRequest)(nil),   // 42: network.v1.ReleaseAttachmentRequest
+	(*PrepareAttachmentResponse)(nil),  // 43: network.v1.PrepareAttachmentResponse
+	(*GetAttachmentResponse)(nil),      // 44: network.v1.GetAttachmentResponse
+	(*ConfirmAttachmentResponse)(nil),  // 45: network.v1.ConfirmAttachmentResponse
+	(*ReleaseAttachmentResponse)(nil),  // 46: network.v1.ReleaseAttachmentResponse
+	(*GetSubmissionRequest)(nil),       // 47: network.v1.GetSubmissionRequest
+	(*GetSubmissionResponse)(nil),      // 48: network.v1.GetSubmissionResponse
+	(*ListVPCCIDRPresetsRequest)(nil),  // 49: network.v1.ListVPCCIDRPresetsRequest
+	(*ListVPCCIDRPresetsResponse)(nil), // 50: network.v1.ListVPCCIDRPresetsResponse
+	(*timestamppb.Timestamp)(nil),      // 51: google.protobuf.Timestamp
 }
 var file_network_v1_network_proto_depIdxs = []int32{
 	0,  // 0: network.v1.VPC.state:type_name -> network.v1.ResourceState
-	50, // 1: network.v1.VPC.created_at:type_name -> google.protobuf.Timestamp
-	50, // 2: network.v1.VPC.updated_at:type_name -> google.protobuf.Timestamp
-	50, // 3: network.v1.VPC.observed_at:type_name -> google.protobuf.Timestamp
-	7,  // 4: network.v1.VPC.base_connectivity:type_name -> network.v1.VPCBaseConnectivity
-	50, // 5: network.v1.VPCBaseConnectivity.observed_at:type_name -> google.protobuf.Timestamp
-	2,  // 6: network.v1.Operation.kind:type_name -> network.v1.OperationKind
-	1,  // 7: network.v1.Operation.state:type_name -> network.v1.OperationState
-	50, // 8: network.v1.Operation.created_at:type_name -> google.protobuf.Timestamp
-	50, // 9: network.v1.Operation.updated_at:type_name -> google.protobuf.Timestamp
-	50, // 10: network.v1.Operation.completed_at:type_name -> google.protobuf.Timestamp
-	50, // 11: network.v1.Operation.next_attempt_at:type_name -> google.protobuf.Timestamp
-	3,  // 12: network.v1.Operation.resource_type:type_name -> network.v1.ResourceType
-	9,  // 13: network.v1.CreateVPCRequest.attribution:type_name -> network.v1.Attribution
-	6,  // 14: network.v1.CreateVPCResponse.vpc:type_name -> network.v1.VPC
-	6,  // 15: network.v1.GetVPCResponse.vpc:type_name -> network.v1.VPC
-	0,  // 16: network.v1.ListVPCsRequest.state:type_name -> network.v1.ResourceState
-	6,  // 17: network.v1.ListVPCsResponse.items:type_name -> network.v1.VPC
-	6,  // 18: network.v1.DeleteVPCResponse.vpc:type_name -> network.v1.VPC
-	8,  // 19: network.v1.GetOperationResponse.operation:type_name -> network.v1.Operation
-	0,  // 20: network.v1.Subnet.state:type_name -> network.v1.ResourceState
-	50, // 21: network.v1.Subnet.created_at:type_name -> google.protobuf.Timestamp
-	50, // 22: network.v1.Subnet.updated_at:type_name -> google.protobuf.Timestamp
-	50, // 23: network.v1.Subnet.observed_at:type_name -> google.protobuf.Timestamp
-	9,  // 24: network.v1.CreateSubnetRequest.attribution:type_name -> network.v1.Attribution
-	20, // 25: network.v1.CreateSubnetResponse.subnet:type_name -> network.v1.Subnet
-	20, // 26: network.v1.GetSubnetResponse.subnet:type_name -> network.v1.Subnet
-	0,  // 27: network.v1.ListSubnetsRequest.state:type_name -> network.v1.ResourceState
-	20, // 28: network.v1.ListSubnetsResponse.items:type_name -> network.v1.Subnet
-	20, // 29: network.v1.DeleteSubnetResponse.subnet:type_name -> network.v1.Subnet
-	33, // 30: network.v1.PodPrimaryPlan.labels:type_name -> network.v1.AttachmentLabels
-	33, // 31: network.v1.VMPrimaryPlan.labels:type_name -> network.v1.AttachmentLabels
-	34, // 32: network.v1.ControllerReference.reference:type_name -> network.v1.WorkloadReference
-	34, // 33: network.v1.ControllerReference.owner:type_name -> network.v1.WorkloadReference
-	34, // 34: network.v1.PodReference.reference:type_name -> network.v1.WorkloadReference
-	34, // 35: network.v1.PodReference.owner:type_name -> network.v1.WorkloadReference
-	4,  // 36: network.v1.Attachment.state:type_name -> network.v1.AttachmentState
-	29, // 37: network.v1.Attachment.pod_primary:type_name -> network.v1.PodPrimaryPlan
-	50, // 38: network.v1.Attachment.created_at:type_name -> google.protobuf.Timestamp
-	50, // 39: network.v1.Attachment.updated_at:type_name -> google.protobuf.Timestamp
-	50, // 40: network.v1.Attachment.observed_at:type_name -> google.protobuf.Timestamp
-	50, // 41: network.v1.Attachment.released_at:type_name -> google.protobuf.Timestamp
-	34, // 42: network.v1.Attachment.root_controller:type_name -> network.v1.WorkloadReference
-	31, // 43: network.v1.Attachment.vm_primary:type_name -> network.v1.VMPrimaryPlan
-	32, // 44: network.v1.Attachment.vm_current_addresses:type_name -> network.v1.VMCurrentAddress
-	30, // 45: network.v1.PrepareAttachmentRequest.vm_expectation:type_name -> network.v1.VMNetworkExpectation
-	37, // 46: network.v1.PrepareAttachmentResponse.attachment:type_name -> network.v1.Attachment
-	37, // 47: network.v1.GetAttachmentResponse.attachment:type_name -> network.v1.Attachment
-	37, // 48: network.v1.ConfirmAttachmentResponse.attachment:type_name -> network.v1.Attachment
-	37, // 49: network.v1.ReleaseAttachmentResponse.attachment:type_name -> network.v1.Attachment
-	5,  // 50: network.v1.GetSubmissionResponse.state:type_name -> network.v1.SubmissionState
-	50, // 51: network.v1.GetSubmissionResponse.closed_at:type_name -> google.protobuf.Timestamp
-	34, // 52: network.v1.GetSubmissionResponse.root_controller:type_name -> network.v1.WorkloadReference
-	35, // 53: network.v1.GetSubmissionResponse.controllers:type_name -> network.v1.ControllerReference
-	36, // 54: network.v1.GetSubmissionResponse.current_pods:type_name -> network.v1.PodReference
-	36, // 55: network.v1.GetSubmissionResponse.retired_pods:type_name -> network.v1.PodReference
-	48, // 56: network.v1.NetworkService.ListVPCCIDRPresets:input_type -> network.v1.ListVPCCIDRPresetsRequest
-	10, // 57: network.v1.NetworkService.CreateVPC:input_type -> network.v1.CreateVPCRequest
-	12, // 58: network.v1.NetworkService.GetVPC:input_type -> network.v1.GetVPCRequest
-	14, // 59: network.v1.NetworkService.ListVPCs:input_type -> network.v1.ListVPCsRequest
-	16, // 60: network.v1.NetworkService.DeleteVPC:input_type -> network.v1.DeleteVPCRequest
-	21, // 61: network.v1.NetworkService.CreateSubnet:input_type -> network.v1.CreateSubnetRequest
-	23, // 62: network.v1.NetworkService.GetSubnet:input_type -> network.v1.GetSubnetRequest
-	25, // 63: network.v1.NetworkService.ListSubnets:input_type -> network.v1.ListSubnetsRequest
-	27, // 64: network.v1.NetworkService.DeleteSubnet:input_type -> network.v1.DeleteSubnetRequest
-	18, // 65: network.v1.NetworkService.GetOperation:input_type -> network.v1.GetOperationRequest
-	38, // 66: network.v1.NetworkService.PrepareAttachment:input_type -> network.v1.PrepareAttachmentRequest
-	39, // 67: network.v1.NetworkService.GetAttachment:input_type -> network.v1.GetAttachmentRequest
-	40, // 68: network.v1.NetworkService.ConfirmAttachment:input_type -> network.v1.ConfirmAttachmentRequest
-	41, // 69: network.v1.NetworkService.ReleaseAttachment:input_type -> network.v1.ReleaseAttachmentRequest
-	46, // 70: network.v1.InstanceNetworkConsumerService.GetSubmission:input_type -> network.v1.GetSubmissionRequest
-	49, // 71: network.v1.NetworkService.ListVPCCIDRPresets:output_type -> network.v1.ListVPCCIDRPresetsResponse
-	11, // 72: network.v1.NetworkService.CreateVPC:output_type -> network.v1.CreateVPCResponse
-	13, // 73: network.v1.NetworkService.GetVPC:output_type -> network.v1.GetVPCResponse
-	15, // 74: network.v1.NetworkService.ListVPCs:output_type -> network.v1.ListVPCsResponse
-	17, // 75: network.v1.NetworkService.DeleteVPC:output_type -> network.v1.DeleteVPCResponse
-	22, // 76: network.v1.NetworkService.CreateSubnet:output_type -> network.v1.CreateSubnetResponse
-	24, // 77: network.v1.NetworkService.GetSubnet:output_type -> network.v1.GetSubnetResponse
-	26, // 78: network.v1.NetworkService.ListSubnets:output_type -> network.v1.ListSubnetsResponse
-	28, // 79: network.v1.NetworkService.DeleteSubnet:output_type -> network.v1.DeleteSubnetResponse
-	19, // 80: network.v1.NetworkService.GetOperation:output_type -> network.v1.GetOperationResponse
-	42, // 81: network.v1.NetworkService.PrepareAttachment:output_type -> network.v1.PrepareAttachmentResponse
-	43, // 82: network.v1.NetworkService.GetAttachment:output_type -> network.v1.GetAttachmentResponse
-	44, // 83: network.v1.NetworkService.ConfirmAttachment:output_type -> network.v1.ConfirmAttachmentResponse
-	45, // 84: network.v1.NetworkService.ReleaseAttachment:output_type -> network.v1.ReleaseAttachmentResponse
-	47, // 85: network.v1.InstanceNetworkConsumerService.GetSubmission:output_type -> network.v1.GetSubmissionResponse
-	71, // [71:86] is the sub-list for method output_type
-	56, // [56:71] is the sub-list for method input_type
-	56, // [56:56] is the sub-list for extension type_name
-	56, // [56:56] is the sub-list for extension extendee
-	0,  // [0:56] is the sub-list for field type_name
+	51, // 1: network.v1.VPC.created_at:type_name -> google.protobuf.Timestamp
+	51, // 2: network.v1.VPC.updated_at:type_name -> google.protobuf.Timestamp
+	51, // 3: network.v1.VPC.observed_at:type_name -> google.protobuf.Timestamp
+	8,  // 4: network.v1.VPC.base_connectivity:type_name -> network.v1.VPCBaseConnectivity
+	7,  // 5: network.v1.VPC.public_egress:type_name -> network.v1.VPCPublicEgress
+	0,  // 6: network.v1.VPCPublicEgress.state:type_name -> network.v1.ResourceState
+	51, // 7: network.v1.VPCPublicEgress.observed_at:type_name -> google.protobuf.Timestamp
+	51, // 8: network.v1.VPCBaseConnectivity.observed_at:type_name -> google.protobuf.Timestamp
+	2,  // 9: network.v1.Operation.kind:type_name -> network.v1.OperationKind
+	1,  // 10: network.v1.Operation.state:type_name -> network.v1.OperationState
+	51, // 11: network.v1.Operation.created_at:type_name -> google.protobuf.Timestamp
+	51, // 12: network.v1.Operation.updated_at:type_name -> google.protobuf.Timestamp
+	51, // 13: network.v1.Operation.completed_at:type_name -> google.protobuf.Timestamp
+	51, // 14: network.v1.Operation.next_attempt_at:type_name -> google.protobuf.Timestamp
+	3,  // 15: network.v1.Operation.resource_type:type_name -> network.v1.ResourceType
+	10, // 16: network.v1.CreateVPCRequest.attribution:type_name -> network.v1.Attribution
+	6,  // 17: network.v1.CreateVPCResponse.vpc:type_name -> network.v1.VPC
+	6,  // 18: network.v1.GetVPCResponse.vpc:type_name -> network.v1.VPC
+	0,  // 19: network.v1.ListVPCsRequest.state:type_name -> network.v1.ResourceState
+	6,  // 20: network.v1.ListVPCsResponse.items:type_name -> network.v1.VPC
+	6,  // 21: network.v1.DeleteVPCResponse.vpc:type_name -> network.v1.VPC
+	9,  // 22: network.v1.GetOperationResponse.operation:type_name -> network.v1.Operation
+	0,  // 23: network.v1.Subnet.state:type_name -> network.v1.ResourceState
+	51, // 24: network.v1.Subnet.created_at:type_name -> google.protobuf.Timestamp
+	51, // 25: network.v1.Subnet.updated_at:type_name -> google.protobuf.Timestamp
+	51, // 26: network.v1.Subnet.observed_at:type_name -> google.protobuf.Timestamp
+	10, // 27: network.v1.CreateSubnetRequest.attribution:type_name -> network.v1.Attribution
+	21, // 28: network.v1.CreateSubnetResponse.subnet:type_name -> network.v1.Subnet
+	21, // 29: network.v1.GetSubnetResponse.subnet:type_name -> network.v1.Subnet
+	0,  // 30: network.v1.ListSubnetsRequest.state:type_name -> network.v1.ResourceState
+	21, // 31: network.v1.ListSubnetsResponse.items:type_name -> network.v1.Subnet
+	21, // 32: network.v1.DeleteSubnetResponse.subnet:type_name -> network.v1.Subnet
+	34, // 33: network.v1.PodPrimaryPlan.labels:type_name -> network.v1.AttachmentLabels
+	34, // 34: network.v1.VMPrimaryPlan.labels:type_name -> network.v1.AttachmentLabels
+	35, // 35: network.v1.ControllerReference.reference:type_name -> network.v1.WorkloadReference
+	35, // 36: network.v1.ControllerReference.owner:type_name -> network.v1.WorkloadReference
+	35, // 37: network.v1.PodReference.reference:type_name -> network.v1.WorkloadReference
+	35, // 38: network.v1.PodReference.owner:type_name -> network.v1.WorkloadReference
+	4,  // 39: network.v1.Attachment.state:type_name -> network.v1.AttachmentState
+	30, // 40: network.v1.Attachment.pod_primary:type_name -> network.v1.PodPrimaryPlan
+	51, // 41: network.v1.Attachment.created_at:type_name -> google.protobuf.Timestamp
+	51, // 42: network.v1.Attachment.updated_at:type_name -> google.protobuf.Timestamp
+	51, // 43: network.v1.Attachment.observed_at:type_name -> google.protobuf.Timestamp
+	51, // 44: network.v1.Attachment.released_at:type_name -> google.protobuf.Timestamp
+	35, // 45: network.v1.Attachment.root_controller:type_name -> network.v1.WorkloadReference
+	32, // 46: network.v1.Attachment.vm_primary:type_name -> network.v1.VMPrimaryPlan
+	33, // 47: network.v1.Attachment.vm_current_addresses:type_name -> network.v1.VMCurrentAddress
+	31, // 48: network.v1.PrepareAttachmentRequest.vm_expectation:type_name -> network.v1.VMNetworkExpectation
+	38, // 49: network.v1.PrepareAttachmentResponse.attachment:type_name -> network.v1.Attachment
+	38, // 50: network.v1.GetAttachmentResponse.attachment:type_name -> network.v1.Attachment
+	38, // 51: network.v1.ConfirmAttachmentResponse.attachment:type_name -> network.v1.Attachment
+	38, // 52: network.v1.ReleaseAttachmentResponse.attachment:type_name -> network.v1.Attachment
+	5,  // 53: network.v1.GetSubmissionResponse.state:type_name -> network.v1.SubmissionState
+	51, // 54: network.v1.GetSubmissionResponse.closed_at:type_name -> google.protobuf.Timestamp
+	35, // 55: network.v1.GetSubmissionResponse.root_controller:type_name -> network.v1.WorkloadReference
+	36, // 56: network.v1.GetSubmissionResponse.controllers:type_name -> network.v1.ControllerReference
+	37, // 57: network.v1.GetSubmissionResponse.current_pods:type_name -> network.v1.PodReference
+	37, // 58: network.v1.GetSubmissionResponse.retired_pods:type_name -> network.v1.PodReference
+	49, // 59: network.v1.NetworkService.ListVPCCIDRPresets:input_type -> network.v1.ListVPCCIDRPresetsRequest
+	11, // 60: network.v1.NetworkService.CreateVPC:input_type -> network.v1.CreateVPCRequest
+	13, // 61: network.v1.NetworkService.GetVPC:input_type -> network.v1.GetVPCRequest
+	15, // 62: network.v1.NetworkService.ListVPCs:input_type -> network.v1.ListVPCsRequest
+	17, // 63: network.v1.NetworkService.DeleteVPC:input_type -> network.v1.DeleteVPCRequest
+	22, // 64: network.v1.NetworkService.CreateSubnet:input_type -> network.v1.CreateSubnetRequest
+	24, // 65: network.v1.NetworkService.GetSubnet:input_type -> network.v1.GetSubnetRequest
+	26, // 66: network.v1.NetworkService.ListSubnets:input_type -> network.v1.ListSubnetsRequest
+	28, // 67: network.v1.NetworkService.DeleteSubnet:input_type -> network.v1.DeleteSubnetRequest
+	19, // 68: network.v1.NetworkService.GetOperation:input_type -> network.v1.GetOperationRequest
+	39, // 69: network.v1.NetworkService.PrepareAttachment:input_type -> network.v1.PrepareAttachmentRequest
+	40, // 70: network.v1.NetworkService.GetAttachment:input_type -> network.v1.GetAttachmentRequest
+	41, // 71: network.v1.NetworkService.ConfirmAttachment:input_type -> network.v1.ConfirmAttachmentRequest
+	42, // 72: network.v1.NetworkService.ReleaseAttachment:input_type -> network.v1.ReleaseAttachmentRequest
+	47, // 73: network.v1.InstanceNetworkConsumerService.GetSubmission:input_type -> network.v1.GetSubmissionRequest
+	50, // 74: network.v1.NetworkService.ListVPCCIDRPresets:output_type -> network.v1.ListVPCCIDRPresetsResponse
+	12, // 75: network.v1.NetworkService.CreateVPC:output_type -> network.v1.CreateVPCResponse
+	14, // 76: network.v1.NetworkService.GetVPC:output_type -> network.v1.GetVPCResponse
+	16, // 77: network.v1.NetworkService.ListVPCs:output_type -> network.v1.ListVPCsResponse
+	18, // 78: network.v1.NetworkService.DeleteVPC:output_type -> network.v1.DeleteVPCResponse
+	23, // 79: network.v1.NetworkService.CreateSubnet:output_type -> network.v1.CreateSubnetResponse
+	25, // 80: network.v1.NetworkService.GetSubnet:output_type -> network.v1.GetSubnetResponse
+	27, // 81: network.v1.NetworkService.ListSubnets:output_type -> network.v1.ListSubnetsResponse
+	29, // 82: network.v1.NetworkService.DeleteSubnet:output_type -> network.v1.DeleteSubnetResponse
+	20, // 83: network.v1.NetworkService.GetOperation:output_type -> network.v1.GetOperationResponse
+	43, // 84: network.v1.NetworkService.PrepareAttachment:output_type -> network.v1.PrepareAttachmentResponse
+	44, // 85: network.v1.NetworkService.GetAttachment:output_type -> network.v1.GetAttachmentResponse
+	45, // 86: network.v1.NetworkService.ConfirmAttachment:output_type -> network.v1.ConfirmAttachmentResponse
+	46, // 87: network.v1.NetworkService.ReleaseAttachment:output_type -> network.v1.ReleaseAttachmentResponse
+	48, // 88: network.v1.InstanceNetworkConsumerService.GetSubmission:output_type -> network.v1.GetSubmissionResponse
+	74, // [74:89] is the sub-list for method output_type
+	59, // [59:74] is the sub-list for method input_type
+	59, // [59:59] is the sub-list for extension type_name
+	59, // [59:59] is the sub-list for extension extendee
+	0,  // [0:59] is the sub-list for field type_name
 }
 
 func init() { file_network_v1_network_proto_init() }
@@ -4435,16 +4610,17 @@ func file_network_v1_network_proto_init() {
 	if File_network_v1_network_proto != nil {
 		return
 	}
-	file_network_v1_network_proto_msgTypes[8].OneofWrappers = []any{}
-	file_network_v1_network_proto_msgTypes[14].OneofWrappers = []any{}
+	file_network_v1_network_proto_msgTypes[1].OneofWrappers = []any{}
+	file_network_v1_network_proto_msgTypes[9].OneofWrappers = []any{}
 	file_network_v1_network_proto_msgTypes[15].OneofWrappers = []any{}
+	file_network_v1_network_proto_msgTypes[16].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_network_v1_network_proto_rawDesc), len(file_network_v1_network_proto_rawDesc)),
 			NumEnums:      6,
-			NumMessages:   44,
+			NumMessages:   45,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

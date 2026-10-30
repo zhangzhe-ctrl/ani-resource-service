@@ -82,7 +82,11 @@ func wireVPC(v biz.VPC) *networkv1.VPC {
 	if b := v.BaseConnectivity; b != nil {
 		base = &networkv1.VPCBaseConnectivity{State: b.State, Reason: string(b.Reason), ReasonMessage: b.Reason.Message(), ObservedAt: optionalTime(b.ObservedAt), ObservationStale: b.ObservationStale}
 	}
-	return &networkv1.VPC{BaseConnectivity: base, Id: v.ID, TenantId: v.TenantID, Name: v.Name, Description: v.Description, Cidr: v.CIDR, State: statesToWire[v.State], Reason: string(v.Reason), ReasonMessage: v.Reason.Message(), CreatedAt: timestamppb.New(v.CreatedAt), UpdatedAt: timestamppb.New(v.UpdatedAt), Version: v.Version, ObservedAt: optionalTime(v.ObservedAt), ObservationStale: v.ObservationStale, LastOperationId: v.LastOperationID, SubnetCount: v.SubnetCount}
+	var public *networkv1.VPCPublicEgress
+	if e := v.PublicEgress; e != nil {
+		public = &networkv1.VPCPublicEgress{BindingId: e.ID, EipId: e.EIPID, EipAddress: e.EIPAddress, BindingState: e.BindingState, State: statesToWire[e.State], Reason: string(e.Reason), ReasonMessage: e.Reason.Message(), DesiredEnabled: e.DesiredEnabled, AppliedEnabled: e.AppliedEnabled, ObservedAt: optionalTime(e.ObservedAt), ObservationStale: e.ObservationStale, Version: e.Version, LastOperationId: e.LastOperationID}
+	}
+	return &networkv1.VPC{PublicEgress: public, BaseConnectivity: base, Id: v.ID, TenantId: v.TenantID, Name: v.Name, Description: v.Description, Cidr: v.CIDR, State: statesToWire[v.State], Reason: string(v.Reason), ReasonMessage: v.Reason.Message(), CreatedAt: timestamppb.New(v.CreatedAt), UpdatedAt: timestamppb.New(v.UpdatedAt), Version: v.Version, ObservedAt: optionalTime(v.ObservedAt), ObservationStale: v.ObservationStale, LastOperationId: v.LastOperationID, SubnetCount: v.SubnetCount}
 }
 func optionalTime(v *time.Time) *timestamppb.Timestamp {
 	if v == nil {

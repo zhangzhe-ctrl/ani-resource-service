@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -103,6 +104,11 @@ func (p *Postgres) AcceptEIP(ctx context.Context, i biz.EgressIntent, a biz.Attr
 	if found, err := egressReplay(ctx, q, i, &replay); found || err != nil {
 		return replay, err
 	}
+	if len(i.SecurityGroupIDs) > 0 {
+		if err = sgTenantLock(ctx, q, i.TenantID); err != nil {
+			return biz.EIP{}, err
+		}
+	}
 	// Pool selection, default switching, allocation close and retirement share the
 	// cluster lock. Selection is persisted before any Kubernetes request exists.
 	if err = q.LockPlatformCluster(ctx, sqlcgen.LockPlatformClusterParams{ClusterID: p.placement.ClusterID}); err != nil {
@@ -137,6 +143,28 @@ func (p *Postgres) AcceptEIP(ctx context.Context, i biz.EgressIntent, a biz.Attr
 	if err != nil {
 		return biz.EIP{}, databaseFailure(err)
 	}
+	if len(i.SecurityGroupIDs) > 0 {
+		if _, err = resolveSecurityGroups(ctx, q, i.TenantID, row.ClusterID, row.Namespace, i.SecurityGroupIDs); err != nil {
+			return biz.EIP{}, err
+		}
+		op := sgNewOperation(i.TenantID, row.EipID, "set_eip_security_groups", "eip", now)
+		binding := biz.SecurityGroupBinding{TenantID: i.TenantID, TargetType: "eip", TargetID: row.EipID, Namespace: row.Namespace, Version: 1, State: "applying", SecurityGroupIDs: slices.Clone(i.SecurityGroupIDs), LastOperationID: op.ID}
+		if err = sgSaveTarget(ctx, q, binding); err != nil {
+			return biz.EIP{}, databaseFailure(err)
+		}
+		for _, id := range i.SecurityGroupIDs {
+			if err = q.ReserveSecurityGroupReference(ctx, sqlcgen.ReserveSecurityGroupReferenceParams{TenantID: i.TenantID, TargetType: "eip", TargetID: row.EipID, SecurityGroupID: id}); err != nil {
+				return biz.EIP{}, databaseFailure(err)
+			}
+		}
+		intent := biz.SecurityGroupIntent{TenantID: i.TenantID, Action: "create_eip_security_groups", ID: row.EipID, SecurityGroupIDs: slices.Clone(i.SecurityGroupIDs)}
+		if err = q.InsertSecurityGroupOperation(ctx, sqlcgen.InsertSecurityGroupOperationParams{TenantID: i.TenantID, OperationID: op.ID, Payload: sgJSON(op), ActorRef: a.Actor, CallerRef: a.DirectCaller, Intent: sgJSON(intent)}); err != nil {
+			return biz.EIP{}, databaseFailure(err)
+		}
+		if err = q.ScheduleSecurityGroup(ctx, sqlcgen.ScheduleSecurityGroupParams{TenantID: i.TenantID, TargetType: "eip", TargetID: row.EipID, RequestedVersion: binding.Version}); err != nil {
+			return biz.EIP{}, databaseFailure(err)
+		}
+	}
 	v := eipResource(row)
 	v.ObservationStale = true
 	if err = insertEgressAcceptance(ctx, q, i, a, v, v.EgressMetadata, "eip", row.ClusterID, row.Namespace, now, true); err != nil {
@@ -147,11 +175,11 @@ func (p *Postgres) AcceptEIP(ctx context.Context, i biz.EgressIntent, a biz.Attr
 	}
 	return v, nil
 }
-func eipBindingTarget(kind, id, state string) *biz.EIPBindingTarget {
+func eipBindingTarget(kind, id, state, vpcID string) *biz.EIPBindingTarget {
 	if kind == "" {
 		return nil
 	}
-	return &biz.EIPBindingTarget{Kind: kind, ID: id, State: state}
+	return &biz.EIPBindingTarget{Kind: kind, ID: id, State: state, VPCID: vpcID}
 }
 
 // Internal workers can load all address purposes. Tenant entry points must
@@ -174,7 +202,7 @@ func (p *Postgres) GetEIP(ctx context.Context, tenant, id string) (biz.EIP, erro
 	v := eipResource(r.NetworkEip)
 	v.BindingID = r.BindingID
 	v.BindingState = r.BindingState
-	v.BindingTarget = eipBindingTarget(r.BindingTargetKind, r.BindingTargetID, r.BindingState)
+	v.BindingTarget = eipBindingTarget(r.BindingTargetKind, r.BindingTargetID, r.BindingState, r.BindingVpcID)
 	return v, databaseFailure(err)
 }
 func (p *Postgres) ListEIPs(ctx context.Context, tenant string, f biz.VPCFilter) ([]biz.EIP, int64, error) {
@@ -197,7 +225,7 @@ func (p *Postgres) ListEIPs(ctx context.Context, tenant string, f biz.VPCFilter)
 		v := eipResource(r.NetworkEip)
 		v.BindingID = r.BindingID
 		v.BindingState = r.BindingState
-		v.BindingTarget = eipBindingTarget(r.BindingTargetKind, r.BindingTargetID, r.BindingState)
+		v.BindingTarget = eipBindingTarget(r.BindingTargetKind, r.BindingTargetID, r.BindingState, r.BindingVpcID)
 		values = append(values, v)
 	}
 	return values, total, nil
@@ -279,14 +307,22 @@ func (p *Postgres) AcceptSnat(ctx context.Context, i biz.EgressIntent, a biz.Att
 	if err != nil {
 		return biz.VPCSnatBinding{}, databaseFailure(err)
 	}
+	var parentProof sqlcgen.GetVPCProviderReadinessRow
 	// Disabling an existing binding remains possible when an exit is degraded.
 	// Creating/enabling requires applied, fresh parents and exit configuration.
 	if i.Kind == "bind_snat" || i.Enabled {
-		if err = p.requireBaseConnectivity(ctx, q, i.TenantID, vpcID, now, freshness); err != nil {
-			return biz.VPCSnatBinding{}, err
+		// Public egress depends on this VPC's own fenced Provider observation,
+		// never the aggregate lifecycle or optional Intranet EIP/SNAT readiness.
+		proof, proofErr := q.GetVPCProviderReadiness(ctx, sqlcgen.GetVPCProviderReadinessParams{TenantID: i.TenantID, VpcID: &vpcID})
+		if proofErr != nil {
+			return biz.VPCSnatBinding{}, databaseFailure(proofErr)
 		}
-		if !freshResource(parent.State, parent.ObservedAt, now, freshness) || !freshResource(eip.State, eip.ObservedAt, now, freshness) {
-			return biz.VPCSnatBinding{}, biz.Fail(biz.PublicEgressNotReady, "network parents are not ready")
+		parentProof = proof
+		if parent.State == "deleting" || parent.State == "deleted" || parent.State == "failed" || !proof.ProviderReady || !freshTime(proof.ProviderObservedAt, now, freshness) || (proof.ProviderGeneration <= 0 || proof.ProviderObservedGeneration != proof.ProviderGeneration) {
+			return biz.VPCSnatBinding{}, biz.Fail(biz.PublicEgressNotReady, "VPC Provider is not fresh and ready")
+		}
+		if !freshResource(eip.State, eip.ObservedAt, now, freshness) {
+			return biz.VPCSnatBinding{}, biz.Fail(biz.PublicEgressNotReady, "EIP is not fresh and ready")
 		}
 		if err = completedOperation(ctx, q, i.TenantID, eip.LastOperationID); err != nil {
 			return biz.VPCSnatBinding{}, err
@@ -309,6 +345,14 @@ func (p *Postgres) AcceptSnat(ctx context.Context, i biz.EgressIntent, a biz.Att
 	eipBinding, err := q.GetBinding(ctx, sqlcgen.GetBindingParams{TenantID: i.TenantID, ResourceID: eipID})
 	if err != nil {
 		return biz.VPCSnatBinding{}, databaseFailure(err)
+	}
+	if i.Kind == "bind_snat" || i.Enabled {
+		if parentBinding.PendingAction != "" || eipBinding.PendingAction != "" {
+			return biz.VPCSnatBinding{}, biz.Fail(biz.ResourceBusy, "network parent has an unresolved Provider mutation")
+		}
+		if parentProof.ProviderObservedUid != parentBinding.ProviderUid {
+			return biz.VPCSnatBinding{}, biz.Fail(biz.ProviderOwnership, "VPC Provider observation identity changed")
+		}
 	}
 	if eip.ClusterID != p.placement.ClusterID || parentBinding.ClusterID != eip.ClusterID || parentBinding.Namespace != eip.Namespace || eipBinding.Namespace != eip.Namespace || eipBinding.ClusterID != eip.ClusterID || parentBinding.ProviderUid == "" || eipBinding.ProviderUid == "" {
 		return biz.VPCSnatBinding{}, biz.Fail(biz.ProviderOwnership, "resource placement or identity does not match")
@@ -464,4 +508,15 @@ func (p *Postgres) DeleteSnat(ctx context.Context, tenant, id string, a biz.Attr
 		return biz.VPCSnatBinding{}, databaseFailure(err)
 	}
 	return snatResource(row, eip.Address), nil
+}
+
+func publicEgress(payload []byte) (*biz.VPCPublicEgress, error) {
+	if len(payload) == 0 || string(payload) == "null" {
+		return nil, nil
+	}
+	var value biz.VPCPublicEgress
+	if err := json.Unmarshal(payload, &value); err != nil {
+		return nil, err
+	}
+	return &value, nil
 }

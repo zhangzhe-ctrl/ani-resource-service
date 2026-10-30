@@ -271,7 +271,9 @@ type EIPBindingTarget struct {
 	Kind string `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
 	Id   string `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
 	// reserved or bound; unknown Provider outcomes preserve the active claim.
-	State         string `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
+	State string `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
+	// Real parent VPC, while id retains its SNAT or load balancer identity.
+	VpcId         string `protobuf:"bytes,4,opt,name=vpc_id,json=vpcId,proto3" json:"vpc_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -323,6 +325,13 @@ func (x *EIPBindingTarget) GetId() string {
 func (x *EIPBindingTarget) GetState() string {
 	if x != nil {
 		return x.State
+	}
+	return ""
+}
+
+func (x *EIPBindingTarget) GetVpcId() string {
+	if x != nil {
+		return x.VpcId
 	}
 	return ""
 }
@@ -502,13 +511,14 @@ func (x *VPCSnatBinding) GetPurpose() string {
 }
 
 type CreateEIPRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	TargetTenantId string                 `protobuf:"bytes,1,opt,name=target_tenant_id,json=targetTenantId,proto3" json:"target_tenant_id,omitempty"`
-	Name           string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Description    string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	IdempotencyKey string                 `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	TargetTenantId   string                 `protobuf:"bytes,1,opt,name=target_tenant_id,json=targetTenantId,proto3" json:"target_tenant_id,omitempty"`
+	Name             string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description      string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	IdempotencyKey   string                 `protobuf:"bytes,4,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	SecurityGroupIds []string               `protobuf:"bytes,5,rep,name=security_group_ids,json=securityGroupIds,proto3" json:"security_group_ids,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *CreateEIPRequest) Reset() {
@@ -567,6 +577,13 @@ func (x *CreateEIPRequest) GetIdempotencyKey() string {
 		return x.IdempotencyKey
 	}
 	return ""
+}
+
+func (x *CreateEIPRequest) GetSecurityGroupIds() []string {
+	if x != nil {
+		return x.SecurityGroupIds
+	}
+	return nil
 }
 
 type CreateEIPResponse struct {
@@ -5811,11 +5828,12 @@ const file_network_v1_egress_proto_rawDesc = "" +
 	"\x0ebinding_target\x18\x11 \x01(\v2\x1c.network.v1.EIPBindingTargetR\rbindingTarget\x12\x14\n" +
 	"\x05scope\x18\x12 \x01(\tR\x05scope\x12\x1d\n" +
 	"\n" +
-	"managed_by\x18\x13 \x01(\tR\tmanagedBy\"L\n" +
+	"managed_by\x18\x13 \x01(\tR\tmanagedBy\"c\n" +
 	"\x10EIPBindingTarget\x12\x12\n" +
 	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x14\n" +
-	"\x05state\x18\x03 \x01(\tR\x05state\"\xa7\x05\n" +
+	"\x05state\x18\x03 \x01(\tR\x05state\x12\x15\n" +
+	"\x06vpc_id\x18\x04 \x01(\tR\x05vpcId\"\xa7\x05\n" +
 	"\x0eVPCSnatBinding\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x15\n" +
@@ -5839,12 +5857,13 @@ const file_network_v1_egress_proto_rawDesc = "" +
 	"\x0fdesired_enabled\x18\x0f \x01(\bR\x0edesiredEnabled\x12,\n" +
 	"\x0fapplied_enabled\x18\x10 \x01(\bH\x00R\x0eappliedEnabled\x88\x01\x01\x12\x18\n" +
 	"\apurpose\x18\x11 \x01(\tR\apurposeB\x12\n" +
-	"\x10_applied_enabled\"\x9b\x01\n" +
+	"\x10_applied_enabled\"\xc9\x01\n" +
 	"\x10CreateEIPRequest\x12(\n" +
 	"\x10target_tenant_id\x18\x01 \x01(\tR\x0etargetTenantId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12'\n" +
-	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"6\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\x12,\n" +
+	"\x12security_group_ids\x18\x05 \x03(\tR\x10securityGroupIds\"6\n" +
 	"\x11CreateEIPResponse\x12!\n" +
 	"\x03eip\x18\x01 \x01(\v2\x0f.network.v1.EIPR\x03eip\"P\n" +
 	"\rGetEIPRequest\x12(\n" +

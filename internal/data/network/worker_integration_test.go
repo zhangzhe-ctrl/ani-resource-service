@@ -30,7 +30,7 @@ func (p *memoryProvider) EnsureVPC(_ context.Context, target biz.ProviderTarget)
 	}
 	value, exists := p.objects[target.ResourceID]
 	if !exists {
-		value = biz.ProviderObservation{Exists: true, Ready: true, Identity: uuid.NewString()}
+		value = biz.ProviderObservation{Exists: true, Ready: true, Generation: 1, ObservedGeneration: 1, Identity: uuid.NewString()}
 		p.objects[target.ResourceID] = value
 	}
 	return value, nil

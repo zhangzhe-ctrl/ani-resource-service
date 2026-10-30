@@ -61,7 +61,7 @@ func TestNET05AMigrationUpgradesAllThreeHistoricalChecksums(t *testing.T) {
 	})
 	for _, table := range tables {
 		var body string
-		if e := f.Owner.QueryRow(ctx, "SELECT coalesce(jsonb_agg(to_jsonb(t)-'eip_id'-'snat_id'-'lb_id'-'requested_generation'-'processed_generation'-'retry_not_before'-'evidence_hash'-'evidence_applied_at'-'base_connectivity_required'-'create_dispatched'-'retired'-'available_ip_count'-'used_ip_count'-'available_ip_range'-'used_ip_range'),'[]')::text FROM (SELECT * FROM "+table+" ORDER BY tenant_id) t").Scan(&body); e != nil {
+		if e := f.Owner.QueryRow(ctx, "SELECT coalesce(jsonb_agg(to_jsonb(t)-'eip_id'-'snat_id'-'lb_id'-'requested_generation'-'processed_generation'-'retry_not_before'-'evidence_hash'-'evidence_applied_at'-'base_connectivity_required'-'create_dispatched'-'retired'-'provider_ready'-'provider_observed_at'-'provider_observed_uid'-'provider_generation'-'provider_observed_generation'-'available_ip_count'-'used_ip_count'-'available_ip_range'-'used_ip_range'),'[]')::text FROM (SELECT * FROM "+table+" ORDER BY tenant_id) t").Scan(&body); e != nil {
 			t.Fatal(e)
 		}
 		if body != facts[table] {

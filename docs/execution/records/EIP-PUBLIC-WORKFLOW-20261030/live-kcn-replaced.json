@@ -1,0 +1,423 @@
+{
+  "eip": {
+    "apiVersion": "networking.kubercloud.com/v1",
+    "kind": "EIP",
+    "metadata": {
+      "creationTimestamp": "2026-10-30T08:29:12Z",
+      "finalizers": [
+        "networking.kubercloud.com/finalizer"
+      ],
+      "generation": 3,
+      "labels": {
+        "network.ani.io/binding-id": "c674d211-9b38-429e-a040-270c41dcf86f",
+        "network.ani.io/managed-by": "ani-network-service",
+        "network.ani.io/resource-id": "eip_b651666e73bd447ca85fa7dd0ace350f",
+        "network.ani.io/tenant-id": "46936e6b-3a3b-4868-8d88-6833665abb70"
+      },
+      "managedFields": [
+        {
+          "apiVersion": "networking.kubercloud.com/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:finalizers": {
+                ".": {},
+                "v:\"networking.kubercloud.com/finalizer\"": {}
+              }
+            },
+            "f:spec": {
+              "f:ipAddress": {}
+            }
+          },
+          "manager": "kc-networking-controller",
+          "operation": "Update",
+          "time": "2026-10-30T08:29:12Z"
+        },
+        {
+          "apiVersion": "networking.kubercloud.com/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:labels": {
+                ".": {},
+                "f:network.ani.io/binding-id": {},
+                "f:network.ani.io/managed-by": {},
+                "f:network.ani.io/resource-id": {},
+                "f:network.ani.io/tenant-id": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:ipVersion": {},
+              "f:securityGroups": {},
+              "f:subnet": {}
+            }
+          },
+          "manager": "ani-network-service",
+          "operation": "Update",
+          "time": "2026-10-30T08:33:33Z"
+        },
+        {
+          "apiVersion": "networking.kubercloud.com/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:status": {
+              ".": {},
+              "f:appliedSecurityGroups": {},
+              "f:boundResource": {
+                ".": {},
+                "f:disabled": {},
+                "f:nodeName": {},
+                "f:observedGeneration": {},
+                "f:resource": {},
+                "f:resourceType": {},
+                "f:vpc": {}
+              },
+              "f:conditions": {
+                ".": {},
+                "k:{\"type\":\"Initialized\"}": {
+                  ".": {},
+                  "f:lastTransitionTime": {},
+                  "f:message": {},
+                  "f:reason": {},
+                  "f:status": {},
+                  "f:type": {}
+                },
+                "k:{\"type\":\"Valid\"}": {
+                  ".": {},
+                  "f:lastTransitionTime": {},
+                  "f:message": {},
+                  "f:reason": {},
+                  "f:status": {},
+                  "f:type": {}
+                }
+              },
+              "f:gateway": {},
+              "f:phase": {}
+            }
+          },
+          "manager": "kc-networking-controller",
+          "operation": "Update",
+          "subresource": "status",
+          "time": "2026-10-30T08:33:33Z"
+        }
+      ],
+      "name": "eip-b651666e73bd447ca85fa7dd0ace350f",
+      "namespace": "tenant-46936e6b-3a3b-4868-8d88-6833665abb70",
+      "resourceVersion": "83302514",
+      "uid": "e7a61fd1-7833-48e3-80d7-62ce873ed0f8"
+    },
+    "spec": {
+      "ipAddress": "172.16.102.193",
+      "ipVersion": "IPv4",
+      "securityGroups": [
+        "ani-sg-90dee3d1236449f78922b4d6f7bb91ef"
+      ],
+      "subnet": "kcn-system/pool-1c5c2bebf286440fa7ed5006c2256021"
+    },
+    "status": {
+      "appliedSecurityGroups": [
+        "ani-sg-90dee3d1236449f78922b4d6f7bb91ef"
+      ],
+      "boundResource": {
+        "disabled": false,
+        "nodeName": "ani-02",
+        "observedGeneration": 1,
+        "resource": "snat-59038e6ee9624d17815208324a4a9ed4",
+        "resourceType": "Snat",
+        "vpc": "tenant-46936e6b-3a3b-4868-8d88-6833665abb70/vpc-f1fcd7ec549843cdb6adbe0dde65cc10"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-10-30T08:29:12Z",
+          "message": "",
+          "reason": "Initialized",
+          "status": "True",
+          "type": "Initialized"
+        },
+        {
+          "lastTransitionTime": "2026-10-30T08:29:12Z",
+          "message": "",
+          "reason": "Valid",
+          "status": "True",
+          "type": "Valid"
+        }
+      ],
+      "gateway": "egw-01601cbe1387407182e9ba11ff7a2b79",
+      "phase": "Bound"
+    }
+  },
+  "groups": {
+    "group_a": {
+      "apiVersion": "networking.kubercloud.com/v1",
+      "kind": "SecurityGroup",
+      "metadata": {
+        "creationTimestamp": "2026-10-30T07:57:00Z",
+        "finalizers": [
+          "networking.kubercloud.com/finalizer"
+        ],
+        "generation": 1,
+        "labels": {
+          "network.ani.io/binding-id": "a4030bbb-34db-410a-b2f7-9deb964632d1",
+          "network.ani.io/managed-by": "ani-network-service",
+          "network.ani.io/resource-id": "sg_a9fad06b18074fbe89448ebf9dde08d0",
+          "network.ani.io/tenant-id": "46936e6b-3a3b-4868-8d88-6833665abb70"
+        },
+        "managedFields": [
+          {
+            "apiVersion": "networking.kubercloud.com/v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:labels": {
+                  ".": {},
+                  "f:network.ani.io/binding-id": {},
+                  "f:network.ani.io/managed-by": {},
+                  "f:network.ani.io/resource-id": {},
+                  "f:network.ani.io/tenant-id": {}
+                }
+              },
+              "f:spec": {
+                ".": {},
+                "f:allowSameGroupTraffic": {},
+                "f:egressRules": {},
+                "f:ingressRules": {}
+              }
+            },
+            "manager": "ani-network-service",
+            "operation": "Update",
+            "time": "2026-10-30T07:57:00Z"
+          },
+          {
+            "apiVersion": "networking.kubercloud.com/v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:finalizers": {
+                  ".": {},
+                  "v:\"networking.kubercloud.com/finalizer\"": {}
+                }
+              }
+            },
+            "manager": "kc-networking-controller",
+            "operation": "Update",
+            "time": "2026-10-30T07:57:00Z"
+          },
+          {
+            "apiVersion": "networking.kubercloud.com/v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:status": {
+                ".": {},
+                "f:allowSameGroupTraffic": {},
+                "f:conditions": {
+                  ".": {},
+                  "k:{\"type\":\"Ready\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  },
+                  "k:{\"type\":\"Valid\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  }
+                },
+                "f:egressMd5": {},
+                "f:ingressMd5": {},
+                "f:observedGeneration": {}
+              }
+            },
+            "manager": "kc-networking-controller",
+            "operation": "Update",
+            "subresource": "status",
+            "time": "2026-10-30T08:30:01Z"
+          }
+        ],
+        "name": "ani-sg-a9fad06b18074fbe89448ebf9dde08d0",
+        "namespace": "tenant-46936e6b-3a3b-4868-8d88-6833665abb70",
+        "resourceVersion": "83302516",
+        "uid": "438f52c6-888e-44b2-b7be-ab6928de449e"
+      },
+      "spec": {
+        "allowSameGroupTraffic": false,
+        "egressRules": [],
+        "ingressRules": [
+          {
+            "action": "drop",
+            "ipVersion": "IPv4",
+            "priority": 1,
+            "protocol": "all"
+          }
+        ]
+      },
+      "status": {
+        "allowSameGroupTraffic": false,
+        "conditions": [
+          {
+            "lastTransitionTime": "2026-10-30T07:57:00Z",
+            "message": "",
+            "reason": "Valid",
+            "status": "True",
+            "type": "Valid"
+          },
+          {
+            "lastTransitionTime": "2026-10-30T07:57:00Z",
+            "message": "",
+            "reason": "Ready",
+            "status": "True",
+            "type": "Ready"
+          }
+        ],
+        "egressMd5": "d751713988987e9331980363e24189ce",
+        "ingressMd5": "b79f817c08a95f4e3752cebd6e87c679",
+        "observedGeneration": 1
+      }
+    },
+    "group_b": {
+      "apiVersion": "networking.kubercloud.com/v1",
+      "kind": "SecurityGroup",
+      "metadata": {
+        "creationTimestamp": "2026-10-30T07:57:00Z",
+        "finalizers": [
+          "networking.kubercloud.com/finalizer"
+        ],
+        "generation": 1,
+        "labels": {
+          "network.ani.io/binding-id": "aff1cceb-ebb0-4661-a4d2-21faf3735931",
+          "network.ani.io/managed-by": "ani-network-service",
+          "network.ani.io/resource-id": "sg_90dee3d1236449f78922b4d6f7bb91ef",
+          "network.ani.io/tenant-id": "46936e6b-3a3b-4868-8d88-6833665abb70"
+        },
+        "managedFields": [
+          {
+            "apiVersion": "networking.kubercloud.com/v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:labels": {
+                  ".": {},
+                  "f:network.ani.io/binding-id": {},
+                  "f:network.ani.io/managed-by": {},
+                  "f:network.ani.io/resource-id": {},
+                  "f:network.ani.io/tenant-id": {}
+                }
+              },
+              "f:spec": {
+                ".": {},
+                "f:allowSameGroupTraffic": {},
+                "f:egressRules": {},
+                "f:ingressRules": {}
+              }
+            },
+            "manager": "ani-network-service",
+            "operation": "Update",
+            "time": "2026-10-30T07:57:00Z"
+          },
+          {
+            "apiVersion": "networking.kubercloud.com/v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:finalizers": {
+                  ".": {},
+                  "v:\"networking.kubercloud.com/finalizer\"": {}
+                }
+              }
+            },
+            "manager": "kc-networking-controller",
+            "operation": "Update",
+            "time": "2026-10-30T07:57:00Z"
+          },
+          {
+            "apiVersion": "networking.kubercloud.com/v1",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:status": {
+                ".": {},
+                "f:allowSameGroupTraffic": {},
+                "f:appliedEIPs": {
+                  ".": {},
+                  "f:eip-b651666e73bd447ca85fa7dd0ace350f": {}
+                },
+                "f:conditions": {
+                  ".": {},
+                  "k:{\"type\":\"Ready\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  },
+                  "k:{\"type\":\"Valid\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  }
+                },
+                "f:egressMd5": {},
+                "f:ingressMd5": {},
+                "f:observedGeneration": {}
+              }
+            },
+            "manager": "kc-networking-controller",
+            "operation": "Update",
+            "subresource": "status",
+            "time": "2026-10-30T08:33:33Z"
+          }
+        ],
+        "name": "ani-sg-90dee3d1236449f78922b4d6f7bb91ef",
+        "namespace": "tenant-46936e6b-3a3b-4868-8d88-6833665abb70",
+        "resourceVersion": "83302518",
+        "uid": "177a49ed-e426-4ea7-9c84-99561c93d120"
+      },
+      "spec": {
+        "allowSameGroupTraffic": false,
+        "egressRules": [],
+        "ingressRules": [
+          {
+            "action": "drop",
+            "ipVersion": "IPv4",
+            "priority": 1,
+            "protocol": "all"
+          }
+        ]
+      },
+      "status": {
+        "allowSameGroupTraffic": false,
+        "appliedEIPs": {
+          "eip-b651666e73bd447ca85fa7dd0ace350f": "uplink.tenant-46936e6b-3a3b-4868-8d88-6833665abb70.vpc-f1fcd7ec549843cdb6adbe0dde65cc10"
+        },
+        "conditions": [
+          {
+            "lastTransitionTime": "2026-10-30T07:57:00Z",
+            "message": "",
+            "reason": "Valid",
+            "status": "True",
+            "type": "Valid"
+          },
+          {
+            "lastTransitionTime": "2026-10-30T07:57:00Z",
+            "message": "",
+            "reason": "Ready",
+            "status": "True",
+            "type": "Ready"
+          }
+        ],
+        "egressMd5": "d751713988987e9331980363e24189ce",
+        "ingressMd5": "b79f817c08a95f4e3752cebd6e87c679",
+        "observedGeneration": 1
+      }
+    }
+  }
+}

@@ -177,7 +177,7 @@ Underlay 等待 Subnet `Valid/Initialized/Ready=True`，并要求 `underlayState
 
 | 拟新增 REST | 内部 RPC | 语义 |
 |---|---|---|
-| `POST /api/v1/networks/eips` | `CreateEIP` | 名称、描述、idempotency_key；异步分配，返回 EIP 受理快照与 last_operation_id |
+| `POST /api/v1/networks/eips` | `CreateEIP` | 名称、描述、idempotency_key、可选 security_group_ids；安全组与地址原子受理，异步分配，返回 EIP 受理快照与 last_operation_id |
 | `GET /api/v1/networks/eips` / `GET /api/v1/networks/eips/{id}` | `ListEIPs / GetEIP` | 仅当前租户，列表/详情不返回平台池和节点拓扑 |
 | `DELETE /api/v1/networks/eips/{id}` | `DeleteEIP` | 仅未绑定 EIP；进行中重复调用返回同一删除操作 |
 | `POST /api/v1/networks/vpcs/{vpc_id}/snat` | `BindVPCSnat` | body `eip_id,idempotency_key`；创建全 VPC 绑定并启用 |

@@ -50,6 +50,7 @@ type ProviderTarget struct {
 }
 
 type ProviderObservation struct {
+	Generation, ObservedGeneration int64
 	SubnetIPRanges                 SubnetIPRanges
 	Egress                         *EgressAppliedFacts
 	NeedsUpdate                    bool
@@ -100,6 +101,7 @@ type Work struct {
 }
 
 type Progress struct {
+	ProviderGeneration, ProviderObservedGeneration int64
 	// Diagnostic only; never persisted or returned in the public resource model.
 	ProviderError  error `json:"-"`
 	SubnetIPRanges SubnetIPRanges
@@ -232,6 +234,7 @@ func (w *Worker) Step(ctx context.Context) (worked bool, stepErr error) {
 	} else {
 		progress = applyEgressFacts(progress, observation)
 		progress.SubnetIPRanges = observation.SubnetIPRanges
+		progress.ProviderGeneration, progress.ProviderObservedGeneration = observation.Generation, observation.ObservedGeneration
 		progress.Observed = true
 		progress.Proof = observation.Proof
 		if progress.Proof.CollectedAt.IsZero() {
@@ -338,6 +341,7 @@ func (w *Worker) ensure(ctx context.Context, work Work, target ProviderTarget, o
 		observed = value
 		progress = applyEgressFacts(progress, value)
 		progress.SubnetIPRanges = value.SubnetIPRanges
+		progress.ProviderGeneration, progress.ProviderObservedGeneration = value.Generation, value.ObservedGeneration
 		if !value.Proof.CollectedAt.IsZero() {
 			progress.Proof = value.Proof
 		}
@@ -375,6 +379,7 @@ func (w *Worker) ensure(ctx context.Context, work Work, target ProviderTarget, o
 		observed = value
 		progress = applyEgressFacts(progress, value)
 		progress.SubnetIPRanges = value.SubnetIPRanges
+		progress.ProviderGeneration, progress.ProviderObservedGeneration = value.Generation, value.ObservedGeneration
 		if !value.Proof.CollectedAt.IsZero() {
 			progress.Proof = value.Proof
 		}

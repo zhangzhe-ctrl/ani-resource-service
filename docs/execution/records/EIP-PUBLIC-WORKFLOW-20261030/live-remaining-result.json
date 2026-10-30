@@ -1,0 +1,8 @@
+{
+  "public_lifecycle": "PASS",
+  "initial_and_replace_sg_intent": "PASS",
+  "KCN_membership": "PASS",
+  "Resource_SG_applied_status": "NOT_VERIFIED: old deployed KCN does not emit EIP Ready; user will retest new cluster",
+  "clear_sg": "PASS",
+  "packet_forwarding": "NOT_RUN"
+}

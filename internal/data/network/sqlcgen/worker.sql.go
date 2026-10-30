@@ -259,7 +259,7 @@ func (q *Queries) CompleteAttempt(ctx context.Context, arg CompleteAttemptParams
 }
 
 const getBinding = `-- name: GetBinding :one
-SELECT tenant_id, vpc_id, binding_id, cluster_id, namespace, provider_name, provider_uid, pending_action, pending_since, subnet_id, resource_kind, eip_id, snat_id, create_dispatched, lb_id FROM network_provider_bindings WHERE tenant_id=$1 AND coalesce(vpc_id,subnet_id,eip_id,snat_id,lb_id)=$2::text
+SELECT tenant_id, vpc_id, binding_id, cluster_id, namespace, provider_name, provider_uid, pending_action, pending_since, subnet_id, resource_kind, eip_id, snat_id, create_dispatched, lb_id, provider_ready, provider_observed_at, provider_observed_uid, provider_generation, provider_observed_generation FROM network_provider_bindings WHERE tenant_id=$1 AND coalesce(vpc_id,subnet_id,eip_id,snat_id,lb_id)=$2::text
 `
 
 type GetBindingParams struct {
@@ -286,6 +286,43 @@ func (q *Queries) GetBinding(ctx context.Context, arg GetBindingParams) (Network
 		&i.SnatID,
 		&i.CreateDispatched,
 		&i.LbID,
+		&i.ProviderReady,
+		&i.ProviderObservedAt,
+		&i.ProviderObservedUid,
+		&i.ProviderGeneration,
+		&i.ProviderObservedGeneration,
+	)
+	return i, err
+}
+
+const getVPCProviderReadiness = `-- name: GetVPCProviderReadiness :one
+SELECT b.provider_ready,b.provider_observed_at,b.provider_observed_uid,b.provider_generation,b.provider_observed_generation
+FROM network_provider_bindings b
+WHERE b.tenant_id=$1 AND b.vpc_id=$2
+`
+
+type GetVPCProviderReadinessParams struct {
+	TenantID string
+	VpcID    *string
+}
+
+type GetVPCProviderReadinessRow struct {
+	ProviderReady              bool
+	ProviderObservedAt         *time.Time
+	ProviderObservedUid        string
+	ProviderGeneration         int64
+	ProviderObservedGeneration int64
+}
+
+func (q *Queries) GetVPCProviderReadiness(ctx context.Context, arg GetVPCProviderReadinessParams) (GetVPCProviderReadinessRow, error) {
+	row := q.db.QueryRow(ctx, getVPCProviderReadiness, arg.TenantID, arg.VpcID)
+	var i GetVPCProviderReadinessRow
+	err := row.Scan(
+		&i.ProviderReady,
+		&i.ProviderObservedAt,
+		&i.ProviderObservedUid,
+		&i.ProviderGeneration,
+		&i.ProviderObservedGeneration,
 	)
 	return i, err
 }
@@ -489,6 +526,42 @@ func (q *Queries) SaveBindingObservation(ctx context.Context, arg SaveBindingObs
 		arg.ClearPending,
 		arg.TenantID,
 		arg.ResourceID,
+		arg.BindingID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const saveVPCProviderReadiness = `-- name: SaveVPCProviderReadiness :execrows
+UPDATE network_provider_bindings SET provider_ready=$1,
+ provider_observed_at=$2::timestamptz,
+ provider_observed_uid=$3,provider_generation=$4,provider_observed_generation=$5
+WHERE tenant_id=$6 AND vpc_id=$7::text AND binding_id=$8
+ AND (provider_uid='' OR provider_uid=$3)
+`
+
+type SaveVPCProviderReadinessParams struct {
+	Ready              bool
+	ObservedAt         *time.Time
+	Identity           string
+	Generation         int64
+	ObservedGeneration int64
+	TenantID           string
+	VpcID              string
+	BindingID          string
+}
+
+func (q *Queries) SaveVPCProviderReadiness(ctx context.Context, arg SaveVPCProviderReadinessParams) (int64, error) {
+	result, err := q.db.Exec(ctx, saveVPCProviderReadiness,
+		arg.Ready,
+		arg.ObservedAt,
+		arg.Identity,
+		arg.Generation,
+		arg.ObservedGeneration,
+		arg.TenantID,
+		arg.VpcID,
 		arg.BindingID,
 	)
 	if err != nil {

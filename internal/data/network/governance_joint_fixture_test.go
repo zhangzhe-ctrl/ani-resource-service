@@ -132,6 +132,16 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.f.w = worker
+	// A dedicated HTTP scenario can run new VPCs without the optional base
+	// network. Use the production rollout command; the already prepared LB
+	// fixture and its Intranet association retain their normal lifecycle.
+	withoutNewVPCBase := os.Getenv("NETWORK_JOINT_WITHOUT_NEW_VPC_BASE") == "1"
+	if withoutNewVPCBase {
+		rollout, err := f.f.p.SetNewVPCBaseConnectivity(f.f.ctx, false)
+		if err != nil || rollout.NewVPCsEnabled {
+			t.Fatalf("disable optional new-VPC base connectivity: %v", err)
+		}
+	}
 	f.f.p.UseSecurityGroupObserver(provider)
 	securityGroupWorker := biz.NewSecurityGroupWorker(f.f.p, provider, uuid.NewString(), policy)
 	attachmentWorker := networkJointBackendObserver(t, f, provider, policy)
@@ -186,6 +196,9 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 	info["ClusterID"], info["ClusterUID"] = aggregates.identity.ClusterID, aggregates.identity.ClusterUID
 	info["DefaultVPCNamespace"], info["DefaultVPCName"], info["DefaultVPCUID"] = aggregates.identity.Namespace, aggregates.identity.Name, aggregates.identity.UID
 	info["QualifiedPublicPoolID"], info["GatewayID"] = f.f.pool.ID, f.f.pool.Pool.GatewayID
+	if withoutNewVPCBase {
+		info["NewVPCBaseDisabled"] = "true"
+	}
 	raw, err := json.Marshal(info)
 	if err != nil {
 		t.Fatal(err)

@@ -1,0 +1,92 @@
+apiVersion: v1
+items:
+- apiVersion: networking.kubercloud.com/v1
+  kind: EIP
+  metadata:
+    creationTimestamp: "2026-10-30T08:29:12Z"
+    finalizers:
+    - networking.kubercloud.com/finalizer
+    generation: 2
+    labels:
+      network.ani.io/binding-id: c674d211-9b38-429e-a040-270c41dcf86f
+      network.ani.io/managed-by: ani-network-service
+      network.ani.io/resource-id: eip_b651666e73bd447ca85fa7dd0ace350f
+      network.ani.io/tenant-id: 46936e6b-3a3b-4868-8d88-6833665abb70
+    name: eip-b651666e73bd447ca85fa7dd0ace350f
+    namespace: tenant-46936e6b-3a3b-4868-8d88-6833665abb70
+    resourceVersion: "83291871"
+    uid: e7a61fd1-7833-48e3-80d7-62ce873ed0f8
+  spec:
+    ipAddress: 172.16.102.193
+    ipVersion: IPv4
+    securityGroups:
+    - ani-sg-a9fad06b18074fbe89448ebf9dde08d0
+    subnet: kcn-system/pool-1c5c2bebf286440fa7ed5006c2256021
+  status:
+    appliedSecurityGroups:
+    - ani-sg-a9fad06b18074fbe89448ebf9dde08d0
+    boundResource:
+      disabled: false
+      nodeName: ani-02
+      observedGeneration: 1
+      resource: snat-59038e6ee9624d17815208324a4a9ed4
+      resourceType: Snat
+      vpc: tenant-46936e6b-3a3b-4868-8d88-6833665abb70/vpc-f1fcd7ec549843cdb6adbe0dde65cc10
+    conditions:
+    - lastTransitionTime: "2026-10-30T08:29:12Z"
+      message: ""
+      reason: Initialized
+      status: "True"
+      type: Initialized
+    - lastTransitionTime: "2026-10-30T08:29:12Z"
+      message: ""
+      reason: Valid
+      status: "True"
+      type: Valid
+    gateway: egw-01601cbe1387407182e9ba11ff7a2b79
+    phase: Bound
+- apiVersion: networking.kubercloud.com/v1
+  kind: SecurityGroup
+  metadata:
+    creationTimestamp: "2026-10-30T07:57:00Z"
+    finalizers:
+    - networking.kubercloud.com/finalizer
+    generation: 1
+    labels:
+      network.ani.io/binding-id: a4030bbb-34db-410a-b2f7-9deb964632d1
+      network.ani.io/managed-by: ani-network-service
+      network.ani.io/resource-id: sg_a9fad06b18074fbe89448ebf9dde08d0
+      network.ani.io/tenant-id: 46936e6b-3a3b-4868-8d88-6833665abb70
+    name: ani-sg-a9fad06b18074fbe89448ebf9dde08d0
+    namespace: tenant-46936e6b-3a3b-4868-8d88-6833665abb70
+    resourceVersion: "83291876"
+    uid: 438f52c6-888e-44b2-b7be-ab6928de449e
+  spec:
+    allowSameGroupTraffic: false
+    egressRules: []
+    ingressRules:
+    - action: drop
+      ipVersion: IPv4
+      priority: 1
+      protocol: all
+  status:
+    allowSameGroupTraffic: false
+    appliedEIPs:
+      eip-b651666e73bd447ca85fa7dd0ace350f: uplink.tenant-46936e6b-3a3b-4868-8d88-6833665abb70.vpc-f1fcd7ec549843cdb6adbe0dde65cc10
+    conditions:
+    - lastTransitionTime: "2026-10-30T07:57:00Z"
+      message: ""
+      reason: Valid
+      status: "True"
+      type: Valid
+    - lastTransitionTime: "2026-10-30T07:57:00Z"
+      message: ""
+      reason: Ready
+      status: "True"
+      type: Ready
+    egressMd5: d751713988987e9331980363e24189ce
+    ingressMd5: b79f817c08a95f4e3752cebd6e87c679
+    observedGeneration: 1
+kind: List
+metadata:
+  resourceVersion: ""

@@ -1,0 +1,24 @@
+{
+  "id": "eip_b651666e73bd447ca85fa7dd0ace350f",
+  "name": "eip-live-sg-20261030",
+  "description": "task-owned EIP with atomic initial SG",
+  "state": "available",
+  "reason": "",
+  "created_at": "2026-10-30T08:28:47.397207Z",
+  "updated_at": "2026-10-30T08:29:50.646782Z",
+  "version": "3",
+  "observed_at": "2026-10-30T08:29:47.468007Z",
+  "observation_stale": false,
+  "last_operation_id": "a8cc90bc-9145-49d3-92d9-49586df0b4b1",
+  "address": "172.16.102.193",
+  "binding_id": "snat_59038e6ee9624d17815208324a4a9ed4",
+  "binding_state": "bound",
+  "scope": "public",
+  "managed_by": "tenant",
+  "binding_target": {
+    "kind": "vpc_snat",
+    "id": "snat_59038e6ee9624d17815208324a4a9ed4",
+    "state": "bound",
+    "vpc_id": "vpc_f1fcd7ec549843cdb6adbe0dde65cc10"
+  }
+}

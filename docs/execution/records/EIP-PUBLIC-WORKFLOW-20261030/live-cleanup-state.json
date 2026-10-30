@@ -1,0 +1,22 @@
+{
+  "eip": {
+    "id": "eip_b651666e73bd447ca85fa7dd0ace350f",
+    "state": "deleted",
+    "reason": ""
+  },
+  "vpc": {
+    "id": "vpc_f1fcd7ec549843cdb6adbe0dde65cc10",
+    "state": "deleted",
+    "reason": ""
+  },
+  "group_a": {
+    "id": "sg_a9fad06b18074fbe89448ebf9dde08d0",
+    "state": "deleted",
+    "reason": ""
+  },
+  "group_b": {
+    "id": "sg_90dee3d1236449f78922b4d6f7bb91ef",
+    "state": "deleted",
+    "reason": ""
+  }
+}
