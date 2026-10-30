@@ -267,7 +267,7 @@ Provider 观察按对象已发布的状态及代次字段固定，不能统一�
 | 网卡输入 | 管理员手填已准备接口名，不依赖接口库存列表作为受理前置 |
 | CreateVlanNetwork v2 | 保留名称/既有可选简介/VLAN，增加 cluster_id、virtual_switch_id、device_name；内部登记不成为用户前置操作 |
 | Get/List/DeleteVlanNetwork | 保留产品入口，补交换机引用和逐节点进度；删除不删除交换机 |
-| 旧 AdoptNetworkDevice | 仅保留既有历史合同边界，新用户主流程不调用，不再写旧 kcn-config/adoption 配置 |
+| 旧独立设备接口 | 发现、登记、查询和退出 RPC/HTTP 全部移除；旧方法调用不再注册，交换机内部逻辑设备继续随二层网络生命周期管理 |
 
 当前 Proto 的 device_id 为第 3 字段，不能把它换名复用为交换机 ID；新增字段或版本化请求，明确旧 device_id 与新参数互斥。旧记录读取及精确幂等重放继续支持；KCN v0.9 下新的无交换机旧式创建若不能满足新前置，应明确拒绝，不猜组或后台收养。
 

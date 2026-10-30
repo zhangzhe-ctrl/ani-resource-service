@@ -43,18 +43,8 @@ func wireSnat(v biz.VPCSnatBinding) *networkv1.VPCSnatBinding {
 	}
 	return &networkv1.VPCSnatBinding{Id: v.ID, TenantId: v.TenantID, VpcId: v.VPCID, EipId: v.EIPID, EipAddress: v.EIPAddress, State: statesToWire[v.State], Reason: string(v.Reason), ReasonMessage: v.Reason.Message(), Version: v.Version, CreatedAt: timestamppb.New(v.CreatedAt), UpdatedAt: timestamppb.New(v.UpdatedAt), ObservedAt: optionalTime(v.ObservedAt), ObservationStale: v.ObservationStale, LastOperationId: v.LastOperationID, DesiredEnabled: v.DesiredEnabled, AppliedEnabled: v.AppliedEnabled, Purpose: v.Purpose}
 }
-func wireNode(v biz.NodeInterface) *networkv1.NodeInterface {
-	return &networkv1.NodeInterface{NodeName: v.NodeName, NodeUid: v.NodeUID, Name: v.Name, Kind: v.Kind, Mac: v.MAC, Mtu: v.MTU, LinkUp: v.LinkUp, Carrier: v.Carrier, Addresses: v.Addresses, Master: v.Master, OvsManaged: v.OVSManaged, KcManaged: v.KCManaged, DefaultRoute: v.DefaultRoute, Management: v.Management, Selectable: v.Selectable, UnavailableReasons: v.UnavailableReasons, ObservedAt: timestamppb.New(v.ObservedAt), VlanNetworkIds: v.VlanNetworkIDs}
-}
 func wirePlatform(v biz.PlatformResource) *networkv1.PlatformResource {
 	r := &networkv1.PlatformResource{Id: v.ID, ClusterId: v.ClusterID, Name: v.Name, Description: v.Description, State: statesToWire[v.State], Reason: string(v.Reason), ReasonMessage: v.Reason.Message(), Version: v.Version, CreatedAt: timestamppb.New(v.CreatedAt), UpdatedAt: timestamppb.New(v.UpdatedAt), ObservedAt: optionalTime(v.ObservedAt), ObservationStale: v.ObservationStale, LastOperationId: v.LastOperationID}
-	if v.Device != nil {
-		d := &networkv1.NetworkDevice{DeviceName: v.Device.DeviceName, InventoryFingerprint: v.Device.InventoryFingerprint}
-		for _, n := range v.Device.Nodes {
-			d.Nodes = append(d.Nodes, wireNode(n))
-		}
-		r.Configuration = &networkv1.PlatformResource_Device{Device: d}
-	}
 	if v.Vlan != nil {
 		r.Configuration = &networkv1.PlatformResource_Vlan{Vlan: &networkv1.VlanNetwork{DeviceId: v.Vlan.DeviceID, VlanId: v.Vlan.VlanID, VirtualSwitchId: v.Vlan.VirtualSwitchID, DeviceName: v.Vlan.DeviceName, GroupName: v.Vlan.GroupName, Nodes: wireSwitchNodes(v.Vlan.Nodes)}}
 	}
@@ -155,30 +145,6 @@ func (s *TenantEgressService) ListEIPs(ctx context.Context, r *networkv1.ListEIP
 	}
 	return reply, nil
 }
-func (s *PlatformNetworkService) ListNodeInterfaces(ctx context.Context, r *networkv1.ListNodeInterfacesRequest) (*networkv1.ListNodeInterfacesResponse, error) {
-	var v biz.InterfaceInventory
-	var err error
-	if r.GetClusterId() != "" || r.GetVirtualSwitchId() != "" {
-		v, err = s.egress.ListVirtualSwitchInterfaces(ctx, r.GetNodeName(), r.GetClusterId(), r.GetVirtualSwitchId())
-	} else {
-		v, err = s.egress.ListNodeInterfaces(ctx, r.GetNodeName())
-	}
-	if err != nil {
-		return nil, rpcError(err)
-	}
-	reply := &networkv1.ListNodeInterfacesResponse{InventoryFingerprint: v.Fingerprint, Total: int64(len(v.Items))}
-	for _, n := range v.Items {
-		reply.Items = append(reply.Items, wireNode(n))
-	}
-	return reply, nil
-}
-func (s *PlatformNetworkService) AdoptNetworkDevice(ctx context.Context, r *networkv1.AdoptNetworkDeviceRequest) (*networkv1.AdoptNetworkDeviceResponse, error) {
-	v, err := s.egress.CreatePlatform(ctx, biz.PlatformIntent{Kind: "adopt_device", Name: r.GetName(), IdempotencyKey: r.GetIdempotencyKey(), Device: &biz.DeviceConfig{DeviceName: r.GetDeviceName(), InventoryFingerprint: r.GetInventoryFingerprint()}})
-	if err != nil {
-		return nil, rpcError(err)
-	}
-	return &networkv1.AdoptNetworkDeviceResponse{Resource: wirePlatform(v)}, nil
-}
 func (s *PlatformNetworkService) CreateVlanNetwork(ctx context.Context, r *networkv1.CreateVlanNetworkRequest) (*networkv1.CreateVlanNetworkResponse, error) {
 	v, err := s.egress.CreatePlatform(ctx, biz.PlatformIntent{Kind: "create_vlan", Name: r.GetName(), Description: r.GetDescription(), IdempotencyKey: r.GetIdempotencyKey(), Vlan: &biz.VlanConfig{DeviceID: r.GetDeviceId(), VlanID: r.GetVlanId(), ClusterID: r.GetClusterId(), VirtualSwitchID: r.GetVirtualSwitchId(), DeviceName: r.GetDeviceName()}})
 	if err != nil {
@@ -206,13 +172,6 @@ func (s *PlatformNetworkService) CreatePublicAddressPool(ctx context.Context, r 
 		return nil, rpcError(err)
 	}
 	return &networkv1.CreatePublicAddressPoolResponse{Resource: wirePlatform(v)}, nil
-}
-func (s *PlatformNetworkService) GetNetworkDevice(ctx context.Context, r *networkv1.GetNetworkDeviceRequest) (*networkv1.GetNetworkDeviceResponse, error) {
-	v, err := s.egress.GetPlatform(ctx, "device", r.GetDeviceId())
-	if err != nil {
-		return nil, rpcError(err)
-	}
-	return &networkv1.GetNetworkDeviceResponse{Resource: wirePlatform(v)}, nil
 }
 func (s *PlatformNetworkService) GetVlanNetwork(ctx context.Context, r *networkv1.GetVlanNetworkRequest) (*networkv1.GetVlanNetworkResponse, error) {
 	v, err := s.egress.GetPlatform(ctx, "vlan", r.GetVlanNetworkId())

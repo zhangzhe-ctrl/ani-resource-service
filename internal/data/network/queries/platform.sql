@@ -45,12 +45,6 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8,sqlc.arg(fingerprint_version));
 INSERT INTO network_platform_resources(resource_id,kind,cluster_id,name,description,state,created_at,updated_at,last_operation_id,provider_name,binding_id)
 VALUES($1,$2,$3,$4,$5,'provisioning',$6,$6,$7,$8,$9) RETURNING *;
 
--- name: InsertDeviceAdoption :exec
-INSERT INTO network_device_adoptions(resource_id,cluster_id,device_name,inventory_fingerprint,node_inventory) VALUES($1,$2,$3,$4,$5);
-
--- name: InsertVlanNetwork :exec
-INSERT INTO network_vlan_networks(resource_id,cluster_id,device_id,vlan_id) VALUES($1,$2,$3,$4);
-
 -- name: InsertEgressGateway :exec
 INSERT INTO network_egress_gateways(resource_id,cluster_id) VALUES($1,$2);
 
@@ -119,7 +113,7 @@ UPDATE network_platform_reconciliations SET next_run_at=clock_timestamp(),lease_
 -- name: DuePlatformCandidate :one
 SELECT p.* FROM network_platform_resources p JOIN network_platform_reconciliations r ON r.resource_id=p.resource_id
 WHERE p.cluster_id=sqlc.arg(cluster_id) AND r.next_run_at<=clock_timestamp() AND (r.lease_until IS NULL OR r.lease_until<=clock_timestamp())
- AND NOT EXISTS(SELECT 1 FROM network_device_adoptions d WHERE d.resource_id=p.resource_id AND d.registration_closed)
+ AND p.kind<>'device'
 ORDER BY r.next_run_at,p.resource_id LIMIT 1 FOR UPDATE OF p SKIP LOCKED;
 
 -- name: AcquirePlatformLease :one
@@ -168,9 +162,6 @@ WHERE resource_id=sqlc.arg(resource_id) AND lease_owner=sqlc.arg(owner)::uuid AN
 -- name: NotifyPlatform :execrows
 UPDATE network_platform_reconciliations SET requested_generation=requested_generation+1,
  next_run_at=greatest(retry_not_before,least(next_run_at,clock_timestamp())) WHERE resource_id=$1;
-
--- name: SaveDeviceProgress :execrows
-UPDATE network_device_adoptions SET node_progress=$3 WHERE cluster_id=$1 AND resource_id=$2;
 
 -- name: ObservationPlatformResources :many
 SELECT p.*,r.requested_generation FROM network_platform_resources p JOIN network_platform_reconciliations r ON r.resource_id=p.resource_id WHERE p.cluster_id=$1;

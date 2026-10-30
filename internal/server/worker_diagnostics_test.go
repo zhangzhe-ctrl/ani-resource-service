@@ -37,9 +37,9 @@ func TestVirtualSwitchDiagnosticsLogNodeCauseWithoutClaimingObservation(t *testi
 	var output bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&output, nil))
 	work := biz.VirtualSwitchWork{Switch: biz.VirtualSwitch{EgressMetadata: biz.EgressMetadata{ID: "switch-id", LastOperationID: "operation-id"}, BindingID: "binding-id", BindingState: "configured"}}
-	progress := biz.VirtualSwitchProgress{BindingState: "configured", Reason: biz.ProviderUnavailable, Action: "inspect", NodeName: "node-a", NodeUID: "node-uid", ProviderError: &biz.ProviderError{Kind: biz.ProviderTemporary, Cause: errors.New("node facts collection expired")}}
+	progress := biz.VirtualSwitchProgress{BindingState: "configured", Reason: biz.ProviderUnavailable, Action: "inspect", NodeName: "node-a", NodeUID: "node-uid", ProviderError: &biz.ProviderError{Kind: biz.ProviderTemporary, Cause: errors.New("node network audit invalidated after one fresh collection")}}
 	o.ObserveVirtualSwitchWork(context.Background(), logger, work, progress, nil)
-	for _, want := range []string{"node facts collection expired", "switch-id", "binding-id", "operation-id", "node-a", "node-uid", `"action":"inspect"`, `"observed":false`, `"result":"provider_error"`} {
+	for _, want := range []string{"node network audit invalidated after one fresh collection", "switch-id", "binding-id", "operation-id", "node-a", "node-uid", `"action":"inspect"`, `"observed":false`, `"result":"provider_error"`} {
 		if !strings.Contains(output.String(), want) {
 			t.Fatalf("missing diagnostic %q: %s", want, output.String())
 		}

@@ -21,7 +21,7 @@ func TestPlatformGovernanceScope(t *testing.T) {
 	base := peer.NewContext(context.Background(), &peer.Peer{AuthInfo: credentials.TLSInfo{State: tls.ConnectionState{Version: tls.VersionTLS13, PeerCertificates: []*x509.Certificate{cert}, VerifiedChains: [][]*x509.Certificate{{cert}}}}})
 	platform := metadata.Pairs(GovernanceScopeHeader, "platform", "x-ani-actor", "governance:user:7", "x-ani-request-id", "22222222-2222-4222-8222-222222222222")
 	methods := []string{}
-	for _, desc := range []grpc.ServiceDesc{networkv1.PlatformNetworkService_ServiceDesc, networkv1.PlatformDeviceRetirementService_ServiceDesc, networkv1.PlatformDefaultEgressService_ServiceDesc} {
+	for _, desc := range []grpc.ServiceDesc{networkv1.PlatformNetworkService_ServiceDesc, networkv1.PlatformDefaultEgressService_ServiceDesc} {
 		for _, method := range desc.Methods {
 			methods = append(methods, "/"+desc.ServiceName+"/"+method.MethodName)
 		}
@@ -49,7 +49,6 @@ func TestPlatformGovernanceScope(t *testing.T) {
 		readOnly     bool
 	}{
 		{"tenant_to_platform", networkv1.PlatformNetworkService_ListPublicAddressPools_FullMethodName, metadata.Pairs("x-ani-tenant-id", "11111111-1111-4111-8111-111111111111", "x-ani-actor", "governance:user:7", "x-ani-request-id", platform.Get("x-ani-request-id")[0]), codes.PermissionDenied, false},
-		{"tenant_to_device_retirement", "/network.v1.PlatformDeviceRetirementService/RetireNetworkDevice", metadata.Pairs("x-ani-tenant-id", "11111111-1111-4111-8111-111111111111", "x-ani-actor", "governance:user:7", "x-ani-request-id", platform.Get("x-ani-request-id")[0]), codes.PermissionDenied, false},
 		{"tenant_to_default_vpc", "/network.v1.PlatformDefaultEgressService/CreateDefaultVPCEgress", metadata.Pairs("x-ani-tenant-id", "11111111-1111-4111-8111-111111111111", "x-ani-actor", "governance:user:7", "x-ani-request-id", platform.Get("x-ani-request-id")[0]), codes.PermissionDenied, false},
 		{"platform_to_tenant", GetVPCMethod, platform, codes.PermissionDenied, false},
 		{"unknown_method", "/network.v1.PlatformNetworkService/Anything", platform, codes.PermissionDenied, false},

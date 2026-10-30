@@ -17,7 +17,7 @@ type VirtualSwitch struct {
 }
 
 type VirtualSwitchNode struct {
-	NodeName, NodeUID, MAC, State, Reason string
+	NodeName, NodeUID, State, Reason string
 	// LastObservedAt is the oldest provider evidence supporting the last
 	// successful inspection. Failed reads never renew this durable timestamp.
 	LastObservedAt time.Time `json:"LastObservedAt,omitzero"`
@@ -36,57 +36,13 @@ type VirtualSwitchFilter struct {
 }
 
 type VirtualSwitchInventory struct {
-	Inventory   InterfaceInventory
+	Inventory   PreparedDeviceInventory
 	Members     []VirtualSwitchNode
 	Fingerprint string
 }
 type VirtualSwitchInfrastructure interface {
 	VirtualSwitchInventory(context.Context, string, VirtualSwitch, string) (VirtualSwitchInventory, error)
 }
-type VirtualSwitchInventoryReader interface {
-	ListVirtualSwitchInterfaces(context.Context, string, VirtualSwitch) (InterfaceInventory, error)
-}
-
-func (e *Egress) ListVirtualSwitchInterfaces(ctx context.Context, node, cluster, id string) (InterfaceInventory, error) {
-	if _, err := e.authorization.Platform(ctx); err != nil {
-		return InterfaceInventory{}, err
-	}
-	if cluster == "" || !validEgressID(id, "vsw") {
-		return InterfaceInventory{}, Fail(InvalidArgument, "cluster_id and virtual_switch_id are required together")
-	}
-	r, err := e.switchRepository()
-	if err != nil {
-		return InterfaceInventory{}, err
-	}
-	sw, err := r.GetVirtualSwitch(ctx, id)
-	if err != nil {
-		return InterfaceInventory{}, err
-	}
-	if sw.State == Deleting || sw.State == Deleted || (sw.ClusterID != "" && sw.ClusterID != cluster) {
-		return InterfaceInventory{}, Fail(ResourceBusy, "switch is unavailable for this cluster")
-	}
-	infra, ok := e.infrastructure.(VirtualSwitchInventoryReader)
-	if !ok {
-		return InterfaceInventory{}, Fail(DependencyUnavailable, "scoped interface inventory is unavailable")
-	}
-	items, err := infra.ListVirtualSwitchInterfaces(ctx, cluster, sw)
-	if err != nil {
-		return items, err
-	}
-	if node != "" {
-		// A diagnostic subset never carries a full admission fingerprint.
-		filtered := items.Items[:0]
-		for _, n := range items.Items {
-			if n.NodeName == node {
-				filtered = append(filtered, n)
-			}
-		}
-		items.Items = filtered
-		items.Fingerprint = ""
-	}
-	return items, nil
-}
-
 type VirtualSwitchRepository interface {
 	CreateVirtualSwitch(context.Context, VirtualSwitchIntent, Attribution) (VirtualSwitch, error)
 	GetVirtualSwitch(context.Context, string) (VirtualSwitch, error)

@@ -138,7 +138,7 @@ func TestInternalBusinessListenerPolicy(t *testing.T) {
 				{"create", "/network.v1.NetworkService/CreateVPC", &networkv1.CreateVPCRequest{TenantId: callRulesTenant, Attribution: trustedAttribution()}, &networkv1.CreateVPCResponse{}, codes.OK},
 				{"image", imagev1.TenantImageService_GetImageSpace_FullMethodName, &imagev1.GetImageSpaceRequest{TenantId: callRulesTenant}, &imagev1.GetImageSpaceResponse{}, codes.OK},
 				{"attachment", "/network.v1.NetworkService/PrepareAttachment", &networkv1.PrepareAttachmentRequest{}, &networkv1.PrepareAttachmentResponse{}, codes.PermissionDenied},
-				{"platform", "/network.v1.PlatformNetworkService/ListNodeInterfaces", &networkv1.ListNodeInterfacesRequest{}, &networkv1.ListNodeInterfacesResponse{}, codes.PermissionDenied},
+				{"platform", networkv1.PlatformNetworkService_CreateVirtualSwitch_FullMethodName, &networkv1.CreateVirtualSwitchRequest{}, &networkv1.CreateVirtualSwitchResponse{}, codes.PermissionDenied},
 				{"unknown", "/network.v1.UnknownService/Anything", &networkv1.GetVPCRequest{}, &networkv1.GetVPCResponse{}, codes.PermissionDenied},
 			} {
 				t.Run(tc.name, func(t *testing.T) {

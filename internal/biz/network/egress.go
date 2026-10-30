@@ -131,10 +131,6 @@ type PublicPoolVerification struct {
 	TopologyFingerprint, EvidenceReference, Scope string
 	VerifiedAt, ExpiresAt                         time.Time
 }
-type DeviceConfig struct {
-	DeviceName, InventoryFingerprint string
-	Nodes                            []NodeInterface
-}
 type VlanConfig struct {
 	DeviceID        string
 	VlanID          int32
@@ -147,7 +143,6 @@ type VlanConfig struct {
 type PlatformResource struct {
 	EgressMetadata
 	ClusterID, Kind              string
-	Device                       *DeviceConfig
 	Vlan                         *VlanConfig
 	Pool                         *PublicPoolConfig
 	AllocationEnabled, IsDefault bool
@@ -157,27 +152,15 @@ type PlatformResource struct {
 	Verification                 *PublicPoolVerification
 }
 
-// NodeInterface contains actual link/address/route/OVS facts collected inside
-// the Kubernetes node network namespace. Node.status.addresses is insufficient.
-type NodeInterface struct {
-	NodeName, NodeUID, Name, Kind, MAC              string
-	MTU                                             int32
-	LinkUp, Carrier                                 bool
-	Addresses                                       []string
-	Master                                          string
-	OVSManaged, KCManaged, DefaultRoute, Management bool
-	// KCBridgeReady is collected from the real OVS bridge, vendor and mapping.
-	// Config identity/ownership are supplied by the provider, never the caller.
-	KCBridgeReady, KCConfigured        bool
-	KCConfigUID, KCDeviceOwner         string
-	KCBridgeNetworks                   []string `json:",omitempty"`
-	Selectable                         bool
-	UnavailableReasons, VlanNetworkIDs []string
-	ObservedAt                         time.Time
+// PreparedDeviceNode is the logical administrator-supplied device intent on a
+// frozen Kubernetes Node identity. Old snapshot JSON may contain extra host
+// fields; the default JSON decoder deliberately ignores them.
+type PreparedDeviceNode struct {
+	NodeName, NodeUID, Name string
 }
-type InterfaceInventory struct {
+type PreparedDeviceInventory struct {
 	CollectedAt time.Time
-	Items       []NodeInterface
+	Items       []PreparedDeviceNode
 	Fingerprint string
 }
 
@@ -196,22 +179,23 @@ type PlatformIntent struct {
 	Kind, ID, Name, Description, IdempotencyKey string
 	ExpectedVersion                             int64
 	Enabled                                     bool
-	Device                                      *DeviceConfig
 	Vlan                                        *VlanConfig
 	Pool                                        *PublicPoolConfig
 	Verification                                *PublicPoolVerification
 }
 
 func (i PlatformIntent) Fingerprint() string {
-	i.IdempotencyKey = ""
-	// Observation timestamps never change replay identity. The accepted node
-	// set/facts are pinned by the caller's inventory fingerprint.
-	if i.Device != nil {
-		d := *i.Device
-		d.Nodes = nil
-		i.Device = &d
-	}
-	return egressFingerprint(i)
+	// Keep the original v1 wire shape, including its retired null Device slot.
+	// Removing the Go field must not change accepted pool/gateway replay keys.
+	return egressFingerprint(struct {
+		Kind, ID, Name, Description, IdempotencyKey string
+		ExpectedVersion                             int64
+		Enabled                                     bool
+		Device                                      any
+		Vlan                                        *VlanConfig
+		Pool                                        *PublicPoolConfig
+		Verification                                *PublicPoolVerification
+	}{i.Kind, i.ID, i.Name, i.Description, "", i.ExpectedVersion, i.Enabled, nil, i.Vlan, i.Pool, i.Verification})
 }
 
 // FingerprintVersion retains the exact v1 struct encoding above. New fields
@@ -254,7 +238,6 @@ type EgressRepository interface {
 	GetPlatformOperation(context.Context, string) (Operation, error)
 }
 type EgressInfrastructure interface {
-	ListNodeInterfaces(context.Context) (InterfaceInventory, error)
 	ValidatePublicPool(context.Context, PublicPoolConfig) error
 }
 
@@ -443,19 +426,6 @@ func (e *Egress) ListEIPs(ctx context.Context, r ListVPCs) ([]EIP, string, int64
 	return rows, next, total, nil
 }
 
-func (e *Egress) ListNodeInterfaces(ctx context.Context, node string) (InterfaceInventory, error) {
-	if _, err := e.authorization.Platform(ctx); err != nil {
-		return InterfaceInventory{}, err
-	}
-	inventory, err := e.infrastructure.ListNodeInterfaces(ctx)
-	if err != nil {
-		return inventory, err
-	}
-	if node != "" {
-		inventory.Items = slices.DeleteFunc(inventory.Items, func(v NodeInterface) bool { return v.NodeName != node })
-	}
-	return inventory, nil
-}
 func (e *Egress) CreatePlatform(ctx context.Context, i PlatformIntent) (PlatformResource, error) {
 	a, err := e.authorization.Platform(ctx)
 	if err != nil {
@@ -470,10 +440,8 @@ func (e *Egress) CreatePlatform(ctx context.Context, i PlatformIntent) (Platform
 	i.Enabled = false
 	i.Verification = nil
 	switch i.Kind {
-	case "adopt_device":
-		return PlatformResource{}, Fail(InvalidArgument, "standalone device registration has been removed; provide device_name when creating a layer 2 network")
 	case "create_vlan":
-		if i.Vlan == nil || i.Device != nil || i.Pool != nil || i.Vlan.VlanID < 0 || i.Vlan.VlanID > 4094 {
+		if i.Vlan == nil || i.Pool != nil || i.Vlan.VlanID < 0 || i.Vlan.VlanID > 4094 {
 			return PlatformResource{}, Fail(InvalidArgument, "device_id and vlan_id 0..4094 are required")
 		}
 		v := i.Vlan
@@ -486,11 +454,11 @@ func (e *Egress) CreatePlatform(ctx context.Context, i PlatformIntent) (Platform
 		}
 		i.Vlan = &VlanConfig{DeviceID: v.DeviceID, VlanID: v.VlanID, VirtualSwitchID: v.VirtualSwitchID, ClusterID: v.ClusterID, DeviceName: v.DeviceName}
 	case "create_egress_gateway":
-		if i.Device != nil || i.Vlan != nil || i.Pool != nil {
+		if i.Vlan != nil || i.Pool != nil {
 			return PlatformResource{}, Fail(InvalidArgument, "gateway has no mode or device configuration")
 		}
 	case "create_public_pool", "create_intranet_pool":
-		if i.Device != nil || i.Vlan != nil || i.Pool == nil {
+		if i.Vlan != nil || i.Pool == nil {
 			return PlatformResource{}, Fail(InvalidArgument, "pool configuration is required")
 		}
 		var normalized PublicPoolConfig
@@ -511,8 +479,6 @@ func (e *Egress) CreatePlatform(ctx context.Context, i PlatformIntent) (Platform
 }
 func platformPrefix(kind string) string {
 	switch kind {
-	case "device":
-		return "device"
 	case "vlan":
 		return "vlan"
 	case "egress_gateway":
@@ -562,7 +528,7 @@ func (e *Egress) DeletePlatform(ctx context.Context, kind, id string) (PlatformR
 	if err != nil {
 		return PlatformResource{}, err
 	}
-	if kind == "device" || !validEgressID(id, platformPrefix(kind)) {
+	if !validEgressID(id, platformPrefix(kind)) {
 		return PlatformResource{}, Fail(ResourceNotFound, "deletable platform resource not found")
 	}
 	v, err := e.repository.DeletePlatform(ctx, kind, id, a)
@@ -584,7 +550,6 @@ func (e *Egress) SetPool(ctx context.Context, i PlatformIntent) (PlatformResourc
 	}
 	i.Name = ""
 	i.Description = ""
-	i.Device = nil
 	i.Vlan = nil
 	i.Pool = nil
 	switch i.Kind {
@@ -685,51 +650,4 @@ func ValidatePoolVerification(v PublicPoolVerification, now time.Time) error {
 		}
 	}
 	return nil
-}
-
-// FilterNodeInterfaces never renews observed_at. An empty/partial/future/stale
-// inventory cannot authorize device adoption, even if other links are healthy.
-func FilterNodeInterfaces(items []NodeInterface, now time.Time, freshness time.Duration) []NodeInterface {
-	result := slices.Clone(items)
-	for j := range result {
-		v := &result[j]
-		v.UnavailableReasons = slices.Clone(v.UnavailableReasons)
-		reject := func(r string) { v.UnavailableReasons = append(v.UnavailableReasons, r) }
-		if v.NodeName == "" || v.NodeUID == "" || v.Name == "" {
-			reject("incomplete_identity")
-		}
-		if v.ObservedAt.IsZero() || v.ObservedAt.After(now) || now.Sub(v.ObservedAt) > freshness {
-			reject("stale_facts")
-		}
-		if v.Management || v.DefaultRoute {
-			reject("management_or_default_route")
-		}
-		if v.Kind != "device" {
-			reject("not_physical_device")
-		}
-		managedReady := v.KCManaged && v.KCConfigured && v.KCConfigUID != "" && v.KCBridgeReady && v.OVSManaged && v.Master == "ovs-system" && v.MAC != "" && v.LinkUp && v.Carrier
-		if (v.Master != "" || v.OVSManaged) && !managedReady {
-			reject("already_in_use")
-		}
-		if (v.KCManaged || v.KCConfigured) && !managedReady {
-			reject("managed_device_not_ready")
-		}
-		if v.KCDeviceOwner != "" {
-			reject("already_registered")
-		}
-		for _, raw := range v.Addresses {
-			ip, err := netip.ParsePrefix(raw)
-			if err != nil || !ip.Addr().IsLinkLocalUnicast() {
-				reject("address_assigned")
-				break
-			}
-		}
-		if len(v.VlanNetworkIDs) > 0 {
-			reject("vlan_in_use")
-		}
-		slices.Sort(v.UnavailableReasons)
-		v.UnavailableReasons = slices.Compact(v.UnavailableReasons)
-		v.Selectable = len(v.UnavailableReasons) == 0
-	}
-	return result
 }

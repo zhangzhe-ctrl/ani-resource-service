@@ -187,7 +187,6 @@ func buildApp(bc *conf.Bootstrap, logger *slog.Logger) (*kratos.App, error) {
 	networkv1.RegisterTenantEgressServiceServer(grpcServer, service.NewTenantEgressService(egress))
 	networkv1.RegisterPlatformNetworkServiceServer(grpcServer, service.NewPlatformNetworkService(egress))
 	networkv1.RegisterPlatformEIPServiceServer(grpcServer, service.NewPlatformEIPService(egress))
-	networkv1.RegisterPlatformDeviceRetirementServiceServer(grpcServer, service.NewPlatformDeviceRetirementService(egress))
 	if defaultService != nil {
 		networkv1.RegisterPlatformDefaultEgressServiceServer(grpcServer, defaultService)
 	}

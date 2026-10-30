@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestEgressAuthorizationRequiresTrustedContextAndExplicitDelegation(t *testing.T) {
@@ -81,76 +80,6 @@ func TestPublicPoolTopologyAndReservations(t *testing.T) {
 		t.Fatal("same physical and OVN gateway accepted")
 	}
 }
-func TestNodeInterfaceFactsDoNotTreatManagementOrStaleLinksAsCandidates(t *testing.T) {
-	now := time.Now().UTC()
-	fresh := NodeInterface{NodeName: "n1", NodeUID: "uid1", Name: "ens224", Kind: "device", ObservedAt: now, Addresses: []string{"fe80::1/64", "169.254.1.1/16"}}
-	cases := []struct {
-		name   string
-		change func(*NodeInterface)
-	}{
-		{"address", func(v *NodeInterface) { v.Addresses = append(v.Addresses, "10.0.0.1/24") }},
-		{"management", func(v *NodeInterface) { v.Management = true }},
-		{"default_route", func(v *NodeInterface) { v.DefaultRoute = true }},
-		{"veth", func(v *NodeInterface) { v.Kind = "veth" }},
-		{"bridge", func(v *NodeInterface) { v.Master = "br0" }},
-		{"ovs", func(v *NodeInterface) { v.OVSManaged = true }},
-		{"managed", func(v *NodeInterface) { v.KCManaged = true }},
-		{"stale", func(v *NodeInterface) { v.ObservedAt = now.Add(-61 * time.Second) }},
-		{"future", func(v *NodeInterface) { v.ObservedAt = now.Add(time.Second) }},
-		{"uid_missing", func(v *NodeInterface) { v.NodeUID = "" }},
-	}
-	if !FilterNodeInterfaces([]NodeInterface{fresh}, now, time.Minute)[0].Selectable {
-		t.Fatal("link-local-only physical device rejected")
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			v := fresh
-			c.change(&v)
-			r := FilterNodeInterfaces([]NodeInterface{v}, now, time.Minute)[0]
-			if r.Selectable || len(r.UnavailableReasons) == 0 {
-				t.Fatal(r)
-			}
-			if !r.ObservedAt.Equal(v.ObservedAt) {
-				t.Fatal("filter renewed facts")
-			}
-		})
-	}
-}
-
-func TestPreManagedDeviceRequiresCompleteKCProof(t *testing.T) {
-	now := time.Now().UTC()
-	fresh := NodeInterface{NodeName: "ani-01", NodeUID: "node-1", Name: "ens35", Kind: "device", MAC: "00:0c:29:e2:f0:2b", Master: "ovs-system", OVSManaged: true, KCManaged: true, KCConfigured: true, KCBridgeReady: true, KCConfigUID: "config-uid", LinkUp: true, Carrier: true, ObservedAt: now}
-	if !FilterNodeInterfaces([]NodeInterface{fresh}, now, time.Minute)[0].Selectable {
-		t.Fatal("already prepared kc device is not selectable for registration")
-	}
-	cases := []struct {
-		name   string
-		change func(*NodeInterface)
-	}{
-		{"unconfigured", func(v *NodeInterface) { v.KCConfigured = false }},
-		{"not_managed", func(v *NodeInterface) { v.KCManaged = false }},
-		{"unknown_config", func(v *NodeInterface) { v.KCConfigUID = "" }},
-		{"wrong_bridge_or_mapping", func(v *NodeInterface) { v.KCBridgeReady = false }},
-		{"another_owner", func(v *NodeInterface) { v.KCDeviceOwner = "foreign-binding" }},
-		{"bond", func(v *NodeInterface) { v.Master = "bond0" }},
-		{"no_mac", func(v *NodeInterface) { v.MAC = "" }},
-		{"link_down", func(v *NodeInterface) { v.LinkUp = false }},
-		{"no_carrier", func(v *NodeInterface) { v.Carrier = false }},
-		{"management_bridge", func(v *NodeInterface) { v.Management = true }},
-		{"address", func(v *NodeInterface) { v.Addresses = []string{"172.16.102.200/24"} }},
-		{"stale", func(v *NodeInterface) { v.ObservedAt = now.Add(-2 * time.Minute) }},
-		{"external_vlan", func(v *NodeInterface) { v.UnavailableReasons = []string{"provider_vlan_in_use"} }},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			v := fresh
-			tc.change(&v)
-			if FilterNodeInterfaces([]NodeInterface{v}, now, time.Minute)[0].Selectable {
-				t.Fatal("unsafe pre-managed device accepted", v)
-			}
-		})
-	}
-}
 func TestEgressFingerprintsPreserveIntentAndIgnoreInfrastructureRefresh(t *testing.T) {
 	i := EgressIntent{TenantID: "tenant", Kind: "create_eip", Name: "eip", IdempotencyKey: "one"}
 	h := i.Fingerprint()
@@ -162,14 +91,39 @@ func TestEgressFingerprintsPreserveIntentAndIgnoreInfrastructureRefresh(t *testi
 	if h == i.Fingerprint() {
 		t.Fatal("different intent same fingerprint")
 	}
-	p := PlatformIntent{Kind: "adopt_device", Device: &DeviceConfig{DeviceName: "ens224", InventoryFingerprint: strings.Repeat("a", 64)}}
+	p := PlatformIntent{Kind: "create_egress_gateway", Name: "gateway", IdempotencyKey: "one"}
 	h = p.Fingerprint()
-	p.Device.Nodes = []NodeInterface{{ObservedAt: time.Now()}}
+	p.IdempotencyKey = "two"
 	if h != p.Fingerprint() {
-		t.Fatal("discovery after replay changed fingerprint")
+		t.Fatal("platform idempotency key leaked into fingerprint")
 	}
-	p.Device.InventoryFingerprint = strings.Repeat("b", 64)
+	p.Name = "different"
 	if h == p.Fingerprint() {
-		t.Fatal("node set/facts fingerprint omitted")
+		t.Fatal("different platform intent shared a fingerprint")
+	}
+}
+
+func TestPlatformFingerprintsRetainAcceptedV1AndSwitchV2Encoding(t *testing.T) {
+	legacy := PlatformIntent{Kind: "create_egress_gateway", Name: "gateway", IdempotencyKey: "ignored"}
+	if got := legacy.VersionedFingerprint(); got != "88fea9209b1b35455ac99adecf7d3e38ec6c4fb700d22dc7449549a820b3b12c" || legacy.FingerprintVersion() != 1 {
+		t.Fatal("accepted v1 wire fingerprint changed", got)
+	}
+	legacyVlan := PlatformIntent{Kind: "create_vlan", Name: "legacy", Vlan: &VlanConfig{DeviceID: "device_" + strings.Repeat("b", 32)}}
+	if got := legacyVlan.VersionedFingerprint(); got != "4f5300600d0edc706b5b85fdaa641b90053f9c0d797b9121c0a732f6e6f805b8" {
+		t.Fatal("accepted legacy VLAN replay fingerprint changed", got)
+	}
+	legacyPool := PlatformIntent{Kind: "create_public_pool", Name: "pool", Pool: &PublicPoolConfig{Mode: "overlay", GatewayID: "egw_" + strings.Repeat("c", 32), CIDR: "192.0.2.0/24", OVNGatewayIP: "192.0.2.1"}}
+	if got := legacyPool.VersionedFingerprint(); got != "ea8611db2d991c34d6a8fc24daf837967ac12e57ff4a298b4f604338e0e03c6d" {
+		t.Fatal("accepted public pool replay fingerprint changed", got)
+	}
+	current := PlatformIntent{Kind: "create_vlan", Name: "prepared", IdempotencyKey: "ignored", Vlan: &VlanConfig{ClusterID: "test-cluster", VirtualSwitchID: "vsw_" + strings.Repeat("a", 32), DeviceName: "ens35", VlanID: 0}}
+	if got := current.VersionedFingerprint(); got != "49db9268cea6fa0f6b030411e22e5a8f159dd5a84ee54dffd1b3239cf079b301" || current.FingerprintVersion() != 2 {
+		t.Fatal("accepted v2 wire fingerprint changed", got)
+	}
+	before := current.VersionedFingerprint()
+	current.Vlan.DeviceID = "device_server_generated"
+	current.Vlan.Nodes = []VirtualSwitchNode{{NodeName: "node", NodeUID: "uid", Prepared: true}}
+	if current.VersionedFingerprint() != before {
+		t.Fatal("server-generated binding facts changed v2 replay identity")
 	}
 }

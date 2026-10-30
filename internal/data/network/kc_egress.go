@@ -35,7 +35,7 @@ const kcSystemNamespace = "kcn-system"
 
 func egressKind(kind string) bool {
 	switch kind {
-	case "eip", "snat", "device", "vlan", "egress_gateway", "public_pool":
+	case "eip", "snat", "vlan", "egress_gateway", "public_pool":
 		return true
 	}
 	return false
@@ -659,19 +659,7 @@ func (p *KCProvider) readEgressSetOnce(ctx context.Context, r egressResolved, cr
 			}
 			result.proof.Hash = contentHash([]string{result.proof.Hash, proof.Hash})
 		} else {
-			b, err := p.platformBinding(ctx, "device", r.deviceID)
-			if err != nil {
-				return result, err
-			}
-			device, err := p.observeDeviceFromView(ctx, biz.ProviderTarget{Kind: "device", ResourceID: r.deviceID, BindingID: b.BindingID, KnownIdentity: b.ProviderUid, Direct: critical, Requirement: biz.ObservationRequirement{RequestedGeneration: r.target.Requirement.RequestedGeneration}}, result.view)
-			if err != nil {
-				return result, err
-			}
-			result.deviceReady = device.Ready
-			if device.Proof.CollectedAt.Before(result.proof.CollectedAt) {
-				result.proof.CollectedAt = device.Proof.CollectedAt
-			}
-			result.proof.Hash = contentHash([]string{result.proof.Hash, device.Proof.Hash})
+			return result, &biz.ProviderError{Kind: biz.ProviderConflict}
 		}
 	}
 	if result.view != nil && !p.observation.valid(result.view, result.keys) {
@@ -683,9 +671,6 @@ func (p *KCProvider) readEgressSetOnce(ctx context.Context, r egressResolved, cr
 	return result, nil
 }
 func (p *KCProvider) observeEgress(ctx context.Context, t biz.ProviderTarget) (biz.ProviderObservation, error) {
-	if t.Kind == "device" {
-		return p.observeDevice(ctx, t)
-	}
 	r, err := p.resolveEgress(ctx, t)
 	if err != nil {
 		return biz.ProviderObservation{}, err
@@ -913,9 +898,6 @@ func eipBindingConflictAllowed(set egressReadSet, namespace, eip, expectedSnat, 
 	return false
 }
 func (p *KCProvider) EnsureEgress(ctx context.Context, t biz.ProviderTarget) (biz.ProviderObservation, error) {
-	if t.Kind == "device" {
-		return p.ensureDevice(ctx, t)
-	}
 	r, err := p.resolveEgress(ctx, t)
 	if err != nil {
 		return biz.ProviderObservation{}, err
@@ -1022,7 +1004,7 @@ func (p *KCProvider) UpdateEgress(ctx context.Context, t biz.ProviderTarget) (bi
 }
 func (p *KCProvider) deleteEgress(ctx context.Context, t biz.ProviderTarget) error {
 	t.Deleting = true
-	if t.Kind == "device" || t.KnownIdentity == "" {
+	if t.KnownIdentity == "" {
 		return &biz.ProviderError{Kind: biz.ProviderConflict}
 	}
 	t.Direct = true

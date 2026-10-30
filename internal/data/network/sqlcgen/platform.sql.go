@@ -282,7 +282,7 @@ func (q *Queries) CountVlanPools(ctx context.Context, arg CountVlanPoolsParams) 
 const duePlatformCandidate = `-- name: DuePlatformCandidate :one
 SELECT p.resource_id, p.kind, p.cluster_id, p.name, p.description, p.state, p.reason, p.version, p.created_at, p.updated_at, p.observed_at, p.last_operation_id, p.provider_name, p.provider_uid, p.provider_images, p.binding_id, p.pending_action, p.pending_since FROM network_platform_resources p JOIN network_platform_reconciliations r ON r.resource_id=p.resource_id
 WHERE p.cluster_id=$1 AND r.next_run_at<=clock_timestamp() AND (r.lease_until IS NULL OR r.lease_until<=clock_timestamp())
- AND NOT EXISTS(SELECT 1 FROM network_device_adoptions d WHERE d.resource_id=p.resource_id AND d.registration_closed)
+ AND p.kind<>'device'
 ORDER BY r.next_run_at,p.resource_id LIMIT 1 FOR UPDATE OF p SKIP LOCKED
 `
 
@@ -540,29 +540,6 @@ func (q *Queries) GetVlanNetwork(ctx context.Context, arg GetVlanNetworkParams) 
 	return i, err
 }
 
-const insertDeviceAdoption = `-- name: InsertDeviceAdoption :exec
-INSERT INTO network_device_adoptions(resource_id,cluster_id,device_name,inventory_fingerprint,node_inventory) VALUES($1,$2,$3,$4,$5)
-`
-
-type InsertDeviceAdoptionParams struct {
-	ResourceID           string
-	ClusterID            string
-	DeviceName           string
-	InventoryFingerprint string
-	NodeInventory        []byte
-}
-
-func (q *Queries) InsertDeviceAdoption(ctx context.Context, arg InsertDeviceAdoptionParams) error {
-	_, err := q.db.Exec(ctx, insertDeviceAdoption,
-		arg.ResourceID,
-		arg.ClusterID,
-		arg.DeviceName,
-		arg.InventoryFingerprint,
-		arg.NodeInventory,
-	)
-	return err
-}
-
 const insertEgressGateway = `-- name: InsertEgressGateway :exec
 INSERT INTO network_egress_gateways(resource_id,cluster_id) VALUES($1,$2)
 `
@@ -798,27 +775,6 @@ func (q *Queries) InsertPublicPool(ctx context.Context, arg InsertPublicPoolPara
 		arg.VlanNetworkID,
 		arg.UpstreamGatewayIp,
 		arg.ManagedGateway,
-	)
-	return err
-}
-
-const insertVlanNetwork = `-- name: InsertVlanNetwork :exec
-INSERT INTO network_vlan_networks(resource_id,cluster_id,device_id,vlan_id) VALUES($1,$2,$3,$4)
-`
-
-type InsertVlanNetworkParams struct {
-	ResourceID string
-	ClusterID  string
-	DeviceID   string
-	VlanID     int32
-}
-
-func (q *Queries) InsertVlanNetwork(ctx context.Context, arg InsertVlanNetworkParams) error {
-	_, err := q.db.Exec(ctx, insertVlanNetwork,
-		arg.ResourceID,
-		arg.ClusterID,
-		arg.DeviceID,
-		arg.VlanID,
 	)
 	return err
 }
@@ -1350,24 +1306,6 @@ func (q *Queries) RunPlatformOperation(ctx context.Context, arg RunPlatformOpera
 		&i.NextAttemptAt,
 	)
 	return i, err
-}
-
-const saveDeviceProgress = `-- name: SaveDeviceProgress :execrows
-UPDATE network_device_adoptions SET node_progress=$3 WHERE cluster_id=$1 AND resource_id=$2
-`
-
-type SaveDeviceProgressParams struct {
-	ClusterID    string
-	ResourceID   string
-	NodeProgress []byte
-}
-
-func (q *Queries) SaveDeviceProgress(ctx context.Context, arg SaveDeviceProgressParams) (int64, error) {
-	result, err := q.db.Exec(ctx, saveDeviceProgress, arg.ClusterID, arg.ResourceID, arg.NodeProgress)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
 }
 
 const savePlatformImages = `-- name: SavePlatformImages :execrows

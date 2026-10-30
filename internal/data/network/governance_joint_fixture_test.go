@@ -143,7 +143,6 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 	networkv1.RegisterNetworkServiceServer(server, service.NewNetworkService(f.f.n))
 	networkv1.RegisterTenantEgressServiceServer(server, service.NewTenantEgressService(f.f.e))
 	networkv1.RegisterPlatformNetworkServiceServer(server, service.NewPlatformNetworkService(f.f.e))
-	networkv1.RegisterPlatformDeviceRetirementServiceServer(server, service.NewPlatformDeviceRetirementService(f.f.e))
 	networkv1.RegisterPlatformDefaultEgressServiceServer(server, aggregates.defaultService)
 	networkv1.RegisterTenantLoadBalancerServiceServer(server, service.NewTenantLoadBalancerService(f.lbs))
 	serving := make(chan error, 1)
@@ -179,7 +178,7 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 	info := map[string]string{"ProviderURL": cfg.Host, "CertificateName": "tenant-tls", "Namespace": boundNamespace, "Address": listener.Addr().String(), "CAFile": ca, "CertFile": clientCert, "KeyFile": clientKey, "RuntimeDSN": f.runtimeDSN, "TenantID": f.f.tenant, "ParentVPC": f.vpc.ID, "EntrySubnet": f.subnet.ID, "BackendSubnet": f.backendSubnet.ID, "BackendAddress": "10.42.2.2", "SecondBackendAddress": "10.42.2.3"}
 	info["ClusterID"], info["ClusterUID"] = aggregates.identity.ClusterID, aggregates.identity.ClusterUID
 	info["DefaultVPCNamespace"], info["DefaultVPCName"], info["DefaultVPCUID"] = aggregates.identity.Namespace, aggregates.identity.Name, aggregates.identity.UID
-	info["LegacyDeviceID"], info["QualifiedPublicPoolID"], info["GatewayID"] = aggregates.legacyDeviceID, f.f.pool.ID, f.f.pool.Pool.GatewayID
+	info["QualifiedPublicPoolID"], info["GatewayID"] = f.f.pool.ID, f.f.pool.Pool.GatewayID
 	raw, err := json.Marshal(info)
 	if err != nil {
 		t.Fatal(err)
@@ -307,7 +306,7 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 	// references to deleted pool history; it closes allocation and retires the
 	// pool slot. Do not erase those records outside the production contract.
 	var active int
-	if err = f.f.owner.QueryRow(f.f.ctx, `SELECT (SELECT count(*) FROM network_vpcs WHERE state<>'deleted')+(SELECT count(*) FROM network_subnets WHERE state<>'deleted')+(SELECT count(*) FROM network_eips WHERE state<>'deleted')+(SELECT count(*) FROM network_snat_bindings WHERE state<>'deleted')+(SELECT count(*) FROM network_load_balancers WHERE state<>'deleted')+(SELECT count(*) FROM network_attachments WHERE state<>'released')+(SELECT count(*) FROM network_platform_resources WHERE kind<>'device' AND state<>'deleted')+(SELECT count(*) FROM network_virtual_switches WHERE state<>'deleted')+(SELECT count(*) FROM network_default_vpc_egresses WHERE state<>'deleted')+(SELECT count(*) FROM network_legacy_device_retirements WHERE state<>'retired')`).Scan(&active); err != nil {
+	if err = f.f.owner.QueryRow(f.f.ctx, `SELECT (SELECT count(*) FROM network_vpcs WHERE state<>'deleted')+(SELECT count(*) FROM network_subnets WHERE state<>'deleted')+(SELECT count(*) FROM network_eips WHERE state<>'deleted')+(SELECT count(*) FROM network_snat_bindings WHERE state<>'deleted')+(SELECT count(*) FROM network_load_balancers WHERE state<>'deleted')+(SELECT count(*) FROM network_attachments WHERE state<>'released')+(SELECT count(*) FROM network_platform_resources WHERE kind<>'device' AND state<>'deleted')+(SELECT count(*) FROM network_virtual_switches WHERE state<>'deleted')+(SELECT count(*) FROM network_default_vpc_egresses WHERE state<>'deleted')`).Scan(&active); err != nil {
 		t.Fatal(err)
 	}
 	if active != 0 {
@@ -315,7 +314,7 @@ func TestNetworkGovernanceFixture(t *testing.T) {
 	}
 	var pendingDevice int
 	if err = f.f.owner.QueryRow(f.f.ctx, `SELECT count(*) FROM network_platform_resources r JOIN network_platform_operations o ON o.operation_id=r.last_operation_id JOIN network_device_adoptions d ON d.resource_id=r.resource_id WHERE r.kind='device' AND NOT d.retired AND (r.state<>'available' OR o.state<>'succeeded')`).Scan(&pendingDevice); err != nil || pendingDevice != 0 {
-		t.Fatalf("permanent adoption must be fully applied before isolated fixture teardown: %d %v", pendingDevice, err)
+		t.Fatalf("internal switch device must be fully registered before isolated fixture teardown: %d %v", pendingDevice, err)
 	}
 	t.Log("Resource product cleanup pass: no active runtime resources or aggregates; device registration history retained")
 	cancel()

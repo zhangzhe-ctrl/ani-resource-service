@@ -64,8 +64,6 @@ func (p *egressProvider) EnsureEgress(ctx context.Context, t biz.ProviderTarget)
 			v.Egress.TargetGeneration = 1
 		case "public_pool":
 			v.Egress.ProviderImages = append([]string{}, p.images...)
-		case "device":
-			v.Egress.DeviceNodes = t.Egress.Platform.Device.Nodes
 		}
 		p.objects[t.ResourceID] = v
 	}
@@ -98,9 +96,6 @@ type testEgressInfrastructure struct{}
 
 func (testEgressInfrastructure) ValidatePublicPool(context.Context, biz.PublicPoolConfig) error {
 	return nil
-}
-func (testEgressInfrastructure) ListNodeInterfaces(context.Context) (biz.InterfaceInventory, error) {
-	return biz.InterfaceInventory{Fingerprint: strings.Repeat("1", 64), Items: []biz.NodeInterface{{NodeName: "fixture-node", NodeUID: "fixture-uid", Name: "fixture0", Kind: "device", Selectable: true, ObservedAt: time.Now()}}}, nil
 }
 
 type egressFixture struct {

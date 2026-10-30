@@ -31,7 +31,6 @@ type networkJointAggregates struct {
 	steppers       []runtime.Stepper
 	defaultService *service.PlatformDefaultEgressService
 	identity       biz.DefaultVPCIdentity
-	legacyDeviceID string
 }
 
 func wireNetworkJointAggregates(t *testing.T, f *lbAdmissionFixture, provider *data.KCProvider, policy biz.WorkerPolicy) *networkJointAggregates {
@@ -68,8 +67,6 @@ func wireNetworkJointAggregates(t *testing.T, f *lbAdmissionFixture, provider *d
 	if err != nil {
 		t.Fatal(err)
 	}
-	// New independent legacy registrations are closed. An empty legacyDeviceID
-	// advertises that boundary without manufacturing a resource or retirement.
 	return &networkJointAggregates{steppers: []runtime.Stepper{switchWorker, defaultWorker}, defaultService: service.NewPlatformDefaultEgressService(usecase), identity: identity}
 }
 

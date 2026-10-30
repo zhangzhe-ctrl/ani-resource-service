@@ -94,7 +94,7 @@ func (p *Postgres) acceptSwitchVlan(ctx context.Context, i biz.PlatformIntent, a
 		if textValue(device.VirtualSwitchID) != s.ResourceID || textValue(device.SwitchBindingID) != textValue(s.BindingID) {
 			return biz.PlatformResource{}, biz.Fail(biz.ResourceInUse, "device has an active registration owned by another binding")
 		}
-		var frozenDevice []biz.NodeInterface
+		var frozenDevice []biz.PreparedDeviceNode
 		if err = json.Unmarshal(device.NodeInventory, &frozenDevice); err != nil {
 			return biz.PlatformResource{}, databaseFailure(err)
 		}
@@ -173,11 +173,11 @@ func sameSwitchMembers(a, b []biz.VirtualSwitchNode) bool {
 	return true
 }
 
-func sameSwitchDeviceIdentity(frozen, current []biz.NodeInterface) bool {
+func sameSwitchDeviceIdentity(frozen, current []biz.PreparedDeviceNode) bool {
 	if len(frozen) == 0 || len(frozen) != len(current) {
 		return false
 	}
-	identities := map[string]biz.NodeInterface{}
+	identities := map[string]biz.PreparedDeviceNode{}
 	for _, n := range frozen {
 		key := n.NodeUID + "/" + n.Name
 		if n.NodeUID == "" || n.NodeName == "" || n.Name == "" || identities[key].NodeUID != "" {

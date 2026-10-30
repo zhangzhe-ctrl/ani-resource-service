@@ -12,24 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// NIC names are supplied by administrators. Resource retains logical ownership;
-// physical inventory discovery and standalone device adoption are retired.
-func (p *KCProvider) ListNodeInterfaces(context.Context) (biz.InterfaceInventory, error) {
-	return biz.InterfaceInventory{}, biz.Fail(biz.InvalidArgument, "interface discovery has been removed; enter the prepared interface name when creating a layer 2 network")
-}
-func (p *KCProvider) listNodeInterfaces(context.Context, *auditView) (biz.InterfaceInventory, error) {
-	return p.ListNodeInterfaces(context.Background())
-}
-func (p *KCProvider) observeDevice(context.Context, biz.ProviderTarget) (biz.ProviderObservation, error) {
-	return biz.ProviderObservation{}, &biz.ProviderError{Kind: biz.ProviderReject}
-}
-func (p *KCProvider) observeDeviceFromView(ctx context.Context, t biz.ProviderTarget, _ *auditView) (biz.ProviderObservation, error) {
-	return p.observeDevice(ctx, t)
-}
-func (p *KCProvider) ensureDevice(ctx context.Context, t biz.ProviderTarget) (biz.ProviderObservation, error) {
-	return p.observeDevice(ctx, t)
-}
-
 func adoptionMarker(device string) string {
 	return "network.ani.io/device-adoption-" + contentHash(device)[:16]
 }

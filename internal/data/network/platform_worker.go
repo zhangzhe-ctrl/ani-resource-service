@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -160,15 +159,7 @@ func (p *Postgres) finishPlatform(ctx context.Context, w biz.Work, progress biz.
 			return err
 		}
 	}
-	if progress.Egress != nil && len(progress.Egress.DeviceNodes) > 0 && r.Kind == "device" {
-		body, err := json.Marshal(progress.Egress.DeviceNodes)
-		if err != nil {
-			return err
-		}
-		if err = affected(q.SaveDeviceProgress(ctx, sqlcgen.SaveDeviceProgressParams{ClusterID: r.ClusterID, ResourceID: r.ResourceID, NodeProgress: body})); err != nil {
-			return err
-		}
-	}
+
 	if w.ActiveOperation {
 		if err = affected(q.CompletePlatformAttempt(ctx, sqlcgen.CompletePlatformAttemptParams{ResourceID: r.ResourceID, OperationID: w.Operation.ID, Epoch: w.Epoch, State: string(progress.OperationState), Reason: string(progress.Reason), DelayMicros: progress.NextDelay.Microseconds()})); err != nil {
 			return err

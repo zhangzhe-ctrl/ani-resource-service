@@ -28,12 +28,12 @@ func (b *switchBoundary) VirtualSwitchInventory(_ context.Context, cluster strin
 		return biz.VirtualSwitchInventory{}, biz.Fail(biz.DependencyUnavailable, "facts unavailable")
 	}
 	now := time.Now()
-	members := []biz.VirtualSwitchNode{{NodeName: "n1", NodeUID: "uid1", MAC: "02:00:00:00:00:01", Priority: 100, Allocated: true}, {NodeName: "n2", NodeUID: "uid2", MAC: "02:00:00:00:00:02", Priority: 100, Allocated: true}}
-	items := []biz.NodeInterface{}
+	members := []biz.VirtualSwitchNode{{NodeName: "n1", NodeUID: "uid1", Priority: 100, Allocated: true}, {NodeName: "n2", NodeUID: "uid2", Priority: 100, Allocated: true}}
+	items := []biz.PreparedDeviceNode{}
 	for _, n := range members {
-		items = append(items, biz.NodeInterface{NodeName: n.NodeName, NodeUID: n.NodeUID, Name: device, MAC: n.MAC, Kind: "device", Selectable: true, ObservedAt: now})
+		items = append(items, biz.PreparedDeviceNode{NodeName: n.NodeName, NodeUID: n.NodeUID, Name: device})
 	}
-	return biz.VirtualSwitchInventory{Members: members, Fingerprint: strings.Repeat("a", 64), Inventory: biz.InterfaceInventory{Items: items, Fingerprint: strings.Repeat("b", 64), CollectedAt: now}}, nil
+	return biz.VirtualSwitchInventory{Members: members, Fingerprint: strings.Repeat("a", 64), Inventory: biz.PreparedDeviceInventory{Items: items, Fingerprint: strings.Repeat("b", 64), CollectedAt: now}}, nil
 }
 func (b *switchBoundary) InspectVirtualSwitchNode(_ context.Context, sw biz.VirtualSwitch, n biz.VirtualSwitchNode) (biz.VirtualSwitchNode, error) {
 	b.mu.Lock()

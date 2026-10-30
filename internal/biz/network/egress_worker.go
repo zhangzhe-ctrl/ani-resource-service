@@ -18,7 +18,6 @@ type EgressAppliedFacts struct {
 	Address          string
 	AppliedEnabled   *bool
 	TargetGeneration int64
-	DeviceNodes      []NodeInterface
 }
 type EgressResourceProvider interface {
 	EnsureEgress(context.Context, ProviderTarget) (ProviderObservation, error)
@@ -27,7 +26,7 @@ type EgressResourceProvider interface {
 
 func isEgressKind(kind string) bool {
 	switch kind {
-	case "eip", "snat", "device", "vlan", "egress_gateway", "public_pool":
+	case "eip", "snat", "vlan", "egress_gateway", "public_pool":
 		return true
 	}
 	return false

@@ -71,7 +71,7 @@ func virtualSwitchInventory(sw biz.VirtualSwitch, device string, nodes, maps, vl
 }
 
 func virtualSwitchInventoryMode(sw biz.VirtualSwitch, device string, nodes, _, vlans, daemons []unstructured.Unstructured, config *unstructured.Unstructured, _, collected time.Time, _ bool) (biz.VirtualSwitchInventory, error) {
-	result := biz.VirtualSwitchInventory{Inventory: biz.InterfaceInventory{CollectedAt: collected}}
+	result := biz.VirtualSwitchInventory{Inventory: biz.PreparedDeviceInventory{CollectedAt: collected}}
 	if device == "" || config == nil || config.GetUID() == "" || config.GetResourceVersion() == "" || config.GetDeletionTimestamp() != nil || collected.IsZero() {
 		return result, switchUnavailable()
 	}
@@ -97,7 +97,7 @@ func virtualSwitchInventoryMode(sw biz.VirtualSwitch, device string, nodes, _, v
 		if uid == "" || n.GetResourceVersion() == "" {
 			return result, switchConflict()
 		}
-		v := biz.NodeInterface{NodeName: n.GetName(), NodeUID: uid, Name: device}
+		v := biz.PreparedDeviceNode{NodeName: n.GetName(), NodeUID: uid, Name: device}
 		for _, vlan := range vlans {
 			if crString(&vlan, "spec", "devName") != device {
 				continue
@@ -105,9 +105,7 @@ func virtualSwitchInventoryMode(sw biz.VirtualSwitch, device string, nodes, _, v
 			if sw.BindingID == "" || crString(&vlan, "spec", "vClusterName") != sw.GroupName || vlan.GetLabels()[ownerLabel] != "ani-network-service" || vlan.GetLabels()[resourceLabel] == "" {
 				return result, switchConflict()
 			}
-			v.VlanNetworkIDs = append(v.VlanNetworkIDs, vlan.GetLabels()[resourceLabel])
 		}
-		slices.Sort(v.VlanNetworkIDs)
 		result.Inventory.Items = append(result.Inventory.Items, v)
 		result.Members = append(result.Members, biz.VirtualSwitchNode{NodeName: n.GetName(), NodeUID: uid, Priority: 100, Allocated: true, ResourceVersion: n.GetResourceVersion()})
 	}
@@ -115,17 +113,13 @@ func virtualSwitchInventoryMode(sw biz.VirtualSwitch, device string, nodes, _, v
 		return result, switchUnavailable()
 	}
 	slices.SortFunc(result.Members, func(a, b biz.VirtualSwitchNode) int { return strings.Compare(a.NodeUID, b.NodeUID) })
-	slices.SortFunc(result.Inventory.Items, func(a, b biz.NodeInterface) int { return strings.Compare(a.NodeUID, b.NodeUID) })
+	slices.SortFunc(result.Inventory.Items, func(a, b biz.PreparedDeviceNode) int { return strings.Compare(a.NodeUID, b.NodeUID) })
 	stable := slices.Clone(result.Members)
 	for i := range stable {
 		stable[i].ResourceVersion = ""
 	}
 	result.Fingerprint = contentHash(stable)
-	inventory := slices.Clone(result.Inventory.Items)
-	for i := range inventory {
-		inventory[i].ObservedAt = time.Time{}
-	}
-	result.Inventory.Fingerprint = contentHash(inventory)
+	result.Inventory.Fingerprint = contentHash(result.Inventory.Items)
 	return result, nil
 }
 
@@ -179,11 +173,11 @@ func (p *KCProvider) virtualSwitchDeviceState(ctx context.Context, sw biz.Virtua
 }
 
 func inspectVirtualSwitchDeviceState(sw biz.VirtualSwitch, current *biz.VirtualSwitchInventory, device sqlcgen.NetworkDeviceAdoption, nodes []unstructured.Unstructured) (bool, bool, error) {
-	var frozen []biz.NodeInterface
+	var frozen []biz.PreparedDeviceNode
 	if sw.BindingID == "" || json.Unmarshal(device.NodeInventory, &frozen) != nil || len(frozen) == 0 || len(frozen) != len(current.Inventory.Items) {
 		return false, false, switchConflict()
 	}
-	identities := map[string]biz.NodeInterface{}
+	identities := map[string]biz.PreparedDeviceNode{}
 	for _, v := range frozen {
 		if v.NodeUID == "" || v.NodeName == "" || v.Name != device.DeviceName || identities[v.NodeUID].NodeUID != "" {
 			return false, false, switchConflict()
@@ -211,16 +205,16 @@ func inspectVirtualSwitchDeviceState(sw biz.VirtualSwitch, current *biz.VirtualS
 	return configured, wired && configured, nil
 }
 
-func virtualSwitchObservationProof(sw biz.VirtualSwitch, inventory biz.InterfaceInventory, collected time.Time) biz.ObservationProof {
+func virtualSwitchObservationProof(sw biz.VirtualSwitch, inventory biz.PreparedDeviceInventory, collected time.Time) biz.ObservationProof {
 	// This proves the complete KCN/Node collection, not physical NIC readiness.
 	return biz.ObservationProof{CollectedAt: inventory.CollectedAt, CollectionStartedAt: collected, Hash: contentHash(struct {
 		SwitchID, BindingID, Fingerprint string
 		Version                          int64
-		Inventory                        biz.InterfaceInventory
+		Inventory                        biz.PreparedDeviceInventory
 	}{sw.ID, sw.BindingID, sw.MembershipFingerprint, sw.BindingVersion, inventory})}
 }
 
-func switchWiring(n *unstructured.Unstructured, v biz.NodeInterface, group string) bool {
+func switchWiring(n *unstructured.Unstructured, v biz.PreparedDeviceNode, group string) bool {
 	return n != nil && v.Name != "" && slices.Contains(strings.FieldsFunc(n.GetAnnotations()[virtualSwitchGroupPrefix+group], func(r rune) bool { return r == ',' || r == ' ' }), v.Name)
 }
 
@@ -349,22 +343,18 @@ func (p *KCProvider) InspectVirtualSwitchNode(ctx context.Context, sw biz.Virtua
 			if err != nil {
 				return current, readFailure(err)
 			}
-			now, err := p.repository.queries.DatabaseTime(ctx)
-			if err != nil {
-				return current, readFailure(err)
-			}
-			return inspectSwitchNodeCleanup(sw, current, freshNode, nil, freshVlans, nil, now)
+			return inspectSwitchNodeCleanup(sw, current, freshNode, freshVlans)
 		}
 	}
 	return member, switchConflict(fmt.Errorf("virtual switch %s member node %s missing", sw.ID, member.NodeName))
 }
 
-func inspectSwitchNodeCleanup(sw biz.VirtualSwitch, member biz.VirtualSwitchNode, node *unstructured.Unstructured, maps, vlans []unstructured.Unstructured, devices []sqlcgen.NetworkDeviceAdoption, now time.Time) (biz.VirtualSwitchNode, error) {
+func inspectSwitchNodeCleanup(sw biz.VirtualSwitch, member biz.VirtualSwitchNode, node *unstructured.Unstructured, vlans []unstructured.Unstructured) (biz.VirtualSwitchNode, error) {
 	current, err := inspectSwitchNodeObject(sw, member, node)
 	if err != nil || current.Applied || !current.DeleteFenced {
 		return current, err
 	}
-	clean, err := switchNodeCleanupConfirmed(sw, current, node, maps, vlans, devices, now)
+	clean, err := switchNodeCleanupConfirmed(sw, current, node, vlans)
 	if err != nil || !clean {
 		return current, err
 	}
@@ -565,7 +555,7 @@ func (p *KCProvider) patchVirtualSwitchDeletionNode(ctx context.Context, sw biz.
 
 // Completion releases Resource's logical binding after KCN has removed its
 // VLANs and node device acknowledgement. It does not assert physical OVS teardown.
-func switchNodeCleanupConfirmed(sw biz.VirtualSwitch, member biz.VirtualSwitchNode, node *unstructured.Unstructured, _, vlans []unstructured.Unstructured, _ []sqlcgen.NetworkDeviceAdoption, _ time.Time) (bool, error) {
+func switchNodeCleanupConfirmed(sw biz.VirtualSwitch, member biz.VirtualSwitchNode, node *unstructured.Unstructured, vlans []unstructured.Unstructured) (bool, error) {
 	if node == nil || node.GetName() != member.NodeName || string(node.GetUID()) != member.NodeUID || node.GetResourceVersion() == "" || node.GetDeletionTimestamp() != nil {
 		return false, switchUnavailable()
 	}

@@ -1,7 +1,8 @@
 # Egress runtime prerequisites
 
 The Network process registers the tenant and platform gRPC services, including
-virtual switches and legacy device retirement, and runs their durable workers.
+virtual switches, and runs their durable workers. Physical interface discovery
+and standalone device registration, lookup and retirement services are removed.
 The independent default VPC egress service requires the identity guard below.
 The process requires the
 additional reads/writes in [network-rbac.yaml](network-rbac.yaml). Adapt its
@@ -23,7 +24,7 @@ the VlanNetwork. KCN owns interface configuration and takeover annotations.
 Resource no longer deploys a host facts collector or requires a physical inventory
 approval, and it does not write `kcn-config` or legacy device-adoption markers.
 The shared ConfigMap and Node reads remain necessary for KCN observations and
-VPC address admission; Node patch remains necessary for owned group labels.
+platform address pool admission; Node patch remains necessary for owned group labels.
 Application ownership checks still protect other groups and device reservations.
 
 KCN feedback represents the configuration steps that KCN publishes. It does not

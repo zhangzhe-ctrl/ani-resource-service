@@ -58,7 +58,7 @@ func TestVirtualSwitchAdmissionFreezesLogicalIntentWithoutNodeProbe(t *testing.T
 				t.Fatal(v, err)
 			}
 			device := v.Inventory.Items[0]
-			if device.Name != "prepared0" || device.NodeUID != "uid1" || device.MAC != "" || v.Members[0].MAC != "" || device.LinkUp || device.Carrier || device.OVSManaged || device.Selectable {
+			if device.Name != "prepared0" || device.NodeUID != "uid1" {
 				t.Fatal("administrator intent fabricated host probe evidence", v)
 			}
 		})
@@ -79,7 +79,7 @@ func TestVirtualSwitchAdmissionAcceptsKCNManagedDeviceWithoutLegacyOwner(t *test
 
 func TestVirtualSwitchWiringUsesExactKCNDeviceAcknowledgement(t *testing.T) {
 	sw, nodes, _, _, _, _ := switchFixture(t)
-	v := biz.NodeInterface{NodeName: "n1", NodeUID: "uid1", Name: "ens35"}
+	v := biz.PreparedDeviceNode{NodeName: "n1", NodeUID: "uid1", Name: "ens35"}
 	for _, tc := range []struct {
 		feedback string
 		ready    bool
@@ -98,7 +98,7 @@ func TestVirtualSwitchWiringUsesExactKCNDeviceAcknowledgement(t *testing.T) {
 func TestInspectSwitchUnknownRequiresBindingOwner(t *testing.T) {
 	sw, nodes, _, _, _, _ := switchFixture(t)
 	sw.BindingID = "binding1"
-	member := biz.VirtualSwitchNode{NodeName: "n1", NodeUID: "uid1", MAC: "00:11:22:33:44:55", Priority: 100, Allocated: true, Prepared: true, Unknown: true}
+	member := biz.VirtualSwitchNode{NodeName: "n1", NodeUID: "uid1", Priority: 100, Allocated: true, Prepared: true, Unknown: true}
 	labels := nodes[0].GetLabels()
 	labels[virtualSwitchGroupPrefix+sw.GroupName] = "100"
 	nodes[0].SetLabels(labels)
@@ -200,10 +200,16 @@ func TestVirtualSwitchDeviceStateWaitsForEveryNodeAndIgnoresStoredMAC(t *testing
 		labels[virtualSwitchGroupPrefix+sw.GroupName] = "100"
 		nodes[i].SetLabels(labels)
 		nodes[i].SetAnnotations(map[string]string{"networking.kubercloud.com/chassis": "chassis", VirtualSwitchOwnerKey(sw.GroupName): sw.BindingID, virtualSwitchGroupPrefix + sw.GroupName: "ens35"})
-		// Existing persisted MAC values are historical data, not a new gate.
-		accepted.Inventory.Items[i].MAC = "00:11:22:33:44:55"
 	}
 	body, _ := json.Marshal(accepted.Inventory.Items)
+	var historical []map[string]any
+	if err := json.Unmarshal(body, &historical); err != nil {
+		t.Fatal(err)
+	}
+	for _, node := range historical {
+		node["MAC"], node["Management"], node["OVSManaged"] = "historical-mac", true, true
+	}
+	body, _ = json.Marshal(historical)
 	device := sqlcgen.NetworkDeviceAdoption{DeviceName: "ens35", NodeInventory: body}
 	// Existing switch-owned devices can remain in KCN's prepared device list.
 	_ = unstructured.SetNestedField(config.Object, "ens35", "data", "managedDevices")
@@ -220,7 +226,7 @@ func TestVirtualSwitchDeviceStateWaitsForEveryNodeAndIgnoresStoredMAC(t *testing
 			t.Fatal(feedback, configured, ready, err)
 		}
 	}
-	changed := append([]biz.NodeInterface(nil), accepted.Inventory.Items...)
+	changed := append([]biz.PreparedDeviceNode(nil), accepted.Inventory.Items...)
 	changed[1].NodeUID = "replacement-uid"
 	body, _ = json.Marshal(changed)
 	device.NodeInventory = body

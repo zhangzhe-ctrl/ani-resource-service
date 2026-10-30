@@ -1,20 +1,20 @@
 # kc 公网出网操作手册
 
-日期：2026-09-10。面向 Network 平台管理员及租户初始化操作者。第 0 节是产品接口操作顺序；后续 kc 命令是 Provider 字段与只读核对参考，不可用于绕过产品链路验收。
+日期：2026-10-30（产品入口按手填网卡流程更新；底层 kc 命令保留原版本参考）。面向 Network 平台管理员及租户初始化操作者。第 0 节是产品接口操作顺序；后续 kc 命令是 Provider 字段与只读核对参考，不可用于绕过产品链路验收。
 
 本文以 kc 源码 `a2245883eb2b46a998f041feb3ad0ed3f6cf7c60` 为准；Network 输入为 `e481e968d3cc2f17bc4c6a736c438428519b09a0`。旧附件只作示意。本文是 [租户 VPC SNAT 方案](specs/vpc-snat.md)的操作附录；产品规则以方案为准，当前执行结果见[执行状态](execution/status.md)。
 
-**2026-09-10 实测补充：Overlay 原始新建/重新启用流程失败，kc 新网关缓存漏填 serviceIP，ER 源路由下一跳为空；手工只补测试下一跳后的双 worker HTTPS 对照成功。Underlay 尚未实测。** 完整记录见 [Overlay 实测](execution/records/KC-OVERLAY-20260910T114200Z/README.md)。后续原始流程验收须先取得修复后的 kc 版本；不能照此手册创建出 Bound CR 就宣称可以出网。本轮 Network 实现未重跑原生 Overlay 数据面；用户明确要求只标注 kc 缺陷，不修复或升级 kc。
+**2026-09-10 历史实测记录：Overlay 原始新建/重新启用流程失败，kc 新网关缓存漏填 serviceIP，ER 源路由下一跳为空；手工只补测试下一跳后的双 worker HTTPS 对照成功。当时 Underlay 尚未实测；2026-10-30 的 Boss 删除/重建控制面结果见执行状态。** 完整记录见 [Overlay 实测](execution/records/KC-OVERLAY-20260910T114200Z/README.md)。后续原始流程验收须先取得修复后的 kc 版本；不能照此手册创建出 Bound CR 就宣称可以出网。本轮 Network 实现未重跑原生 Overlay 数据面；用户明确要求只标注 kc 缺陷，不修复或升级 kc。
 
 Network 的 [原 RPC](../api/network/v1/network.proto) 提供 VPC/Subnet/Attachment；[出网 RPC](../api/network/v1/egress.proto) 增加独立平台管理与租户 EIP/SNAT 服务。正式运行进程已注册服务，出网权限默认拒绝，需要可信入口注入授权上下文；受控测试通过不代表真实 IAM 或 ANI Gateway 已接通。不要手建 EIP/Snat 冒充产品受理结果，不修改已有对象的映射或归属标签。
 
 ## 0. Network 产品接口操作顺序
 
-所有操作在明确的集群、独占测试服务/数据库和可信授权入口上执行。部署所需的 [RBAC 与节点事实采集器](../deployments/egress/README.md) 独立说明权限、节点 UID 固定和停止方式。普通 RPC 请求中的 `target_tenant_id` 不能授予身份；未提供时使用可信租户上下文，指定其他租户需要单独代操作许可。`PlatformNetworkService` 的管理员权限不自动包含租户代操作权限。当前 ANI Gateway/OpenAPI 接线不在本轮。
+所有操作在明确的集群、独占测试服务/数据库和可信授权入口上执行。部署所需的 [RBAC 与 KCN 节点反馈](../deployments/egress/README.md) 独立说明权限、节点 UID 固定和停止方式。普通 RPC 请求中的 `target_tenant_id` 不能授予身份；未提供时使用可信租户上下文，指定其他租户需要单独代操作许可。`PlatformNetworkService` 的管理员权限不自动包含租户代操作权限。当前 ANI Gateway/OpenAPI 接线不在本轮。
 
-1. **读取事实。** Underlay 管理员调用 `ListNodeInterfaces`，记录完整 `inventory_fingerprint`、节点 UID、事实时间和不可用原因；本轮只做自动测试，不能对真实网卡执行下一步。Overlay 跳过网卡和 VLAN 接管。
-2. **平台初始化。** Underlay 调用 `AdoptNetworkDevice`：空闲口执行接管；已由安装器加入 managedDevices 且 kc 接管就绪的口，核验后登记并复用，保留原物理配置。等待 `GetNetworkDevice` 的各节点进度，再调用 `CreateVlanNetwork`，其中 `vlan_id=0` 是 untagged。两种模式都调用 `CreateEgressGateway`，等待资源 `available` 且观测新鲜，再调用 `CreatePublicAddressPool`。请求使用产品网关/VLAN ID，不能提交底层 namespace 或 Public CR 名。设备条件与归属规则见[方案 4.1](specs/vpc-snat.md#41-underlay-的网卡发现与二层网络)。
-3. **记录验收并开放。** `GetPublicAddressPool` 返回当前 `topology_fingerprint` 与 `observed_provider_images`。具备该池/网关配置、实际镜像和模式范围的有效现场验收依据后，管理员调用 `RecordPublicPoolVerification`，提供完整源码 revision、实际 SHA-256 镜像 digest、该 fingerprint、证据引用、范围、验证及到期时间。再以最新 `expected_version` 和独立幂等键调用 `SetPublicPoolAllocationEnabled(enabled=true)`，并调用 `SetDefaultPublicPool`。只有 CR Ready 或历史手改 OVN 对照结果时，不能填写虚构验收记录；新池保持关闭。受控测试中的 fixture 证据只适用于该测试依赖。
+1. **准备网卡。** Underlay 管理员在线下准备各目标节点同名接口、交换机和 VLAN，创建虚拟交换机后手填 `device_name`、`cluster_id`、`virtual_switch_id` 和 `vlan_id`。平台不再提供网卡发现、独立设备登记或退出接口，不收集 MAC、carrier、管理路由或 OVS 库存。Overlay 跳过网卡与 VLAN 接管。
+2. **平台初始化。** 调用 `CreateVlanNetwork` 并等待 KCN 对应组在完整节点集合反馈该接口名，`vlan_id=0` 表示 untagged。再创建公网池；未指定公网网关时由平台创建和管理网关，也可按现有合同指定网关。请求使用产品交换机、VLAN 或网关 ID，不能提交底层 namespace 或 CR 名。Resource 保留身份、权限、持久化、幂等与逻辑占用，KCN 执行网卡接管，详见[方案 4.1](specs/vpc-snat.md#41-underlay-的网卡发现与二层网络)。
+3. **开放分配。** 池、网关及必要二层网络就绪且观测有效后，以最新 `expected_version` 和独立幂等键调用 `SetPublicPoolAllocationEnabled(enabled=true)`；需要供新租户 EIP 使用时设置 `SetDefaultPublicPool`。公有网络不要求先登记手工验收证据；开放分配与实际出网流量验收分别报告。
 4. **租户私网与地址。** 通过既有 `NetworkService` 创建 VPC/Subnet；调用 `TenantEgressService.CreateEIP` 只提供名称、描述和幂等键。保存返回的产品 ID 与 operation ID，以 `GetEIP` 等待已分配地址。租户接口不暴露池配置，分配重试始终使用首次持久选定的池。
 5. **绑定与启停。** `BindVPCSnat(vpc_id,eip_id,idempotency_key)` 返回不可变 binding ID。用 `GetVPCSnatBinding` 等待 `applied_enabled=true`；`SetVPCSnatEnabled` 带该 ID、目标 enabled、最新 version 和永久幂等键。受理时 applied 值为空；停用完成后为显式 false，绑定及 EIP 继续占用。父 EIP 的持续观察也须恢复就绪后再发起重新启用；过渡中可返回出口未就绪。
 6. **解绑与释放。** `DeleteVPCSnatBinding(binding_id)` 后等待资源 deleted，确认 EIP 回到 unbound；需要释放地址时再 `DeleteEIP(eip_id)`。关闭池分配不会删除已有 EIP。平台退役依次关闭分配、释放全部 EIP/其他消费者、删除池、删除网关或 VLAN。VLAN 删除不自动归还物理网卡；部分接管不覆盖共享 `managedDevices` 回滚。
@@ -27,8 +27,8 @@ Network 的 [原 RPC](../api/network/v1/network.proto) 提供 VPC/Subnet/Attachm
 
 | 用户操作 | kc 对象或配置 | 作用域及归属 |
 |---|---|---|
-| 管理员查询候选网卡 | 节点实际 link/address/route/OVS 事实；ListNodeInterfaces | 平台；按节点返回 |
-| 管理员接管物理网卡 | `kcn-system/kcn-config.data.managedDevices` | 平台系统配置 |
+| 管理员手填已准备网卡 | 交换机完整 Node UID/组归属与逻辑设备占用 | 平台；无宿主事实发现接口 |
+| KCN 接管网卡 | Node 对应组标签和设备反馈、`VlanNetwork` | Resource 仅管理本产品组；KCN 执行物理接管 |
 | 管理员创建 VLAN 二层网络 | `VlanNetwork`，`vlanID: 0–4094` | Cluster；不填 namespace |
 | 管理员配置公网网关 | `EIPGateway`，`scope: Public` | Cluster；不填 namespace |
 | 管理员创建公网地址池 | `Subnet`，`type: Public` | 固定 `kcn-system` |
@@ -103,88 +103,16 @@ kc get subnets.networking.kubercloud.com sys-service -n "$KC_SYSTEM_NS" -o yaml
 
 本文示例中的 `198.51.100.0/24`、`203.0.113.0/24` 仅用于解释字段，属于文档地址，不可作为真实公网输入。命令将真实出口地址变量留空，填写完成后才能继续。
 
-## 3. 平台管理员：VLAN 模式的网卡查询和二层初始化
+## 3. 平台管理员：手填网卡与二层初始化
 
-Overlay 模式跳过本节，不为了 Overlay 公网再接管一块物理网卡。
+Overlay 模式跳过本节。Underlay 管理员先在线下确认目标节点同名接口和交换机/VLAN 配置，再通过 Boss 或产品接口创建交换机和二层网络。
 
-### 3.1 查询候选网卡
+1. 调用 `CreateVirtualSwitch(name, idempotency_key)` 获取交换机 ID。
+2. 调用 `CreateVlanNetwork`，填写名称、目标集群、交换机 ID、已准备的网卡名及 VLAN ID；不传物理库存 fingerprint，也不单独创建或登记设备。
+3. 用 `GetVlanNetwork` 观察进度。Resource 固定节点 UID、组归属与逻辑占用，KCN 查找接口并接管；只有对应组精确网卡反馈和 VLAN 状态满足条件时才推进可用。
+4. 退役时先清理下游消费者与公网池，再删除二层网络和无引用的交换机。产品删除确认逻辑占用释放，不将其作为 KCN 已拆除 OVS 桥的证明。
 
-管理员 ListNodeInterfaces 返回：节点、接口名、接口类型、MAC、MTU、链路状态、IP 地址、master/OVS 占用、是否已被 kc 接管、是否可选、不可选原因、观测时间。不要把 `Node.status.addresses` 当成完整网卡列表。
-
-在每个 Kubernetes 节点的宿主网络环境读取以下事实；kind 场景应进入相应 kind 节点的网络环境，不能拿外层 VM 的同名网卡当成节点网卡：
-
-```bash
-ip -j -d link show
-ip -j address show
-ip -j route show table all
-ovs-vsctl show
-ovs-vsctl get Open_vSwitch . external_ids:ovn-bridge-mappings
-```
-
-最后两条在该节点实际的 OVS 运维环境执行；有些部署需进入 OVS 容器。不要假定 API 所在机器就是网络节点。
-
-| 筛选项 | 代码实际要求 / 产品补充检查 |
-|---|---|
-| 同名网卡 | 当前配置对所有节点生效，没有本流程可用的 VlanNetwork nodeSelector；按全部节点的同名候选交集选择。 |
-| 地址占用 | kc 的 `HasIPAddress` 拒绝有非 link-local IP 的接口。实际实现跳过 `IsLinkLocalUnicast()` 地址，不能仅按注释理解为只跳过 IPv6。 |
-| 链路 | kc 会尝试将接口设为 UP；UP 不证明交换机链路或 VLAN 已正确连接，还应检查 carrier 和交换机配置。 |
-| 已有用途 | 产品应排除 loopback、管理/默认路由接口、隧道接口、veth，以及被其他 bridge/bond/系统占用的候选；这些是产品接管检查，不能宣称 kc 已完整实现。 |
-| 已由 kc 接管 | 是二层网络的正常前置状态；核对 `br-<devName>`、kc 标记、bridge mapping、节点身份和现有占用后，经同一管理员 API 登记使用，保留已有物理配置。 |
-
-[kc 网卡接管][kc-device-adopt]、[地址过滤][kc-device-filter]。当前 `networking.kubercloud.com/managed_netdevs` annotation 只反映已接管设备的布尔状态，不是完整候选网卡发现接口。
-
-### 3.2 将选定网卡加入 managedDevices
-
-```bash
-KC_DEV=''       # 例如 ens224，必须在全部目标节点存在且满足上表
-KC_VLAN_ID=''   # 0：不打 tag；1–4094：交换机已配置的 VLAN ID
-KC_VLAN='public-uplink'
-: "${KC_DEV:?先选择网卡}"
-: "${KC_VLAN_ID:?填写 0 到 4094 的 VLAN ID}"
-
-kc get configmap kcn-config -n "$KC_SYSTEM_NS" -o json > kcn-config.before.json
-jq --arg dev "$KC_DEV" '
-  def trim: gsub("^\\s+|\\s+$"; "");
-  {metadata:{resourceVersion:.metadata.resourceVersion},
-   data:{managedDevices:([((.data.managedDevices // "") | split(",")[] | trim | select(length>0)), $dev] | unique | join(","))}}
-' kcn-config.before.json > managed-devices.patch.json
-cat managed-devices.patch.json
-kc patch configmap kcn-config -n "$KC_SYSTEM_NS" \
-  --type=merge --patch-file=managed-devices.patch.json
-```
-
-这一步保留其他受管网卡及其他 ConfigMap 配置；`resourceVersion` 冲突时重新读取、核对后生成 patch。不要把 `managedDevices` 覆盖成只剩新网卡，也不要直接重放旧备份覆盖其他管理员的新配置。
-
-查看所有节点反馈，并在节点 OVS 环境确认 `br-$KC_DEV`、物理口以及 `net.$KC_DEV:br-$KC_DEV` mapping：
-
-```bash
-kc get nodes -o json | jq '.items[] | {
-  node:.metadata.name,
-  managed:(.metadata.annotations["networking.kubercloud.com/managed_netdevs"] // "{}" | fromjson)
-}'
-```
-
-### 3.3 创建 VlanNetwork
-
-```bash
-cat > vlan-network.yaml <<EOF
-apiVersion: networking.kubercloud.com/v1
-kind: VlanNetwork
-metadata:
-  name: ${KC_VLAN}
-spec:
-  vlanID: ${KC_VLAN_ID}
-  devName: ${KC_DEV}
-EOF
-kc apply --dry-run=server -f vlan-network.yaml
-kc apply -f vlan-network.yaml
-kc wait --for=condition=Ready --timeout=180s \
-  "vlannetworks.networking.kubercloud.com/$KC_VLAN"
-kc get vlannetworks.networking.kubercloud.com "$KC_VLAN" -o json \
-  | jq '{spec,status}'
-```
-
-要求 `Valid=True`、`Ready=True`、`notReadyNodes` 为空。`vlanID` 与 `devName` 不可变；一个 VlanNetwork 当前只允许一个 Subnet 占用。同一物理接口可承载不同 VLAN，但相同物理口和相同 VLAN ID 不应创建多个互相冲突的独立出口网络。[二层 schema][kc-vlan-type]、[子网独占绑定][kc-vlan-bind]。
+平台不提供候选网卡查询、独立设备登记或设备退出 API；Resource 不修改共享 `managedDevices`。接口名、IP、物理接线和上游连通性由管理员准备，节点反馈与 Provider 状态由 KCN 提供。完整规则见[虚拟交换机与二层网络流程](specs/kcn-v09-underlay-flow.md)。
 
 ## 4. 平台管理员：先创建 Public EIPGateway
 

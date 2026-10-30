@@ -164,12 +164,12 @@ Underlay 等待 Subnet `Valid/Initialized/Ready=True`，并要求 `underlayState
 
 | 能力/RPC 草案 | 关键输入与输出 |
 |---|---|
-| `ListNodeInterfaces` | 按节点和接管状态过滤，返回第 4.1 节的事实、不可选原因及时间；不等同于 Node.status.addresses |
-| `AdoptNetworkDevice` | 明确接口名、完整事实 fingerprint、幂等键；接管空闲口或核验登记 kc 已受管口，异步报告各节点结果；详见 4.1 |
-| `CreateVlanNetwork / Get / List / Delete` | devName、vlanID；接管前置及唯一占用检查 |
+| `CreateVlanNetwork / Get / List / Delete` | 目标集群、交换机、手填 device_name 和 VLAN ID；KCN 接管、完整节点身份和逻辑占用检查 |
 | `CreateEgressGateway / Get / List / Delete` | 平台网关名称；本期固定 Public/Host，内部字段隐藏于租户 |
 | `CreatePublicAddressPool / Get / List / Delete` | 第 4.3 节输入；异步资源状态；池拓扑、容量原因仅管理员可见 |
 | `SetPublicPoolAllocationEnabled / SetDefaultPublicPool` | 指定平台池 ID、并发版本和幂等键；开放须有对应模式验收依据，切换不迁移已分配 EIP |
+
+网卡发现、独立设备登记/查询和退出 RPC/HTTP 入口已移除；交换机内部设备只保留逻辑身份与占用，不对管理员暴露独立登记步骤。
 
 这些能力使用独立管理员 service/授权面及 `GetPlatformOperation` 查询，不向现有租户 `CreateSubnet` 添加 `type=Public` 绕过所有权。平台记录、操作、幂等使用平台作用域；不往租户表塞空/虚构 tenant_id 以绕过非空约束。最小写权限与网卡接管能力留在基础设施 adapter，不把节点 root 能力暴露给普通租户服务入口。
 

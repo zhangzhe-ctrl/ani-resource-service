@@ -439,9 +439,6 @@ const (
 	PlatformNetworkService_GetVirtualSwitch_FullMethodName                 = "/network.v1.PlatformNetworkService/GetVirtualSwitch"
 	PlatformNetworkService_ListVirtualSwitches_FullMethodName              = "/network.v1.PlatformNetworkService/ListVirtualSwitches"
 	PlatformNetworkService_DeleteVirtualSwitch_FullMethodName              = "/network.v1.PlatformNetworkService/DeleteVirtualSwitch"
-	PlatformNetworkService_ListNodeInterfaces_FullMethodName               = "/network.v1.PlatformNetworkService/ListNodeInterfaces"
-	PlatformNetworkService_AdoptNetworkDevice_FullMethodName               = "/network.v1.PlatformNetworkService/AdoptNetworkDevice"
-	PlatformNetworkService_GetNetworkDevice_FullMethodName                 = "/network.v1.PlatformNetworkService/GetNetworkDevice"
 	PlatformNetworkService_CreateVlanNetwork_FullMethodName                = "/network.v1.PlatformNetworkService/CreateVlanNetwork"
 	PlatformNetworkService_GetVlanNetwork_FullMethodName                   = "/network.v1.PlatformNetworkService/GetVlanNetwork"
 	PlatformNetworkService_ListVlanNetworks_FullMethodName                 = "/network.v1.PlatformNetworkService/ListVlanNetworks"
@@ -479,9 +476,6 @@ type PlatformNetworkServiceClient interface {
 	GetVirtualSwitch(ctx context.Context, in *GetVirtualSwitchRequest, opts ...grpc.CallOption) (*GetVirtualSwitchResponse, error)
 	ListVirtualSwitches(ctx context.Context, in *ListVirtualSwitchesRequest, opts ...grpc.CallOption) (*ListVirtualSwitchesResponse, error)
 	DeleteVirtualSwitch(ctx context.Context, in *DeleteVirtualSwitchRequest, opts ...grpc.CallOption) (*DeleteVirtualSwitchResponse, error)
-	ListNodeInterfaces(ctx context.Context, in *ListNodeInterfacesRequest, opts ...grpc.CallOption) (*ListNodeInterfacesResponse, error)
-	AdoptNetworkDevice(ctx context.Context, in *AdoptNetworkDeviceRequest, opts ...grpc.CallOption) (*AdoptNetworkDeviceResponse, error)
-	GetNetworkDevice(ctx context.Context, in *GetNetworkDeviceRequest, opts ...grpc.CallOption) (*GetNetworkDeviceResponse, error)
 	CreateVlanNetwork(ctx context.Context, in *CreateVlanNetworkRequest, opts ...grpc.CallOption) (*CreateVlanNetworkResponse, error)
 	GetVlanNetwork(ctx context.Context, in *GetVlanNetworkRequest, opts ...grpc.CallOption) (*GetVlanNetworkResponse, error)
 	ListVlanNetworks(ctx context.Context, in *ListVlanNetworksRequest, opts ...grpc.CallOption) (*ListVlanNetworksResponse, error)
@@ -550,36 +544,6 @@ func (c *platformNetworkServiceClient) DeleteVirtualSwitch(ctx context.Context, 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteVirtualSwitchResponse)
 	err := c.cc.Invoke(ctx, PlatformNetworkService_DeleteVirtualSwitch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *platformNetworkServiceClient) ListNodeInterfaces(ctx context.Context, in *ListNodeInterfacesRequest, opts ...grpc.CallOption) (*ListNodeInterfacesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListNodeInterfacesResponse)
-	err := c.cc.Invoke(ctx, PlatformNetworkService_ListNodeInterfaces_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *platformNetworkServiceClient) AdoptNetworkDevice(ctx context.Context, in *AdoptNetworkDeviceRequest, opts ...grpc.CallOption) (*AdoptNetworkDeviceResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdoptNetworkDeviceResponse)
-	err := c.cc.Invoke(ctx, PlatformNetworkService_AdoptNetworkDevice_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *platformNetworkServiceClient) GetNetworkDevice(ctx context.Context, in *GetNetworkDeviceRequest, opts ...grpc.CallOption) (*GetNetworkDeviceResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetNetworkDeviceResponse)
-	err := c.cc.Invoke(ctx, PlatformNetworkService_GetNetworkDevice_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -837,9 +801,6 @@ type PlatformNetworkServiceServer interface {
 	GetVirtualSwitch(context.Context, *GetVirtualSwitchRequest) (*GetVirtualSwitchResponse, error)
 	ListVirtualSwitches(context.Context, *ListVirtualSwitchesRequest) (*ListVirtualSwitchesResponse, error)
 	DeleteVirtualSwitch(context.Context, *DeleteVirtualSwitchRequest) (*DeleteVirtualSwitchResponse, error)
-	ListNodeInterfaces(context.Context, *ListNodeInterfacesRequest) (*ListNodeInterfacesResponse, error)
-	AdoptNetworkDevice(context.Context, *AdoptNetworkDeviceRequest) (*AdoptNetworkDeviceResponse, error)
-	GetNetworkDevice(context.Context, *GetNetworkDeviceRequest) (*GetNetworkDeviceResponse, error)
 	CreateVlanNetwork(context.Context, *CreateVlanNetworkRequest) (*CreateVlanNetworkResponse, error)
 	GetVlanNetwork(context.Context, *GetVlanNetworkRequest) (*GetVlanNetworkResponse, error)
 	ListVlanNetworks(context.Context, *ListVlanNetworksRequest) (*ListVlanNetworksResponse, error)
@@ -885,15 +846,6 @@ func (UnimplementedPlatformNetworkServiceServer) ListVirtualSwitches(context.Con
 }
 func (UnimplementedPlatformNetworkServiceServer) DeleteVirtualSwitch(context.Context, *DeleteVirtualSwitchRequest) (*DeleteVirtualSwitchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteVirtualSwitch not implemented")
-}
-func (UnimplementedPlatformNetworkServiceServer) ListNodeInterfaces(context.Context, *ListNodeInterfacesRequest) (*ListNodeInterfacesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListNodeInterfaces not implemented")
-}
-func (UnimplementedPlatformNetworkServiceServer) AdoptNetworkDevice(context.Context, *AdoptNetworkDeviceRequest) (*AdoptNetworkDeviceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AdoptNetworkDevice not implemented")
-}
-func (UnimplementedPlatformNetworkServiceServer) GetNetworkDevice(context.Context, *GetNetworkDeviceRequest) (*GetNetworkDeviceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetNetworkDevice not implemented")
 }
 func (UnimplementedPlatformNetworkServiceServer) CreateVlanNetwork(context.Context, *CreateVlanNetworkRequest) (*CreateVlanNetworkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateVlanNetwork not implemented")
@@ -1057,60 +1009,6 @@ func _PlatformNetworkService_DeleteVirtualSwitch_Handler(srv interface{}, ctx co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PlatformNetworkServiceServer).DeleteVirtualSwitch(ctx, req.(*DeleteVirtualSwitchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _PlatformNetworkService_ListNodeInterfaces_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListNodeInterfacesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PlatformNetworkServiceServer).ListNodeInterfaces(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PlatformNetworkService_ListNodeInterfaces_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlatformNetworkServiceServer).ListNodeInterfaces(ctx, req.(*ListNodeInterfacesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _PlatformNetworkService_AdoptNetworkDevice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdoptNetworkDeviceRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PlatformNetworkServiceServer).AdoptNetworkDevice(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PlatformNetworkService_AdoptNetworkDevice_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlatformNetworkServiceServer).AdoptNetworkDevice(ctx, req.(*AdoptNetworkDeviceRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _PlatformNetworkService_GetNetworkDevice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetNetworkDeviceRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PlatformNetworkServiceServer).GetNetworkDevice(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PlatformNetworkService_GetNetworkDevice_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlatformNetworkServiceServer).GetNetworkDevice(ctx, req.(*GetNetworkDeviceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1569,18 +1467,6 @@ var PlatformNetworkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteVirtualSwitch",
 			Handler:    _PlatformNetworkService_DeleteVirtualSwitch_Handler,
-		},
-		{
-			MethodName: "ListNodeInterfaces",
-			Handler:    _PlatformNetworkService_ListNodeInterfaces_Handler,
-		},
-		{
-			MethodName: "AdoptNetworkDevice",
-			Handler:    _PlatformNetworkService_AdoptNetworkDevice_Handler,
-		},
-		{
-			MethodName: "GetNetworkDevice",
-			Handler:    _PlatformNetworkService_GetNetworkDevice_Handler,
 		},
 		{
 			MethodName: "CreateVlanNetwork",

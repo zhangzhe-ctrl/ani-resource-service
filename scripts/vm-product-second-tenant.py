@@ -186,8 +186,8 @@ def inspect_before_post(g, state, kind, token):
         require(isinstance(available, list), 'VPC CIDR conflict facts unavailable')
         inventory = vpcs(g, token)
         target = ipaddress.ip_network(VPC_CIDR)
-        # Public presets perform the authoritative platform/System/ServiceCIDR/
-        # fresh node facts checks. Never edit Resource presets to make this pass.
+        # Public presets enforce the configured VPC allowlist and persisted pool
+        # conflicts. Never edit Resource presets to make this pass.
         facts = {'at': now(), 'offered_cidrs': available, 'inventory_source': 'tenant-scoped public VPC pagination'}
     else:
         inventory = subnets(g, token, state['vpc']['resource_id'])

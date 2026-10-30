@@ -221,9 +221,9 @@ func TestGovernanceAllowlistMatrix(t *testing.T) {
 		}
 	}
 	for _, method := range []string{
-		"/network.v1.PlatformNetworkService/ListNodeInterfaces",
+		"/network.v1.PlatformNetworkService/ListVirtualSwitches",
 		"/network.v1.PlatformNetworkService/CreatePublicAddressPool",
-		"/network.v1.PlatformNetworkService/AdoptNetworkDevice",
+		"/network.v1.PlatformNetworkService/CreateVlanNetwork",
 		"/network.v1.NetworkService/PrepareAttachment",
 		"/network.v1.UnknownService/Anything",
 	} {

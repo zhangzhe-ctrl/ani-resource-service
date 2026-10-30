@@ -32,21 +32,6 @@ func poolConfig(p sqlcgen.NetworkPublicPool) biz.PublicPoolConfig {
 func platformSnapshot(ctx context.Context, q *sqlcgen.Queries, r sqlcgen.NetworkPlatformResource) (biz.PlatformResource, error) {
 	v := platformMetadata(r)
 	switch r.Kind {
-	case "device":
-		d, err := q.GetDeviceAdoption(ctx, sqlcgen.GetDeviceAdoptionParams{ClusterID: r.ClusterID, ResourceID: r.ResourceID})
-		if err != nil {
-			return v, databaseFailure(err)
-		}
-		config := biz.DeviceConfig{DeviceName: d.DeviceName, InventoryFingerprint: d.InventoryFingerprint}
-		if err = json.Unmarshal(d.NodeProgress, &config.Nodes); err != nil {
-			return v, databaseFailure(err)
-		}
-		if len(config.Nodes) == 0 {
-			if err = json.Unmarshal(d.NodeInventory, &config.Nodes); err != nil {
-				return v, databaseFailure(err)
-			}
-		}
-		v.Device = &config
 	case "vlan":
 		d, err := q.GetVlanNetwork(ctx, sqlcgen.GetVlanNetworkParams{ClusterID: r.ClusterID, ResourceID: r.ResourceID})
 		if err != nil {
@@ -205,41 +190,13 @@ func (p *Postgres) AcceptPlatform(ctx context.Context, i biz.PlatformIntent, a b
 		return p.acceptSwitchVlan(ctx, i, a, freshness)
 	}
 	if i.Kind == "create_vlan" {
-		if _, v09 := p.egressInfrastructure.(biz.VirtualSwitchInfrastructure); v09 {
-			return biz.PlatformResource{}, biz.Fail(biz.InvalidArgument, "new VLAN creation requires a virtual switch; legacy exact replay remains supported")
-		}
+		return biz.PlatformResource{}, biz.Fail(biz.InvalidArgument, "new VLAN creation requires a virtual switch; legacy exact replay remains supported")
 	}
-	if i.Kind == "adopt_device" || i.Kind == "create_public_pool" || i.Kind == "create_intranet_pool" {
+	if i.Kind == "create_public_pool" || i.Kind == "create_intranet_pool" {
 		if p.egressInfrastructure == nil {
 			return biz.PlatformResource{}, biz.Fail(biz.DependencyUnavailable, "platform facts are unavailable")
 		}
-		if i.Kind == "adopt_device" {
-			inventory, err := p.egressInfrastructure.ListNodeInterfaces(ctx)
-			if err != nil {
-				return biz.PlatformResource{}, err
-			}
-			if inventory.Fingerprint != i.Device.InventoryFingerprint {
-				return biz.PlatformResource{}, biz.Fail(biz.ResourceBusy, "node inventory changed")
-			}
-			nodes := map[string]bool{}
-			selected := map[string]bool{}
-			d := *i.Device
-			d.Nodes = nil
-			for _, v := range inventory.Items {
-				nodes[v.NodeUID] = true
-				if v.Name == d.DeviceName {
-					if !v.Selectable || selected[v.NodeUID] {
-						return biz.PlatformResource{}, biz.Fail(biz.ResourceInUse, "device is unavailable on a node")
-					}
-					d.Nodes = append(d.Nodes, v)
-					selected[v.NodeUID] = true
-				}
-			}
-			if len(nodes) == 0 || len(selected) != len(nodes) {
-				return biz.PlatformResource{}, biz.Fail(biz.DependencyUnavailable, "device facts must cover all nodes")
-			}
-			i.Device = &d
-		} else if i.Kind == "create_intranet_pool" {
+		if i.Kind == "create_intranet_pool" {
 			infra, ok := p.egressInfrastructure.(biz.IntranetPoolInfrastructure)
 			if !ok {
 				return biz.PlatformResource{}, biz.Fail(biz.DependencyUnavailable, "intranet infrastructure facts are unavailable")
@@ -277,10 +234,6 @@ func (p *Postgres) AcceptPlatform(ctx context.Context, i biz.PlatformIntent, a b
 	}
 	kind, prefix := "", ""
 	switch i.Kind {
-	case "adopt_device":
-		kind, prefix = "device", "device"
-	case "create_vlan":
-		kind, prefix = "vlan", "vlan"
 	case "create_egress_gateway":
 		kind, prefix = "egress_gateway", "egw"
 	case "create_public_pool", "create_intranet_pool":
@@ -298,11 +251,7 @@ func (p *Postgres) AcceptPlatform(ctx context.Context, i biz.PlatformIntent, a b
 		}
 		return nil
 	}
-	if i.Vlan != nil {
-		if err = checkParent("device", i.Vlan.DeviceID); err != nil {
-			return biz.PlatformResource{}, err
-		}
-	}
+
 	if i.Pool != nil {
 		if i.Pool.Scope != "intranet" && i.Pool.GatewayID != "" {
 			if _, ownerErr := q.ManagedGatewayOwner(ctx, sqlcgen.ManagedGatewayOwnerParams{ClusterID: p.placement.ClusterID, GatewayID: &i.Pool.GatewayID}); ownerErr == nil {
@@ -345,17 +294,6 @@ func (p *Postgres) AcceptPlatform(ctx context.Context, i biz.PlatformIntent, a b
 		return biz.PlatformResource{}, databaseFailure(err)
 	}
 	switch kind {
-	case "device":
-		nodes, err := json.Marshal(i.Device.Nodes)
-		if err != nil {
-			return biz.PlatformResource{}, err
-		}
-		err = q.InsertDeviceAdoption(ctx, sqlcgen.InsertDeviceAdoptionParams{ResourceID: id, ClusterID: p.placement.ClusterID, DeviceName: i.Device.DeviceName, InventoryFingerprint: i.Device.InventoryFingerprint, NodeInventory: nodes})
-		if err != nil {
-			return biz.PlatformResource{}, databaseFailure(err)
-		}
-	case "vlan":
-		err = q.InsertVlanNetwork(ctx, sqlcgen.InsertVlanNetworkParams{ResourceID: id, ClusterID: p.placement.ClusterID, DeviceID: i.Vlan.DeviceID, VlanID: i.Vlan.VlanID})
 	case "egress_gateway":
 		err = q.InsertEgressGateway(ctx, sqlcgen.InsertEgressGatewayParams{ResourceID: id, ClusterID: p.placement.ClusterID})
 	case "public_pool":

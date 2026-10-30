@@ -15,7 +15,7 @@ func TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe(t *testing.T) {
 		{"clean_without_facts", true}, {"empty_acknowledgement", true}, {"unrelated_group", true}, {"daemon_feedback", false}, {"provider_vlan", false}, {"owned_label", false}, {"owned_marker", false}, {"replacement_node", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			sw, nodes, _, _, _, now := switchFixture(t)
+			sw, nodes, _, _, _, _ := switchFixture(t)
 			member := biz.VirtualSwitchNode{NodeName: "n1", NodeUID: "uid1", Priority: 100, Allocated: true}
 			var vlans []unstructured.Unstructured
 			switch tc.name {
@@ -34,7 +34,7 @@ func TestSwitchDeletionWaitsForKCNReleaseWithoutHostProbe(t *testing.T) {
 			case "replacement_node":
 				nodes[0].SetUID("replacement")
 			}
-			clean, err := switchNodeCleanupConfirmed(sw, member, &nodes[0], nil, vlans, nil, now)
+			clean, err := switchNodeCleanupConfirmed(sw, member, &nodes[0], vlans)
 			if clean != tc.clean || (tc.clean && err != nil) {
 				t.Fatal(clean, err)
 			}

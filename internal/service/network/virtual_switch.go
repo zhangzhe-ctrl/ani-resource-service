@@ -10,7 +10,7 @@ import (
 func wireSwitchNodes(nodes []biz.VirtualSwitchNode) []*networkv1.VirtualSwitchNode {
 	result := make([]*networkv1.VirtualSwitchNode, 0, len(nodes))
 	for _, n := range nodes {
-		result = append(result, &networkv1.VirtualSwitchNode{NodeName: n.NodeName, NodeUid: n.NodeUID, Mac: n.MAC, Priority: n.Priority, State: n.State, Reason: n.Reason})
+		result = append(result, &networkv1.VirtualSwitchNode{NodeName: n.NodeName, NodeUid: n.NodeUID, Priority: n.Priority, State: n.State, Reason: n.Reason})
 	}
 	return result
 }

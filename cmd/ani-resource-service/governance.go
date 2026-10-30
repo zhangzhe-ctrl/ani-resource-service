@@ -173,7 +173,6 @@ func runGovernance(bc *conf.Bootstrap, logger *slog.Logger) error {
 	networkv1.RegisterTenantEgressServiceServer(gs, networkService.NewTenantEgressService(egress))
 	networkv1.RegisterPlatformNetworkServiceServer(gs, networkService.NewPlatformNetworkService(egress))
 	networkv1.RegisterPlatformEIPServiceServer(gs, networkService.NewPlatformEIPService(egress))
-	networkv1.RegisterPlatformDeviceRetirementServiceServer(gs, networkService.NewPlatformDeviceRetirementService(egress))
 	if defaultService != nil {
 		networkv1.RegisterPlatformDefaultEgressServiceServer(gs, defaultService)
 	}
