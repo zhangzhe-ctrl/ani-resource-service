@@ -22,9 +22,15 @@ GITLEAKS_MODULE := github.com/zricethezav/gitleaks/v8@$(GITLEAKS_VERSION)
 SERVICE_NAME ?= ani-resource-service
 INTEGRATION_TIMEOUT ?= 20m
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+IMAGE ?=
+PLATFORM ?= linux/amd64
+TARGET ?= service
+BUILDER_IMAGE ?= golang:1.26.10-bookworm
+RUNTIME_IMAGE ?= gcr.io/distroless/static-debian12:nonroot
+GOPROXY ?= https://goproxy.cn,https://proxy.golang.org,direct
 LDFLAGS := -X main.Name=$(SERVICE_NAME) -X main.Version=$(VERSION)
 
-.PHONY: tools check-buf check-sqlc supply-chain-tools check-govulncheck check-cyclonedx check-gitleaks config sql generate build test verify integration race tenant-mutations vuln secrets sbom supply-chain-verify audit clean help
+.PHONY: tools check-buf check-sqlc supply-chain-tools check-govulncheck check-cyclonedx check-gitleaks config sql generate build test verify integration race tenant-mutations vuln secrets sbom supply-chain-verify audit clean help image test-image
 
 tools: check-buf check-sqlc
 
@@ -88,6 +94,15 @@ build:
 	mkdir -p bin
 	$(GO) build -trimpath -ldflags "$(LDFLAGS)" -o bin/$(SERVICE_NAME) ./cmd/...
 
+image:
+	@test -n "$(IMAGE)" || { echo 'usage: make image IMAGE=registry/project/ani-resource-service:tag VERSION=version' >&2; exit 2; }
+	python3 scripts/build-image.py --image "$(IMAGE)" --version "$(VERSION)" \
+	  --platform "$(PLATFORM)" --target "$(TARGET)" \
+	  --builder-image "$(BUILDER_IMAGE)" --runtime-image "$(RUNTIME_IMAGE)" --goproxy "$(GOPROXY)"
+
+test-image:
+	PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/image -v
+
 test:
 	$(GO) test -count=1 ./...
 
@@ -129,6 +144,8 @@ clean:
 	rm -rf bin .tools .work .tmp
 
 help:
+	@echo "make image IMAGE=repo:tag VERSION=version  build the production service image locally"
+	@echo "make test-image  test image orchestration without Docker"
 	@echo "make tools    install pinned Proto and SQL generators"
 	@echo "make generate regenerate Proto, typed config and SQL"
 	@echo "make verify   run deterministic local quality gates"

@@ -26,6 +26,24 @@ make race
 make tenant-mutations
 ```
 
+生产镜像使用与 ACC、ModelDev 相同的命令接口，在远程构建机执行：
+
+```bash
+make image IMAGE=registry/project/ani-resource-service:tag VERSION=version
+make test-image
+```
+
+`PLATFORM` 默认 `linux/amd64`，`TARGET=service`；可显式覆盖 `BUILDER_IMAGE`、
+`RUNTIME_IMAGE` 和 `GOPROXY`。构建只编译 `cmd/ani-resource-service`，带齐各领域嵌入的
+SQL migration，不在构建或启动时执行迁移。Docker 使用独立白名单源码快照，排除配置、
+凭据、测试、Git 和缓存。`.work/images/image-*/result.json` 记录源码 commit、dirty 状态、
+实际输入摘要及本地镜像 digest；命令仅构建并加载本地镜像。
+
+镜像统一入口 `/app/bin/server`，默认参数 `-conf /app/configs`，用户 `10001:10001`，
+带系统 CA；兼容现有 `/ani-resource-service` 和 `/app/bin/ani-resource-service` 命令路径。
+运行配置和 secret 由环境挂载，线上自定义 command/args 可继续使用。
+ani-deploy 页面中的 `make verify` 可独立勾选，开启后执行本仓原始质量检查，失败即停止发布。
+
 Image 的真实数据库、生命周期和租户隔离另用 `make image-integration`、
 `make image-tenant-mutations`；需设置本次检查独占的短路径 `TMPDIR`。
 完整入口和 CI 检查范围见 [运行验证](docs/runtime-verification.md)。

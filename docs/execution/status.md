@@ -1,5 +1,13 @@
 # Network 执行状态
 
+## 生产镜像入口统一（2026-10-31）
+
+**构建入口、Fedora 质量门禁与真实镜像验证 PASS；ani-deploy Resource 项目已接入。** 基于最新远端 main `9a88a1ec091cb50779ffcb76dfb898e8c265c77e` 的独立工作树，补齐 `make image IMAGE=... VERSION=...`、根 Dockerfile、隔离源码快照和本地镜像回执，沿用 ACC/ModelDev 的命令接口。显式编译 `cmd/ani-resource-service`，保留 API 子模块的 `go.mod/go.sum`、各领域嵌入迁移 SQL 及 notice；配置、凭据、测试和缓存不进入 Docker 输入。统一 `/app/bin/server`，保留 `/ani-resource-service`、`/app/bin/ani-resource-service` 两个兼容入口，不自动迁移。
+
+原始 `make verify` 首次因任务长 TMPDIR 超过 Unix socket 路径上限而 FAIL（196s）；短目录定向复验和整条原始门禁重跑 PASS（172s），未改 Go 代码或依赖。首个真实镜像因遗漏子模块边界文件而 FAIL；新增回归先 RED，保留模块文件后 9 项镜像测试 GREEN，真实镜像重建及三个入口的无网络/只读/cap-drop `-h`、系统 CA 检查 PASS。成功重试 172.403s（编译 117s），复用了首轮基础层和模块缓存，不作为首次冷构建估算。实际来源、命令、digest、覆盖文件哈希与各次结果见[验证回执](records/production-image-20261031.json)。
+
+发布台 `.40:9998` 已加入 Resource，目标 `ani-system/ani-resource-service`、容器 `resource`、Harbor `ani-gpu-platform/ani-resource-service`，质量开关执行所选源码原始 `make verify`；6 项针对编排测试及真实页面读取/选择通过。此次只上线发布能力；Resource 的 Harbor 推送、Deployment 更新、PostgreSQL 集成及真实业务验收 **NOT_RUN**。原工作区未提交文件保持原状。
+
 ## Public EIP Workflow (20261030)
 
 **代码/生成、make verify、真实 PG 与受控 KCN HTTP/mTLS 主链：PASS；10 集群无基础网络的公网 EIP 分配/绑定/启停/解绑：PASS。** 基于 main `bf1b034`，公网绑定/再启用独立验证 VPC 自身 Provider UID、实际/观察代次、Ready 和新鲜度，不要求基础 Intranet EIP/SNAT 存在或正常，也不读取聚合 available 作为门禁；保留 EIP、池、归属和并发保护。迁移 0024 新增未知默认 Provider 事实，须经真实观察补齐。VPC Get/List 返回同快照 `public_egress`，EIP 目标增加真实 `vpc_id`；EIP 初始安全组与地址在同一事务受理，更换沿用已有独立配置版本。
