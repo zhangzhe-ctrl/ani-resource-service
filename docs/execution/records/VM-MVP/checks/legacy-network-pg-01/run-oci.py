@@ -64,8 +64,8 @@ def main():
         assert before == expected and len(before) == 558
         overlay = plan['overlay']
         helper = source / overlay['path']
-        assert sha(helper) == overlay['original_sha256'] and sha(D / 'postgres-overlay.go') == overlay['input_sha256']
-        helper.write_bytes((D / 'postgres-overlay.go').read_bytes())
+        assert sha(helper) == overlay['original_sha256'] and sha(D / 'postgres-overlay.go.txt') == overlay['input_sha256']
+        helper.write_bytes((D / 'postgres-overlay.go.txt').read_bytes())
         subprocess.run([str(Path(GO).parent / 'gofmt'), '-w', str(helper)], check=True, timeout=10)
         after = {str(p.relative_to(source)): sha(p) for p in source.rglob('*') if p.is_file()}
         assert set(after) == set(before) and {k for k in after if after[k] != before[k]} == {overlay['path']}

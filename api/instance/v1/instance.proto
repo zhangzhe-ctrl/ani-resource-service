@@ -216,6 +216,7 @@ message ListInstancesRequest {
   string instance_kind = 6 [json_name = "instance_kind"];
   string compute_type = 7 [json_name = "compute_type"];
   string observed_state = 8; string name = 9;
+  string id = 10;
 }
 message ListInstancesResponse {
   repeated Instance items = 1;

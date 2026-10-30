@@ -400,6 +400,7 @@ func validateResources(kind string, gpu GPU) error {
 type ListFilter struct {
 	Page, PageSize                                 uint32
 	InstanceKind, ComputeType, ObservedState, Name string
+	ID                                             string
 }
 
 func PageWindow(page, size uint32) (uint32, uint32, int64, error) {

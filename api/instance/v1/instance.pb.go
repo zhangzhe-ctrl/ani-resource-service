@@ -2396,6 +2396,7 @@ type ListInstancesRequest struct {
 	ComputeType   string                 `protobuf:"bytes,7,opt,name=compute_type,proto3" json:"compute_type,omitempty"`
 	ObservedState string                 `protobuf:"bytes,8,opt,name=observed_state,json=observedState,proto3" json:"observed_state,omitempty"`
 	Name          string                 `protobuf:"bytes,9,opt,name=name,proto3" json:"name,omitempty"`
+	Id            string                 `protobuf:"bytes,10,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2475,6 +2476,13 @@ func (x *ListInstancesRequest) GetObservedState() string {
 func (x *ListInstancesRequest) GetName() string {
 	if x != nil {
 		return x.Name
+	}
+	return ""
+}
+
+func (x *ListInstancesRequest) GetId() string {
+	if x != nil {
+		return x.Id
 	}
 	return ""
 }
@@ -4036,7 +4044,7 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\x12GetInstanceRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
-	"instanceId\"\xff\x01\n" +
+	"instanceId\"\x8f\x02\n" +
 	"\x14ListInstancesRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x12\n" +
 	"\x04page\x18\x04 \x01(\rR\x04page\x12\x1b\n" +
@@ -4044,7 +4052,9 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\rinstance_kind\x18\x06 \x01(\tR\rinstance_kind\x12\"\n" +
 	"\fcompute_type\x18\a \x01(\tR\fcompute_type\x12%\n" +
 	"\x0eobserved_state\x18\b \x01(\tR\robservedState\x12\x12\n" +
-	"\x04name\x18\t \x01(\tR\x04nameJ\x04\b\x02\x10\x03J\x04\b\x03\x10\x04R\bafter_id\"o\n" +
+	"\x04name\x18\t \x01(\tR\x04name\x12\x0e\n" +
+	"\x02id\x18\n" +
+	" \x01(\tR\x02idJ\x04\b\x02\x10\x03J\x04\b\x03\x10\x04R\bafter_id\"o\n" +
 	"\x15ListInstancesResponse\x12+\n" +
 	"\x05items\x18\x01 \x03(\v2\x15.instance.v1.InstanceR\x05items\x12\x14\n" +
 	"\x05total\x18\x03 \x01(\x03R\x05totalJ\x04\b\x02\x10\x03R\rnext_after_id\"\x97\n" +

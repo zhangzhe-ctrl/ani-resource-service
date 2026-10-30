@@ -87,7 +87,7 @@ Sandbox 条目定义 Resource RPC 合同和精确接收方 allowlist。Governanc
 | `/vm.v1.VMService/SetSecurityGroups` | 原键及 expected_version，持久操作 |
 | `/instance.v1.InstanceService/GetInstance` | 查询 |
 | `/instance.v1.InstanceService/ResolveInstanceMetricScope` | 仅持久化范围读取；历史查询不要求当前运行对象 |
-| `/instance.v1.InstanceService/ListInstances` | page/page_size，默认1/20、最大100，items/total；同RR快照Count/List |
+| `/instance.v1.InstanceService/ListInstances` | page/page_size，默认1/20、最大100，items/total；同RR快照Count/List；name 与 id 为子串过滤（id 不区分大小写、最长36），不传 observed_state 时排除 deleted |
 | `/instance.v1.InstanceService/GetOperation` | 查询 |
 | `/instance.v1.InstanceService/GetInstanceRuntime` | 只读当前owner UID链，不调用Observe/签名 |
 | `/instance.v1.InstanceService/ListInstanceEvents` | 当前Pod UID的core/v1 Events，有限读取，无持久化 |

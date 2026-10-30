@@ -229,7 +229,7 @@ func (p *Postgres) List(ctx context.Context, tenant string, f biz.ListFilter) ([
 	if e != nil {
 		return nil, 0, e
 	}
-	if (f.InstanceKind != "" && f.InstanceKind != biz.KindContainer) || (f.ComputeType != "" && f.ComputeType != biz.TypeCPU && f.ComputeType != biz.TypeGPU) || (f.ObservedState != "" && f.ObservedState != "pending" && f.ObservedState != "running" && f.ObservedState != "stopped" && f.ObservedState != "deleted") || len([]rune(f.Name)) > 80 {
+	if (f.InstanceKind != "" && f.InstanceKind != biz.KindContainer) || (f.ComputeType != "" && f.ComputeType != biz.TypeCPU && f.ComputeType != biz.TypeGPU) || (f.ObservedState != "" && f.ObservedState != "pending" && f.ObservedState != "running" && f.ObservedState != "stopped" && f.ObservedState != "deleted") || len([]rune(f.Name)) > 80 || len([]rune(f.ID)) > 36 {
 		return nil, 0, biz.ErrInvalid
 	}
 	tx, e := p.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
@@ -237,14 +237,14 @@ func (p *Postgres) List(ctx context.Context, tenant string, f biz.ListFilter) ([
 		return nil, 0, e
 	}
 	defer tx.Rollback(ctx)
-	where := " WHERE tenant_id=$1 AND ($2::text='' OR snapshot->'Spec'->>'instance_kind'=$2) AND ($3::text='' OR snapshot->'Spec'->>'compute_type'=$3) AND ($4::text='' OR snapshot->>'Observed'=$4) AND ($5::text='' OR position(lower($5) in lower(snapshot->'Spec'->>'Name'))>0)"
-	args := []any{tenant, f.InstanceKind, f.ComputeType, f.ObservedState, strings.TrimSpace(f.Name)}
+	where := " WHERE tenant_id=$1 AND ($2::text='' OR snapshot->'Spec'->>'instance_kind'=$2) AND ($3::text='' OR snapshot->'Spec'->>'compute_type'=$3) AND ($4::text='' OR coalesce(snapshot->>'Observed','')=$4) AND ($4::text<>'' OR coalesce(snapshot->>'Observed','')<>'deleted') AND ($5::text='' OR position(lower($5) in lower(snapshot->'Spec'->>'Name'))>0) AND ($6::text='' OR position(lower($6) in lower(instance_id::text))>0)"
+	args := []any{tenant, f.InstanceKind, f.ComputeType, f.ObservedState, strings.TrimSpace(f.Name), strings.TrimSpace(f.ID)}
 	var total int64
 	if e = tx.QueryRow(ctx, "SELECT count(*) FROM instance.instances"+where, args...).Scan(&total); e != nil {
 		return nil, 0, e
 	}
 	args = append(args, int64(size), offset)
-	rows, e := tx.Query(ctx, "SELECT snapshot,version,desired,created_at,updated_at,instance_contract_version,current_mounts,mounts_initialized,applied_mount_version,runtime_desired,recovery_fence FROM instance.instances"+where+" ORDER BY created_at DESC,instance_id DESC LIMIT $6 OFFSET $7", args...)
+	rows, e := tx.Query(ctx, "SELECT snapshot,version,desired,created_at,updated_at,instance_contract_version,current_mounts,mounts_initialized,applied_mount_version,runtime_desired,recovery_fence FROM instance.instances"+where+" ORDER BY created_at DESC,instance_id DESC LIMIT $7 OFFSET $8", args...)
 	if e != nil {
 		return nil, 0, e
 	}

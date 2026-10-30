@@ -330,7 +330,7 @@ func (s *Service) ListInstances(ctx context.Context, r *pb.ListInstancesRequest)
 	if e := biz.RequireTenant(ctx, r.TenantId); e != nil {
 		return nil, rpcError(e)
 	}
-	items, total, e := s.repo.List(ctx, r.TenantId, biz.ListFilter{Page: r.Page, PageSize: r.PageSize, InstanceKind: r.InstanceKind, ComputeType: r.ComputeType, ObservedState: r.ObservedState, Name: r.Name})
+	items, total, e := s.repo.List(ctx, r.TenantId, biz.ListFilter{Page: r.Page, PageSize: r.PageSize, InstanceKind: r.InstanceKind, ComputeType: r.ComputeType, ObservedState: r.ObservedState, Name: r.Name, ID: r.Id})
 	if e != nil {
 		return nil, rpcError(e)
 	}
