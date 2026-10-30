@@ -33,7 +33,7 @@ func wireEIP(v biz.EIP) *networkv1.EIP {
 	}
 	r := &networkv1.EIP{Id: v.ID, TenantId: v.TenantID, Name: v.Name, Description: v.Description, State: statesToWire[v.State], Reason: string(v.Reason), ReasonMessage: v.Reason.Message(), Version: v.Version, CreatedAt: timestamppb.New(v.CreatedAt), UpdatedAt: timestamppb.New(v.UpdatedAt), ObservedAt: optionalTime(v.ObservedAt), ObservationStale: v.ObservationStale, LastOperationId: v.LastOperationID, Address: v.Address, BindingId: v.BindingID, BindingState: v.BindingState, Scope: v.Scope, ManagedBy: v.ManagedBy}
 	if v.BindingTarget != nil {
-		r.BindingTarget = &networkv1.EIPBindingTarget{Kind: v.BindingTarget.Kind, Id: v.BindingTarget.ID, State: v.BindingTarget.State}
+		r.BindingTarget = &networkv1.EIPBindingTarget{Kind: v.BindingTarget.Kind, Id: v.BindingTarget.ID, State: v.BindingTarget.State, VpcId: v.BindingTarget.VPCID}
 	}
 	return r
 }
@@ -75,7 +75,7 @@ func wirePlatform(v biz.PlatformResource) *networkv1.PlatformResource {
 	return r
 }
 func (s *TenantEgressService) CreateEIP(ctx context.Context, r *networkv1.CreateEIPRequest) (*networkv1.CreateEIPResponse, error) {
-	v, err := s.egress.CreateEIP(ctx, biz.EgressIntent{TenantID: r.GetTargetTenantId(), Name: r.GetName(), Description: r.GetDescription(), IdempotencyKey: r.GetIdempotencyKey()})
+	v, err := s.egress.CreateEIP(ctx, biz.EgressIntent{TenantID: r.GetTargetTenantId(), Name: r.GetName(), Description: r.GetDescription(), IdempotencyKey: r.GetIdempotencyKey(), SecurityGroupIDs: r.GetSecurityGroupIds()})
 	if err != nil {
 		return nil, rpcError(err)
 	}

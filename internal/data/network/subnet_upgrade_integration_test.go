@@ -81,7 +81,7 @@ func TestSubnetMigrationUpgradesNET01WithoutChangingDurableFacts(t *testing.T) {
 	})
 	for _, table := range tables {
 		var row string
-		if err := fixture.Owner.QueryRow(ctx, "SELECT (to_jsonb(t)-'eip_id'-'snat_id'-'lb_id'-'subnet_id'-'resource_kind'-'reconciliation_id'-'requested_generation'-'processed_generation'-'retry_not_before'-'evidence_hash'-'evidence_applied_at'-'base_connectivity_required'-'create_dispatched'-'retired')::text FROM "+table+" t WHERE tenant_id=$1", tenant).Scan(&row); err != nil {
+		if err := fixture.Owner.QueryRow(ctx, "SELECT (to_jsonb(t)-'eip_id'-'snat_id'-'lb_id'-'subnet_id'-'resource_kind'-'reconciliation_id'-'requested_generation'-'processed_generation'-'retry_not_before'-'evidence_hash'-'evidence_applied_at'-'base_connectivity_required'-'create_dispatched'-'retired'-'provider_ready'-'provider_observed_at'-'provider_observed_uid'-'provider_generation'-'provider_observed_generation')::text FROM "+table+" t WHERE tenant_id=$1", tenant).Scan(&row); err != nil {
 			t.Fatal(err)
 		}
 		if row != before[table] {

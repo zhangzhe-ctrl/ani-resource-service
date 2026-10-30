@@ -100,6 +100,7 @@ type EgressMetadata struct {
 // while its legacy BindingID is empty.
 type EIPBindingTarget struct {
 	Kind, ID, State string
+	VPCID           string `json:",omitempty"`
 }
 type EIP struct {
 	EgressMetadata
@@ -168,6 +169,7 @@ type EgressIntent struct {
 	TenantID, Kind, ID, Name, Description, IdempotencyKey, VPCID, EIPID string
 	Enabled                                                             bool
 	ExpectedVersion                                                     int64
+	SecurityGroupIDs                                                    []string `json:",omitempty"`
 }
 
 func (i EgressIntent) Fingerprint() string {
@@ -302,7 +304,11 @@ func (e *Egress) CreateEIP(ctx context.Context, i EgressIntent) (EIP, error) {
 	if err != nil {
 		return EIP{}, err
 	}
-	i = EgressIntent{TenantID: tenant, Kind: "create_eip", Name: i.Name, Description: i.Description, IdempotencyKey: i.IdempotencyKey}
+	i = EgressIntent{TenantID: tenant, Kind: "create_eip", Name: i.Name, Description: i.Description, IdempotencyKey: i.IdempotencyKey, SecurityGroupIDs: slices.Clone(i.SecurityGroupIDs)}
+	if err = ValidateSecurityGroupIDs(i.SecurityGroupIDs); err != nil {
+		return EIP{}, err
+	}
+	slices.Sort(i.SecurityGroupIDs)
 	i.Name, err = normalizeEgressName(i.Name, i.Description, i.IdempotencyKey)
 	if err != nil {
 		return EIP{}, err

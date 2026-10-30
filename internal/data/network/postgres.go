@@ -232,6 +232,9 @@ func (p *Postgres) GetVPC(ctx context.Context, tenant, id string) (biz.VPC, erro
 	value := vpc(row.NetworkVpc)
 	value.SubnetCount = row.SubnetCount
 	value.BaseConnectivity = &biz.BaseConnectivity{State: row.BaseState, Reason: biz.Reason(row.BaseReason), ObservedAt: row.BaseObservedAt}
+	if err == nil {
+		value.PublicEgress, err = publicEgress(row.PublicEgress)
+	}
 	return value, vpcQueryFailure(ctx, err)
 }
 
@@ -294,6 +297,10 @@ func (p *Postgres) ListVPCs(ctx context.Context, tenant string, filter biz.VPCFi
 		value := vpc(row.NetworkVpc)
 		value.SubnetCount = row.SubnetCount
 		value.BaseConnectivity = &biz.BaseConnectivity{State: row.BaseState, Reason: biz.Reason(row.BaseReason), ObservedAt: row.BaseObservedAt}
+		value.PublicEgress, err = publicEgress(row.PublicEgress)
+		if err != nil {
+			return nil, 0, databaseFailure(err)
+		}
 		result = append(result, value)
 	}
 	return result, total, nil

@@ -190,7 +190,7 @@ func inspectResource(object *unstructured.Unstructured, binding sqlcgen.NetworkP
 		ranges.Available = subnetIPRange(object, "v4availableIPrange")
 		ranges.Used = subnetIPRange(object, "v4usingIPrange")
 	}
-	return biz.ProviderObservation{SubnetIPRanges: ranges, Exists: true, Identity: string(object.GetUID()), HasDependencies: len(subnets) > 0 || len(eips) > 0 || used > 0,
+	return biz.ProviderObservation{Generation: object.GetGeneration(), ObservedGeneration: observed, SubnetIPRanges: ranges, Exists: true, Identity: string(object.GetUID()), HasDependencies: len(subnets) > 0 || len(eips) > 0 || used > 0,
 		Ready: object.GetDeletionTimestamp() == nil && object.GetGeneration() > 0 && observed == object.GetGeneration() && router != "" && good["Valid"] && good["Initialized"] && good["Ready"]}, nil
 }
 

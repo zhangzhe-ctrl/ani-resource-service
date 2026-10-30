@@ -87,6 +87,8 @@ message EIPBindingTarget {
   string id = 2;
   // reserved or bound; unknown Provider outcomes preserve the active claim.
   string state = 3;
+  // Real parent VPC, while id retains its SNAT or load balancer identity.
+  string vpc_id = 4;
 }
 message VPCSnatBinding {
   string id = 1;
@@ -109,7 +111,7 @@ message VPCSnatBinding {
   // Output only. All existing tenant SNAT APIs select public, never intranet.
   string purpose = 17;
 }
-message CreateEIPRequest { string target_tenant_id = 1; string name = 2; string description = 3; string idempotency_key = 4; }
+message CreateEIPRequest { string target_tenant_id = 1; string name = 2; string description = 3; string idempotency_key = 4; repeated string security_group_ids = 5; }
 message CreateEIPResponse { EIP eip = 1; }
 message GetEIPRequest { string target_tenant_id = 1; string eip_id = 2; }
 message GetEIPResponse { EIP eip = 1; }

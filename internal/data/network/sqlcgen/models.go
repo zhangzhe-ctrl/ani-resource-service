@@ -607,21 +607,26 @@ type NetworkPlatformResource struct {
 }
 
 type NetworkProviderBinding struct {
-	TenantID         string
-	VpcID            *string
-	BindingID        string
-	ClusterID        string
-	Namespace        string
-	ProviderName     string
-	ProviderUid      string
-	PendingAction    string
-	PendingSince     *time.Time
-	SubnetID         *string
-	ResourceKind     string
-	EipID            *string
-	SnatID           *string
-	CreateDispatched bool
-	LbID             *string
+	TenantID                   string
+	VpcID                      *string
+	BindingID                  string
+	ClusterID                  string
+	Namespace                  string
+	ProviderName               string
+	ProviderUid                string
+	PendingAction              string
+	PendingSince               *time.Time
+	SubnetID                   *string
+	ResourceKind               string
+	EipID                      *string
+	SnatID                     *string
+	CreateDispatched           bool
+	LbID                       *string
+	ProviderReady              bool
+	ProviderObservedAt         *time.Time
+	ProviderObservedUid        string
+	ProviderGeneration         int64
+	ProviderObservedGeneration int64
 }
 
 type NetworkPublicPool struct {

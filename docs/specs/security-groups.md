@@ -30,7 +30,7 @@ action 被拒绝；已有绑定的规则修改同样检查该组合约束。
 使用逗号分隔的 KCN 名，清空使用显式空字符串。所有原生变更以 UID/RV 条件写。
 创建和重建必须使用持久当前配置；用户不可直接注入 Provider 注解绕过产品 ID。
 
-EIP 使用 `spec.securityGroups`。首次 GET 绑定配置返回 version 1 的空配置；
+EIP 使用 `spec.securityGroups`。CreateEIP 的 `security_group_ids` 与地址、初始配置及引用原子受理，初始配置 version 1；不传安全组时，首次 GET 绑定配置返回 version 1 的空配置；
 PUT 使用该配置版本，而非地址资源版本。未绑定 EIP 可以保存配置，但保持
 待应用状态；具备绑定目标、VPC、节点及网关后才能报告实际应用。
 

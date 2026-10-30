@@ -1,5 +1,7 @@
 # ANI Resource 文档导航
 
+[公网 EIP 独立绑定与关联展示](specs/vpc-connectivity-lb.md#5-public-eip-与-vpc-公网出站调整)：无基础网络准入、VPC/EIP 同快照关系和 EIP 创建选组；实际验证见[执行状态](execution/status.md#public-eip-workflow-20261030)。
+
 [租户安全组](specs/security-groups.md)：容器/VM/EIP 接入、默认仅入方向拒绝、持久当前配置及真实应用判定；实际结果见[执行状态](execution/status.md#security-groups-20261030)。
 
 GPU 容器实例 v1.5：[规格](specs/instance-mvp.md)、[实施计划](plans/instance-mvp-v1.5.md)、[运行与恢复](runbooks/instance-mvp-fedora.md)、[当前执行状态](execution/status.md#gpu-container-instance-mvp-v15)。本轮按用户调整只负责后端，前端接入交由专人。

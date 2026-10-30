@@ -97,6 +97,25 @@ message VPC {
   int64 subnet_count = 14;
   string reason_message = 15;
   VPCBaseConnectivity base_connectivity = 16;
+  // Same-snapshot active public claim; absent only when no public binding exists.
+  VPCPublicEgress public_egress = 17;
+}
+// Read-only projection of the existing public SNAT and exclusive EIP claim.
+// Disabled egress remains bound. Stale evidence never implies an unbound EIP.
+message VPCPublicEgress {
+  string binding_id = 1;
+  string eip_id = 2;
+  string eip_address = 3;
+  string binding_state = 4;
+  ResourceState state = 5;
+  string reason = 6;
+  string reason_message = 7;
+  bool desired_enabled = 8;
+  optional bool applied_enabled = 9;
+  google.protobuf.Timestamp observed_at = 10;
+  bool observation_stale = 11;
+  int64 version = 12;
+  string last_operation_id = 13;
 }
 // Read-only system dependency summary. Internal EIP/SNAT IDs, placement and
 // address-pool selection are deliberately not tenant-configurable or exposed.

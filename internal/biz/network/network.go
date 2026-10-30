@@ -39,7 +39,15 @@ type BaseConnectivity struct {
 
 const BaseConnectivityNotReady Reason = "BASE_CONNECTIVITY_NOT_READY"
 
+type VPCPublicEgress struct {
+	EgressMetadata
+	EIPID, EIPAddress, BindingState string
+	DesiredEnabled                  bool
+	AppliedEnabled                  *bool
+}
+
 type VPC struct {
+	PublicEgress                          *VPCPublicEgress  `json:",omitempty"`
 	BaseConnectivity                      *BaseConnectivity `json:",omitempty"`
 	ID, TenantID, Name, CIDR, Description string
 	State                                 ResourceState
@@ -161,6 +169,12 @@ func (n *Network) DeleteVPC(ctx context.Context, tenant, id string) (VPC, error)
 }
 
 func (n *Network) observation(value VPC) VPC {
+	if p := value.PublicEgress; p != nil {
+		p.ObservationStale = p.ObservedAt == nil || p.ObservedAt.After(n.now()) || n.now().Sub(*p.ObservedAt) > n.freshness
+		if p.ObservationStale {
+			p.AppliedEnabled = nil
+		}
+	}
 	if value.BaseConnectivity != nil {
 		b := value.BaseConnectivity
 		b.ObservationStale = b.ObservedAt == nil || b.ObservedAt.After(n.now()) || n.now().Sub(*b.ObservedAt) > n.freshness

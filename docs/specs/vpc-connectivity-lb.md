@@ -1,6 +1,6 @@
 # VPC 基础内网、公网出站与租户 LB 统一方案
 
-初始日期：2026-09-14；后端合同更新：2026-10-10。状态：实现范围与实际验收分别见执行状态；用户已确认的约束见 [ADR-0005](../adr/0005-separate-vpc-connectivity-and-exclusive-eip-bindings.md)。本文定义目标行为，实施任务见[执行计划](../plans/vpc-connectivity-lb.md)，当前进度只看[执行状态](../execution/status.md)。历史实施结果保留各自时点；本次固定三规格、多监听器和 VPC 预设只改后端，未修改前端或共享平台预置。
+初始日期：2026-09-14；后端合同更新：2026-10-30。状态：实现范围与实际验收分别见执行状态；用户已确认的约束见 [ADR-0005](../adr/0005-separate-vpc-connectivity-and-exclusive-eip-bindings.md)。本文定义目标行为，实施任务见[执行计划](../plans/vpc-connectivity-lb.md)，当前进度只看[执行状态](../execution/status.md)。历史实施结果保留各自时点；本次固定三规格、多监听器和 VPC 预设只改后端，未修改前端或共享平台预置。
 
 ## 1. 固定输入和变化范围
 
@@ -106,9 +106,13 @@ CreateVPC 的租户输入保持名称/CIDR/描述/幂等键，不让用户选择
 - 原租户 EIP 查询/申请保持 Public 语义；基础 Intranet 地址使用系统用例，不允许租户伪造 scope 或 managed_by。
 - 原按 VPC GetSnat/Bind/Toggle/Unbind API 明确只操作 **Public** SNAT，查询与唯一性都加用途，不返回任意一条未删除的 SNAT。
 - 绑定事务同时预留 `(tenant, vpc, public)` 位置和 EIP 的唯一目标位置，LB 与 SNAT 必须走同一套地址占用事务。
-- 绑定/启用要求 VPC 基础连接已就绪且观察新鲜、Public 池通过其自身出口能力检查；不能因内网验证通过就绕过公网准入。
+- 绑定/再启用只要求 VPC 自身具有新鲜、同 UID、当前 Provider spec 代次已应用的 Provider Ready 证据，无未决 Provider 写，且 VPC 未删除/失败；不要求基础 Intranet EIP/SNAT 存在或就绪，也不读取受基础故障影响的 VPC 聚合 available 作为门禁。Public EIP、池、网关和必要二层网络继续独立检查。迁移 0024 将 VPC Provider 证据保存于原绑定，先于基础聚合落库；历史行初始 unknown，须经真实观察补齐，不从聚合状态回填 Ready。
 - 停用保留 Public EIP 和绑定占用；解绑确认 Snat 消失且 EIP 无绑定后才释放 claim；释放 EIP 要同时检查产品和 Provider 的 SNAT/LB/外来绑定。
-- EIP 响应增加 `binding_target: {kind, id, state}`，区分 `vpc_snat` 与 `load_balancer`。旧 `binding_id` 保持“SNAT ID”语义：SNAT 目标时返回其 ID，LB 目标时为空；旧 `binding_state` 从统一 claim 投影为 unbound/reserved/bound，LB 占用时绝不能返回 unbound。新客户端必须根据 binding_state/target 判断占用，不能根据空旧 ID 判断地址可用；完成相关客户端适配是开放 LB 绑定的门槛。字段移除另行版本升级。
+- EIP 响应增加 `binding_target: {kind, id, state, vpc_id}`，区分 `vpc_snat` 与 `load_balancer`。旧 `binding_id` 保持“SNAT ID”语义：SNAT 目标时返回其 ID，LB 目标时为空；旧 `binding_state` 从统一 claim 投影为 unbound/reserved/bound，LB 占用时绝不能返回 unbound。新客户端必须根据 binding_state/target 判断占用，不能根据空旧 ID 判断地址可用；完成相关客户端适配是开放 LB 绑定的门槛。字段移除另行版本升级。
+
+VPC Get/List 的 `public_egress` 从同一 SQL 查询快照中联结 public SNAT、Public EIP 和有效 claim，包含 `binding_id/eip_id/eip_address/binding_state/state/reason/reason_message/desired_enabled/applied_enabled/observed_at/observation_stale/version/last_operation_id`。无有效 public 关联才缺省；停用或观测过期仍保留占用，过期时不返回 `applied_enabled`。EIP 的 `binding_target.vpc_id` 同样经保持 tenant 的 SNAT/LB 关联取得，原 `id` 不改变身份含义。列表不得逐行 RPC 或 Kubernetes 查询补齐。
+
+CreateEIP 可提供 `security_group_ids`，校验同租户、同 placement、组可用及组合规则后，与 EIP、初始配置、引用和持久操作在同一事务受理；任何失败都不留下部分 EIP，也不会先创建地址再调用第二次绑定。空集合保留原指纹；非空选择按集合规范化并参与永久幂等。更换继续使用既有 SetEIPSecurityGroups 的独立配置版本。
 
 同 VPC 内网与公网路由按实际 `intranetNetworks` 和 Public 默认出口分别生效。验收必须测试 Public 启停/解绑前后内网路径和私网 LB 不变；公网访问声明仍需独立真实请求和源地址证据。
 

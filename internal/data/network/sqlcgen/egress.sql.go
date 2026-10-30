@@ -351,9 +351,12 @@ const getEIP = `-- name: GetEIP :one
 SELECT e.tenant_id, e.eip_id, e.cluster_id, e.namespace, e.name, e.description, e.pool_id, e.pool_revision, e.address, e.state, e.reason, e.version, e.created_at, e.updated_at, e.observed_at, e.last_operation_id, e.scope, e.managed_by, e.system_owner_vpc,coalesce(c.snat_id,'')::text AS binding_id,
  coalesce(c.state,'unbound')::text AS binding_state,
  coalesce(c.target_kind,'')::text AS binding_target_kind,
- coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id
+ coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id,
+ coalesce(sn.vpc_id,lb.vpc_id,'')::text AS binding_vpc_id
 FROM network_eips e LEFT JOIN network_eip_claims c
  ON c.tenant_id=e.tenant_id AND c.eip_id=e.eip_id AND c.released_at IS NULL
+LEFT JOIN network_snat_bindings sn ON sn.tenant_id=c.tenant_id AND sn.snat_id=c.snat_id
+LEFT JOIN network_load_balancers lb ON lb.tenant_id=c.tenant_id AND lb.lb_id=c.lb_id
 WHERE e.tenant_id=$1 AND e.eip_id=$2 AND e.scope='public' AND e.managed_by='tenant'
 `
 
@@ -368,6 +371,7 @@ type GetEIPRow struct {
 	BindingState      string
 	BindingTargetKind string
 	BindingTargetID   string
+	BindingVpcID      string
 }
 
 func (q *Queries) GetEIP(ctx context.Context, arg GetEIPParams) (GetEIPRow, error) {
@@ -397,6 +401,7 @@ func (q *Queries) GetEIP(ctx context.Context, arg GetEIPParams) (GetEIPRow, erro
 		&i.BindingState,
 		&i.BindingTargetKind,
 		&i.BindingTargetID,
+		&i.BindingVpcID,
 	)
 	return i, err
 }
@@ -405,9 +410,12 @@ const getEIPClaim = `-- name: GetEIPClaim :one
 SELECT e.tenant_id, e.eip_id, e.cluster_id, e.namespace, e.name, e.description, e.pool_id, e.pool_revision, e.address, e.state, e.reason, e.version, e.created_at, e.updated_at, e.observed_at, e.last_operation_id, e.scope, e.managed_by, e.system_owner_vpc,coalesce(c.snat_id,'')::text AS binding_id,
  coalesce(c.state,'unbound')::text AS binding_state,
  coalesce(c.target_kind,'')::text AS binding_target_kind,
- coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id
+ coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id,
+ coalesce(sn.vpc_id,lb.vpc_id,'')::text AS binding_vpc_id
 FROM network_eips e LEFT JOIN network_eip_claims c
  ON c.tenant_id=e.tenant_id AND c.eip_id=e.eip_id AND c.released_at IS NULL
+LEFT JOIN network_snat_bindings sn ON sn.tenant_id=c.tenant_id AND sn.snat_id=c.snat_id
+LEFT JOIN network_load_balancers lb ON lb.tenant_id=c.tenant_id AND lb.lb_id=c.lb_id
 WHERE e.tenant_id=$1 AND e.eip_id=$2
 `
 
@@ -422,6 +430,7 @@ type GetEIPClaimRow struct {
 	BindingState      string
 	BindingTargetKind string
 	BindingTargetID   string
+	BindingVpcID      string
 }
 
 // Worker-only lookup includes system addresses and uses the same claim projection.
@@ -452,6 +461,7 @@ func (q *Queries) GetEIPClaim(ctx context.Context, arg GetEIPClaimParams) (GetEI
 		&i.BindingState,
 		&i.BindingTargetKind,
 		&i.BindingTargetID,
+		&i.BindingVpcID,
 	)
 	return i, err
 }
@@ -753,9 +763,12 @@ const listEIPs = `-- name: ListEIPs :many
 SELECT e.tenant_id, e.eip_id, e.cluster_id, e.namespace, e.name, e.description, e.pool_id, e.pool_revision, e.address, e.state, e.reason, e.version, e.created_at, e.updated_at, e.observed_at, e.last_operation_id, e.scope, e.managed_by, e.system_owner_vpc,coalesce(c.snat_id,'')::text AS binding_id,
  coalesce(c.state,'unbound')::text AS binding_state,
  coalesce(c.target_kind,'')::text AS binding_target_kind,
- coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id
+ coalesce(c.snat_id,c.lb_id,'')::text AS binding_target_id,
+ coalesce(sn.vpc_id,lb.vpc_id,'')::text AS binding_vpc_id
 FROM network_eips e LEFT JOIN network_eip_claims c
  ON c.tenant_id=e.tenant_id AND c.eip_id=e.eip_id AND c.released_at IS NULL
+LEFT JOIN network_snat_bindings sn ON sn.tenant_id=c.tenant_id AND sn.snat_id=c.snat_id
+LEFT JOIN network_load_balancers lb ON lb.tenant_id=c.tenant_id AND lb.lb_id=c.lb_id
 WHERE e.tenant_id=$1 AND e.scope='public' AND e.managed_by='tenant'
  AND ($2::text='' OR e.name=$2)
  AND (($3::text='' AND e.state<>'deleted') OR e.state=$3)
@@ -778,6 +791,7 @@ type ListEIPsRow struct {
 	BindingState      string
 	BindingTargetKind string
 	BindingTargetID   string
+	BindingVpcID      string
 }
 
 func (q *Queries) ListEIPs(ctx context.Context, arg ListEIPsParams) ([]ListEIPsRow, error) {
@@ -820,6 +834,7 @@ func (q *Queries) ListEIPs(ctx context.Context, arg ListEIPsParams) ([]ListEIPsR
 			&i.BindingState,
 			&i.BindingTargetKind,
 			&i.BindingTargetID,
+			&i.BindingVpcID,
 		); err != nil {
 			return nil, err
 		}

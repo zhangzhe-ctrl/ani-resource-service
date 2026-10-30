@@ -103,3 +103,15 @@ WHERE b.tenant_id=sqlc.arg(tenant_id) AND b.lb_id=sqlc.arg(lb_id)::text AND b.bi
 AND EXISTS(SELECT 1 FROM network_lb_retired_bindings r JOIN network_load_balancers l USING(tenant_id,cluster_id,namespace,lb_id)
  WHERE r.tenant_id=b.tenant_id AND r.lb_id=b.lb_id AND r.binding_id=b.binding_id AND r.provider_uid=b.provider_uid
  AND r.provider_name=b.provider_name AND r.cleanup_target_version=l.applied_version AND l.configuration_state='waiting_for_backends');
+
+-- name: SaveVPCProviderReadiness :execrows
+UPDATE network_provider_bindings SET provider_ready=sqlc.arg(ready),
+ provider_observed_at=sqlc.narg(observed_at)::timestamptz,
+ provider_observed_uid=sqlc.arg(identity),provider_generation=sqlc.arg(generation),provider_observed_generation=sqlc.arg(observed_generation)
+WHERE tenant_id=sqlc.arg(tenant_id) AND vpc_id=sqlc.arg(vpc_id)::text AND binding_id=sqlc.arg(binding_id)
+ AND (provider_uid='' OR provider_uid=sqlc.arg(identity));
+
+-- name: GetVPCProviderReadiness :one
+SELECT b.provider_ready,b.provider_observed_at,b.provider_observed_uid,b.provider_generation,b.provider_observed_generation
+FROM network_provider_bindings b
+WHERE b.tenant_id=$1 AND b.vpc_id=$2;

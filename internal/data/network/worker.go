@@ -178,6 +178,15 @@ func (p *Postgres) Finish(ctx context.Context, work biz.Work, progress biz.Progr
 	if err != nil {
 		return databaseFailure(err)
 	}
+	if work.Resource.Kind == "vpc" {
+		var observed *time.Time
+		if progress.Observed {
+			observed = &progress.Proof.CollectedAt
+		}
+		if err = affected(q.SaveVPCProviderReadiness(ctx, sqlcgen.SaveVPCProviderReadinessParams{TenantID: work.Resource.TenantID, VpcID: work.Resource.ID, BindingID: work.BindingID, Ready: progress.Observed && progress.State == biz.Available && progress.Identity != "", ObservedAt: observed, Identity: progress.Identity, Generation: progress.ProviderGeneration, ObservedGeneration: progress.ProviderObservedGeneration})); err != nil {
+			return err
+		}
+	}
 	if err = p.finishBaseConnectivity(ctx, q, work, &progress, now); err != nil {
 		return err
 	}
