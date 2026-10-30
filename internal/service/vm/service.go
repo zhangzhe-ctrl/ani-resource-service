@@ -40,6 +40,7 @@ type Service struct {
 	config         Config
 	media          map[string]*pb.MediaReference
 	addresses      AddressReader
+	relations      biz.RelationsPort
 	logs           biz.LogPort
 	logMu          sync.Mutex
 	logTotal       int
@@ -268,7 +269,7 @@ func (s *Service) GetVM(ctx context.Context, r *pb.GetVMRequest) (*pb.VirtualMac
 	if e != nil {
 		return nil, rpcError(e)
 	}
-	return s.project(ctx, v)
+	return s.projectDetail(ctx, v)
 }
 func wireVM(v biz.VM) (*pb.VirtualMachine, error) {
 	spec, e := pb.DecodeCreateSpec(v.Spec.Canonical)
@@ -285,7 +286,7 @@ func wireVM(v biz.VM) (*pb.VirtualMachine, error) {
 		}
 	}
 	for _, a := range v.Addresses {
-		out.Addresses = append(out.Addresses, &pb.CurrentAddress{NicName: a.NIC, Address: a.Address, ObservedAt: observed(v.ObservedAt)})
+		out.Addresses = append(out.Addresses, &pb.CurrentAddress{NicName: a.NIC, Address: a.Address, ObservedAt: observed(a.ObservedAt)})
 	}
 	wireMedia(v, out)
 	return out, nil

@@ -59,7 +59,11 @@ func (n *Network) CurrentAddresses(ctx context.Context, v biz.VM) ([]biz.Address
 	}
 	out := []biz.Address{}
 	for _, x := range a.VMCurrentAddresses {
-		out = append(out, biz.Address{NIC: x.NICName, Address: x.Address, VMIUID: x.VMIUID, LauncherUID: x.LauncherPodUID})
+		address := biz.Address{NIC: x.NICName, Address: x.Address, VMIUID: x.VMIUID, LauncherUID: x.LauncherPodUID}
+		if a.ObservedAt != nil {
+			address.ObservedAt = *a.ObservedAt
+		}
+		out = append(out, address)
 	}
 	return out, nil
 }

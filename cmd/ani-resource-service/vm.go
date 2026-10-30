@@ -144,6 +144,7 @@ func wireVM(ctx context.Context, c *conf.Network, compute *computeComponents, re
 		return nil, nil, e
 	}
 	handler.SetAddressReader(networkPort)
+	handler.SetRelationsReader(data.NewDetailRelations(repository))
 	if instances != nil && instances.service != nil {
 		instances.service.SetVMMetricScope(func(ctx context.Context, tenant, id string) (string, string, bool, error) {
 			v, e := repo.Get(ctx, tenant, id)

@@ -74,7 +74,10 @@ type NetworkPlan struct {
 	Namespace, NADName, NADUID, NADDigest, KCNSubnetRef string
 	Labels                                              map[string]string
 }
-type Address struct{ NIC, Address, VMIUID, LauncherUID string }
+type Address struct {
+	NIC, Address, VMIUID, LauncherUID string
+	ObservedAt                        time.Time
+}
 type GuestInitialization struct {
 	Method, Username, SSHPublicKey, CredentialIntentDigest string
 	PasswordSet                                            bool

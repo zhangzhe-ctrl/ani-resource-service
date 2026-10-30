@@ -32,7 +32,7 @@ type Snapshot struct {
 	Ready, Complete, Failed, Tombstone bool
 	Included, Excluded, Indications    []string
 	Reason                             string
-	ObservedAt                         time.Time
+	ObservedAt, CreatedAt              time.Time
 }
 
 type RestoreDiskImpact struct{ DiskID, Action, Reason string }

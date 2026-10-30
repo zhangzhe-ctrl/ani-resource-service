@@ -1,0 +1,23 @@
+# Read-only QEMU Guest Agent queries. VM/namespace/VMI ownership is checked
+# before and after name-based subresource calls in the Resource adapter.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ani-resource-vm-guest-info
+rules:
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources: ["virtualmachineinstances/guestosinfo", "virtualmachineinstances/filesystemlist"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ani-resource-vm-guest-info-ani-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ani-resource-vm-guest-info
+subjects:
+  - kind: ServiceAccount
+    name: ani-resource-service
+    namespace: ani-system
