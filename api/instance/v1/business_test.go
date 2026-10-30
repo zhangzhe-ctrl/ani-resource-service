@@ -7,7 +7,7 @@ import (
 )
 
 func currentBusiness() *CreateSpec {
-	return &CreateSpec{InstanceContractVersion: 2, WorkspaceMountPath: "/workspace", Name: "workspace-a", ImageId: "img_" + strings.Repeat("b", 32), ImageScope: "platform", PresetId: "20000000-0000-4000-8000-000000000001", InstanceKind: "container", ComputeType: "cpu", ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("a", 64), Cpu: "1000m", Memory: "2048Mi", ClusterId: "11111111-1111-4111-8111-111111111111", Namespace: "tenant-a", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", Shell: "/bin/sh", Uid: 1000, Gid: 1000, Scheduling: &SchedulingOptions{PodPlacement: SchedulingOptions_NONE.Enum()}, PresetName: "CPU", PresetCode: "cpu-small"}
+	return &CreateSpec{WorkspaceMountPath: "/workspace", Name: "workspace-a", ImageId: "img_" + strings.Repeat("b", 32), ImageScope: "platform", PresetId: "20000000-0000-4000-8000-000000000001", InstanceKind: "container", ComputeType: "cpu", ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("a", 64), Cpu: "1000m", Memory: "2048Mi", ClusterId: "11111111-1111-4111-8111-111111111111", Namespace: "tenant-a", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", Shell: "/bin/sh", Uid: 1000, Gid: 1000, Scheduling: &SchedulingOptions{PodPlacement: SchedulingOptions_NONE.Enum()}, PresetName: "CPU", PresetCode: "cpu-small"}
 }
 func TestCommandIdentityAndBusinessDigest(t *testing.T) {
 	b := currentBusiness()

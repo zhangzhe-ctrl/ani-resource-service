@@ -14,7 +14,7 @@
 
 Gov 唯一租户目录为 `GET /api/v1/compute-presets`，usage 必填。CONTAINER_INSTANCE 要求 `instance:preset:read`/INSTANCE；TRAINING（含微调）要求 `modeldev:compute-preset:read`/MODEL；INFERENCE 要求 `inference:compute-preset:read`/INFERENCE；VIRTUAL_MACHINE 要求 `vm:compute-preset:read`/VIRTUAL_MACHINE（module=17）；SANDBOX 由 Sandbox 生命周期合同固定使用，不把它当作普通容器目录。旧 `/api/v1/instance-presets` 删除，无兼容入口。各用途分别检查当前业务授权，不因共享 URL 互相放行。创建仍只调用一次活跃的 `instance.v1.InstanceService/ResolveCreateSpec`：服务端复用 compute resolver 的单次读取，再检查镜像、Namespace、SA、存储、调度、网络及卷。Gov 不串行调用公共解析与容器解析来重复读取规格。
 
-InstanceService 原七个目录 RPC 直接删除，不保留转发、别名、旧方法失败后的回退或双目录实现。活跃实例 v2、GpuPresetReference、冻结字节/hash、AcceptCreate 和生命周期合同见[实例合同](instance-mvp.md)及[配置与网络合同](instance-configuration-network.md)。目录中的 `devices_per_instance` 存储 JSON 和实例 v2 字段保持原语义，公共解析显式映射为单执行单元设备数。
+InstanceService 原七个目录 RPC 直接删除，不保留转发、别名、旧方法失败后的回退或双目录实现。活跃实例配置、GpuPresetReference、冻结字节/hash、AcceptCreate 和生命周期合同见[实例合同](instance-mvp.md)及[配置与网络合同](instance-configuration-network.md)。目录中的 `devices_per_instance` 存储 JSON 和实例配置字段保持原语义，公共解析显式映射为单执行单元设备数。
 
 ## 公共解析
 

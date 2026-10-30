@@ -17,9 +17,9 @@ func TestCurrentCanonicalInputProjectionDoesNotFollowDescriptor(t *testing.T) {
 		t.Fatalf("current input bytes changed: %s", raw)
 	}
 }
-func TestV2CommandCoversConfigurationAndEnvOrder(t *testing.T) {
+func TestCommandCoversConfigurationAndEnvOrder(t *testing.T) {
 	spec := currentBusiness()
-	spec.InstanceContractVersion = 2
+
 	spec.WorkspaceMountPath = "/work"
 	spec.Labels = map[string]string{"team": "ml"}
 	spec.Env = []*InstanceEnvVar{{Name: "A", Value: " a "}, {Name: "B", Value: "$(A)"}}

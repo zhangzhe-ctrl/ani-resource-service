@@ -1,0 +1,266 @@
+{
+  "date": "2026-10-31",
+  "executionHost": "fedora",
+  "cluster": "ani-lab (172.16.101.10/11/12)",
+  "source": {
+    "resource": {
+      "component": "resource",
+      "revision": "d09b4230ab6523539a9ed3fa42cc859b8ba00bc7",
+      "sourceArchiveSHA256": "7c275c5be7572149609871829dda82c4874ca6862839c8958e8d02892e5cddb0",
+      "sourcePath": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/release/artifacts/resource-source-d09b4230ab6523539a9ed3fa42cc859b8ba00bc7",
+      "binaryPath": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/release/artifacts/resource-image-d09b4230ab6523539a9ed3fa42cc859b8ba00bc7/server",
+      "binarySHA256": "a159ef42eba6a43b29da23928046afef03a49cf3e2c8a342390aeccdcb5d3a4f",
+      "runtimeBaseID": "sha256:26a84c9340fe960d00022bbe71702e7c42af7716324f156d3660c1b2910ebb8b",
+      "image": "172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:16b5adbcc72b815f43e5213e849e3887efa5f8955d7b553cf3c2e0e0982ca866"
+    },
+    "governance": {
+      "component": "governance",
+      "revision": "3dcb01238031d7d66199bcf881270ea0b41e1b20",
+      "sourceArchiveSHA256": "bc8aa35066d5411ca1d6be5ac819ce04db9151f4b6e9adf24dd2cab5330d1586",
+      "sourcePath": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/release/artifacts/governance-source-3dcb01238031d7d66199bcf881270ea0b41e1b20",
+      "binaryPath": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/release/artifacts/governance-image-3dcb01238031d7d66199bcf881270ea0b41e1b20/server",
+      "binarySHA256": "2300e22098a37f89db77f71a0cdfde2f2f50671551e66c34bc9a161061547b3b",
+      "runtimeBaseID": "sha256:26a84c9340fe960d00022bbe71702e7c42af7716324f156d3660c1b2910ebb8b",
+      "image": "172.16.101.10:30003/icn-01a15337-release/ani-governance@sha256:30888614f5c07ce2b9135fb98d62ff350e3a39c8fd5267081082b77334227605"
+    },
+    "resourceSDK": "v0.0.0-20261030162442-d09b4230ab65",
+    "resourceSDKSum": "h1:w1fWpi20mnEG5gQoI1djR0P4MGtb8G95WWIsBEryKqw=",
+    "replacementOrGoWork": false,
+    "upstreamDirectModuleDownload": "NOT_VERIFIED; exact published Git commit was packed into a formal Go module archive and resolved through a task file proxy"
+  },
+  "checks": {
+    "resource-generate": {
+      "result": "PASS",
+      "log": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/resource-generate.log"
+    },
+    "resource-unit": {
+      "result": "PASS",
+      "log": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/resource-unit.log"
+    },
+    "resource-pg-02": {
+      "result": "PASS",
+      "log": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/resource-pg-02.log"
+    },
+    "resource-verify-03": {
+      "result": "PASS",
+      "log": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/resource-verify-03.log"
+    },
+    "gov-generate": {
+      "result": "PASS",
+      "log": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/gov-generate.log"
+    },
+    "gov-ent-generate-03": {
+      "result": "PASS",
+      "log": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/gov-ent-generate-03.log"
+    },
+    "gov-atlas-validate": {
+      "result": "PASS",
+      "log": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/gov-atlas-validate.log"
+    },
+    "gov-unit": {
+      "result": "PASS",
+      "log": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/gov-unit.log"
+    },
+    "gov-vet": {
+      "result": "PASS",
+      "log": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/gov-vet.log"
+    },
+    "gov-build": {
+      "result": "PASS",
+      "log": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/gov-build.log"
+    }
+  },
+  "postgresJoint": {
+    "result": "PASS",
+    "evidence": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/private/gov-pg.UoLF2U",
+    "runtimeRole": "gov_acc_runtime (not superuser)",
+    "resourceBoundary": "real Resource mTLS and isolated PostgreSQL; external Acc plan/Kubernetes fixtures in these tests",
+    "dataTopCases": 9,
+    "serviceTopCases": 5,
+    "skip": 0
+  },
+  "live": {
+    "result": "PASS",
+    "scope": "CPU normal tenant public HTTP flow with real Notebook/Pod/PVC/PV",
+    "resourceInstanceSchemaVersions": 9,
+    "governanceNewMigrations": [
+      "20261028010000",
+      "20261029101000",
+      "20261031010000"
+    ],
+    "proof": {
+      "instanceId": "8b1846dd-580c-4e1a-bb28-aa1b6584af98",
+      "createOperationId": "0fd55a96-da97-4d11-8dbc-0969523d1b71",
+      "deleteOperationId": "ab5f7c29-6658-4630-bbcd-f3eb91daf902",
+      "createReplay": "PASS",
+      "runtime": {
+        "namespace": "tenant-46936e6b-3a3b-4868-8d88-6833665abb70",
+        "notebookUID": "2898267e-7520-4e0c-9f43-8e62652445e6",
+        "statefulSetUID": "8e2654d5-f149-444e-89f0-f879b2f1fbb5",
+        "podUID": "1640434b-4ee1-4cbc-a462-f514a4250d7c",
+        "pvcUID": "45371b56-86c4-4767-ac2d-323c8595a49f",
+        "node": "ani-03",
+        "podPhase": "Running",
+        "podReady": true,
+        "workspaceBound": true
+      },
+      "configuration": "PASS",
+      "cleanup": "PASS",
+      "originalCreatePreserved": true,
+      "elapsedSeconds": 66.116
+    },
+    "originalAdmissionEvidence": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/release/evidence/tenant-container-proof-hjpyfoq2",
+    "completedEvidence": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/release/evidence/tenant-container-proof-9zgwqmrc",
+    "gpuCudaWorkload": "NOT_RUN this cutover; GPU frozen/admission/replay/refund passed real PG/mTLS tests"
+  },
+  "oldContainerReset": {
+    "result": "PASS",
+    "oldContainers": 16,
+    "backupManifestSHA256": "7628b909cde4c5593fd36e2e3a8e00c153db87b1a2446270e645c2e25ae1e15a",
+    "results": [
+      {
+        "domain": "governance",
+        "owner": "gov_owner",
+        "dryRunRolledBack": true,
+        "committed": false,
+        "deleted": {
+          "sys_quota_charges": 9,
+          "sys_gpu_usage_sync": 9,
+          "sys_gpu_delete_acceptances": 9,
+          "sys_quota_operations_create": 16,
+          "sys_quota_operations_delete": 16
+        },
+        "target_charge_balance": 0,
+        "shared_accounts_preserved": true,
+        "other_operations_preserved": 17,
+        "remaining_target_operations": 0
+      },
+      {
+        "domain": "resource",
+        "owner": "ani_resource_instance_owner",
+        "dryRunRolledBack": true,
+        "committed": false,
+        "deleted": {
+          "instances": 16,
+          "instance_work": 16,
+          "gpu_cutover_audit": 0,
+          "workspace_bindings": 16,
+          "instance_operations": 50,
+          "network_submissions": 15,
+          "borrowed_volume_references": 25,
+          "instance_quota_release_outbox": 9
+        },
+        "guards_preserved": 0,
+        "remaining_instances": 0,
+        "schema_history_preserved": true
+      },
+      {
+        "domain": "governance",
+        "owner": "gov_owner",
+        "dryRunRolledBack": false,
+        "committed": true,
+        "deleted": {
+          "sys_quota_charges": 9,
+          "sys_gpu_usage_sync": 9,
+          "sys_gpu_delete_acceptances": 9,
+          "sys_quota_operations_create": 16,
+          "sys_quota_operations_delete": 16
+        },
+        "target_charge_balance": 0,
+        "shared_accounts_preserved": true,
+        "other_operations_preserved": 17,
+        "remaining_target_operations": 0
+      },
+      {
+        "domain": "resource",
+        "owner": "ani_resource_instance_owner",
+        "dryRunRolledBack": false,
+        "committed": true,
+        "deleted": {
+          "instances": 16,
+          "instance_work": 16,
+          "gpu_cutover_audit": 0,
+          "workspace_bindings": 16,
+          "instance_operations": 50,
+          "network_submissions": 15,
+          "borrowed_volume_references": 25,
+          "instance_quota_release_outbox": 9
+        },
+        "guards_preserved": 0,
+        "remaining_instances": 0,
+        "schema_history_preserved": true
+      }
+    ]
+  },
+  "quotaAdjustment": {
+    "name": "ani-cpu-p01-budget",
+    "uid": "d826dd97-68ef-44eb-8dd2-017708af12ef",
+    "before": {
+      "limits.cpu": "28",
+      "limits.memory": "40Gi",
+      "pods": "30",
+      "requests.cpu": "18",
+      "requests.memory": "36Gi"
+    },
+    "after": {
+      "limits.cpu": "30",
+      "limits.memory": "40Gi",
+      "pods": "30",
+      "requests.cpu": "18",
+      "requests.memory": "36Gi"
+    },
+    "previousRunningServiceLimitsCPU": "29.75",
+    "reason": "original unchanged Resource/Gov pod limits could not be recreated within the old 28-core namespace limit",
+    "deploymentResourcesChanged": false,
+    "newImagesStartWithAdmissionEnabled": true
+  },
+  "temporaryImageCleanup": {
+    "result": "PASS",
+    "imageID": "img_869f3519e6b74f348cda9e68511d7de6",
+    "unregisteredVersion": 2,
+    "taskOperatorPodDeleted": "e382bb2f-f32b-4475-a4b5-0b92c2bb521d",
+    "method": "formal image-admin unregister-platform",
+    "registryArtifactDeleted": false
+  },
+  "commands": [
+    "Res: make generate BUF=<pinned 1.60.0> SQLC=<pinned 1.31.1>",
+    "Res: make verify BUF=<pinned> SQLC=<pinned>",
+    "Res: INSTANCE_TEST_RUN=<configuration/restart/lifecycle selection> bash scripts/instance-integration ./internal/data/instance",
+    "Gov: make api; make ent; atlas v1.3.0 migrate hash/validate; go mod tidy",
+    "Gov: go test -count=1 ./app/admin/service/internal/{commandcontract,data,service,server}; go vet same; go build -trimpath ./app/admin/service/cmd/server",
+    "Gov: ANI_EXPECT_RESOURCE_VERSION=v0.0.0-20261030162442-d09b4230ab65 bash private/run-gov-pg.sh",
+    "Live: release/prep/cutover.py close/quiesce; owner-scoped exact history cleanup; Resource owner 009; native Atlas migrate apply; guarded image rollout/open",
+    "Live: release/prep/run-container-acceptance.py --execute (same instance/key after probe fixes)"
+  ],
+  "earlierFailuresRetained": [
+    "resource-pg.log: historical test reader needed StoredMount JSON decoding; assertions retained",
+    "resource-verify.log: long Unix socket temp path; resource-verify-02.log: absent isolated Git metadata; final verify-03 PASS",
+    "Gov initial RED overlay compile failure not counted as RED; valid gov-admission-red-02 failed on retired flag gate",
+    "gov-ent-generate.log: stopped two-minute wrapper retries; generate-02: wrong cwd/internal-package error; final formal make ent generate-03 PASS",
+    "Resource owner 009 committed before private multiline-JSON receipt parser failed; rechecked existing version9 without replaying DDL",
+    "old namespace CPU quota blocked original pod resource declarations; adjusted only limits.cpu 28 to30",
+    "private acceptance probe repaired stored compute_type tag, controller StatefulSet template/owner checks, and normal reauthentication on expired token; same resource/key, no server auth/TTL changes"
+  ],
+  "githubCI": "NOT_VERIFIED; Fedora checks and live acceptance are separate from GitHub CI",
+  "pullRequests": [
+    "https://github.com/zhangzhe-ctrl/ani-resource-service/pull/36",
+    "https://github.com/zhangzhe-ctrl/ani-governance/pull/80"
+  ],
+  "postCutover": {
+    "result": "PASS",
+    "checks": {
+      "business_proof_pass": true,
+      "deployments_fixed_ready_and_flags": true,
+      "deployed_images_fixed": true,
+      "resource_schema_001_to_009": true,
+      "resource_old_empty_and_proof_deleted": true,
+      "governance_atlas_17_latest_31": true,
+      "governance_old_empty_and_proof_acked": true,
+      "non_container_operations_preserved": true,
+      "gpu_shared_accounts_preserved": true,
+      "manual_notebook_preserved": true
+    },
+    "artifact": "/home/chabking/codex-runs/remove-instance-config-v2-20261030/release/evidence/post-cutover.json",
+    "sha256": "145c93b2813363af682298182139bec890e79c4d5b43d539e95230b1ff2fbbc5"
+  }
+}

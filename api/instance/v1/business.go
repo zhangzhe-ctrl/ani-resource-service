@@ -20,25 +20,11 @@ import (
 // CanonicalBusinessPayload is shared by Gov and Res. Trusted attachments and
 // command identities are separate messages and never enter the public hash.
 func CanonicalBusinessPayload(m proto.Message) ([]byte, error) {
-	version := ContractV2
-	if s, ok := m.(*CreateSpec); ok && s != nil {
-		version = ContractVersion(s.InstanceContractVersion)
-	}
-	return CanonicalBusinessPayloadVersion(m, version)
-}
-
-// CanonicalBusinessPayloadVersion freezes the current explicit field set. It never
-// uses descriptor defaults to change an accepted payload.
-func CanonicalBusinessPayloadVersion(m proto.Message, version uint32) ([]byte, error) {
 	if m == nil || !m.ProtoReflect().IsValid() || hasUnknown(m.ProtoReflect()) {
 		return nil, ErrInvalidBusiness
 	}
 	if _, e := (protojson.MarshalOptions{}).Marshal(m); e != nil {
 		return nil, e
-	}
-	version = ContractVersion(version)
-	if version != ContractV2 {
-		return nil, ErrInvalidBusiness
 	}
 	var value map[string]any
 	switch v := m.(type) {
@@ -66,14 +52,10 @@ func CanonicalBusinessPayloadVersion(m proto.Message, version uint32) ([]byte, e
 		}
 
 	case *CreateSpec:
-		if ContractVersion(v.InstanceContractVersion) != version {
-			return nil, ErrInvalidBusiness
-		}
 		if e := validateSpecConfiguration(v); e != nil {
 			return nil, e
 		}
 		value = map[string]any{"name": v.Name, "image_id": v.ImageId, "image_scope": v.ImageScope, "preset_id": v.PresetId, "image_reference": v.ImageReference, "cpu": v.Cpu, "memory": v.Memory, "cluster_id": v.ClusterId, "namespace": v.Namespace, "service_account": v.ServiceAccount, "storage_class": v.StorageClass, "workspace_size": v.WorkspaceSize, "shell": v.Shell, "uid": strconv.FormatInt(v.Uid, 10), "gid": strconv.FormatInt(v.Gid, 10), "instance_kind": v.InstanceKind, "compute_type": v.ComputeType, "scheduling": wireJSON(v.Scheduling), "preset_name": v.PresetName, "preset_code": v.PresetCode, "gpu_execution": wireJSON(v.GpuExecution), "gpu_display": wireJSON(v.GpuDisplay), "gpu_selection": wireJSON(v.GpuSelection)}
-		value["instance_contract_version"] = v.InstanceContractVersion
 		value["workspace_mount_path"] = v.WorkspaceMountPath
 		mounts := []any{}
 		for _, x := range sortedFrozenMounts(v.VolumeMounts) {
@@ -164,16 +146,18 @@ func BusinessPayloadDigest(m proto.Message) (string, error) {
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:]), nil
 }
-func BusinessPayloadDigestVersion(m proto.Message, version uint32) (string, error) {
-	raw, e := CanonicalBusinessPayloadVersion(m, version)
-	if e != nil {
-		return "", e
-	}
-	sum := sha256.Sum256(raw)
-	return hex.EncodeToString(sum[:]), nil
-}
 func DecodeBusinessPayload(raw []byte) (*CreateSpec, error) {
 	b := new(CreateSpec)
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return nil, err
+	}
+	descriptor := b.ProtoReflect().Descriptor().Fields()
+	for name := range fields {
+		if descriptor.ByName(protoreflect.Name(name)) == nil && descriptor.ByJSONName(name) == nil {
+			return nil, ErrInvalidBusiness
+		}
+	}
 	if e := protojson.Unmarshal(raw, b); e != nil {
 		return nil, e
 	}
@@ -343,8 +327,7 @@ func CommandDigest(c *CommandContext, s *CreateSpec) (string, error) {
 		display = map[string]any{"profile_id": d.ProfileId, "profile_version": fmt.Sprint(d.ProfileVersion), "profile_name": d.ProfileName, "model_key": d.ModelKey, "mode": fmt.Sprint(int32(d.Mode))}
 	}
 	value := map[string]any{"tenant_id": c.TenantId, "resource_id": c.ResourceId, "operation_id": c.OperationId, "name": s.Name, "image_id": s.ImageId, "image_scope": s.ImageScope, "preset_id": s.PresetId, "image_reference": s.ImageReference, "cpu": s.Cpu, "memory": s.Memory, "cluster_id": s.ClusterId, "namespace": s.Namespace, "service_account": s.ServiceAccount, "storage_class": s.StorageClass, "workspace_size": s.WorkspaceSize, "shell": s.Shell, "uid": fmt.Sprint(s.Uid), "gid": fmt.Sprint(s.Gid), "instance_kind": s.InstanceKind, "compute_type": s.ComputeType, "scheduling": scheduling, "preset_name": s.PresetName, "preset_code": s.PresetCode, "gpu_display": display, "execution_digest": execution}
-	domain := "resource-create-v2\n"
-	value["instance_contract_version"] = s.InstanceContractVersion
+	domain := "resource-create\n"
 	value["workspace_mount_path"] = s.WorkspaceMountPath
 	mounts := []any{}
 	for _, m := range sortedFrozenMounts(s.VolumeMounts) {

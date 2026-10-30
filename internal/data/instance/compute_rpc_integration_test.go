@@ -145,27 +145,27 @@ func TestComputeRPCUsesTrustedScopeAndPersistentCatalog(t *testing.T) {
 			}
 			before := observed.reads.Load()
 			raw := &ipb.CreateInstanceData{Name: "workspace", ImageId: "img_" + strings.Repeat("a", 32), ImageScope: "platform", PresetId: p.Id}
-			spec, e := instanceClient.ResolveCreateSpec(tenantContext, &ipb.ResolveCreateSpecRequest{TenantId: tenant, Data: raw, InstanceContractVersion: 2})
-			if e != nil || observed.reads.Load() != before+1 || spec.Cpu != "1250m" || spec.Memory != "1536Mi" || spec.PresetCode != p.Code || spec.PresetName != p.Name || spec.InstanceContractVersion != 2 || spec.WorkspaceMountPath != "/workspace" {
+			spec, e := instanceClient.ResolveCreateSpec(tenantContext, &ipb.ResolveCreateSpecRequest{TenantId: tenant, Data: raw})
+			if e != nil || observed.reads.Load() != before+1 || spec.Cpu != "1250m" || spec.Memory != "1536Mi" || spec.PresetCode != p.Code || spec.PresetName != p.Name || spec.WorkspaceMountPath != "/workspace" {
 				t.Fatal("container did not reuse one compute read", spec, e)
 			}
-			expected := &ipb.CreateSpec{Name: raw.Name, ImageId: raw.ImageId, ImageScope: raw.ImageScope, PresetId: p.Id, ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("a", 64), Cpu: "1250m", Memory: "1536Mi", ClusterId: cluster, Namespace: "tenant-" + tenant, ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", Shell: "/bin/sh", Uid: 1000, Gid: 1000, InstanceKind: "container", ComputeType: kind, Scheduling: &ipb.SchedulingOptions{PodPlacement: ipb.SchedulingOptions_NONE.Enum()}, PresetName: p.Name, PresetCode: p.Code, InstanceContractVersion: 2, WorkspaceMountPath: "/workspace"}
+			expected := &ipb.CreateSpec{Name: raw.Name, ImageId: raw.ImageId, ImageScope: raw.ImageScope, PresetId: p.Id, ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("a", 64), Cpu: "1250m", Memory: "1536Mi", ClusterId: cluster, Namespace: "tenant-" + tenant, ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", Shell: "/bin/sh", Uid: 1000, Gid: 1000, InstanceKind: "container", ComputeType: kind, Scheduling: &ipb.SchedulingOptions{PodPlacement: ipb.SchedulingOptions_NONE.Enum()}, PresetName: p.Name, PresetCode: p.Code, WorkspaceMountPath: "/workspace"}
 			if g := data.Gpu; g != nil {
 				expected.GpuSelection = &ipb.GpuPresetReference{ProfileId: g.ProfileId, ProfileVersion: g.ProfileVersion, SpecDigest: g.SpecDigest, DevicesPerInstance: g.DevicesPerInstance, ClusterId: g.ClusterId, PoolId: g.PoolId, Mode: g.Mode, ModelKey: g.ModelKey, MemoryMibPerDevice: g.MemoryMibPerDevice, CoreLimitPercent: g.CoreLimitPercent}
 			}
-			actualCanonical, e := ipb.CanonicalBusinessPayloadVersion(spec, 2)
+			actualCanonical, e := ipb.CanonicalBusinessPayload(spec)
 			if e != nil {
 				t.Fatal(e)
 			}
-			expectedCanonical, e := ipb.CanonicalBusinessPayloadVersion(expected, 2)
+			expectedCanonical, e := ipb.CanonicalBusinessPayload(expected)
 			if e != nil || string(actualCanonical) != string(expectedCanonical) {
 				t.Fatal("active v2 canonical bytes changed", e)
 			}
-			actualHash, e := ipb.BusinessPayloadDigestVersion(spec, 2)
+			actualHash, e := ipb.BusinessPayloadDigest(spec)
 			if e != nil {
 				t.Fatal(e)
 			}
-			expectedHash, e := ipb.BusinessPayloadDigestVersion(expected, 2)
+			expectedHash, e := ipb.BusinessPayloadDigest(expected)
 			if e != nil || actualHash != expectedHash {
 				t.Fatal("active v2 digest changed", e)
 			}

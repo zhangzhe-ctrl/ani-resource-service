@@ -785,21 +785,20 @@ func (x *ListMountablePVCsResponse) GetTotal() int64 {
 }
 
 type InstanceConfiguration struct {
-	state                   protoimpl.MessageState `protogen:"open.v1"`
-	InstanceId              string                 `protobuf:"bytes,1,opt,name=instance_id,proto3" json:"instance_id,omitempty"`
-	InstanceContractVersion uint32                 `protobuf:"varint,2,opt,name=instance_contract_version,proto3" json:"instance_contract_version,omitempty"`
-	WorkspaceMountPath      string                 `protobuf:"bytes,3,opt,name=workspace_mount_path,proto3" json:"workspace_mount_path,omitempty"`
-	VolumeMounts            []*VolumeMount         `protobuf:"bytes,4,rep,name=volume_mounts,proto3" json:"volume_mounts,omitempty"`
-	Network                 *NetworkSelection      `protobuf:"bytes,5,opt,name=network,proto3" json:"network,omitempty"`
-	Labels                  map[string]string      `protobuf:"bytes,6,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Annotations             map[string]string      `protobuf:"bytes,7,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Env                     []*InstanceEnvVar      `protobuf:"bytes,8,rep,name=env,proto3" json:"env,omitempty"`
-	Version                 int64                  `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
-	AppliedMountVersion     int64                  `protobuf:"varint,10,opt,name=applied_mount_version,proto3" json:"applied_mount_version,omitempty"`
-	PendingChange           *PendingMountChange    `protobuf:"bytes,11,opt,name=pending_change,proto3" json:"pending_change,omitempty"`
-	SecurityGroupIds        []string               `protobuf:"bytes,12,rep,name=security_group_ids,proto3" json:"security_group_ids,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId          string                 `protobuf:"bytes,1,opt,name=instance_id,proto3" json:"instance_id,omitempty"`
+	WorkspaceMountPath  string                 `protobuf:"bytes,3,opt,name=workspace_mount_path,proto3" json:"workspace_mount_path,omitempty"`
+	VolumeMounts        []*VolumeMount         `protobuf:"bytes,4,rep,name=volume_mounts,proto3" json:"volume_mounts,omitempty"`
+	Network             *NetworkSelection      `protobuf:"bytes,5,opt,name=network,proto3" json:"network,omitempty"`
+	Labels              map[string]string      `protobuf:"bytes,6,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Annotations         map[string]string      `protobuf:"bytes,7,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Env                 []*InstanceEnvVar      `protobuf:"bytes,8,rep,name=env,proto3" json:"env,omitempty"`
+	Version             int64                  `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
+	AppliedMountVersion int64                  `protobuf:"varint,10,opt,name=applied_mount_version,proto3" json:"applied_mount_version,omitempty"`
+	PendingChange       *PendingMountChange    `protobuf:"bytes,11,opt,name=pending_change,proto3" json:"pending_change,omitempty"`
+	SecurityGroupIds    []string               `protobuf:"bytes,12,rep,name=security_group_ids,proto3" json:"security_group_ids,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *InstanceConfiguration) Reset() {
@@ -837,13 +836,6 @@ func (x *InstanceConfiguration) GetInstanceId() string {
 		return x.InstanceId
 	}
 	return ""
-}
-
-func (x *InstanceConfiguration) GetInstanceContractVersion() uint32 {
-	if x != nil {
-		return x.InstanceContractVersion
-	}
-	return 0
 }
 
 func (x *InstanceConfiguration) GetWorkspaceMountPath() string {
@@ -1134,14 +1126,13 @@ func (x *GpuSummary) GetCoreLimitPercent() uint32 {
 }
 
 type ResolveCreateSpecRequest struct {
-	state                   protoimpl.MessageState `protogen:"open.v1"`
-	TenantId                string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
-	Data                    *CreateInstanceData    `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
-	Namespace               string                 `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	SchedulingDefaults      *SchedulingOptions     `protobuf:"bytes,4,opt,name=scheduling_defaults,json=schedulingDefaults,proto3" json:"scheduling_defaults,omitempty"`
-	InstanceContractVersion uint32                 `protobuf:"varint,5,opt,name=instance_contract_version,proto3" json:"instance_contract_version,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	TenantId           string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	Data               *CreateInstanceData    `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Namespace          string                 `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	SchedulingDefaults *SchedulingOptions     `protobuf:"bytes,4,opt,name=scheduling_defaults,json=schedulingDefaults,proto3" json:"scheduling_defaults,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ResolveCreateSpecRequest) Reset() {
@@ -1202,13 +1193,6 @@ func (x *ResolveCreateSpecRequest) GetSchedulingDefaults() *SchedulingOptions {
 	return nil
 }
 
-func (x *ResolveCreateSpecRequest) GetInstanceContractVersion() uint32 {
-	if x != nil {
-		return x.InstanceContractVersion
-	}
-	return 0
-}
-
 // One managed business snapshot; GPU values exist only in gpu_execution.resources.
 type CreateSpec struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
@@ -1235,17 +1219,16 @@ type CreateSpec struct {
 	GpuExecution   *v1.GpuExecution       `protobuf:"bytes,21,opt,name=gpu_execution,proto3" json:"gpu_execution,omitempty"`
 	GpuDisplay     *v1.GpuDisplay         `protobuf:"bytes,22,opt,name=gpu_display,proto3" json:"gpu_display,omitempty"`
 	// Resolver-only managed selection reference, removed from accepted commands.
-	GpuSelection            *GpuPresetReference  `protobuf:"bytes,23,opt,name=gpu_selection,proto3" json:"gpu_selection,omitempty"`
-	InstanceContractVersion uint32               `protobuf:"varint,24,opt,name=instance_contract_version,proto3" json:"instance_contract_version,omitempty"`
-	WorkspaceMountPath      string               `protobuf:"bytes,25,opt,name=workspace_mount_path,proto3" json:"workspace_mount_path,omitempty"`
-	VolumeMounts            []*FrozenVolumeMount `protobuf:"bytes,26,rep,name=volume_mounts,proto3" json:"volume_mounts,omitempty"`
-	Network                 *NetworkSelection    `protobuf:"bytes,27,opt,name=network,proto3" json:"network,omitempty"`
-	Labels                  map[string]string    `protobuf:"bytes,28,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Annotations             map[string]string    `protobuf:"bytes,29,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Env                     []*InstanceEnvVar    `protobuf:"bytes,30,rep,name=env,proto3" json:"env,omitempty"`
-	SecurityGroupIds        []string             `protobuf:"bytes,31,rep,name=security_group_ids,proto3" json:"security_group_ids,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	GpuSelection       *GpuPresetReference  `protobuf:"bytes,23,opt,name=gpu_selection,proto3" json:"gpu_selection,omitempty"`
+	WorkspaceMountPath string               `protobuf:"bytes,25,opt,name=workspace_mount_path,proto3" json:"workspace_mount_path,omitempty"`
+	VolumeMounts       []*FrozenVolumeMount `protobuf:"bytes,26,rep,name=volume_mounts,proto3" json:"volume_mounts,omitempty"`
+	Network            *NetworkSelection    `protobuf:"bytes,27,opt,name=network,proto3" json:"network,omitempty"`
+	Labels             map[string]string    `protobuf:"bytes,28,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Annotations        map[string]string    `protobuf:"bytes,29,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Env                []*InstanceEnvVar    `protobuf:"bytes,30,rep,name=env,proto3" json:"env,omitempty"`
+	SecurityGroupIds   []string             `protobuf:"bytes,31,rep,name=security_group_ids,proto3" json:"security_group_ids,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CreateSpec) Reset() {
@@ -1437,13 +1420,6 @@ func (x *CreateSpec) GetGpuSelection() *GpuPresetReference {
 		return x.GpuSelection
 	}
 	return nil
-}
-
-func (x *CreateSpec) GetInstanceContractVersion() uint32 {
-	if x != nil {
-		return x.InstanceContractVersion
-	}
-	return 0
 }
 
 func (x *CreateSpec) GetWorkspaceMountPath() string {
@@ -3868,10 +3844,9 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\x12unavailable_reason\x18\a \x01(\tR\x12unavailable_reason\"b\n" +
 	"\x19ListMountablePVCsResponse\x12/\n" +
 	"\x05items\x18\x01 \x03(\v2\x19.instance.v1.MountablePVCR\x05items\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x03R\x05total\"\xb6\x06\n" +
+	"\x05total\x18\x02 \x01(\x03R\x05total\"\x99\x06\n" +
 	"\x15InstanceConfiguration\x12 \n" +
-	"\vinstance_id\x18\x01 \x01(\tR\vinstance_id\x12<\n" +
-	"\x19instance_contract_version\x18\x02 \x01(\rR\x19instance_contract_version\x122\n" +
+	"\vinstance_id\x18\x01 \x01(\tR\vinstance_id\x122\n" +
 	"\x14workspace_mount_path\x18\x03 \x01(\tR\x14workspace_mount_path\x12>\n" +
 	"\rvolume_mounts\x18\x04 \x03(\v2\x18.instance.v1.VolumeMountR\rvolume_mounts\x127\n" +
 	"\anetwork\x18\x05 \x01(\v2\x1d.instance.v1.NetworkSelectionR\anetwork\x12F\n" +
@@ -3888,7 +3863,7 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a>\n" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc6\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x02\x10\x03R\x19instance_contract_version\"\xc6\x03\n" +
 	"\x12GpuPresetReference\x12\x1e\n" +
 	"\n" +
 	"profile_id\x18\x01 \x01(\tR\n" +
@@ -3918,13 +3893,12 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\x15memory_mib_per_device\x18\t \x01(\x03R\x15memory_mib_per_device\x12*\n" +
 	"\x10memory_mib_total\x18\n" +
 	" \x01(\x03R\x10memory_mib_total\x12.\n" +
-	"\x12core_limit_percent\x18\b \x01(\rR\x12core_limit_percentJ\x04\b\x06\x10\aJ\x04\b\a\x10\bR\x1cshared_memory_mib_per_deviceR\x17shared_memory_mib_total\"\x99\x02\n" +
+	"\x12core_limit_percent\x18\b \x01(\rR\x12core_limit_percentJ\x04\b\x06\x10\aJ\x04\b\a\x10\bR\x1cshared_memory_mib_per_deviceR\x17shared_memory_mib_total\"\xfc\x01\n" +
 	"\x18ResolveCreateSpecRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x123\n" +
 	"\x04data\x18\x02 \x01(\v2\x1f.instance.v1.CreateInstanceDataR\x04data\x12\x1c\n" +
 	"\tnamespace\x18\x03 \x01(\tR\tnamespace\x12O\n" +
-	"\x13scheduling_defaults\x18\x04 \x01(\v2\x1e.instance.v1.SchedulingOptionsR\x12schedulingDefaults\x12<\n" +
-	"\x19instance_contract_version\x18\x05 \x01(\rR\x19instance_contract_version\"\xab\v\n" +
+	"\x13scheduling_defaults\x18\x04 \x01(\v2\x1e.instance.v1.SchedulingOptionsR\x12schedulingDefaultsJ\x04\b\x05\x10\x06R\x19instance_contract_version\"\x8e\v\n" +
 	"\n" +
 	"CreateSpec\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
@@ -3954,8 +3928,7 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\vpreset_code\x18\x14 \x01(\tR\vpreset_code\x12B\n" +
 	"\rgpu_execution\x18\x15 \x01(\v2\x1c.accelerator.v1.GpuExecutionR\rgpu_execution\x12<\n" +
 	"\vgpu_display\x18\x16 \x01(\v2\x1a.accelerator.v1.GpuDisplayR\vgpu_display\x12E\n" +
-	"\rgpu_selection\x18\x17 \x01(\v2\x1f.instance.v1.GpuPresetReferenceR\rgpu_selection\x12<\n" +
-	"\x19instance_contract_version\x18\x18 \x01(\rR\x19instance_contract_version\x122\n" +
+	"\rgpu_selection\x18\x17 \x01(\v2\x1f.instance.v1.GpuPresetReferenceR\rgpu_selection\x122\n" +
 	"\x14workspace_mount_path\x18\x19 \x01(\tR\x14workspace_mount_path\x12D\n" +
 	"\rvolume_mounts\x18\x1a \x03(\v2\x1e.instance.v1.FrozenVolumeMountR\rvolume_mounts\x127\n" +
 	"\anetwork\x18\x1b \x01(\v2\x1d.instance.v1.NetworkSelectionR\anetwork\x12;\n" +
@@ -3968,7 +3941,7 @@ const file_instance_v1_instance_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a>\n" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9c\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x18\x10\x19R\x19instance_contract_version\"\x9c\x01\n" +
 	"\x0eCommandContext\x12\x1c\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\ttenant_id\x12 \n" +
 	"\vresource_id\x18\x02 \x01(\tR\vresource_id\x12\"\n" +
