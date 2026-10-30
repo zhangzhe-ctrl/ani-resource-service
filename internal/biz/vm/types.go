@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 )
@@ -117,7 +119,50 @@ type VM struct {
 	Desired, Observed, Reason, LastOperationID string
 	Addresses                                  []Address
 	ObservedAt                                 time.Time
+	// CreatedAt comes from the row column; it is not part of the stored payload.
+	CreatedAt time.Time `json:"-"`
 }
+
+// ListFilter is the tenant-scoped list query. State is the display-state group
+// accepted by the public contract, not the raw Observed value.
+type ListFilter struct {
+	Page, PageSize uint32
+	State, Keyword string
+}
+
+// vmListStates is the closed set of display-state groups. "all" and the empty
+// value mean the same thing: every state except deleted tombstones.
+var vmListStates = map[string]bool{
+	"pending": true, "provisioning": true, "starting": true, "stopping": true,
+	"running": true, "stopped": true, "failed": true, "deleting": true, "deleted": true,
+}
+
+// Validated applies defaults and rejects values outside the public contract.
+// It is shared by the repository and by callers that need to fail early.
+func (f ListFilter) Validated() (ListFilter, error) {
+	if f.Page == 0 {
+		f.Page = 1
+	}
+	if f.PageSize == 0 {
+		f.PageSize = 20
+	}
+	if f.PageSize > 100 {
+		return f, ErrInvalid
+	}
+	f.State = strings.TrimSpace(f.State)
+	if f.State == "all" {
+		f.State = ""
+	}
+	if f.State != "" && !vmListStates[f.State] {
+		return f, ErrInvalid
+	}
+	f.Keyword = strings.TrimSpace(f.Keyword)
+	if utf8.RuneCountInString(f.Keyword) > 80 {
+		return f, ErrInvalid
+	}
+	return f, nil
+}
+
 type Operation struct {
 	TenantID, ID, VMID, Action, Key, RequestDigest string
 	Intent                                         json.RawMessage
@@ -152,7 +197,7 @@ type Repository interface {
 	AcceptCommand(context.Context, Command) (Operation, error)
 	LookupReplay(context.Context, Command) (Operation, error)
 	Get(context.Context, string, string) (VM, error)
-	List(context.Context, string, uint32, uint32) ([]VM, int64, error)
+	List(context.Context, string, ListFilter) ([]VM, int64, error)
 	GetOperation(context.Context, string, string, string) (Operation, error)
 	Claim(context.Context, string, time.Duration) (Operation, VM, error)
 	Save(context.Context, Operation, VM) error

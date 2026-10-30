@@ -275,7 +275,7 @@ func wireVM(v biz.VM) (*pb.VirtualMachine, error) {
 	if e != nil {
 		return nil, rpcError(e)
 	}
-	out := &pb.VirtualMachine{SecurityGroupIds: append([]string(nil), v.SecurityGroupIDs...), Id: v.ID, Name: v.Name, Version: v.Version, OsFamily: v.Spec.Media.OSFamily, OsVersion: v.Spec.Media.OSVersion, FrozenSpec: spec, DesiredState: v.Desired, ObservedState: v.Observed, Reason: v.Reason, ObservedAt: observed(v.ObservedAt), LastOperationId: v.LastOperationID, Closing: v.Closing, BootDevice: v.Spec.BootDevice}
+	out := &pb.VirtualMachine{SecurityGroupIds: append([]string(nil), v.SecurityGroupIDs...), Id: v.ID, Name: v.Name, Version: v.Version, OsFamily: v.Spec.Media.OSFamily, OsVersion: v.Spec.Media.OSVersion, FrozenSpec: spec, DesiredState: v.Desired, ObservedState: v.Observed, Reason: v.Reason, ObservedAt: observed(v.ObservedAt), LastOperationId: v.LastOperationID, Closing: v.Closing, BootDevice: v.Spec.BootDevice, CreatedAt: observed(v.CreatedAt)}
 	if !v.SecurityGroupsInitialized {
 		out.SecurityGroupIds = append([]string(nil), v.Spec.SecurityGroupIDs...)
 	}
@@ -306,7 +306,7 @@ func (s *Service) ListVMs(ctx context.Context, r *pb.ListVMsRequest) (*pb.ListVM
 	if e := biz.RequireTenant(ctx, r.TenantId); e != nil {
 		return nil, rpcError(e)
 	}
-	all, total, e := s.repo.List(ctx, r.TenantId, r.Page, r.PageSize)
+	all, total, e := s.repo.List(ctx, r.TenantId, biz.ListFilter{Page: r.Page, PageSize: r.PageSize, State: r.State, Keyword: r.Keyword})
 	if e != nil {
 		return nil, rpcError(e)
 	}

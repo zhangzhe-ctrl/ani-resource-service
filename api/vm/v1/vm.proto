@@ -126,7 +126,11 @@ message AcceptDeleteRequest {
 }
 message Acceptance { string operation_id = 1; string resource_id = 2; bool accepted = 3; }
 message GetVMRequest { string tenant_id = 1; string vm_id = 2; }
-message ListVMsRequest { string tenant_id = 1; uint32 page = 2; uint32 page_size = 3; }
+message ListVMsRequest {
+  string tenant_id = 1; uint32 page = 2; uint32 page_size = 3;
+  // Display-state group filter; empty means all except deleted tombstones.
+  string state = 4; string keyword = 5;
+}
 message ListVMsResponse { repeated VirtualMachine items = 1; int64 total = 2; }
 message GetOperationRequest { string tenant_id = 1; string vm_id = 2; string operation_id = 3; }
 message ChangeVMRequest {
@@ -183,6 +187,7 @@ message VirtualMachine {
   string last_operation_id = 12; bool closing = 13; repeated Disk disks = 14;
   repeated MediaState media = 15; string boot_device = 16;
   repeated string security_group_ids = 17 [json_name = "security_group_ids"];
+  string created_at = 18 [json_name = "createdAt"];
 }
 message Operation {
   string id = 1; string vm_id = 2; string action = 3; int64 intent_version = 4;

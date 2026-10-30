@@ -161,15 +161,18 @@ func validAcceptance(a biz.Acceptance) bool {
 func readVM(ctx context.Context, q interface {
 	QueryRow(context.Context, string, ...any) pgx.Row
 }, tenant, id string, lock bool) (biz.VM, error) {
-	sql := "SELECT current_configuration FROM vm.virtual_machines WHERE tenant_id=$1 AND id=$2"
+	sql := "SELECT current_configuration,created_at FROM vm.virtual_machines WHERE tenant_id=$1 AND id=$2"
 	if lock {
 		sql += " FOR UPDATE"
 	}
 	var b []byte
-	if e := q.QueryRow(ctx, sql, tenant, id).Scan(&b); e != nil {
+	var created time.Time
+	if e := q.QueryRow(ctx, sql, tenant, id).Scan(&b, &created); e != nil {
 		return biz.VM{}, notFound(e)
 	}
-	return vmFrom(b)
+	v, e := vmFrom(b)
+	v.CreatedAt = created.UTC()
+	return v, e
 }
 func readReplay(ctx context.Context, q interface {
 	QueryRow(context.Context, string, ...any) pgx.Row
@@ -336,21 +339,53 @@ func (p *Postgres) GetOperation(ctx context.Context, t, id, op string) (biz.Oper
 	}
 	return opFrom(b)
 }
-func (p *Postgres) List(ctx context.Context, t string, page, size uint32) ([]biz.VM, int64, error) {
-	if page == 0 {
-		page = 1
-	}
-	if size == 0 {
-		size = 20
-	}
-	if size > 100 {
-		return nil, 0, biz.ErrInvalid
-	}
-	var n int64
-	if e := p.pool.QueryRow(ctx, "SELECT count(*) FROM vm.virtual_machines WHERE tenant_id=$1", t).Scan(&n); e != nil {
+
+// vmDisplayState classifies a stored row into one public display state. The
+// order is significant: the first matching branch wins, so every row belongs to
+// exactly one group.
+const vmDisplayState = `CASE
+ WHEN lower(coalesce(current_configuration->>'Observed',''))='deleted' THEN 'deleted'
+ WHEN closing OR lower(coalesce(current_configuration->>'Desired',''))='deleted' THEN 'deleting'
+ WHEN lower(coalesce(current_configuration->>'Observed',''))='failed' THEN 'failed'
+ WHEN lower(coalesce(current_configuration->>'Observed',''))='running'
+      AND lower(coalesce(current_configuration->>'Desired',''))='running' THEN 'running'
+ WHEN lower(coalesce(current_configuration->>'Observed','')) IN ('stopped','succeeded')
+      AND lower(coalesce(current_configuration->>'Desired',''))='stopped' THEN 'stopped'
+ WHEN lower(coalesce(current_configuration->>'Observed',''))='running'
+      AND lower(coalesce(current_configuration->>'Desired',''))='stopped' THEN 'stopping'
+ WHEN lower(coalesce(current_configuration->>'Desired',''))='running' THEN 'starting'
+ WHEN lower(coalesce(current_configuration->>'Observed','')) IN ('scheduling','scheduled') THEN 'provisioning'
+ ELSE 'pending'
+END`
+
+// vmListWhere builds the tenant-scoped filter shared by the count and page queries.
+// Placeholders are always $1..$3 so both queries can reuse the same argument slice.
+func vmListWhere(tenant string, f biz.ListFilter) (string, []any) {
+	where := " WHERE tenant_id=$1" +
+		" AND ($2::text='' OR (" + vmDisplayState + ")=$2::text)" +
+		" AND ($2::text<>'' OR (" + vmDisplayState + ")<>'deleted')" +
+		" AND ($3::text='' OR position(lower($3) in lower(coalesce(current_configuration->>'Name','')))>0" +
+		" OR position(lower($3) in lower(id::text))>0)"
+	return where, []any{tenant, f.State, f.Keyword}
+}
+
+func (p *Postgres) List(ctx context.Context, t string, f biz.ListFilter) ([]biz.VM, int64, error) {
+	f, e := f.Validated()
+	if e != nil {
 		return nil, 0, e
 	}
-	rows, e := p.pool.Query(ctx, "SELECT current_configuration FROM vm.virtual_machines WHERE tenant_id=$1 ORDER BY created_at DESC,id LIMIT $2 OFFSET $3", t, size, int64(page-1)*int64(size))
+	where, args := vmListWhere(t, f)
+	tx, e := p.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if e != nil {
+		return nil, 0, e
+	}
+	defer tx.Rollback(ctx)
+	var n int64
+	if e = tx.QueryRow(ctx, "SELECT count(*) FROM vm.virtual_machines"+where, args...).Scan(&n); e != nil {
+		return nil, 0, e
+	}
+	args = append(args, int64(f.PageSize), int64(f.Page-1)*int64(f.PageSize))
+	rows, e := tx.Query(ctx, "SELECT current_configuration,created_at FROM vm.virtual_machines"+where+" ORDER BY created_at DESC,id LIMIT $4 OFFSET $5", args...)
 	if e != nil {
 		return nil, 0, e
 	}
@@ -358,16 +393,24 @@ func (p *Postgres) List(ctx context.Context, t string, page, size uint32) ([]biz
 	all := []biz.VM{}
 	for rows.Next() {
 		var b []byte
-		if e = rows.Scan(&b); e != nil {
+		var created time.Time
+		if e = rows.Scan(&b, &created); e != nil {
 			return nil, 0, e
 		}
 		v, x := vmFrom(b)
 		if x != nil {
 			return nil, 0, x
 		}
+		v.CreatedAt = created.UTC()
 		all = append(all, v)
 	}
-	return all, n, rows.Err()
+	if e = rows.Err(); e != nil {
+		return nil, 0, e
+	}
+	if e = tx.Commit(ctx); e != nil {
+		return nil, 0, e
+	}
+	return all, n, nil
 }
 func (p *Postgres) Claim(ctx context.Context, token string, d time.Duration) (biz.Operation, biz.VM, error) {
 	if !biz.UUID(token) || d < time.Second {

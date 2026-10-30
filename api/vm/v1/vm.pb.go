@@ -1639,10 +1639,13 @@ func (x *GetVMRequest) GetVmId() string {
 }
 
 type ListVMsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
-	Page          uint32                 `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
-	PageSize      uint32                 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	TenantId string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	Page     uint32                 `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize uint32                 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// Display-state group filter; empty means all except deleted tombstones.
+	State         string `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
+	Keyword       string `protobuf:"bytes,5,opt,name=keyword,proto3" json:"keyword,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1696,6 +1699,20 @@ func (x *ListVMsRequest) GetPageSize() uint32 {
 		return x.PageSize
 	}
 	return 0
+}
+
+func (x *ListVMsRequest) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *ListVMsRequest) GetKeyword() string {
+	if x != nil {
+		return x.Keyword
+	}
+	return ""
 }
 
 type ListVMsResponse struct {
@@ -3113,6 +3130,7 @@ type VirtualMachine struct {
 	Media            []*MediaState          `protobuf:"bytes,15,rep,name=media,proto3" json:"media,omitempty"`
 	BootDevice       string                 `protobuf:"bytes,16,opt,name=boot_device,json=bootDevice,proto3" json:"boot_device,omitempty"`
 	SecurityGroupIds []string               `protobuf:"bytes,17,rep,name=security_group_ids,proto3" json:"security_group_ids,omitempty"`
+	CreatedAt        string                 `protobuf:"bytes,18,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -3264,6 +3282,13 @@ func (x *VirtualMachine) GetSecurityGroupIds() []string {
 		return x.SecurityGroupIds
 	}
 	return nil
+}
+
+func (x *VirtualMachine) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
 }
 
 type Operation struct {
@@ -4184,11 +4209,13 @@ const file_vm_v1_vm_proto_rawDesc = "" +
 	"\baccepted\x18\x03 \x01(\bR\baccepted\"@\n" +
 	"\fGetVMRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x13\n" +
-	"\x05vm_id\x18\x02 \x01(\tR\x04vmId\"^\n" +
+	"\x05vm_id\x18\x02 \x01(\tR\x04vmId\"\x8e\x01\n" +
 	"\x0eListVMsRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\rR\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x03 \x01(\rR\bpageSize\"T\n" +
+	"\tpage_size\x18\x03 \x01(\rR\bpageSize\x12\x14\n" +
+	"\x05state\x18\x04 \x01(\tR\x05state\x12\x18\n" +
+	"\akeyword\x18\x05 \x01(\tR\akeyword\"T\n" +
 	"\x0fListVMsResponse\x12+\n" +
 	"\x05items\x18\x01 \x03(\v2\x15.vm.v1.VirtualMachineR\x05items\x12\x14\n" +
 	"\x05total\x18\x02 \x01(\x03R\x05total\"j\n" +
@@ -4295,7 +4322,7 @@ const file_vm_v1_vm_proto_rawDesc = "" +
 	"\bnic_name\x18\x01 \x01(\tR\anicName\x12\x18\n" +
 	"\aaddress\x18\x02 \x01(\tR\aaddress\x12\x1f\n" +
 	"\vobserved_at\x18\x03 \x01(\tR\n" +
-	"observedAt\"\xdb\x04\n" +
+	"observedAt\"\xfa\x04\n" +
 	"\x0eVirtualMachine\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -4318,7 +4345,9 @@ const file_vm_v1_vm_proto_rawDesc = "" +
 	"\x05media\x18\x0f \x03(\v2\x11.vm.v1.MediaStateR\x05media\x12\x1f\n" +
 	"\vboot_device\x18\x10 \x01(\tR\n" +
 	"bootDevice\x12.\n" +
-	"\x12security_group_ids\x18\x11 \x03(\tR\x12security_group_ids\"\xbe\x01\n" +
+	"\x12security_group_ids\x18\x11 \x03(\tR\x12security_group_ids\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x12 \x01(\tR\tcreatedAt\"\xbe\x01\n" +
 	"\tOperation\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x13\n" +
 	"\x05vm_id\x18\x02 \x01(\tR\x04vmId\x12\x16\n" +
