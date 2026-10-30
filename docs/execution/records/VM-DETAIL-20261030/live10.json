@@ -1,0 +1,716 @@
+{
+  "verifiedAt": "2026-10-30 Asia/Shanghai",
+  "executionHost": "ssh fedora; 172.16.101.31",
+  "remoteRun": "/home/chabking/codex-runs/vm-detail-enrichment-20261030/live10",
+  "cluster": {
+    "name": "ani-lab",
+    "kubeSystemUID": "5277649d-e28d-4a0a-ae76-8354365c63bc",
+    "nodes": [
+      "172.16.101.10",
+      "172.16.101.11",
+      "172.16.101.12"
+    ]
+  },
+  "source": {
+    "resource": "81c625f0532f1189a50470d6ae01831038c27184",
+    "governance": "bd484be86923a60a289f695749f87e76abfc7330",
+    "console": "41266db4629ce29829cc3e0c25f8f1d7f5c56ace",
+    "consoleBaseBranch": "feat/governance-api",
+    "resourceSDK": "v0.0.0-20261030112612-81c625f0532f",
+    "sdkResolution": "GOWORK=off; candidate file proxy; not published"
+  },
+  "deployments": {
+    "resource": {
+      "name": "ani-resource-service",
+      "image": "172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:c7034638fb394e24043e209ff0cccf6f8631df9208ad5aa1894d41b9d9a87e45",
+      "revision": "81c625f0532f1189a50470d6ae01831038c27184",
+      "generation": 53,
+      "pods": [
+        {
+          "name": "ani-resource-service-7956f75d68-qcpv4",
+          "uid": "3ef041d5-ab01-4d0d-9285-ba953ccf4a34",
+          "node": "ani-01",
+          "containers": [
+            {
+              "allocatedResources": {
+                "cpu": "500m",
+                "memory": "256Mi"
+              },
+              "containerID": "containerd://1dd683ef3195d6b7ada8ea5ff864b0b8c0f8ef9fc310d8cd7ff42ca2e5f7bdb3",
+              "image": "sha256:3ff5350bdb130e1c4df2196ba561cff2f234a85f4c3297490c278e7decc829e5",
+              "imageID": "172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:c7034638fb394e24043e209ff0cccf6f8631df9208ad5aa1894d41b9d9a87e45",
+              "lastState": {},
+              "name": "server",
+              "ready": true,
+              "resources": {
+                "limits": {
+                  "cpu": "2",
+                  "memory": "1Gi"
+                },
+                "requests": {
+                  "cpu": "500m",
+                  "memory": "256Mi"
+                }
+              },
+              "restartCount": 0,
+              "started": true,
+              "state": {
+                "running": {
+                  "startedAt": "2026-10-30T12:26:30Z"
+                }
+              },
+              "user": {
+                "linux": {
+                  "gid": 65532,
+                  "supplementalGroups": [
+                    65532
+                  ],
+                  "uid": 65532
+                }
+              },
+              "volumeMounts": [
+                {
+                  "mountPath": "/run/image-runtime-tls",
+                  "name": "image-runtime-tls",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/configs",
+                  "name": "configs",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/resource-mtls",
+                  "name": "tls",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/resource-private",
+                  "name": "private",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/resource-quota-mtls",
+                  "name": "quota-tls",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/resource-accelerator-mtls",
+                  "name": "accelerator-tls",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                  "name": "kube-api-access-rqmff",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "governance": {
+      "name": "ani-governance",
+      "image": "172.16.101.10:30003/icn-01a15337-release/ani-governance@sha256:879d0601d11760ddb3efa5c217641e2f7f8bc3393b1d79a28ad99ca8b73b07d9",
+      "revision": "bd484be86923a60a289f695749f87e76abfc7330",
+      "generation": 157,
+      "pods": [
+        {
+          "name": "ani-governance-548d98ddd6-f8sl9",
+          "uid": "96be5967-c1f5-4aa6-86fd-a9375a339b17",
+          "node": "ani-01",
+          "containers": [
+            {
+              "allocatedResources": {
+                "cpu": "100m",
+                "memory": "128Mi"
+              },
+              "containerID": "containerd://709d85dc262f0901f441f8dc45357f2af6eea56d5a619fe492550a5829c23f11",
+              "image": "sha256:12c234f0c7230eaecdaa0ca5505266765ba83ab7a82593b3f12ac82782d5675a",
+              "imageID": "172.16.101.10:30003/icn-01a15337-release/ani-governance@sha256:879d0601d11760ddb3efa5c217641e2f7f8bc3393b1d79a28ad99ca8b73b07d9",
+              "lastState": {},
+              "name": "server",
+              "ready": true,
+              "resources": {
+                "limits": {
+                  "cpu": "1",
+                  "memory": "1Gi"
+                },
+                "requests": {
+                  "cpu": "100m",
+                  "memory": "128Mi"
+                }
+              },
+              "restartCount": 0,
+              "started": true,
+              "state": {
+                "running": {
+                  "startedAt": "2026-10-30T12:26:50Z"
+                }
+              },
+              "user": {
+                "linux": {
+                  "gid": 65532,
+                  "supplementalGroups": [
+                    65532
+                  ],
+                  "uid": 65532
+                }
+              },
+              "volumeMounts": [
+                {
+                  "mountPath": "/run/component-logs",
+                  "name": "component-logs-config",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/component-logs-credentials",
+                  "name": "component-logs-credentials",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/secrets/observability-mtls",
+                  "name": "observability-mtls",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/configs",
+                  "name": "configs",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/secrets/ake",
+                  "name": "ake",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/secrets/modeldev-mtls",
+                  "name": "modeldev-mtls",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/secrets/resource-mtls",
+                  "name": "resource-mtls",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/secrets/model-inference-mtls",
+                  "name": "model-inference-mtls",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/secrets/accelerator-lab-mtls",
+                  "name": "accelerator-lab-mtls",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/run/secrets/session-mtls",
+                  "name": "session-mtls",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                },
+                {
+                  "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                  "name": "kube-api-access-25ml6",
+                  "readOnly": true,
+                  "recursiveReadOnly": "Disabled"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "console": {
+    "sourceServer": "http://172.16.101.31:41797",
+    "proxyTarget": "http://172.16.101.10:30085",
+    "normalTenantLogin": true,
+    "fixtures": false,
+    "existingClusterConsole30081Replaced": false,
+    "normalBrowserLogoutVerified": true,
+    "listToExistingDetailNavigation": "PASS",
+    "temporaryServerStoppedAfterVerification": true
+  },
+  "authenticatedRealVMDetail": {
+    "id": "2848bada-fc0f-4159-885c-7df3a3ddedae",
+    "name": "vm-detail-live10-20261030",
+    "version": "2",
+    "osFamily": "linux",
+    "osVersion": "24.04.5 LTS (Noble Numbat)",
+    "desiredState": "Running",
+    "observedState": "Running",
+    "reason": "",
+    "observedAt": "2026-10-30T12:29:49.032191207Z",
+    "addresses": [
+      {
+        "nicName": "default",
+        "address": "10.73.0.2",
+        "observedAt": "2026-10-30T12:38:19.360625Z"
+      }
+    ],
+    "lastOperationId": "7dcbbbd4-859e-455c-bb8a-7519e5b94028",
+    "closing": false,
+    "disks": [
+      {
+        "diskId": "a5ee657e-f8e8-58dc-bdd8-e1155b41d82f",
+        "role": "system",
+        "name": "system",
+        "sizeGb": "30",
+        "requestedBytes": "30000000000",
+        "observedCapacityBytes": "30064771072",
+        "volumeName": "disk-a5ee657ef8e858dcbdd8e1155b41d82f",
+        "serial": "a5ee657e-f8e8-58dc-bdd8-e1155b41d82f",
+        "attached": true,
+        "preparationState": "Bound",
+        "reason": ""
+      }
+    ],
+    "media": [
+      {
+        "slot": "INSTALL",
+        "desiredMedia": "",
+        "observedMedia": "",
+        "effectiveNow": true,
+        "pendingRestart": false
+      },
+      {
+        "slot": "DRIVER",
+        "desiredMedia": "",
+        "observedMedia": "",
+        "effectiveNow": true,
+        "pendingRestart": false
+      }
+    ],
+    "bootDevice": "SYSTEM_DISK",
+    "presetId": "61b5207d-8cbb-40b8-adfa-14977373e7f4",
+    "cpuMillis": "1000",
+    "memoryMib": "1024",
+    "systemDiskSizeGb": "30",
+    "sourceKind": "DISK_IMAGE",
+    "mediaKey": "ubuntu-24.04",
+    "dns": {
+      "mode": "PLATFORM_DEFAULT",
+      "nameservers": [
+        "223.5.5.5",
+        "1.1.1.1"
+      ]
+    },
+    "security_group_ids": [],
+    "createdAt": "2026-10-30T12:29:01.497506Z",
+    "presetName": "测试创建",
+    "hardware": {
+      "sockets": 1,
+      "cores": 1,
+      "threads": 1,
+      "architecture": "amd64",
+      "firmware": "bios",
+      "rootBus": "virtio",
+      "dataBus": "scsi",
+      "nicModel": "virtio",
+      "persistentTpm": false,
+      "persistentUefi": false
+    },
+    "initialization": {
+      "method": "CLOUD_INIT_NOCLOUD",
+      "username": "aniuser",
+      "sshKeyFingerprint": "SHA256:HbWe63OglHojcu+O7ovQK2dQWaEBuKzE2qAP4hq7j4w"
+    },
+    "sourceMedia": {
+      "mediaKey": "ubuntu-24.04",
+      "name": "Ubuntu 24.04.5 LTS",
+      "kind": "DISK_IMAGE",
+      "osFamily": "linux",
+      "osVersion": "24.04.5 LTS (Noble Numbat)",
+      "architecture": "amd64",
+      "firmware": "bios",
+      "rootBus": "virtio",
+      "dataBus": "scsi",
+      "nicModel": "virtio",
+      "persistentTpm": false,
+      "persistentUefi": false,
+      "driverMediaKey": "",
+      "virtualCapacityBytes": "3758096384",
+      "initializationCapability": "CLOUD_INIT_NOCLOUD",
+      "initializationVerified": true
+    },
+    "runtime": {
+      "state": "AGENT_NOT_CONNECTED",
+      "agentState": "NOT_CONNECTED",
+      "observedAt": "2026-10-30T12:38:24.149816484Z",
+      "nodeName": "ani-02",
+      "startedAt": "2026-10-30T12:29:46Z",
+      "hostname": "",
+      "agentVersion": "",
+      "osName": "",
+      "osVersion": "",
+      "kernelRelease": "",
+      "kernelVersion": "",
+      "interfaces": [
+        {
+          "name": "default",
+          "guestName": "",
+          "mac": "fa:00:30:8c:83:9e",
+          "addresses": [
+            "10.73.0.2"
+          ],
+          "infoSource": "domain"
+        }
+      ],
+      "filesystemsState": "NOT_QUERIED",
+      "filesystems": []
+    },
+    "relations": {
+      "vpc": {
+        "id": "vpc_6d7a163a92c24a359dd6536475cb68ad",
+        "name": "test",
+        "state": "RESOLVED"
+      },
+      "subnet": {
+        "id": "subnet_44b196cec7a94afeb05c11f15fb160e0",
+        "name": "test",
+        "state": "RESOLVED"
+      },
+      "securityGroups": []
+    }
+  },
+  "snapshot": {
+    "snapshotId": "d5e47daa-e722-5364-b175-d8effe2ba722",
+    "sourceVmId": "2848bada-fc0f-4159-885c-7df3a3ddedae",
+    "sourceVmUid": "17e8073c-77c4-4fdc-b1c6-8fa0a9f22063",
+    "ready": true,
+    "completeness": "COMPLETE",
+    "included": [
+      "disk-a5ee657ef8e858dcbdd8e1155b41d82f"
+    ],
+    "excluded": [
+      "guest-initialization"
+    ],
+    "indications": [
+      "NoGuestAgent",
+      "Online"
+    ],
+    "disks": [
+      {
+        "diskId": "a5ee657e-f8e8-58dc-bdd8-e1155b41d82f",
+        "role": "system",
+        "name": "system",
+        "sizeGb": "30",
+        "requestedBytes": "30000000000",
+        "observedCapacityBytes": "30064771072",
+        "volumeName": "disk-a5ee657ef8e858dcbdd8e1155b41d82f",
+        "serial": "a5ee657e-f8e8-58dc-bdd8-e1155b41d82f",
+        "attached": true,
+        "preparationState": "Bound",
+        "reason": ""
+      }
+    ],
+    "observedAt": "2026-10-30T12:41:34.38339478Z",
+    "reason": "",
+    "name": "vm-detail-read-proof-20261030",
+    "createdAt": "2026-10-30T12:36:11Z"
+  },
+  "nativeQGA": {
+    "scope": "read-only actual Resource service-account RBAC and native QGA response shape; not positive Gov/Console acceptance",
+    "results": [
+      {
+        "vmId": "96575d3e-185d-4939-a01f-b82562d7af08",
+        "vmiUID": "e4e2c6a5-ab73-4699-ab9c-e0e8de23340a",
+        "guestosinfo": {
+          "hostname": "vm-96575d3e-185d-4939-a01f-b82562d7af08",
+          "guestAgentVersion": "10.2.2",
+          "os": {
+            "id": "fedora",
+            "kernelRelease": "6.19.10-300.fc44.x86_64",
+            "kernelVersion": "#1 SMP PREEMPT_DYNAMIC Wed Mar 25 18:23:49 UTC 2026",
+            "machine": "x86_64",
+            "name": "Fedora Linux",
+            "prettyName": "Fedora Linux 44 (KDE Plasma Desktop Edition)",
+            "version": "44 (KDE Plasma Desktop Edition)",
+            "versionId": "44"
+          }
+        },
+        "fsinfoEnabled": true,
+        "filesystemlist": [
+          {
+            "diskName": "vda1",
+            "mountPoint": "/boot/efi",
+            "fileSystemType": "vfat",
+            "totalBytes": 627875840,
+            "usedBytes": 20987904
+          },
+          {
+            "diskName": "vda2",
+            "mountPoint": "/boot",
+            "fileSystemType": "ext4",
+            "totalBytes": 1916223488,
+            "usedBytes": 376225792
+          },
+          {
+            "diskName": "vda3",
+            "mountPoint": "/",
+            "fileSystemType": "btrfs",
+            "totalBytes": 45472235520,
+            "usedBytes": 4991594496
+          }
+        ]
+      },
+      {
+        "vmId": "fc154879-8a40-4b18-967c-215f5cf5992d",
+        "vmiUID": "d3cc1de1-bd43-4b91-93f1-cfdca333dbd0",
+        "guestosinfo": {
+          "hostname": "WIN-MRBT9E3A5Q7",
+          "guestAgentVersion": "109.1.0",
+          "os": {
+            "id": "mswindows",
+            "kernelRelease": "26100",
+            "kernelVersion": "10.0",
+            "machine": "x86_64",
+            "name": "Microsoft Windows",
+            "prettyName": "Windows Server 2025 Standard",
+            "version": "Microsoft Windows Server 2025",
+            "versionId": "2025"
+          }
+        },
+        "fsinfoEnabled": true,
+        "filesystemlist": [
+          {
+            "diskName": "\\\\?\\Volume{8f2580e7-cf45-11f1-8839-806e6f6e6963}\\",
+            "mountPoint": "D:\\",
+            "fileSystemType": "CDFS",
+            "totalBytes": 726501376,
+            "usedBytes": 726501376
+          },
+          {
+            "diskName": "\\\\?\\Volume{a8bc1f8f-0000-0000-0000-008812000000}\\",
+            "mountPoint": "System Reserved",
+            "fileSystemType": "NTFS",
+            "totalBytes": 0,
+            "usedBytes": 0
+          },
+          {
+            "diskName": "\\\\?\\Volume{a8bc1f8f-0000-0000-0000-500600000000}\\",
+            "mountPoint": "C:\\",
+            "fileSystemType": "NTFS",
+            "totalBytes": 79485202432,
+            "usedBytes": 18089574400
+          },
+          {
+            "diskName": "\\\\?\\Volume{0b5c59ea-8216-4e20-8e7d-c8918623179e}\\",
+            "mountPoint": "U:\\",
+            "fileSystemType": "NTFS",
+            "totalBytes": 4277137408,
+            "usedBytes": 24412160
+          },
+          {
+            "diskName": "\\\\?\\Volume{5d368c8c-38de-486f-ae5b-fa3732fb8692}\\",
+            "mountPoint": "T:\\",
+            "fileSystemType": "NTFS",
+            "totalBytes": 3204378624,
+            "usedBytes": 20938752
+          },
+          {
+            "diskName": "\\\\?\\Volume{a8bc1f8f-0000-0000-0000-100000000000}\\",
+            "mountPoint": "System Reserved",
+            "fileSystemType": "NTFS",
+            "totalBytes": 0,
+            "usedBytes": 0
+          }
+        ]
+      }
+    ]
+  },
+  "isolation": {
+    "status": 404,
+    "response": {
+      "code": 404,
+      "reason": "VM_NOT_FOUND",
+      "message": "VM request failed",
+      "metadata": {}
+    },
+    "otherTenantVMWasNotModified": true
+  },
+  "secondCreate": {
+    "result": "FAIL",
+    "reason": "ResolveCreateSpec returned VM_DEPENDENCY_NOT_READY twice",
+    "matchingTenantVMs": 0
+  },
+  "cleanup": {
+    "state": "PASS",
+    "vmId": "2848bada-fc0f-4159-885c-7df3a3ddedae",
+    "ownerDelete": {
+      "id": "a364d033-5f35-4f86-9836-bd8bba688917",
+      "vmId": "2848bada-fc0f-4159-885c-7df3a3ddedae",
+      "action": "/vm.v1.VMService/AcceptDelete",
+      "intentVersion": "4",
+      "state": "succeeded",
+      "reason": "",
+      "observedAt": "2026-10-30T12:47:18.00960033Z"
+    },
+    "taskNativeObjectsAbsent": [
+      {
+        "resource": "vm",
+        "name": "vm-2848bada-fc0f-4159-885c-7df3a3ddedae",
+        "uid": "17e8073c-77c4-4fdc-b1c6-8fa0a9f22063",
+        "pv": ""
+      },
+      {
+        "resource": "vmi",
+        "name": "vm-2848bada-fc0f-4159-885c-7df3a3ddedae",
+        "uid": "f8008402-3020-41bb-9f33-65a608fa9fcb",
+        "pv": ""
+      },
+      {
+        "resource": "dv",
+        "name": "vd-a5ee657e-f8e8-58dc-bdd8-e1155b41d82f",
+        "uid": "d7d0bc98-818c-419b-a969-cc64119be2fc",
+        "pv": ""
+      },
+      {
+        "resource": "pvc",
+        "name": "vd-a5ee657e-f8e8-58dc-bdd8-e1155b41d82f",
+        "uid": "7f88905e-1d9d-45ba-aa22-c6e4d7245e50",
+        "pv": "pvc-588d6535-db52-47e9-81a6-e155b0ffc657"
+      },
+      {
+        "resource": "secret",
+        "name": "vm-init-2848bada-fc0f-4159-885c-7df3a3ddedae",
+        "uid": "5d56cac3-d37b-42da-a993-0e9f8212bb54",
+        "pv": ""
+      },
+      {
+        "resource": "pods",
+        "name": "virt-launcher-vm-2848bada-fc0f-4159-885c-7df3a3ddedae-r5d5f",
+        "uid": "2370810d-095a-4d57-92b8-7d173ca7edfa",
+        "pv": ""
+      }
+    ],
+    "preexistingVMAndVMIUIDsPreserved": true,
+    "oldTaskDatabaseRemainedStopped": true
+  },
+  "acceptance": [
+    {
+      "item": "creation time, frozen source/preset/hardware/initialization username and key fingerprint",
+      "result": "PASS",
+      "scope": "real authenticated Gov/Res API and candidate Console"
+    },
+    {
+      "item": "VPC and subnet names, current node/start/IP/interface observation source",
+      "result": "PASS",
+      "scope": "real authenticated Gov/Res API and candidate Console"
+    },
+    {
+      "item": "security-group name with a nonempty binding",
+      "result": "NOT_RUN",
+      "reason": "test VM has no bound security groups"
+    },
+    {
+      "item": "stopped and agent-disconnected states without invented guest data",
+      "result": "PASS",
+      "scope": "real authenticated Gov/Res API and candidate Console"
+    },
+    {
+      "item": "snapshot name/createdAt distinct from observedAt",
+      "result": "PASS",
+      "scope": "real product-created snapshot, native metadata and candidate Console"
+    },
+    {
+      "item": "optical-drive purpose and next-boot explanation",
+      "result": "PASS",
+      "scope": "real detail page; no media or power mutation needed"
+    },
+    {
+      "item": "Linux and Windows QGA system/filesystem endpoints",
+      "result": "PASS",
+      "scope": "read-only native requests as actual Resource service-account identity; existing VMI UIDs preserved"
+    },
+    {
+      "item": "connected guest -> new Native.ReadRuntime -> Gov -> Console positive flow",
+      "result": "NOT_RUN",
+      "reason": "own Ubuntu test VM had no AgentConnected; second product-create preflight returned VM_DEPENDENCY_NOT_READY twice; old task owner PostgreSQL is stopped and was not restarted"
+    },
+    {
+      "item": "normal product snapshot/VM deletion and native-object/PV absence",
+      "result": "PASS"
+    }
+  ],
+  "intermediateFailures": [
+    "First image build used a raw sha256 base reference; corrected by tagging the already pinned local base, then built and deployed successfully.",
+    "Snapshot poll encountered one 503 and an expired test-driver token; a later normal authenticated read verified the original operation succeeded, with no duplicate create.",
+    "Read-only attempt to obtain old task persisted VM records failed because its PostgreSQL container is stopped. It remained stopped; no positive production Native.ReadRuntime claim is made."
+  ],
+  "screenshots": {
+    "snapshot.png": {
+      "sha256": "dffe5420fcdd2189d2800f8d33e0d1390f032f88aac20cfe6c9ef955da869d1d"
+    },
+    "media.png": {
+      "sha256": "e72c9c47059dd7b12a248deb6bacaa9c563a9cd1429101f5e3743d69b33d68b7"
+    },
+    "network.png": {
+      "sha256": "1caecf677ed8307c089f84feaf35eb4fb3a60e74f07bd977bf72fcf8a9f0a6a4"
+    },
+    "configuration.png": {
+      "sha256": "481a1f3bd8ec94422ad088d7680422399364efcffad1389c3d2bbebd4df8c72a"
+    },
+    "stopped-guest.png": {
+      "sha256": "4ffdafa66b686476726cc0a20524ce777647f9af74e7a5b1955ed2cc02af52d8"
+    }
+  },
+  "drivers": {
+    "product.py": "0675a3b986a86883e80b232676a82ee686e7f9e801ae0a1ff7cf1addb842faf1",
+    "api.py": "1040197269ae0d8732af580921987c8278c1f01c1b1c31ca6fe204cc079ba0c8",
+    "preflight.py": "eef09f93302067f698955431fab9bec878552adb54accda976af4d3891e3b168",
+    "finish-live.py": "d1df6c8b8d3fdaaafbd2ca653d81caaa1b986febb88a9aeb06b77ee3bede3f24",
+    "read-native-qga.py": "69fe97abb6fb5c8f01079f7ebc4c2a089cef95c827398785b0caaaee89083e31",
+    "create-agent-proof.py": "892d64910ce4223a52c91b4c40e3bb23bad03ba2de3dba5728a8a405d6004405"
+  },
+  "finalRuntime": {
+    "taskTransportPIDsStopped": [
+      1856378,
+      1877596
+    ],
+    "privateCredentialCopiesRemoved": [
+      "registry-auth.json",
+      "tenant-login.json"
+    ],
+    "unacceptedGuestTestPasswordRemoved": true,
+    "browserNormalLogoutVerified": true,
+    "services": [
+      {
+        "name": "ani-resource-service",
+        "generation": 53,
+        "image": "172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:c7034638fb394e24043e209ff0cccf6f8631df9208ad5aa1894d41b9d9a87e45",
+        "readyReplicas": 1
+      },
+      {
+        "name": "ani-governance",
+        "generation": 157,
+        "image": "172.16.101.10:30003/icn-01a15337-release/ani-governance@sha256:879d0601d11760ddb3efa5c217641e2f7f8bc3393b1d79a28ad99ca8b73b07d9",
+        "readyReplicas": 1
+      },
+      {
+        "name": "ani-console",
+        "generation": 11,
+        "image": "172.16.101.10:30003/icn-01a15337-release/eight-console@sha256:579f67443f9f188621d8791af33e91d56ef5b9ccfaae25b9fbf2ef52ac1d3d69",
+        "readyReplicas": 1
+      }
+    ]
+  }
+}
