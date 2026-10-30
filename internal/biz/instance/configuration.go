@@ -10,9 +10,6 @@ func ValidateConfiguration(s Spec) error {
 	if ValidateSecurityGroupIDs(s.SecurityGroupIDs) != nil || (len(s.SecurityGroupIDs) > 0 && s.Network == nil) {
 		return ErrInvalid
 	}
-	if s.ContractVersion != 2 {
-		return ErrInvalid
-	}
 	paths := make([]string, 0, len(s.VolumeMounts))
 	for _, m := range s.VolumeMounts {
 		if m.ClusterID != s.ClusterID || m.Namespace != s.Namespace || m.PVCUID == "" || m.PVCName == "" || m.Ownership != "borrowed" {

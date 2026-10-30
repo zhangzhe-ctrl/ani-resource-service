@@ -9,7 +9,7 @@ import (
 
 func TestCPUAdmissionRejectsGPUState(t *testing.T) {
 	const id = "11111111-1111-4111-8111-111111111111"
-	c := Create{TenantID: id, ID: id, OperationID: id, RequestHash: strings.Repeat("a", 64), BusinessDigest: strings.Repeat("b", 64), Spec: Spec{ContractVersion: 2, WorkspaceMountPath: "/workspace", InstanceKind: KindContainer, Scheduling: Scheduling{PodPlacement: "NONE"}, ComputeType: TypeCPU, ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("c", 64), ImageDigest: "sha256:" + strings.Repeat("c", 64), CPU: "1", Memory: "2Gi", UID: 1000, GID: 1000, Shell: "/bin/bash", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", ClusterID: id, Namespace: "tenant-" + id, NotebookName: "instance-" + id, PVCName: "workspace-" + id}}
+	c := Create{TenantID: id, ID: id, OperationID: id, RequestHash: strings.Repeat("a", 64), BusinessDigest: strings.Repeat("b", 64), Spec: Spec{WorkspaceMountPath: "/workspace", InstanceKind: KindContainer, Scheduling: Scheduling{PodPlacement: "NONE"}, ComputeType: TypeCPU, ImageReference: "registry.invalid/work@sha256:" + strings.Repeat("c", 64), ImageDigest: "sha256:" + strings.Repeat("c", 64), CPU: "1", Memory: "2Gi", UID: 1000, GID: 1000, Shell: "/bin/bash", ServiceAccount: "workload", StorageClass: "ani-block", WorkspaceSize: "1Gi", ClusterID: id, Namespace: "tenant-" + id, NotebookName: "instance-" + id, PVCName: "workspace-" + id}}
 	if err := ValidateCreate(c); err != nil {
 		t.Fatal("fixed CPU specification rejected", err)
 	}

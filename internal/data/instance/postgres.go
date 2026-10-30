@@ -148,23 +148,19 @@ func Migrate(ctx context.Context, dsn, role string) error {
 	return tx.Commit(ctx)
 }
 
-const instanceSelect = "SELECT snapshot,version,desired,created_at,updated_at,instance_contract_version,current_mounts,mounts_initialized,applied_mount_version,runtime_desired,recovery_fence FROM instance.instances WHERE tenant_id=$1 AND instance_id=$2"
+const instanceSelect = "SELECT snapshot,version,desired,created_at,updated_at,current_mounts,mounts_initialized,applied_mount_version,runtime_desired,recovery_fence FROM instance.instances WHERE tenant_id=$1 AND instance_id=$2"
 
 type scanner interface{ Scan(...any) error }
 
 func scanInstance(row scanner) (biz.Instance, error) {
 	var i biz.Instance
 	var raw, mounts, fence []byte
-	var contract int32
-	err := row.Scan(&raw, &i.Version, &i.Desired, &i.CreatedAt, &i.UpdatedAt, &contract, &mounts, &i.MountsInitialized, &i.AppliedMountVersion, &i.RuntimeDesired, &fence)
+	err := row.Scan(&raw, &i.Version, &i.Desired, &i.CreatedAt, &i.UpdatedAt, &mounts, &i.MountsInitialized, &i.AppliedMountVersion, &i.RuntimeDesired, &fence)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return i, biz.ErrNotFound
 	}
 	if err != nil {
 		return i, err
-	}
-	if contract != 2 {
-		return i, biz.ErrInvalid
 	}
 	return decodeCurrentInstance(raw, i.Version, i.Desired, i.CreatedAt, i.UpdatedAt, mounts, i.MountsInitialized, i.AppliedMountVersion, i.RuntimeDesired, fence)
 }
@@ -175,9 +171,6 @@ func (p *Postgres) Get(ctx context.Context, tenant, id string) (biz.Instance, er
 	}
 	if err != nil {
 		return biz.Instance{}, err
-	}
-	if r.InstanceContractVersion != 2 {
-		return biz.Instance{}, biz.ErrInvalid
 	}
 	i, err := decodeCurrentInstance(r.Snapshot, r.Version, r.Desired, r.CreatedAt, r.UpdatedAt, r.CurrentMounts, r.MountsInitialized, r.AppliedMountVersion, r.RuntimeDesired, r.RecoveryFence)
 	if err == nil {
@@ -244,7 +237,7 @@ func (p *Postgres) List(ctx context.Context, tenant string, f biz.ListFilter) ([
 		return nil, 0, e
 	}
 	args = append(args, int64(size), offset)
-	rows, e := tx.Query(ctx, "SELECT snapshot,version,desired,created_at,updated_at,instance_contract_version,current_mounts,mounts_initialized,applied_mount_version,runtime_desired,recovery_fence FROM instance.instances"+where+" ORDER BY created_at DESC,instance_id DESC LIMIT $7 OFFSET $8", args...)
+	rows, e := tx.Query(ctx, "SELECT snapshot,version,desired,created_at,updated_at,current_mounts,mounts_initialized,applied_mount_version,runtime_desired,recovery_fence FROM instance.instances"+where+" ORDER BY created_at DESC,instance_id DESC LIMIT $7 OFFSET $8", args...)
 	if e != nil {
 		return nil, 0, e
 	}
@@ -307,7 +300,7 @@ func (p *Postgres) AcceptCreate(ctx context.Context, c biz.Create) (biz.ACK, err
 			if e != nil {
 				return ack, e
 			}
-			if _, e = tx.Exec(ctx, "UPDATE instance.instances SET create_request_hash=$3,snapshot=$4,instance_contract_version=$5 WHERE tenant_id=$1 AND instance_id=$2", i.TenantID, i.ID, c.RequestHash, raw, c.Spec.ContractVersion); e != nil {
+			if _, e = tx.Exec(ctx, "UPDATE instance.instances SET create_request_hash=$3,snapshot=$4 WHERE tenant_id=$1 AND instance_id=$2", i.TenantID, i.ID, c.RequestHash, raw); e != nil {
 				return ack, e
 			}
 			if e = saveNetworkSubmission(ctx, tx, i); e != nil {
@@ -340,7 +333,7 @@ func (p *Postgres) AcceptCreate(ctx context.Context, c biz.Create) (biz.ACK, err
 	if e != nil {
 		return ack, e
 	}
-	if _, e = tx.Exec(ctx, "INSERT INTO instance.instances(tenant_id,instance_id,create_operation_id,create_request_hash,version,desired,snapshot,instance_contract_version,runtime_desired,current_mounts,mounts_initialized) VALUES($1,$2,$3,$4,1,'running',$5,$6,'running',$7,true)", c.TenantID, c.ID, c.OperationID, c.RequestHash, raw, c.Spec.ContractVersion, marshalMounts(i.CurrentMounts)); e != nil {
+	if _, e = tx.Exec(ctx, "INSERT INTO instance.instances(tenant_id,instance_id,create_operation_id,create_request_hash,version,desired,snapshot,runtime_desired,current_mounts,mounts_initialized) VALUES($1,$2,$3,$4,1,'running',$5,'running',$6,true)", c.TenantID, c.ID, c.OperationID, c.RequestHash, raw, marshalMounts(i.CurrentMounts)); e != nil {
 		return ack, e
 	}
 	if e = saveNetworkSubmission(ctx, tx, i); e != nil {
@@ -383,12 +376,12 @@ func (p *Postgres) AcceptDelete(ctx context.Context, d biz.Delete) (biz.ACK, err
 		if d.ExpectedVersion > 1 {
 			return ack, biz.ErrVersion
 		}
-		i = biz.Instance{TenantID: d.TenantID, ID: d.ID, CreateOperationID: d.CreateOperationID, CurrentMounts: []biz.VolumeMount{}, MountsInitialized: true, RuntimeDesired: biz.Deleted, Spec: biz.Spec{InstanceKind: d.InstanceKind, ComputeType: d.ComputeType, ContractVersion: 2, WorkspaceMountPath: "/workspace"}, Version: 1, Desired: biz.Deleted, Observed: "pending", LastOperationID: d.OperationID}
+		i = biz.Instance{TenantID: d.TenantID, ID: d.ID, CreateOperationID: d.CreateOperationID, CurrentMounts: []biz.VolumeMount{}, MountsInitialized: true, RuntimeDesired: biz.Deleted, Spec: biz.Spec{InstanceKind: d.InstanceKind, ComputeType: d.ComputeType, WorkspaceMountPath: "/workspace"}, Version: 1, Desired: biz.Deleted, Observed: "pending", LastOperationID: d.OperationID}
 		raw, e := json.Marshal(i)
 		if e != nil {
 			return ack, e
 		}
-		if _, e = tx.Exec(ctx, "INSERT INTO instance.instances(tenant_id,instance_id,create_operation_id,create_request_hash,version,desired,snapshot,instance_contract_version,runtime_desired,mounts_initialized) VALUES($1,$2,$3,'',1,'deleted',$4,2,'deleted',true)", d.TenantID, d.ID, d.CreateOperationID, raw); e != nil {
+		if _, e = tx.Exec(ctx, "INSERT INTO instance.instances(tenant_id,instance_id,create_operation_id,create_request_hash,version,desired,snapshot,runtime_desired,mounts_initialized) VALUES($1,$2,$3,'',1,'deleted',$4,'deleted',true)", d.TenantID, d.ID, d.CreateOperationID, raw); e != nil {
 			return ack, e
 		}
 		if _, e = tx.Exec(ctx, "INSERT INTO instance.instance_work(tenant_id,instance_id) VALUES($1,$2)", d.TenantID, d.ID); e != nil {

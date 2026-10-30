@@ -1,5 +1,13 @@
 # Network 执行状态
 
+## Container configuration without version selection (2026-10-31)
+
+**源码/正式生成、Fedora `make verify` 与定向真实 PG：PASS；10～12 切换和真实租户创建/运行/删除：NOT_RUN。** 按用户明确要求废弃开发期容器配置版本选择、旧格式/摘要兼容与 V2 写入开关，保留工作目录、环境变量、PVC 和网络等现有配置功能。Proto 保留旧字段号/name；单一配置进入 Resolve、冻结摘要、命令验签、持久化和查询。独立维护门禁及其它域真实协议不属于配置版本，保持原义。以原 VM 详情分支 `612b2abd8f77c3dce928520c65caba2bc1d0d690` 为基线，保留现有 VM 字段。
+
+定向单元测试及真实独占 PostgreSQL 已通过配置持久化、重启挂载恢复、借用卷与 CPU/GPU 生命周期、009 空账本迁移/非空拒绝；正式生成通过。首轮完整检查因长临时目录导致无关 Unix socket 测试失败，改用短目录后该测试与所有包通过；后续末尾 Git 检查因远端快照缺 Git 元数据失败，建立独立验证仓库后 `resource-verify-03` 完整门禁通过。原始失败与命令保留于 Fedora `/home/chabking/codex-runs/remove-instance-config-v2-20261030/`，未放宽断言。
+
+实时只读核对确认旧16条容器均已正常删除并完成计算、工作盘、网络、借用引用与原账退额；切换将停旧读写进程后，只清理这些精确历史记录再以 owner 显式执行 [009](../../migrations/instance/009_unversioned_configuration.sql)，不会删除借用 PVC 或修改共享配额余额。旧数据清理与切换尚未执行，不以准备脚本或检查通过冒充业务验收。
+
 ## Public EIP Workflow (20261030)
 
 **代码/生成、make verify、真实 PG 与受控 KCN HTTP/mTLS 主链：PASS；10 集群无基础网络的公网 EIP 分配/绑定/启停/解绑：PASS。** 基于 main `bf1b034`，公网绑定/再启用独立验证 VPC 自身 Provider UID、实际/观察代次、Ready 和新鲜度，不要求基础 Intranet EIP/SNAT 存在或正常，也不读取聚合 available 作为门禁；保留 EIP、池、归属和并发保护。迁移 0024 新增未知默认 Provider 事实，须经真实观察补齐。VPC Get/List 返回同快照 `public_egress`，EIP 目标增加真实 `vpc_id`；EIP 初始安全组与地址在同一事务受理，更换沿用已有独立配置版本。

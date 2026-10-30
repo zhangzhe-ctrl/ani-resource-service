@@ -11,7 +11,7 @@ import (
 )
 
 const getInstance = `-- name: GetInstance :one
-SELECT snapshot,version,desired,created_at,updated_at,instance_contract_version,current_mounts,mounts_initialized,applied_mount_version,runtime_desired,recovery_fence
+SELECT snapshot,version,desired,created_at,updated_at,current_mounts,mounts_initialized,applied_mount_version,runtime_desired,recovery_fence
 FROM instance.instances
 WHERE tenant_id=$1 AND instance_id=$2
 `
@@ -22,17 +22,16 @@ type GetInstanceParams struct {
 }
 
 type GetInstanceRow struct {
-	Snapshot                []byte
-	Version                 int64
-	Desired                 string
-	CreatedAt               time.Time
-	UpdatedAt               time.Time
-	InstanceContractVersion int32
-	CurrentMounts           []byte
-	MountsInitialized       bool
-	AppliedMountVersion     int64
-	RuntimeDesired          string
-	RecoveryFence           []byte
+	Snapshot            []byte
+	Version             int64
+	Desired             string
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	CurrentMounts       []byte
+	MountsInitialized   bool
+	AppliedMountVersion int64
+	RuntimeDesired      string
+	RecoveryFence       []byte
 }
 
 func (q *Queries) GetInstance(ctx context.Context, arg GetInstanceParams) (GetInstanceRow, error) {
@@ -44,7 +43,6 @@ func (q *Queries) GetInstance(ctx context.Context, arg GetInstanceParams) (GetIn
 		&i.Desired,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.InstanceContractVersion,
 		&i.CurrentMounts,
 		&i.MountsInitialized,
 		&i.AppliedMountVersion,

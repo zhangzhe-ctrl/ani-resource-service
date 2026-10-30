@@ -22,7 +22,6 @@ type Config struct {
 	NamespacePrefix, ClusterID, ServiceAccount, StorageClass, WorkspaceSize, Shell string
 	LogLimits                                                                      biz.LogLimits
 	UID, GID                                                                       int64
-	NetworkV2Writes                                                                bool
 	NewIntentsEnabled, RestartEnabled, PVCMutationsEnabled                         bool
 }
 type Service struct {
@@ -117,7 +116,7 @@ func rpcError(e error) error {
 	}
 }
 func (s *Service) ResolveCreateSpec(ctx context.Context, r *pb.ResolveCreateSpecRequest) (*pb.CreateSpec, error) {
-	if r == nil || r.Data == nil || strings.TrimSpace(r.Data.Name) == "" || len([]rune(r.Data.Name)) > 80 || (r.Data.ImageScope != "tenant" && r.Data.ImageScope != "platform") || !biz.UUID(r.Data.PresetId) {
+	if r == nil || len(r.ProtoReflect().GetUnknown()) != 0 || r.Data == nil || strings.TrimSpace(r.Data.Name) == "" || len([]rune(r.Data.Name)) > 80 || (r.Data.ImageScope != "tenant" && r.Data.ImageScope != "platform") || !biz.UUID(r.Data.PresetId) {
 		return nil, rpcError(biz.ErrInvalid)
 	}
 	if e := biz.RequireTenant(ctx, r.TenantId); e != nil {
@@ -126,11 +125,7 @@ func (s *Service) ResolveCreateSpec(ctx context.Context, r *pb.ResolveCreateSpec
 	if _, e := imagebiz.ParseImageID(r.Data.ImageId); e != nil {
 		return nil, rpcError(biz.ErrInvalid)
 	}
-	version := r.InstanceContractVersion
-	if version != pb.ContractV2 {
-		return nil, rpcError(biz.ErrInvalid)
-	}
-	if _, e := pb.CanonicalBusinessPayloadVersion(r.Data, version); e != nil {
+	if _, e := pb.CanonicalBusinessPayload(r.Data); e != nil {
 		return nil, rpcError(e)
 	}
 	scheduling, e := pb.ResolveSchedulingOptions(r.Data.Scheduling, r.SchedulingDefaults)
@@ -163,7 +158,6 @@ func (s *Service) ResolveCreateSpec(ctx context.Context, r *pb.ResolveCreateSpec
 			return nil, rpcError(err)
 		}
 	}
-	out.InstanceContractVersion = version
 	out.WorkspaceMountPath = "/workspace"
 	if r.Data.WorkspaceMountPath != nil {
 		out.WorkspaceMountPath = *r.Data.WorkspaceMountPath
@@ -172,7 +166,7 @@ func (s *Service) ResolveCreateSpec(ctx context.Context, r *pb.ResolveCreateSpec
 	out.Annotations = r.Data.Annotations
 	out.Env = r.Data.Env
 	if r.Data.Network != nil {
-		if !s.config.NetworkV2Writes || s.network == nil {
+		if s.network == nil {
 			return nil, status.Error(codes.Unavailable, "INSTANCE_NETWORK_NOT_ENABLED")
 		}
 		selection := biz.NetworkSelection{VPCID: r.Data.Network.VpcId, SubnetID: r.Data.Network.SubnetId}
@@ -241,7 +235,6 @@ func (s *Service) AcceptCreate(ctx context.Context, r *pb.AcceptCreateRequest) (
 		return nil, rpcError(biz.ErrInvalid)
 	}
 	spec := biz.Spec{SecurityGroupIDs: append([]string(nil), f.SecurityGroupIds...), InstanceKind: f.InstanceKind, ComputeType: f.ComputeType, Name: f.Name, ImageID: f.ImageId, ImageScope: f.ImageScope, ImageReference: f.ImageReference, ImageDigest: f.ImageReference[image+1:], PresetID: f.PresetId, PresetName: f.PresetName, PresetCode: f.PresetCode, Scheduling: domainScheduling(f.Scheduling), CPU: f.Cpu, Memory: f.Memory, UID: f.Uid, GID: f.Gid, Shell: f.Shell, ServiceAccount: f.ServiceAccount, StorageClass: f.StorageClass, WorkspaceSize: f.WorkspaceSize, ClusterID: f.ClusterId, Namespace: f.Namespace, NotebookName: "instance-" + c.ResourceId, PVCName: "workspace-" + c.ResourceId}
-	spec.ContractVersion = f.InstanceContractVersion
 	spec.WorkspaceMountPath = f.WorkspaceMountPath
 	spec.Labels = f.Labels
 	spec.Annotations = f.Annotations
