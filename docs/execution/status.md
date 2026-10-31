@@ -1494,3 +1494,5 @@ A05 受限调用者已真实通过：任务 user41/role34 仅有 backend/list/re
 在独立工作树将 Resource `origin/main` `23e25b33ca02890231cd273ef7246b0fc415476c` 与已验收 Sandbox `a778c1f25da0923272c6df9e7fbfb5ddce3abcf1` 合并；原工作区及其他任务的 Helm 改动保留。当前合并源码树 `fc96b8fc566f66794fb66d64f3fbcfcc194f7576`（不含本条状态记录）使用 `GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 make verify` **pass**；以独占 PostgreSQL 镜像 `sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b` 运行 `go test -tags=sandboxintegration -count=1 -timeout=20m -v ./internal/data/sandbox`，111 个顶层测试 **pass**，容器已清理。`ssh ubuntu` 因主机密钥校验失败，构建和测试按允许规则回退本机 `ubuntu`。
 
 此记录不改变 2026-10-30 真实集群验收的源码和镜像范围；截至本次检查，66 已换为其他 main 镜像，本合并候选尚未部署或进行真实集群验收。Gov 合入与跨仓验证另按实际结果记录，不以 Resource 测试替代。
+
+远端 PR CI 的 race 检查发现 Image 拉取 Secret 并发测试夹具对两个共享切片无锁追加；该问题位于测试替身。已为夹具写入加锁，并运行 `go test -race -count=10 -run ^TestEnsureTenantPullSecretConcurrentScopes$ ./internal/biz/image` **pass**；没有改动生产 Image 逻辑。
