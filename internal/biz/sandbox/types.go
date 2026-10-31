@@ -93,6 +93,7 @@ type WorkspaceSpec struct{ MountPath, Size, StorageClass, ReclaimPolicy string }
 // runtime reference. It also accepts a frozen reference for reauthorization.
 type ImageResolver interface {
 	ResolveSandboxImage(ctx context.Context, tenantID, requestedReference string) (string, error)
+	ResolveSandboxImageID(ctx context.Context, tenantID, imageID, imageScope string) (string, error)
 }
 
 // StorageClassResolver selects the platform's currently permitted default
@@ -109,12 +110,16 @@ type RuntimeClassResolver interface {
 
 type CreateSpec struct {
 	Name, ImageReference, ImageDigest, PresetID, PresetCode, PresetName, ComputeType string
+	ImageID                                                                          string `json:"ImageID,omitempty"`
+	ImageScope                                                                       string `json:"ImageScope,omitempty"`
 	CPUMillis, MemoryMiB                                                             int64
 	SelectionDigest, SpecDigest, ClusterID, Namespace, NamespaceUID, RuntimeClass    string
 	Workspace                                                                        WorkspaceSpec
 }
 type Snapshot struct {
 	Name, ImageReference, PresetID, PresetCode, PresetName, ImageDigest, ComputeType, ClusterID, Namespace, NamespaceUID, RuntimeClass, SelectionDigest, SpecDigest string
+	ImageID                                                                                                                                                         string `json:"ImageID,omitempty"`
+	ImageScope                                                                                                                                                      string `json:"ImageScope,omitempty"`
 	CPUMillis, MemoryMiB                                                                                                                                            int64
 	Workspace                                                                                                                                                       WorkspaceSpec
 }
@@ -215,10 +220,8 @@ type SelectionResolver interface {
 	Resolve(context.Context, string, string, compute.Usage) (compute.Selection, error)
 }
 
-// NamespaceResolver prepares a namespace only for initial resolution. Accepted
-// commands must use the read-only method to check their frozen UID.
+// NamespaceResolver checks the shared tenant namespace without creating it.
 type NamespaceResolver interface {
-	EnsureSandboxNamespaceUID(context.Context, string) (string, error)
 	ResolveSandboxNamespaceUID(context.Context, string) (string, error)
 }
 
