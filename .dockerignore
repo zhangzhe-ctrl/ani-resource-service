@@ -1,0 +1,10 @@
+.git
+.scratch
+.private
+.tools
+.work
+.tmp
+bin
+configs
+**/__pycache__
+**/*.pyc

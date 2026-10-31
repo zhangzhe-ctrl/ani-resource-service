@@ -15,6 +15,13 @@
 服务重建遇到已有 namespace 配额不足：原服务资源声明合计需要29.75核 limit，旧 `ani-system/ani-cpu-p01-budget` 为28核。只将 CPU limit 配额补到30核，服务原 requests/limits、内存配额及其它部署保持；新镜像直接带开放门禁启动，避免额外滚动副本。实际镜像、固定归档、命令与结果见[本次回执](records/INSTANCE-CONFIG-UNVERSIONED-20261031.json)。代码在 [Resource #36](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/36) 与 [Governance #80](https://github.com/zhangzhe-ctrl/ani-governance/pull/80)。
 
 **100.64.128.12 追加验收：FAIL（受理前合同不一致，未创建测试实例）。** 2026-10-31 通过 Fedora 驱动正常登录 tenant-a/admin，CPU 规格、租户工作镜像与实例列表可读；携带工作目录、环境变量的 POST 返回 `400 INSTANCE_RESERVED_CONFIG / invalid frozen instance business`，最小请求返回 `400 INVALID_INSTANCE_REQUEST`。当前运行镜像 OCI revision 为 Res `d77ff571`（VM #35，仍有 ContractV2）和 Gov `ddd98f4c`（去 V2 #80）。Resource #36 实际合入 VM 功能分支而非 main；因此另以当前 main 为基线补入同一变更，新增本次文档前的树与已验收 `085eb262` 的完整树完全相同，业务代码没有新差异。Res schema 仍为1–8、Gov Atlas最新为20261030010000，两端配置版本列仍在；迁移尚未完成，服务 Ready 不作为产品验收。唯一长期 UNKNOWN 创建对应实例 `3d9bc121` 已完成全部物理清理且无配额 charge；经私有精确备份、Kubernetes 原身份不存在证明、回滚演练后，按外键顺序清理 Gov CREATE/DELETE 两行及 Res tombstone/已完成 DELETE/idle work 各一行，后置检查 PASS，原有其余27条历史保留。部署与共享配额未改动；当前来源、失败请求和历史库存见[12 集群回执](records/INSTANCE-CONFIG-LIVE12-20261031.json)。
+## 生产镜像入口统一（2026-10-31）
+
+**构建入口、Fedora 质量门禁与真实镜像验证 PASS；ani-deploy Resource 项目已接入。** 基于最新远端 main `9a88a1ec091cb50779ffcb76dfb898e8c265c77e` 的独立工作树，补齐 `make image IMAGE=... VERSION=...`、根 Dockerfile、隔离源码快照和本地镜像回执，沿用 ACC/ModelDev 的命令接口。显式编译 `cmd/ani-resource-service`，保留 API 子模块的 `go.mod/go.sum`、各领域嵌入迁移 SQL 及 notice；配置、凭据、测试和缓存不进入 Docker 输入。统一 `/app/bin/server`，保留 `/ani-resource-service`、`/app/bin/ani-resource-service` 两个兼容入口，不自动迁移。
+
+原始 `make verify` 首次因任务长 TMPDIR 超过 Unix socket 路径上限而 FAIL（196s）；短目录定向复验和整条原始门禁重跑 PASS（172s），未改 Go 代码或依赖。首个真实镜像因遗漏子模块边界文件而 FAIL；新增回归先 RED，保留模块文件后 9 项镜像测试 GREEN，真实镜像重建及三个入口的无网络/只读/cap-drop `-h`、系统 CA 检查 PASS。成功重试 172.403s（编译 117s），复用了首轮基础层和模块缓存，不作为首次冷构建估算。实际来源、命令、digest、覆盖文件哈希与各次结果见[验证回执](records/production-image-20261031.json)。
+
+发布台 `.40:9998` 已加入 Resource，目标 `ani-system/ani-resource-service`、容器 `resource`、Harbor `ani-gpu-platform/ani-resource-service`，质量开关执行所选源码原始 `make verify`；6 项针对编排测试及真实页面读取/选择通过。此次只上线发布能力；Resource 的 Harbor 推送、Deployment 更新、PostgreSQL 集成及真实业务验收 **NOT_RUN**。原工作区未提交文件保持原状。
 
 ## Public EIP Workflow (20261030)
 

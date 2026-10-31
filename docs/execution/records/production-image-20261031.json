@@ -1,0 +1,84 @@
+{
+  "date": "2026-10-31",
+  "baseline": "9a88a1ec091cb50779ffcb76dfb898e8c265c77e",
+  "source_kind": "isolated worktree with explicit build recipe changes",
+  "source_worktree": "/home/chabking/.codex/worktrees/resource-production-image/ani-resource-service",
+  "go_quality_gate": {
+    "host": "fedora",
+    "baseline": "9a88a1ec091cb50779ffcb76dfb898e8c265c77e",
+    "archive_sha256": "4863715b6b94152a038719055e8875160e4797811fb5adc0ff833f0aad0e454d",
+    "command": "make verify",
+    "exit_code": 0,
+    "elapsed_seconds": 172,
+    "tmpdir": "/tmp/rv.eIvNQYYi",
+    "retry_reason": "Initial long task TMPDIR exceeded Unix socket path limit in scripts/lb-api; targeted test passed with this short task-owned TMPDIR",
+    "source_manifest_drift": [],
+    "completed_at_utc": "2026-10-30T15:58:01Z"
+  },
+  "first_verify_attempt": {
+    "status": "FAIL",
+    "seconds": 196,
+    "reason": "Task TMPDIR exceeded Unix socket path limit; short task TMPDIR fixed the environment without source changes"
+  },
+  "final_image_tests": {
+    "status": "PASS",
+    "count": 9,
+    "regression": "Nested API go.mod/go.sum files survive the isolated Docker context; RED before fix, GREEN after fix",
+    "host": "fedora",
+    "log": "/home/chabking/ani-runs/resource-module-boundary-20261031.viCes3CJ/green.log"
+  },
+  "first_image_attempt": {
+    "status": "FAIL",
+    "reason": "Nested API module boundary files omitted from the snapshot caused ambiguous imports",
+    "log": "/home/chabking/workspace/ani-resource-service-runs/production-image-20261030.exkjQ6Ki/image-build.log.attempt1"
+  },
+  "final_image_validation": {
+    "image_build": "PASS",
+    "build_seconds": 172.403,
+    "host": "fedora",
+    "source_archive_sha256": "4863715b6b94152a038719055e8875160e4797811fb5adc0ff833f0aad0e454d",
+    "post_archive_overlay": {
+      "scripts/build-image.py": "08cbfd9f637e7e9248acab15314ad44a440260287991a503b476cf038e7b6cd4"
+    },
+    "receipt": {
+      "schema_version": 1,
+      "service": "ani-resource-service",
+      "source": "https://github.com/zhangzhe-ctrl/ani-resource-service",
+      "source_revision": "9a88a1ec091cb50779ffcb76dfb898e8c265c77e",
+      "source_dirty": null,
+      "source_snapshot": "sha256:3182ae3496918842259ac215e1a90d9d3a015801ea9f3041041add721529c4b3",
+      "version": "9a88a1ec091cb50779ffcb76dfb898e8c265c77e",
+      "target": "service",
+      "platform": "linux/amd64",
+      "image": "ani-resource-service:deploy-recipe-20261030",
+      "local_image_id": "sha256:15c5fadf432be01416127fec964094f3215cea1018cf78b10120661e53513032",
+      "local_config_digest": null,
+      "local_descriptor_digest": "sha256:15c5fadf432be01416127fec964094f3215cea1018cf78b10120661e53513032",
+      "local_descriptor_media_type": "application/vnd.oci.image.index.v1+json",
+      "registry_digest": null,
+      "pushed": false,
+      "builder_image": "m.daocloud.io/docker.io/library/golang@sha256:23ce71337b726608afb1bc00986e630a05034a87a87ea1fc2cd1ae5cf33387eb",
+      "runtime_image": "m.daocloud.io/gcr.io/distroless/static-debian12@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab",
+      "buildkit_metadata": "/home/chabking/workspace/ani-resource-service-runs/production-image-20261030.exkjQ6Ki/image-source/.work/images/image-s_284c7j/buildkit.json",
+      "source_manifest": "/home/chabking/workspace/ani-resource-service-runs/production-image-20261030.exkjQ6Ki/image-source/.work/images/image-s_284c7j/source-manifest.json"
+    },
+    "help_checks": {
+      "default": "PASS",
+      "/ani-resource-service": "PASS",
+      "/app/bin/ani-resource-service": "PASS"
+    },
+    "system_ca": "PASS",
+    "size_bytes": 20364428,
+    "harbor_push": "NOT_RUN",
+    "deployment_update": "NOT_RUN"
+  },
+  "compile_seconds": 117.0,
+  "cache_scope": "Successful retry reused base layers and module downloads from the first attempt; 172.403s is not a cold-build estimate",
+  "recipe_sha256": {
+    "Dockerfile": "486524aa0bae9a5b160c73d73de35304a570cc3d853b1698edb7d2ad9ecc84c2",
+    ".dockerignore": "0a463bd4f1d93fe27228ac0d1e77064ff8beb80dca85c8f689eedf04888d3946",
+    "scripts/build-image.py": "08cbfd9f637e7e9248acab15314ad44a440260287991a503b476cf038e7b6cd4"
+  },
+  "postgres_integration": "NOT_RUN",
+  "business_acceptance": "NOT_RUN_NOT_IN_SCOPE"
+}
