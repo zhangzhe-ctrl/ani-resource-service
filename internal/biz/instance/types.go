@@ -128,7 +128,6 @@ type VolumeResolver interface {
 	ListMountablePVCs(context.Context, string, string, string, uint32, uint32, string) ([]MountablePVC, int64, error)
 }
 type Spec struct {
-	ContractVersion                                        uint32
 	WorkspaceMountPath                                     string
 	VolumeMounts                                           []VolumeMount
 	Network                                                *NetworkSelection

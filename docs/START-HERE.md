@@ -13,7 +13,7 @@ GPU 容器实例 v1.5：[规格](specs/instance-mvp.md)、[实施计划](plans/i
 这是本仓库唯一正式文档导航。项目入口为 [README](../README.md)，工程约定为 [AGENTS](../AGENTS.md)。
 当前实施与验证进度只在 [执行状态](execution/status.md) 维护，本文不复制进度表。
 
-[算力目录与公共解析](specs/compute-presets.md)定义 compute 管理、列表、用途绑定的只读候选及与各消费者的组合边界；[原地迁移与恢复](runbooks/compute-presets-migration.md)定义规格表/账本与匹配 Gov 权限维护步骤。实例 v2、配置与生命周期合同继续有效。
+[算力目录与公共解析](specs/compute-presets.md)定义 compute 管理、列表、用途绑定的只读候选及与各消费者的组合边界；[原地迁移与恢复](runbooks/compute-presets-migration.md)定义规格表/账本与匹配 Gov 权限维护步骤。实例配置使用唯一格式，生命周期合同继续有效；开发环境清理后通过009切换，见[配置合同](specs/instance-configuration-network.md#7-当前配置合同与原账)。
 
 [ani-resource-service 改名与模块整理计划](plans/resource-service-modularization.md)：原R0–R5沿用现有仓库和Kratos分层整理Network，并验证旧客户端、旧数据、资源接管和回退；本次Compute增量以[算力目录合同](specs/compute-presets.md)为准，Storage仍待后续切片。
 

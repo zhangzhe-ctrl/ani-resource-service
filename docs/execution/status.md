@@ -1,5 +1,20 @@
 # Network 执行状态
 
+## Container configuration without version selection (2026-10-31)
+
+**源码/正式生成、Fedora 门禁与定向真实 PG：PASS；10～12 成对发布、正常租户 CPU 创建/Running/删除：PASS。** 按用户明确要求废弃开发期容器配置版本选择、旧格式/摘要兼容与 V2 写入开关，保留工作目录、环境变量、PVC 和网络等现有配置功能。Proto 保留旧字段号/name；单一配置进入 Resolve、冻结摘要、命令验签、持久化和查询。独立维护门禁及其它域真实协议不属于配置版本，保持原义。以原 VM 详情分支 `612b2abd8f77c3dce928520c65caba2bc1d0d690` 为基线，保留现有 VM 字段。
+
+定向单元测试及真实独占 PostgreSQL 已通过配置持久化、重启挂载恢复、借用卷与 CPU/GPU 生命周期、009 空账本迁移/非空拒绝；正式生成通过。首轮完整检查因长临时目录导致无关 Unix socket 测试失败，改用短目录后该测试与所有包通过；后续末尾 Git 检查因远端快照缺 Git 元数据失败，建立独立验证仓库后 `resource-verify-03` 完整门禁通过。原始失败与命令保留于 Fedora `/home/chabking/codex-runs/remove-instance-config-v2-20261030/`，未放宽断言。
+
+10～12 已停旧读写进程，备份并精确清理已完全删除/释放的旧16条容器及 Gov 32条 CREATE/DELETE 原记录；保留借用 PVC、共享配额余额、释放回执和其它 owner 记录。以 `ani_resource_instance_owner` 显式执行 [009](../../migrations/instance/009_unversioned_configuration.sql) 并核实001–009完整校验账；Gov `gov_owner` 经原生 Atlas 顺序执行两条先前待执行的 Sandbox 建表迁移及本次删列，启动自动迁移保持关闭。两端数据库配置版本列、旧 Gov V2 环境变量及私有 `NetworkV2Writes` 键已删除。维护门禁已明确开放。
+
+实际代码为 Res `d09b4230ab6523539a9ed3fa42cc859b8ba00bc7`、Gov `3dcb01238031d7d66199bcf881270ea0b41e1b20`；Gov 固定正式 Res SDK `v0.0.0-20261030162442-d09b4230ab65`，无 replace/go.work。Fedora Gov 正式 API/Ent/schema/Atlas 生成、相关 unit/vet/build 和受限 PostgreSQL+真实 Res mTLS 的 CPU/GPU 授权、冻结摘要、重放、删除退款及 VM/Inference 原账回归均 PASS，无 skip。早期 Ent 两分钟包装器超时和错误调用目录保留，最终正式 `make ent` 成功。
+
+正常 tenant-a 管理员经公共 HTTP 创建 CPU 容器 `8b1846dd-580c-4e1a-bb28-aa1b6584af98`，同键始终返回原操作；真实 `ani-03` Pod Running/Ready、专属 PVC Bound，Notebook→StatefulSet→Pod 的 UID/所有权链匹配持久事实。配置查询无版本字段，正常 DELETE `ab5f7c29-6658-4630-bbcd-f3eb91daf902` 完成计算、工作盘/PV、网络/借用引用和原账清理，测试实例已删。前几次私有验收脚本的字段名/StatefulSet 元数据假设和一次令牌过期均保留；修正探针后继续同一实例，未重复创建，也未修改鉴权或 TTL。真实 GPU/CUDA 工作负载未在本次重新创建，GPU 的本次证据限真实 PG/mTLS 业务链。
+
+服务重建遇到已有 namespace 配额不足：原服务资源声明合计需要29.75核 limit，旧 `ani-system/ani-cpu-p01-budget` 为28核。只将 CPU limit 配额补到30核，服务原 requests/limits、内存配额及其它部署保持；新镜像直接带开放门禁启动，避免额外滚动副本。实际镜像、固定归档、命令与结果见[本次回执](records/INSTANCE-CONFIG-UNVERSIONED-20261031.json)。代码在 [Resource #36](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/36) 与 [Governance #80](https://github.com/zhangzhe-ctrl/ani-governance/pull/80)。
+
+**100.64.128.12 追加验收：FAIL（受理前合同不一致，未创建测试实例）。** 2026-10-31 通过 Fedora 驱动正常登录 tenant-a/admin，CPU 规格、租户工作镜像与实例列表可读；携带工作目录、环境变量的 POST 返回 `400 INSTANCE_RESERVED_CONFIG / invalid frozen instance business`，最小请求返回 `400 INVALID_INSTANCE_REQUEST`。当前运行镜像 OCI revision 为 Res `d77ff571`（VM #35，仍有 ContractV2）和 Gov `ddd98f4c`（去 V2 #80）。Resource #36 实际合入 VM 功能分支而非 main；因此另以当前 main 为基线补入同一变更，新增本次文档前的树与已验收 `085eb262` 的完整树完全相同，业务代码没有新差异。Res schema 仍为1–8、Gov Atlas最新为20261030010000，两端配置版本列仍在；迁移尚未完成，服务 Ready 不作为产品验收。唯一长期 UNKNOWN 创建对应实例 `3d9bc121` 已完成全部物理清理且无配额 charge；经私有精确备份、Kubernetes 原身份不存在证明、回滚演练后，按外键顺序清理 Gov CREATE/DELETE 两行及 Res tombstone/已完成 DELETE/idle work 各一行，后置检查 PASS，原有其余27条历史保留。部署与共享配额未改动；当前来源、失败请求和历史库存见[12 集群回执](records/INSTANCE-CONFIG-LIVE12-20261031.json)。
 ## 生产镜像入口统一（2026-10-31）
 
 **构建入口、Fedora 质量门禁与真实镜像验证 PASS；ani-deploy Resource 项目已接入。** 基于最新远端 main `9a88a1ec091cb50779ffcb76dfb898e8c265c77e` 的独立工作树，补齐 `make image IMAGE=... VERSION=...`、根 Dockerfile、隔离源码快照和本地镜像回执，沿用 ACC/ModelDev 的命令接口。显式编译 `cmd/ani-resource-service`，保留 API 子模块的 `go.mod/go.sum`、各领域嵌入迁移 SQL 及 notice；配置、凭据、测试和缓存不进入 Docker 输入。统一 `/app/bin/server`，保留 `/ani-resource-service`、`/app/bin/ani-resource-service` 两个兼容入口，不自动迁移。

@@ -36,7 +36,7 @@ flowchart LR
 | 专属工作盘会被最终删除 | [工作盘实现](../../internal/data/instance/notebook.go)，EnsureWorkspace、observeWorkspace、DeleteWorkspace | 用户已有卷不能冒用专属工作盘字段和清理流程 |
 | Res Attachment 拒绝不同 Pod UID | [Confirm](../../internal/data/network/attachment.go)、[worker](../../internal/biz/network/attachment_worker.go)、[kc adapter](../../internal/data/network/kc_attachment.go) | 普通 Notebook 启停和自动重建需要受控替换合同 |
 | kcn 有新 Pod 创建网卡及旧 sandbox 清理路径 | [Pod controller](https://gitlab.changqingyun.cn/kubercloud/sdn/kc-networking/-/blob/2b9467c66dc9024fbf321a4b3a98a9e5f3fef377/internal/controller/core/pod_controller.go#L472-500)、[CNI handler](https://gitlab.changqingyun.cn/kubercloud/sdn/kc-networking/-/blob/2b9467c66dc9024fbf321a4b3a98a9e5f3fef377/internal/daemon/cniserver/handler.go#L299-355) | 本次 UID 限制的修改对象是 Res；保留 kcn 的对象归属和迟到 DEL 保护 |
-| 当前规范化使用 EmitUnpopulated，命令摘要显式列举字段 | [business.go](../../api/instance/v1/business.go) | 直接追加字段会改变旧摘要，需要按保存版本解释请求和冻结载荷 |
+| 当前规范化使用 EmitUnpopulated，命令摘要显式列举字段 | [business.go](../../api/instance/v1/business.go) | 直接追加字段会改变旧摘要，本次清空旧开发实例后统一使用唯一显式字段集合 |
 | 实际 governance 装配没有实例网络关联闭环 | [governance composition](../../cmd/ani-resource-service/governance.go)、[full composition](../../cmd/ani-resource-service/app.go) | 两种支持实例的运行路径均需装配 Attachment worker 和实例 Consumer |
 
 ## 2. 范围和所有权
@@ -94,7 +94,7 @@ Instance 在 `internal/biz` 声明自己需要的窄 Network 和卷查询 Interf
 | `labels`、`annotations` | 缺省空；字符串 map，校验 Kubernetes 格式及本方案保留键 |
 | `env[]` | 缺省空；有序 name/value 数组，允许空字符串，拒绝重名；首版是字面值，不开放任意 valueFrom/envFrom |
 
-显式 `null`、未知字段、无效类型和重复 JSON key 均拒绝。v2 内缺省与空集合视为相同意图；`network: {}` 和空路径非法。路径不自动清洗，环境值不 trim、不展开。环境数组保持输入顺序，`$(VAR)` 也是字面值；Notebook 渲染必须处理 kubelet 的变量展开规则，容器内仍得到用户原值。
+显式 `null`、未知字段、无效类型和重复 JSON key 均拒绝。缺省与空集合视为相同意图；`network: {}` 和空路径非法。路径不自动清洗，环境值不 trim、不展开。环境数组保持输入顺序，`$(VAR)` 也是字面值；Notebook 渲染必须处理 kubelet 的变量展开规则，容器内仍得到用户原值。
 
 首版上限：附加卷 8 个、环境变量 64 个、用户 labels/annotations 各 32 项，环境值总计 16 KiB、用户 metadata 总计 16 KiB；保留现有 64 KiB 请求体上限。两端验证和前端提示使用同一限制，不能只在页面限制。
 
@@ -231,14 +231,14 @@ Attachment 的独立地址证明只消费 Pod、VNic、VNicIP 和 EIP 事实；�
 
 ## 7. 当前配置合同与原账
 
-新创建仍只接受显式 `instance_contract_version=2`，缺省、0 和 1 均拒绝；版本由服务端确定，用户不选择。正常新请求的缺省配置只在 Resolve 时解析一次。008 对历史持久结构的有证据前向转换不重新开放旧公开请求、旧 CREATE 摘要或旧版本解码。
+容器配置只有唯一格式，公开及内部 Resolve/CreateSpec/配置查询均不提供 `instance_contract_version`。缺省配置只在 Resolve 时解析一次。没有配置版本选择、V2 写入开关或旧格式解码/摘要兼容分支。2026-10-30 开发环境切换按用户要求先删除全部已有容器并清理本域持久记录（包括已删墓碑、操作与引用），停掉旧读写进程，再显式应用 [009](../../migrations/instance/009_unversioned_configuration.sql) 删除配置版本列；账本非空时迁移失败。借用 PVC 不随实例删除；Gov 原账由正常删除与退额先完成，不通过清表制造完成。
 
 | 数据 | 当前规则 |
 |---|---|
 | 原始请求意图 | 包括用户输入的全部新增字段；metadata 稳定按键编码，挂载按规范路径排序，env 保持原顺序；固定缺省/空值规则 |
 | 冻结 CreateSpec | 保存原工作目录、首次 PVC UID、网络选择、用户 metadata/env 和受管字段；默认只解析一次 |
 | 当前配置 | 独立 CurrentMounts；挂卸提交不修改 CREATE、原镜像、GPU execution 或 charges |
-| 命令摘要 | 使用独立 `resource-create-v2` 域和显式字段集合覆盖完整冻结配置；GPU Execution 仍用它原有摘要 |
+| 命令摘要 | 使用独立 `resource-create` 域和显式字段集合覆盖完整冻结配置；GPU Execution 仍用它原有摘要 |
 | 动态观察 | Attachment 投影、当前 Pod、地址和清理进展单独保存，不能回写并改变原 CREATE 摘要 |
 
 Gov 先做当前授权，再按租户/主体/action/幂等键查已受理的当前合同操作。重放比较完整原始请求意图，返回原 operation/resource/charges，不重新 Resolve；配置不同必须冲突。新键才解析默认值及外部引用，不能丢弃未知字段后误判为同一次请求。

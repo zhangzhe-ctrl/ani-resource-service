@@ -2,13 +2,11 @@ package instance
 
 import "testing"
 
-func TestCurrentConfigurationRejectsRetiredVersions(t *testing.T) {
-	for _, version := range []uint32{0, 1} {
-		if err := ValidateConfiguration(Spec{ContractVersion: version}); err == nil {
-			t.Fatalf("retired configuration %d accepted", version)
-		}
+func TestConfigurationRequiresWorkspacePath(t *testing.T) {
+	if err := ValidateConfiguration(Spec{}); err == nil {
+		t.Fatal("incomplete configuration accepted")
 	}
-	if err := ValidateConfiguration(Spec{ContractVersion: 2, WorkspaceMountPath: "/workspace"}); err != nil {
-		t.Fatal("current configuration defaults rejected", err)
+	if err := ValidateConfiguration(Spec{WorkspaceMountPath: "/workspace"}); err != nil {
+		t.Fatal("configuration defaults rejected", err)
 	}
 }

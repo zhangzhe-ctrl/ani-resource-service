@@ -15,7 +15,7 @@ import (
 func configuredInstance(t *testing.T) biz.Instance {
 	t.Helper()
 	_, i, _, _ := diagnosticFixture(t, false)
-	i.Spec.ContractVersion = 2
+
 	i.Spec.WorkspaceMountPath = "/home/work"
 	i.Spec.VolumeMounts = []biz.VolumeMount{
 		{ClusterID: i.Spec.ClusterID, Namespace: i.Spec.Namespace, PVCName: "dataset", PVCUID: "dataset-original", MountPath: "/datasets", Ownership: "borrowed"},

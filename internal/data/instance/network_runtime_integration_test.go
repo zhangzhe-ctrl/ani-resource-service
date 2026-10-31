@@ -19,7 +19,7 @@ import (
 
 func networkCreate() biz.Create {
 	c := cpuCreate()
-	c.Spec.ContractVersion = 2
+
 	c.Spec.WorkspaceMountPath = "/workspace"
 	c.Spec.Network = &biz.NetworkSelection{VPCID: "vpc_" + strings.Repeat("a", 32), SubnetID: "subnet_" + strings.Repeat("b", 32)}
 	return c
@@ -108,7 +108,7 @@ func TestInstanceNetworkOutageBlocksOriginalGPURefundUntilCleanup(t *testing.T) 
 	f := database(t)
 	ctx := context.Background()
 	c := create()
-	c.Spec.ContractVersion = 2
+
 	c.Spec.WorkspaceMountPath = "/workspace"
 	c.Spec.Network = &biz.NetworkSelection{VPCID: "vpc_" + strings.Repeat("a", 32), SubnetID: "subnet_" + strings.Repeat("b", 32)}
 	if _, err := f.repo.AcceptCreate(ctx, c); err != nil {
@@ -161,7 +161,7 @@ func TestInstanceNetworkSubmissionTrustedServiceAcceptsFrozenSelectionAfterWrite
 	if err != nil {
 		t.Fatal(err)
 	}
-	request := &pb.AcceptCreateRequest{Context: &pb.CommandContext{TenantId: c.TenantID, ResourceId: c.ID, OperationId: c.OperationID}, Spec: &pb.CreateSpec{Name: s.Name, ImageId: s.ImageID, ImageScope: s.ImageScope, PresetId: s.PresetID, ImageReference: s.ImageReference, Cpu: s.CPU, Memory: s.Memory, ClusterId: s.ClusterID, Namespace: s.Namespace, ServiceAccount: s.ServiceAccount, StorageClass: s.StorageClass, WorkspaceSize: s.WorkspaceSize, Shell: s.Shell, Uid: s.UID, Gid: s.GID, InstanceKind: s.InstanceKind, ComputeType: s.ComputeType, Scheduling: &pb.SchedulingOptions{PodPlacement: pb.SchedulingOptions_NONE.Enum()}, InstanceContractVersion: 2, WorkspaceMountPath: s.WorkspaceMountPath, Network: &pb.NetworkSelection{VpcId: s.Network.VPCID, SubnetId: s.Network.SubnetID}}}
+	request := &pb.AcceptCreateRequest{Context: &pb.CommandContext{TenantId: c.TenantID, ResourceId: c.ID, OperationId: c.OperationID}, Spec: &pb.CreateSpec{Name: s.Name, ImageId: s.ImageID, ImageScope: s.ImageScope, PresetId: s.PresetID, ImageReference: s.ImageReference, Cpu: s.CPU, Memory: s.Memory, ClusterId: s.ClusterID, Namespace: s.Namespace, ServiceAccount: s.ServiceAccount, StorageClass: s.StorageClass, WorkspaceSize: s.WorkspaceSize, Shell: s.Shell, Uid: s.UID, Gid: s.GID, InstanceKind: s.InstanceKind, ComputeType: s.ComputeType, Scheduling: &pb.SchedulingOptions{PodPlacement: pb.SchedulingOptions_NONE.Enum()}, WorkspaceMountPath: s.WorkspaceMountPath, Network: &pb.NetworkSelection{VpcId: s.Network.VPCID, SubnetId: s.Network.SubnetID}}}
 	request.Context.RequestDigest, err = pb.CommandDigest(request.Context, request.Spec)
 	if err != nil {
 		t.Fatal(err)
