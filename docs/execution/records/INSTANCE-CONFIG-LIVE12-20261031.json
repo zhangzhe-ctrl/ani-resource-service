@@ -1,0 +1,71 @@
+{
+  "date": "2026-10-31",
+  "executionHost": "fedora",
+  "transport": "local line relay over SSH; API and Kubernetes boundary on node1; no local test/build execution",
+  "cluster": "ani-kcn-full via 100.64.128.12",
+  "nodeInternalIPs": ["10.10.1.66", "10.10.1.67", "10.10.1.68"],
+  "result": "FAIL",
+  "stage": "pre-admission frozen instance validation",
+  "normalTenantLogin": "PASS",
+  "cpuPreset": "4aed8f86-700a-4a83-b729-fa07c9932c66",
+  "tenantImage": "img_50d0690f2d434f979f880404948d55cd",
+  "newInstanceAccepted": false,
+  "runningAndDelete": "NOT_RUN: creation was rejected",
+  "observedDeployment": {
+    "resource": {
+      "readyReplicas": 1,
+      "revision": "d77ff571eb25268a0e03ef64846c03b7d825d630",
+      "image": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:ed9c4c2700ac55f55dd04a107291a014efea9535c24ca15048425651f39f22d6",
+      "instanceSchemaMaxVersion": 8,
+      "instanceContractVersionColumnPresent": true
+    },
+    "governance": {
+      "readyReplicas": 1,
+      "revision": "ddd98f4c79751ba848fa862bab6878dc7bc99bb7",
+      "image": "10.10.1.66:30003/ani-gpu-platform/ani-governance@sha256:0518f2d3616c8a088113b0e604540565d4419ae1921446d17ca4b233c4090fc0",
+      "atlasLatest": "20261030010000",
+      "instanceContractVersionColumnPresent": true,
+      "retiredEnvironmentVariableStillPresent": true
+    }
+  },
+  "failure": {
+    "configuredRequest": {"status": 400, "reason": "INSTANCE_RESERVED_CONFIG", "message": "invalid frozen instance business", "requestId": "03a68bef-4e99-4a4f-8019-b8a847e5540a"},
+    "minimalRequest": {"status": 400, "reason": "INVALID_INSTANCE_REQUEST", "message": "instance request failed"},
+    "cause": "Governance main includes unversioned contract #80; Resource main still requires ContractV2. Resource #36 was merged into codex/vm-detail-enrichment-20261030, not main."
+  },
+  "sourceRepair": {
+    "baseMain": "d77ff571eb25268a0e03ef64846c03b7d825d630",
+    "originalReviewedHead": "085eb262f6e744a7fdeca7536b96f1fba4063bf3",
+    "originalVerifiedTree": "4c3b855c0fce4730b0e39054f487a89acd43c5b8",
+    "reappliedTreeBeforeThisDocumentation": "4c3b855c0fce4730b0e39054f487a89acd43c5b8",
+    "businessDiffFromReviewedHead": "empty",
+    "generationAndMakeVerify": "PASS on the identical original source; not repeated for target-branch correction and documentation",
+    "live12AfterRepair": "NOT_RUN; correction has not been merged or deployed",
+    "requiredCutover": "Complete and back up old container cleanup/history, stop old writers, reset authorized old container ledgers, apply Resource 009 and Governance 20261031010000 with matching source/tooling, then deploy matching versions and repeat the normal tenant lifecycle."
+  },
+  "historicalInventoryBeforeCleanup": {
+    "resourceInstances": 28,
+    "allDesiredAndObservedDeleted": true,
+    "allFourCleanupFlagsTrue": true,
+    "notebooks": 0,
+    "unknownCreateOperation": "5dc726ab-f92b-4f7b-836f-95e36dd4a029",
+    "unknownResource": "3d9bc121-7e68-419d-b9f3-d85e204b9d23",
+    "alreadyCompletedDelete": "99dc580a-9988-4c2d-a96a-673930601585",
+    "quotaChargesForUnknownCreate": 0,
+    "cleanup": "PASS: private backup, rollback rehearsal, exact-instance guarded commit and read-only post-check",
+    "removedResourceInstances": 1,
+    "removedResourceOperations": 1,
+    "removedIdleWorkRows": 1,
+    "removedGovernanceOperations": 2,
+    "remainingNormalDeletedInstances": 27,
+    "remainingOwnerUnknownOperations": 0,
+    "quotaChargesRemoved": 0,
+    "backupSHA256": "c2ef5cd07f8d2b7114a4bcf726a7f5ff025966c2684215844811f664769076ee",
+    "backupLocation": "Fedora task directory cleanup-history/private-backup.jsonl (private)",
+    "crossDatabaseAtomic": false
+  },
+  "rawEvidence": "/home/chabking/codex-runs/live12-unversioned-20261031",
+  "serviceDeploymentChanged": false,
+  "sharedQuotaChanged": false,
+  "otherOwnerResourcesChanged": false
+}

@@ -86,7 +86,8 @@ message MountablePVC {
 message ListMountablePVCsResponse { repeated MountablePVC items = 1; int64 total = 2; }
 message InstanceConfiguration {
   string instance_id = 1 [json_name = "instance_id"];
-  uint32 instance_contract_version = 2 [json_name = "instance_contract_version"];
+  reserved 2;
+  reserved "instance_contract_version";
   string workspace_mount_path = 3 [json_name = "workspace_mount_path"];
   repeated VolumeMount volume_mounts = 4 [json_name = "volume_mounts"];
   NetworkSelection network = 5;
@@ -127,7 +128,8 @@ message ResolveCreateSpecRequest {
   CreateInstanceData data = 2;
   string namespace = 3;
   SchedulingOptions scheduling_defaults = 4;
-  uint32 instance_contract_version = 5 [json_name = "instance_contract_version"];
+  reserved 5;
+  reserved "instance_contract_version";
 }
 // One managed business snapshot; GPU values exist only in gpu_execution.resources.
 message CreateSpec {
@@ -145,7 +147,8 @@ message CreateSpec {
   accelerator.v1.GpuDisplay gpu_display = 22 [json_name = "gpu_display"];
   // Resolver-only managed selection reference, removed from accepted commands.
   GpuPresetReference gpu_selection = 23 [json_name = "gpu_selection"];
-  uint32 instance_contract_version = 24 [json_name = "instance_contract_version"];
+  reserved 24;
+  reserved "instance_contract_version";
   string workspace_mount_path = 25 [json_name = "workspace_mount_path"];
   repeated FrozenVolumeMount volume_mounts = 26 [json_name = "volume_mounts"];
   NetworkSelection network = 27;

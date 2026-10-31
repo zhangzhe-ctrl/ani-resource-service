@@ -45,7 +45,7 @@ func TestGpuExecutionPersistenceAndDeletedCatalogReplay(t *testing.T) {
 			if e != nil {
 				t.Fatal(e)
 			}
-			spec, e := handler.ResolveCreateSpec(containerScope(ctx, tenant), &pb.ResolveCreateSpecRequest{InstanceContractVersion: 2, TenantId: tenant, Data: &pb.CreateInstanceData{Name: "gpu-work", ImageId: "img_" + strings.Repeat("a", 32), ImageScope: "platform", PresetId: preset.ID}})
+			spec, e := handler.ResolveCreateSpec(containerScope(ctx, tenant), &pb.ResolveCreateSpecRequest{TenantId: tenant, Data: &pb.CreateInstanceData{Name: "gpu-work", ImageId: "img_" + strings.Repeat("a", 32), ImageScope: "platform", PresetId: preset.ID}})
 			if e != nil {
 				t.Fatal(e)
 			}

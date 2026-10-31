@@ -4,11 +4,13 @@
 
 ## 发布与维护前置
 
+本手册的目录元数据迁移本身保留实例。当前容器配置去版本的009切换须先完成[实例运行手册](instance-mvp-fedora.md)中单独的清空开发实例前置；二者不能混同。
+
 先完成正式 Res API 发布、Gov 精确锁版、两仓真实协议/身份/PG持久主链验证、独占库正逆向演练及匹配镜像。API 模块发布供编译消费；删除旧 RPC 的 Res 不能提前部署到旧 Gov。
 
 迁移前通过真实业务入口准备归属明确的 CPU/GPU 样本，覆盖运行、停止、待投递/ACK和清理中。保存 Notebook/Pod UID与实际资源、冻结载荷/hash、GPU Execution/Display/分配、operation、原账、outbox及借用卷UID。已有实例没有因目录改名而清理或重建的要求。缺少存量或真实 GPU 证据时必须记录 NOT_RUN。
 
-数据库变更前保存：原实表 OID、完整 ID/内容/审计摘要、PK/UNIQUE/CHECK定义与 convalidated、索引、默认值、owner/ACL、历史001..006 checksum。以只读 catalog 核对实际附属对象和外部依赖。未知版本、外部FK/view/trigger/RLS、命名冲突或owner不符明确失败，不猜测清洗。
+数据库变更前保存：原实表 OID、完整 ID/内容/审计摘要、PK/UNIQUE/CHECK定义与 convalidated、索引、默认值、owner/ACL、当前完整 instance 历史001..009 checksum。以只读 catalog 核对实际附属对象和外部依赖。未知版本、外部FK/view/trigger/RLS、命名冲突或owner不符明确失败，不猜测清洗。
 
 实际入口隔离和恢复必须验证数据面：Service/Endpoints/EndpointSlice 正确不等于 NodePort 已更新。目标环境曾因停止 Notebook 的长 Service/port 名组合触发 kube-proxy nftables `comment too long, 128 characters maximum allowed`，整批同步失败、NodePort 保留旧后端；该行为与[Kubernetes #139515](https://github.com/kubernetes/kubernetes/issues/139515)一致，[上游修复](https://github.com/kubernetes/kubernetes/pull/139516)不能推定已包含于现有镜像。维护前核对实际同步错误，恢复时用新连接和真实鉴权请求确认后端；不能把401当隔离成功，也不能修改已正确的Endpoint或反复修补会被Notebook控制器回写的Service。涉及其他组件的升级/部署应另行取得明确授权，不因数据库已迁移而自动扩大范围。
 

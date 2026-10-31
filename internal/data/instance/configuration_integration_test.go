@@ -14,7 +14,7 @@ func TestBorrowedVolumeReferencesPersistAndReleaseWithCompute(t *testing.T) {
 	f := database(t)
 	ctx := context.Background()
 	c := cpuCreate()
-	c.Spec.ContractVersion = 2
+
 	c.Spec.WorkspaceMountPath = "/work"
 	c.Spec.VolumeMounts = []biz.VolumeMount{{ClusterID: c.Spec.ClusterID, Namespace: c.Spec.Namespace, PVCName: "datasets", PVCUID: uuid.NewString(), MountPath: "/data", ReadOnly: true, Ownership: "borrowed"}}
 	c.Spec.Env = []biz.EnvVar{{Name: "APP_MODE", Value: "  literal  "}}
@@ -25,14 +25,10 @@ func TestBorrowedVolumeReferencesPersistAndReleaseWithCompute(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if got.Spec.ContractVersion != 2 || got.Spec.VolumeMounts[0].PVCUID != c.Spec.VolumeMounts[0].PVCUID || got.Spec.Env[0].Value != "  literal  " {
+	if got.Spec.VolumeMounts[0].PVCUID != c.Spec.VolumeMounts[0].PVCUID || got.Spec.Env[0].Value != "  literal  " {
 		t.Fatal("frozen configuration changed")
 	}
-	var version int
 	var state string
-	if e = f.runtime.QueryRow(ctx, "SELECT instance_contract_version FROM instance.instances WHERE tenant_id=$1 AND instance_id=$2", c.TenantID, c.ID).Scan(&version); e != nil || version != 2 {
-		t.Fatal("version not persisted", e)
-	}
 	check := func(want string) {
 		t.Helper()
 		if e := f.runtime.QueryRow(ctx, "SELECT state FROM instance.borrowed_volume_references WHERE tenant_id=$1 AND instance_id=$2 AND mount_path='/data'", c.TenantID, c.ID).Scan(&state); e != nil || state != want {

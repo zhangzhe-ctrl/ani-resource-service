@@ -46,7 +46,7 @@ func (s *Service) GetInstanceConfiguration(ctx context.Context, r *pb.GetInstanc
 	if e := biz.ValidateConfiguration(i.Spec); e != nil {
 		return nil, rpcError(e)
 	}
-	out := &pb.InstanceConfiguration{InstanceId: i.ID, InstanceContractVersion: i.Spec.ContractVersion, WorkspaceMountPath: i.Spec.WorkspaceMountPath, Labels: i.Spec.Labels, Annotations: i.Spec.Annotations}
+	out := &pb.InstanceConfiguration{InstanceId: i.ID, WorkspaceMountPath: i.Spec.WorkspaceMountPath, Labels: i.Spec.Labels, Annotations: i.Spec.Annotations}
 	out.SecurityGroupIds = append([]string(nil), i.SecurityGroupIDs...)
 	if !i.SecurityGroupsInitialized {
 		out.SecurityGroupIds = append([]string(nil), i.Spec.SecurityGroupIDs...)
