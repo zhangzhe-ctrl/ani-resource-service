@@ -21,12 +21,14 @@ Network accepts the live identity outside its database transaction and inserts
 or compares that exact identity inside the existing acceptance transaction.
 Migration 0025 adds nullable `network_tenant_namespaces.namespace_uid` without
 changing historical migrations. Runtime rejects NULL. During a maintenance
-window, stop new identity admissions, apply the migration, run
-`scripts/tenant-namespace-backfill` first without `-apply`, review its identities
-and SHA256, then apply with `-reviewed-sha256`. It only updates exact existing
-NULL rows in the configured cluster; existing UIDs and other clusters are never
-overwritten. Verify zero NULL in the before/after output before starting the new
-runtime. The tool does not stop admissions or deploy the service itself.
+window, use the [temporary guarded UID cutover](../runbooks/tenant-namespace-uid-window.md):
+freeze target identity-table INSERT/UPDATE, apply the official migration,
+atomically require non-NULL UIDs, then use `scripts/tenant-namespace-backfill`
+first without `-apply`. Apply requires its reviewed SHA256 and the applied
+require-UID window plan. It only fills exact existing NULL rows; existing UIDs
+and other clusters are never overwritten. Verify zero NULL, update Resource,
+and prove original writers retired before removing the temporary guard. The
+tools neither deploy the service nor mutate Namespace objects.
 
 `network.namespace_prefix`, `ANI_NETWORK_NAMESPACE_PREFIX`,
 `NETWORK_NAMESPACE_PREFIX` and Instance's former nonempty prefix configuration

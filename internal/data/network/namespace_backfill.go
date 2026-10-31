@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/tenantnamespace"
@@ -63,6 +64,23 @@ func (p *Postgres) PlanNamespaceUIDBackfill(ctx context.Context) (NamespaceUIDBa
 // ApplyNamespaceUIDBackfill re-reads the complete reviewed plan, then updates
 // exact NULL rows in one transaction. A race or identity drift rolls it back.
 func (p *Postgres) ApplyNamespaceUIDBackfill(ctx context.Context, reviewedSHA256 string) (NamespaceUIDBackfillPlan, error) {
+	return p.applyNamespaceUIDBackfill(ctx, reviewedSHA256, nil)
+}
+
+// ApplyNamespaceUIDBackfillGuarded is the maintenance CLI entry. The temporary
+// non-NULL constraint and exact reviewed two-row manifest are required; its
+// transaction also prevents concurrent identity inserts or DDL during updates.
+func (p *Postgres) ApplyNamespaceUIDBackfillGuarded(ctx context.Context, reviewedSHA256 string, window NamespaceUIDWindowInput) (NamespaceUIDBackfillPlan, error) {
+	if err := namespaceUIDWindowInput(window); err != nil {
+		return NamespaceUIDBackfillPlan{}, err
+	}
+	if window.Stage != "require-uid" || window.ClusterID != p.placement.ClusterID {
+		return NamespaceUIDBackfillPlan{}, fmt.Errorf("require-uid window for this cluster required")
+	}
+	return p.applyNamespaceUIDBackfill(ctx, reviewedSHA256, &window)
+}
+
+func (p *Postgres) applyNamespaceUIDBackfill(ctx context.Context, reviewedSHA256 string, window *NamespaceUIDWindowInput) (NamespaceUIDBackfillPlan, error) {
 	plan, err := p.PlanNamespaceUIDBackfill(ctx)
 	if err != nil {
 		return plan, err
@@ -76,6 +94,36 @@ func (p *Postgres) ApplyNamespaceUIDBackfill(ctx context.Context, reviewedSHA256
 	}
 	defer tx.Rollback(ctx)
 	q := p.queries.WithTx(tx)
+	if window != nil {
+		if _, err = tx.Exec(ctx, `SET LOCAL lock_timeout='5s';SET LOCAL statement_timeout='15s';LOCK TABLE public.network_tenant_namespaces IN SHARE ROW EXCLUSIVE MODE`); err != nil {
+			return plan, err
+		}
+		if err = namespaceUIDBackfillGuard(ctx, tx, *window); err != nil {
+			return plan, err
+		}
+		registered, err := q.ListTenantNamespaceIdentities(ctx)
+		if err != nil {
+			return plan, err
+		}
+		index := 0
+		for _, row := range registered {
+			if row.ClusterID != window.ClusterID {
+				continue
+			}
+			if index >= len(window.Rows) || index >= len(plan.Rows) {
+				return plan, fmt.Errorf("registered Namespace set changed")
+			}
+			want := window.Rows[index]
+			planned := plan.Rows[index]
+			if row.TenantID != want.TenantID || row.Namespace != want.Namespace || planned.LiveUID != want.UID || row.NamespaceUid != nil && *row.NamespaceUid != want.UID || (row.NamespaceUid == nil) != (planned.OriginalUID == nil) {
+				return plan, fmt.Errorf("reviewed Namespace identity changed")
+			}
+			index++
+		}
+		if index != len(window.Rows) || index != len(plan.Rows) {
+			return plan, fmt.Errorf("exact Namespace row count changed")
+		}
+	}
 	for _, row := range plan.Rows {
 		if row.OriginalUID != nil {
 			continue
@@ -99,4 +147,23 @@ func (p *Postgres) ApplyNamespaceUIDBackfill(ctx context.Context, reviewedSHA256
 		return plan, databaseFailure(err)
 	}
 	return p.PlanNamespaceUIDBackfill(ctx)
+}
+
+func namespaceUIDBackfillGuard(ctx context.Context, tx pgx.Tx, in NamespaceUIDWindowInput) error {
+	var database, user string
+	if err := tx.QueryRow(ctx, "SELECT current_database(),current_user").Scan(&database, &user); err != nil {
+		return err
+	}
+	if database != in.Database || user != in.RuntimeRole {
+		return fmt.Errorf("original backfill database/runtime identity differs")
+	}
+	var expression, comment string
+	var validated bool
+	if err := tx.QueryRow(ctx, `SELECT pg_get_expr(conbin,conrelid),convalidated,coalesce(obj_description(oid,'pg_constraint'),'') FROM pg_constraint WHERE conrelid='public.network_tenant_namespaces'::regclass AND conname=$1 AND contype='c'`, NamespaceUIDWindowConstraint).Scan(&expression, &validated, &comment); err != nil {
+		return fmt.Errorf("original require-UID window constraint missing")
+	}
+	if validated || comment != "ani.resource.namespace-uid-window.v1:"+in.WindowID || !namespaceUIDWindowExpressionMatches(expression, in, true) {
+		return fmt.Errorf("original require-UID window constraint differs")
+	}
+	return nil
 }

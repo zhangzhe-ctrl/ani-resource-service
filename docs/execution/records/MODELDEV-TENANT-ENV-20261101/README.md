@@ -50,3 +50,49 @@ The final required verification passed after that correction. Startup rejects
 old nonempty namespace-prefix configuration; ModelDev caller's old namespace/
 owner-label configuration must also be removed at task 09 switch. Existing
 Inference configuration is retained.
+
+
+## Temporary UID write barrier (2026-11-01)
+
+Base for this increment: `71b3ad7a2a88ae531e5e7b80abde2f494ff28d9d`.
+The [one-time owner tool](../../../runbooks/tenant-namespace-uid-window.md)
+defaults to read-only exact plans. It freezes target-cluster identity INSERT/UPDATE
+on schema24, preserves that guard through official migration0025, atomically
+requires non-NULL UIDs for backfill, and removes only its own temporary constraint
+after the exact two UIDs and original writer retirement are proven. It changes no
+ACL, migration, RPC or normal runtime composition. Backfill CLI apply now requires
+the applied require-UID window plan and checks DB/runtime/row identity under lock.
+
+Real isolated PostgreSQL selected exactly
+`^(TestNamespaceUIDWindow|TestTenantNamespaceBackfillIsExactAndNeverOverwritesUID)`
+with `scripts/integration -race -timeout=3m -v -run <pattern> ./internal/data/network`:
+**PASS, exit0**, 2026-10-31T22:37:43.474373Z–22:38:06.715224Z.
+[Full PG output](uid-window-pg-final.log) and [receipt](uid-window-pg-final-receipt.json)
+prove existing-row ON CONFLICT rejection (23514), target UPDATE rejection,
+read/original Delete admission and unrelated-cluster preservation, official25
+migration, transaction-race waiting and changed-row refusal, replacement ADD
+failure rolling back DROP, exact two-row fill, unknown writer source refusal,
+original-address late connections and captured backend retirement, cancellation,
+wrong digest and NULL release refusal. External Namespace verification is a
+controlled boundary in these tests; this is not live cluster acceptance.
+
+Required `make verify`: **PASS, exit0**, 22:38:06.717633Z–22:41:40.721999Z
+on the same nine-file source hashes; [full output](uid-window-verify-final.log),
+[terminal receipt](uid-window-verify-final-receipt.json). This includes deterministic
+pinned generation, ownership boundaries, Network fault builds, tidy diff, default
+package tests (including embedded Python syntax), vet/build/module verification
+and diff checks. The SSH observation handle later ended255; a single bounded
+read retrieved the already-completed authoritative receipt, without restarting
+the check. Existing module-cache stat-write warnings did not fail the check.
+Only these execution records/status were appended after tests.
+
+An earlier PG attempt failed because the new `has_table_privilege` overload
+inferred table OID as text; explicit `$3::oid` corrected it. Its actual failure
+and earlier PG outputs remain in coordinated task09 `res-uid-window-pg-oid-fail*`
+evidence, rather than being reported as final PASS.
+
+**Live freeze/migration/guard swap/backfill/zero-NULL/deployment/release: NOT_RUN.**
+The two historical live Namespace UIDs are available, but current Deployment,
+Pod and runtime-role identity must be freshly read before the template can become
+an apply-ready manifest. No live Plan.SHA256 exists yet. The coordinated task09
+manifest template file hash is only a template hash, not an executable plan digest.

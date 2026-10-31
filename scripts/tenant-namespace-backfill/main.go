@@ -1,9 +1,11 @@
-// The maintenance window pauses new Network admissions before applying this
-// command. Default mode is a read-only exact-row plan; -apply requires its hash.
+// Default mode is a read-only exact-row plan. Applying requires both its hash
+// and the original applied require-UID maintenance-window plan; no stop assumption.
 package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -25,6 +27,7 @@ func run() error {
 	kubeconfig := flag.String("kubeconfig", "", "approved cluster kubeconfig path")
 	apply := flag.Bool("apply", false, "apply only reviewed exact NULL rows")
 	reviewed := flag.String("reviewed-sha256", "", "SHA256 from the read-only plan")
+	windowFile := flag.String("window-plan-file", "", "original applied require-UID window plan JSON, required for apply")
 	flag.Parse()
 	if *dsnFile == "" || *cluster == "" || *kubeconfig == "" {
 		return fmt.Errorf("dsn-file, cluster-id and kubeconfig required")
@@ -58,7 +61,25 @@ func run() error {
 	if !*apply {
 		return nil
 	}
-	after, err := repo.ApplyNamespaceUIDBackfill(ctx, *reviewed)
+	windowRaw, err := os.ReadFile(*windowFile)
+	if err != nil || len(windowRaw) > 65536 {
+		return fmt.Errorf("bounded applied require-UID window plan required")
+	}
+	var window struct {
+		Plan    data.NamespaceUIDWindowPlan
+		Applied bool
+	}
+	if err = json.Unmarshal(windowRaw, &window); err != nil || !window.Applied || window.Plan.Input.Stage != "require-uid" || window.Plan.Input.ClusterID != *cluster {
+		return fmt.Errorf("original applied require-UID window identity differs")
+	}
+	originalSHA := window.Plan.SHA256
+	window.Plan.SHA256 = ""
+	encoded, _ := json.Marshal(window.Plan)
+	sum := sha256.Sum256(encoded)
+	if originalSHA == "" || originalSHA != hex.EncodeToString(sum[:]) {
+		return fmt.Errorf("original window plan digest differs")
+	}
+	after, err := repo.ApplyNamespaceUIDBackfillGuarded(ctx, *reviewed, window.Plan.Input)
 	if err != nil {
 		return err
 	}
