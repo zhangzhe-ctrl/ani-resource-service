@@ -158,3 +158,15 @@ R3 实际发布：版本 `base-network-r3-20261103-c8072f1`，Registry 与运行
 R3 窄观察最终结果：原公网 `PROVIDER_UNAVAILABLE` 错误分支未复现，不能获得该次可信原Cause，R2底层cause仍 **UNKNOWN**。旧私网同operation在UTC23:05:43 epoch827短暂 PROVIDER_NOT_READY，23:05:55 epoch828自然恢复；新private70c22同期epoch128→129亦恢复，这些非错误返回没有原Cause，不能宣称日志补丁消除了波动。正式Observability仅对活动操作、失败或状态/Reason变化写INFO，稳定正常轮次无INFO不等于worker停顿。
 
 最后各只读一次正式GET：服务器UTC23:07:24，公网 observed23:07:13、available/configured/fresh、versions1/1/1、原operation不变；旧私网 observed23:07:03、available/configured/fresh、versions6/6/6、原operation不变，证明正常观察续新。证据 `e2e-r3/observation-cause/{final-result.json,resource-final.log}` 及该目录两份 final-api JSON；原R2红回执保留。未发业务写、探针、原生读取或流量重验，未无限等待全绿，也不把启动期readyz503当作原失败原因。
+
+### R4 同步最新 main、解决 PR 冲突与最终发布
+
+PR #46 收尾检查发现与最新 main `8b31a8e30b4ea0228e9fb433849c5b1c09d2d710`（VM共享观测修复#45）有冲突。`git merge-tree` 定位仅 `docs/execution/status.md` 的新记录插入冲突，解法保留LB与VM两边原文；所有上游VM源码自动合并、无本任务改写。暂存tree `b61efe9418827d604b2b835323ffa189fc705761` 的8548份文件/模式与Fedora候选完全相同，候选manifest `e46073d2ec982676111ea30e7c63f019e9b9a3c442395eeab7c9773546f3710a`。合并候选本轮唯一 `make verify` 于UTC23:15:43～23:19:42 PASS，生成diff空、无verify后源变化；没有重复PG/前端/规格。上游VM的原PG/race证据继续使用其[原验证记录](vm-observation-scope-20261102.json)，不冒称本任务重跑或现场VM行为验收。
+
+正式合并提交 `d6744abbca93f887bb679610e29d46877196ccc8`（父9bf7863与8b31a8e）已SSH推至原PR，GitHub实际检查mergeable=true、无合并冲突；不自动合并或绕过分支规则。真实commit tree与通过候选一致，最终commit manifest `6029d5c77e3a939b49e1256f71b4fffda1f8d35dbe8b1546cb1411cda17427b3`。检查及源证据见 `resource-r4/verification/{result.json,make-verify.log,candidate-source-check.json}`。
+
+最终线上版本 `base-network-r4-20261103-d6744ab`，Registry与Pod实际imageID均为 `ani-resource-service@sha256:4c651e6e91d22bb093d660717638cf020f277b065b2563d11b83f16822a0e852`；native与镜像 `/app/bin/server` SHA-256均为 `7ea223326b06adaf9b775c6d442692e1dc95b45be8e7df3700a3c65595116e87`。Deployment原UID不变，generation/observed66、1/1 Ready；Pod `ani-resource-service-7c9b7f5c-pbdxh` restart0，日志确认R4版本。只改Resource镜像，ConfigSecret UID/data、Schema及其他组件未变，无新迁移；完整回执 `resource-r4/deployment/evidence/publication-result.json`。
+
+R4 部署后的必要烟测仅运行一次，结果 `SMOKE_PASS_WITH_KNOWN_LIMITATIONS`、failures=[]。入口核对10集群UID、上述实际新源/immutable digest/native版本；主池default/allocation/new_vpcs_enabled全true、verification=null，主VPC/baseReady/fresh、原池/EIP/SNAT/VPC Provider UID固定；三LB均available/configured/fresh、原operation succeeded、desired/target/applied1/1/1。四入口各只发一次真实请求，均HTTP200及正确marker；原7KC VPC UID、manual`.194`/默认`.192`及其SNAT UID/spec/绑定均保持。未出现本轮红状态，未轮询、未业务写、未重测规格或CRUD。
+
+最终保留清单 `/home/chabking/tasks/base-network-20261103/e2e-r4/final-smoke/final-retained-resources.json` 已相对链接R2业务证据/清理、R3诊断与R4正式部署回执。**原耗尽EIP自动恢复FAIL、原观察causeUNKNOWN、large用户SKIPPED、持续全绿NOT_ASSERTED** 均保留；一次烟测通过不消除这些限制。四仓PR保留原open/draft状态并更新证据，不自动合并；本段只补文档，不重复已经通过的生成/测试/构建。

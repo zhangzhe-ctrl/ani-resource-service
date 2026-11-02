@@ -12,6 +12,10 @@ Resource 初批业务源码 `1ddb5c6`，R2 修复源码 `3fab1f1`（PR #46），
 
 收尾观察存在已保留的状态波动，不能以阶段流量通过宣称持续全绿。R3 `c8072f1` 修复 LB 错误未传入既有Cause日志的缺口，真实Worker→正式日志回归RED→GREEN及Fedora本轮 `make verify` PASS；实际镜像 `sha256:c8782128a464baa018af985fa407cbd637c4c4ec3f1e44dc911c30a001ce17ef` 已仅替换Resource发布，generation/observed65、1/1 Ready，配置/Schema未变。原公网 `PROVIDER_UNAVAILABLE` 在该窄窗口未复现，底层cause仍UNKNOWN；R3仍观察到同operation短暂NOT_READY后恢复，不能把日志补丁宣称为稳定性修复。最终只读GET显示公网与原私网均available/configured/fresh、观测正常续新；没有重复验流或修改业务资源。详见本轮记录的R3节。
 
+最终 PR #46 已合入最新 main `8b31a8e`，仅执行状态文档冲突，保留两边记录，未改上游 VM 源码。合并源码 `d6744ab` 的 Fedora 本轮完整 `make verify` PASS；**当前运行 R4**：`base-network-r4-20261103-d6744ab`，实际 Resource imageID `sha256:4c651e6e91d22bb093d660717638cf020f277b065b2563d11b83f16822a0e852`，Deployment 原UID不变、generation/observed66、1/1 Ready/restart0，配置/Schema未变。最新 PR 已无合并冲突，未自动合并；上游 VM 现场操作不在本任务重复验收。
+
+R4 单次最终烟测 `SMOKE_PASS_WITH_KNOWN_LIMITATIONS`：实际源码/镜像/native版本守卫、主池三开关及基础连接固定身份、三LB原operation/版本1/1/1/available/configured/fresh、四入口各一次HTTP200/marker、原7VPC及`.194/.192`和默认SNAT保留均PASS。未轮询到绿或重测CRUD/规格；耗尽原EIP自动恢复FAIL、原观察causeUNKNOWN及large用户SKIPPED保持。最终保留清单为Fedora `e2e-r4/final-smoke/final-retained-resources.json`，详见本轮记录。
+
 <a id="lb-usage-alignment-20261102"></a>
 
 ## 2026-11-02：LB 使用方式对齐
@@ -30,11 +34,11 @@ Resource 初批业务源码 `1ddb5c6`，R2 修复源码 `3fab1f1`（PR #46），
 
 ## 2026-11-02：VM Unknown 全局失效与恢复退避修复
 
-**源码与 Fedora 统一快照的真实 PostgreSQL 纵向/race 回归、完整 `make verify`：PASS；新修复部署及现场客机关机/电源操作/浏览器验收：NOT_RUN。** 基于最新 main `0bce651`（已含 PR #44）。原缺陷已在该基线确定性复现：无关 namespace 的 Pod metadata Watch 先于旧 LIST 返回，可将刚核验约 1ms 的健康 VM 变为 Unknown；改后该回归通过。
+**源码与 Fedora 统一快照的真实 PostgreSQL 纵向/race 回归、完整 `make verify`：PASS；修复已随本轮 R4 镜像发布到10集群；现场客机关机/电源操作/浏览器验收：NOT_RUN。** 原验证基于 main `0bce651`（已含 PR #44）。原缺陷已在该基线确定性复现：无关 namespace 的 Pod metadata Watch 先于旧 LIST 返回，可将刚核验约 1ms 的健康 VM 变为 Unknown；改后该回归通过。
 
 共享核验改为每台 VM 的实际原生身份、VMI 和关联 launcher 运行字段，忽略无关 Pod/metadata/RV 变化；Informer 仍为唯一有序事实源，旧 LIST/过时回调不回退新事实。临时失败保留未过期事实及原时间，到 60 秒最迟复查并失效；缺失、归属/UID 冲突立即 Unknown。普通通知不越过退避，只有新鲜、更新且匹配精确 Native UID 的共享证明可提前唤醒相应临时失败，并提高观察 generation 拦住旧结果；冷启动恢复不依赖内存登记。现有租户/关闭/操作围栏、独立执行和请求预算均保留，无新增迁移或配置字段。
 
-同一最终源码快照在 Fedora 跑真实 PG + `go test -race -tags=instanceintegration`（相关 VM/data/server 行为），92.138 秒退出 0；完整 `make verify`，282.740 秒退出 0。包括观测阻塞期间后端命令及操作仍完成、精确恢复与拒绝旧/未来/错 UID 证明、普通通知不能绕过退避、过期与身份撤销等行为。Kubernetes 仅在外部边界替身；未发布镜像或操作现场 VM。独占 PG、私有 DSN 和短临时目录已清理。固定输入、完整命令和边界见[验证记录](records/vm-observation-scope-20261102.json)。
+同一最终源码快照在 Fedora 跑真实 PG + `go test -race -tags=instanceintegration`（相关 VM/data/server 行为），92.138 秒退出 0；完整 `make verify`，282.740 秒退出 0。包括观测阻塞期间后端命令及操作仍完成、精确恢复与拒绝旧/未来/错 UID 证明、普通通知不能绕过退避、过期与身份撤销等行为。Kubernetes 仅在外部边界替身；#45原验证阶段未发布镜像或操作现场VM，本轮R4随后发布上述源码，仍未操作现场VM。独占 PG、私有 DSN 和短临时目录已清理。固定输入、完整命令和边界见[验证记录](records/vm-observation-scope-20261102.json)。
 
 ## 2026-11-02：VM 操作结束后的独立电源观测
 
