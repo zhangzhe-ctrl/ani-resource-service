@@ -89,3 +89,27 @@ LB 物理清理完成后，经正常产品 API 删除任务 CPU 实例 `b08324d2
 证据保存在 run 的 `evidence/{baseline-probe.txt,envoy-before-server-info.json,vip-before.txt,after-snat-probe.txt,envoy-live-summary.json,final-subnet.json,final-eip.json,final-snat.json}`；临时 admin port-forward 均在 finally 中停止。读取平台能力时 `load_balancer_ready=true`；`base_connectivity_ready=false` 仍如实保留，因为本次没有登记产品 Intranet 池及其验证证据，不能把底层流量成功冒充产品管理能力就绪。
 
 按本次创建和继续复验的用途，基础 Subnet/EIP/Snat、测试 LB 及后端 Pod 当前保留；原用户 VM、既有默认公网出口和共享控制器保持。Console 预览已按用户前一条要求重新打开，版本仍为 `1e032e4`。本次只追加运行试验与记录，未改 API 准入规则，也未扩大到公网/TLS/监控或全量测试。
+
+## 用户追加：独立纯公网 LB，不分配基础网络 EIP
+
+2026-11-02 23:02～23:12 CST，用户要求“再做一个公网 lb 的实验，不要基础网络 eip”，随后明确“测完暂时不删除这次的数据”。在 Fedora、同一经 UID 核对的 ani-lab/10～12 集群执行；为了不撤销前次私网试验的 SNAT，创建独立 VPC、子网、后端和纯公网 LB。读取 KCN 使用文档同一快照的 `vpc-public.yaml`，采用 `envoyService.type=LoadBalancer`、`lb_vip_address=disable` 和单独 `lb_eips`，复用既有公共 `lb-common`。本次仍是 KCN Provider 试验，不冒充产品 API 或 Console 全链。
+
+run：`/home/chabking/tasks/lb-alignment-20261102/public-no-base-check`，所有清单在 private、原始回执在 evidence。资源均在原 tenant-a namespace `tenant-46936e6b-3a3b-4868-8d88-6833665abb70`：
+
+| 资源 | 实际身份 |
+| --- | --- |
+| VPC / Subnet | `lb-public-no-base-vpc` / `lb-public-no-base-subnet`；`10.74.0.0/16` / `10.74.0.0/24`，网关 `10.74.0.1`；VPC UID `9df6e706-5c86-4297-8189-293a11142604` |
+| 公网 EIP | `lb-public-no-base-eip`，UID `0fa7fcae-985d-4f96-86dd-5b360fa61eba`，`172.16.102.194`，原 Public pool；phase=Bound，resourceType=Service，绑定本次 Gateway Service 和新 VPC |
+| LB | `lb-public-no-base-proxy` / `lb-public-no-base-gateway` / `lb-public-no-base-endpoint` / `lb-public-no-base-route`；Service UID `aaf6c590-56f3-47d8-b5f7-be42893e7a69`，外部入口 `172.16.102.194:8080`，不分配 VPC 私网 VIP |
+| 后端/客户端 | `lb-public-no-base-backend`，UID `329d4685-dbea-45d0-aa8c-1d412f37b69b`，`10.74.0.2:8080`，业务标记 `lb-public-no-base-check-20261102` |
+| 实际 Envoy | `lb-public-no-base-gateway-55977c574f-gsfvr`，UID `ccdea7c7-8b58-4f98-81c2-39ef9d3a88c2`，`10.74.0.3`，restart=0；EndpointSlice target UID 相同、ready/serving=true |
+
+VPC/Subnet Ready，Public EIP 正确绑定，Route/Backend Accepted。全量只读核对该 VPC 的 SNAT 引用为空、Intranet EIP 绑定为空，唯一 EIP 来自 `type=Public` 的池并绑定 Service；既有 Intranet EIP/SNAT 仍只指向前次 test VPC，未给新 VPC创建基础或公网 SNAT。证据 `final-no-base-proof.json` 和 `final-{vpcs,subnets,eips,snats,services,endpointslices}.json`。
+
+初始沿用两副本 small 的 1 CPU/1Gi 申请，但节点事件为 Insufficient CPU/memory，两个 Envoy 未调度。为排除容量因素，只将本次试验专属 Proxy 改成单副本，申请 50m/128Mi、限制 1 CPU/512Mi；不修改产品规格或前次私网 Proxy。新 Envoy 随后正常 Running、Gateway Programmed，但这些状态不作为流量 PASS。原调度失败和实际调整保存在 `scheduling-{pods,events}.json`、`gateway-wait-after-probe-capacity.txt` 和实际清单。
+
+**结果 FAIL：** 后端自身 HTTP 200；从同 VPC 查询平台 DNS 超时，EG Service/Pod 的 TCP18000 连接失败；Envoy Pod 自身 8080 connection refused。对已运行的 Envoy 做一次有界 55.2 秒初始化观察，最终 uptime=203s 仍 PRE_INITIALIZING：xDS update_attempt=2、update_failure=1、update_success=0、membership_total=0、upstream_cx_total=0，尚未加载转发监听器。
+
+Fedora 的初次 HTTP 经透明 Meta 路由返回空响应，不能据此归因到 LB；因此另从 ani-01 已有 hostNetwork CNI Pod 执行只读 curl，实际源 `100.64.128.2`、经 `ovn0` 到公网 EIP，初始化观察后再次请求仍 connection refused、curl exit=7、HTTP000。这是实验环境 Public 池地址的外部 VPC 访问，不声称全球互联网可达。证据 `no-base-dns-xds-backend-probe.txt`、`envoy-direct-http-from-vpc.txt`、`envoy-initialization-observation.json`、`envoy-final-server-info.json`、`envoy-final-xds-stats.txt`、`final-public-http-from-ani01.txt` 和 `conclusion.json`。
+
+本试验表明该现场只绑定 LB 公网入口，不能替代 Envoy 到平台 DNS/xDS 的内网可达性。未添加基础 EIP/SNAT 来改变本次条件，未改共享网络、镜像、业务代码或重启控制器。临时 admin port-forward 均已停止；按用户明确要求，所有本次 VPC/Subnet/Public EIP/LB/Envoy/后端及相关数据暂不删除，前次私网试验和用户既有资源也保留。
