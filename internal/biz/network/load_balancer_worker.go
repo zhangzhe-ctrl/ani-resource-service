@@ -83,6 +83,7 @@ func (w *Worker) stepLoadBalancer(ctx context.Context, work Work) error {
 	o, err := provider.ObserveLoadBalancer(callCtx, work)
 	cancel()
 	if err != nil {
+		p.ProviderError = err
 		p.Reason = providerReason(err)
 		p.OperationState, p.Backoff = Blocked, true
 		if p.State == Available {
