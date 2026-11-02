@@ -1,5 +1,11 @@
 # Network 执行状态
 
+## Inference 标准租户 namespace 镜像授权（2026-11-02）
+
+Resource 基线 `14dcdb5589f2839e5d9566ebc7c417041b8b76f3`；业务与合同变更 diff SHA-256 `2ed065f91b4e9277ffb9442793329d2d8338a5fc6d50bfa6229e12ce587dfaae`。Inference 使用标准租户 namespace 时复用统一名称、租户标签和原 UID 校验；原共享空间 allowlist 保留。
+
+远程构建主机不可用：`ssh -F /home/chabking/.ssh/config ... ubuntu` 报配置文件不存在；默认 SSH 报 host key verification failed。按本仓允许的回退在本机 `ubuntu`、Go 1.26.10 执行 `go test ./internal/biz/image ./internal/data/image -run 'Test(InferencePullSecretUsesStandardTenantNamespace|EnsureTenantPullSecret|PullSecret|VerifyNamespace)' -count=1`：PASS。正式 Resource 部署与完整集群链路验证尚待完成。
+
 ## Container configuration without version selection (2026-10-31)
 
 **源码/正式生成、Fedora 门禁与定向真实 PG：PASS；10～12 成对发布、正常租户 CPU 创建/Running/删除：PASS。** 按用户明确要求废弃开发期容器配置版本选择、旧格式/摘要兼容与 V2 写入开关，保留工作目录、环境变量、PVC 和网络等现有配置功能。Proto 保留旧字段号/name；单一配置进入 Resolve、冻结摘要、命令验签、持久化和查询。独立维护门禁及其它域真实协议不属于配置版本，保持原义。以原 VM 详情分支 `612b2abd8f77c3dce928520c65caba2bc1d0d690` 为基线，保留现有 VM 字段。
@@ -1342,3 +1348,9 @@ Final Fedora isolated PG race/backfill group and required `make verify` are
 [operational parameters](../runbooks/tenant-namespace-uid-window.md).
 Live constraints/migration/backfill/deployment/release remain **NOT_RUN**; current
 writer identities and a live Plan.SHA256 are not yet established.
+
+## 2026-11-02: Inference tenant pull Secret isolated cluster verification
+
+Resource `origin/main` base `14dcdb5589f2839e5d9566ebc7c417041b8b76f3` plus the six implementation/contract files in this change (tracked diff SHA-256 `2ed065f91b4e9277ffb9442793329d2d8338a5fc6d50bfa6229e12ce587dfaae`; this status entry excluded) authorizes the Inference service for an existing standard tenant namespace and rechecks namespace ownership and UID at the Secret writer. The requested `/home/chabking/.ssh/config` was absent and default SSH to `ubuntu` failed host-key verification, so targeted `go test ./internal/biz/image ./internal/data/image -run 'Test(InferencePullSecretUsesStandardTenantNamespace|EnsureTenantPullSecret|PullSecret|VerifyNamespace)' -count=1` ran locally on host `ubuntu`, Go 1.26.10: PASS.
+
+On the real cluster an isolated image-only Resource harness, using actual image configuration and mTLS, successfully ensured the existing tenant's shared pull Secret for an isolated Inference control plane. The service's model download Job, PVC and KServe predictor were created in the tenant namespace; the predictor served a real completion via a direct port-forward. The cross-namespace Higress route was Accepted and ResolvedRefs. A real tenant AK call through the production Higress gateway returned 403 because the production authorization service resolves model ownership from the production Inference database, while this test service existed only in the isolated database; this is not an end-to-end gateway PASS. Governance login and management GETs returned 200. The shared KServe domain template was changed temporarily and restored after the test services were deleted. The isolated Helm releases, database and Resource harness were removed. The temporary AK was revoked; its policy remains because the API returned 409 while the retained revoked AK references it. Production Resource and Inference images were not replaced; a pre-existing shared tenant pull Secret was retained. This does not constitute production deployment or tenant provisioning automation acceptance.
