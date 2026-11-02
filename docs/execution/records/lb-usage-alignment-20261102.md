@@ -1,0 +1,69 @@
+# LB 使用方式对齐（2026-11-02）
+
+本记录保存固定输入与分层证据，当前结论只维护在[执行状态](../status.md#lb-usage-alignment-20261102)。正式行为见[统一规格](../../specs/vpc-connectivity-lb.md)和[延迟激活合同](../../specs/lb-deferred-activation.md)。
+
+## 固定输入
+
+- Resource：`0bce651a84634b09c7df29939d2d5b934d76a67d` 加本次差异；独立工作树 `lb-alignment-resource-20261102`。
+- Console：`2e6f278111bc169ed2df7f480304093a11528e0b` 加本次差异；独立工作树 `lb-alignment-console-20261102`。
+- Governance：`316ee2efe75377c8d9d3c7edcc7f5fffe89a0d04`；现有 POST/PATCH 合同已经支持整组监听器、空后端和可省略 TLS namespace，无须修改。
+- KCN 使用文档：本地 `/home/chabking/workspace/kc-networking-docs/usage/lb`，`c98e966928e853c9270248b6a282af72e1c4b161`；远端刷新不可用，此提交是本次实际核对快照。Envoy Gateway v1.8.3。
+- 用户明确取消 LB 对基础 Intranet EIP/SNAT 的前置要求；明确允许跳过 Console 缺失的“ani-console对接文档补充”索引前置，依据最新 Governance 正式合同接线。
+- 本地仅编辑、审查、Git 和传输；生成、格式化、测试、API 驱动、数据库和镜像均在 Fedora。原有两个 dirty 工作区保留。按用户要求只跑改动对应的必要测试，未运行完整 `make verify` 或 Console production build。
+
+## 定向验证
+
+| 层次 | 实际范围 | 结果 |
+| --- | --- | --- |
+| Resource 业务与真实 PG | 基础网络缺失/故障时 Create/Update 与真实 worker→adapter 生命周期；VPC Provider UID、当前代次、Ready、freshness、pending、租户和原子性负例 | PASS |
+| Resource 业务与真实 PG，Kubernetes 边界 fixture | 三档私网、公网/双入口、空后端保存/添加/清空/重启/再激活/删除、多监听器、五协议及参数；Proxy/Backend/Policy 创建丢响应、Route 更新丢响应；Proxy 已建/Gateway 未发时产品删除与物理回收 | PASS |
+| 能力与构建 | 公共 pair fingerprint、固定镜像首次冷启动及身份拒绝、Worker、sqlc 生成一致性、Go 1.26.10 native server/lb-api 和原生镜像脚本 | PASS |
+| Console | scoped Oxlint/格式、typecheck、真实组件/Hook/API 定向 harness（外部 UI shell/HTTP 边界替身）；public/private/both 映射、成员身份、权重 0、whole-listener PATCH、版本/幂等/缓存、清空再加；GitNexus 最终 detect_changes | PASS |
+
+原始失败保留：基础网络解耦测试先 RED 后 GREEN；既有单 VIP fixture 不支持同时创建两个 LB，改为串行完整生命周期后通过，不能据此声称并发容量通过。部分创建时 Update 仍受未结束 operation 屏障，未为不可达的“清空再激活”放宽该屏障。
+
+可复现命令和日志：Fedora `lb-provider-20261102.JzNul23J/{run.sh,run2.sh,run3.sh,run4.sh,*tests.log,pg-iteration*.log}`；基础解耦 `ani-resource-service-runs/lb-base-decoupling-20261102-00f37640/{red,green,green2}`；Console `.codex-runs/lb-alignment-console-20261102/{oxlint.log,format-check.log,typecheck.log,harness.log,gitnexus-detect.json}`。测试只在外部 Kubernetes/控制器和 HTTP 边界使用 fixture，未模拟待实现的领域逻辑、事务或权限。
+
+## 候选产物与现场
+
+Resource 构建 run：`/home/chabking/workspace/ani-resource-service-runs/lb-candidate-20261102.cLPP0HeM`。438 文件来源 manifest SHA-256 `1ce1e1a1d8f6717a1ef259bdf1ca7b4b6431c6073d0dc18952da6b024fa68a80`；镜像专用 snapshot `d4ee3fe68aa9e1ebb20b41703b05ecc91d4c9f3110a4d1af091973d9eabc6f63`。native server SHA-256 `4bff7e8ef8220c193b7a98dd21805478d574a0894a528d2692c04bb7083e9815`，镜像内二进制逐字相同。镜像经受管 Harbor 发布为 `172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:e91716e3a44e41f527dc2e2ad4083f09c9741bae00a48862656631e098dcd0ac`。5000 registry 为只读（405），原 pull credential 无 push 权限（401），成功发布使用受管 push 身份；凭据均仅保存在远端 private。
+
+现场发现首个候选漏渲染 `Gateway.spec.listeners[].allowedRoutes.kinds[].group`；API Server 自动补入 `gateway.networking.k8s.io`，导致严格 spec hash 永久不匹配、worker 每轮重写 Gateway，后续 Policy/Route 无法执行。只读真实业务 Observe（1.54s）确认依赖/成员/生成物全部正常，唯一失败为 Gateway Matches=false。修复显式输出该合法 group，保留完整 hash/UID 校验；fixture 注入真实默认后先 RED，修复后 private/small 创建→更新→删除 GREEN（2.669s）。Backend 的 Accepted 仍保留：v1.8.3 是 Route 引用后才写入该状态，未以伪造状态解决。
+
+修复后构建 run `lb-gateway-group-20261102.X4Pqyzmf`，来源 manifest `75d117086d56d95ec995b2409ae3c1314ee18847eb55bc832f3a1e5d270fb61b`、生产 snapshot `c12b8fedfa487617d15a90b67a4cd68d847715a0a9c9115264e17743b5754366`；相对首个镜像生产源码只有上述一行改变。最终发布镜像 `172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:5440839323150fbdb3a814916ab8d5f2800e7044c30bee86ad57375f2933a716`，guarded rollout 已成功，无新增迁移。原始诊断、失败/通过与 BuildKit 回执保留在该 Fedora run 和 `live/evidence/`。
+
+现场 run：`/home/chabking/tasks/lb-alignment-20261102/live`。实际 context `kubernetes-admin@ani-lab`，API `https://172.16.101.10:6443`、TLS name `lb.kubesphere.local`，`kube-system` UID `5277649d-e28d-4a0a-ae76-8354365c63bc`；仅 10～12 三节点。ani-03 在验收前已 Unknown/NotReady，本次不修改节点。
+
+公共 EnvoyProxy UID `234df647-8e2b-47e9-9b12-3cdaaadc7efc`，GatewayClass UID `ed09e25e-9977-4188-afc3-1acc5bc6bcaa`；Class Accepted，公共 Proxy 无容量/ServiceType override。指纹 `2c57dd98237f5a3306653f183e0d8b533b1fc8eccc0f45bb226ecd1663f4e983`，由候选 lb-api 显式核对实际 context/cluster UID 得出。已有 legacy pair 和 Higress 保留。服务账号新增共用读取/必要 LB 权限及 tenant-a namespace 专属 Proxy Role；公共 Proxy 无写授权。
+
+三个现场镜像 tag 的 registry manifest HEAD 均 200，digest 与配置一致：`gateway:v1.8.3`、`envoy:distroless-v1.38.3`、`gateway-dev:latest`。此前“没有运行中的 Envoy LB”指无业务 Gateway/数据面 Pod，未证明镜像缺失；本次 registry 检查也不等于所有节点已有缓存。
+
+Network owner 备份 `pg_dump -Fc` 和文件式 `pg_restore --list` 通过，SHA-256 `e5004f888583663a170f44a5c2965e45debfe818ecbbc9e3ef1588756f2b9525`。原生 `server -migrate` 将 schema 25→26，0026 checksum `14534d550badcd716f83391667b1044fcd98a3dab9e07583978391a7ac94a6fe`，前 25 项未变；kind/member/listener CHECK 和唯一 active Proxy index 校验通过。备份与 DSN 仅在远端 private。
+
+首次候选 full 启动被主线既有 VM 003 schema 缺失阻断；尝试回退旧镜像后，旧版明确拒绝 Network schema 26。故恢复候选，通过同一 native server 的既有 `-vm-migrate` 入口补齐 VM schema 2→3，checksum `d506d4ad601cd5319c71b39d29662078b7d6d079500f4444507aea19f914d8b8`。VM schema owner 备份和 TOC 校验通过，SHA-256 `5625b7638b722e9851be392cc8545bf3f600795a682fb38333f3604af600d8bb`；7 台 VM 的 Native/完整配置/初始规格/version/closing 摘要、21 条 operation intent 和 VM config Secret 均未变。随后候选 Pod `ani-resource-service-b5bcc4d55-chlx8` 启动成功，restart 0，1/1 Ready。启动另记录 Sandbox schema 未就绪 warning；本次未迁移或验证 Sandbox。
+
+运行配置保留原 Secret，并切换到克隆的 `resource-configs-lb-20261102`，仅追加 LB installation 输入；Resource Deployment UID `e17f1f9e-e406-452f-838d-85062a6e860a` 保持。专属 Proxy 写 Role 本次应用于实际 tenant-a namespace，其余租户依[安装权限模板](../../../deployments/load-balancer/network-rbac.yaml)配置。
+
+Console 采用任务独占 Fedora Vite 源码预览 `http://172.16.101.31:43927/`，`/api` 指向现场 Governance，未运行 production build。已正常登录并观察纯公网模式隐藏私网 VIP。页面创建 `lb_462b30c2d88b40e1bb690be72e4d0002`、HTTP/8080 空后端监听器成功，同事务 operation succeeded、无运行投影。再由页面 PATCH 加入实例 API 创建的真实 CPU 后端 `10.73.0.5:8080`（Attachment `att_492d471d1afc45e6aa4d1e6313c30a17`），最终达到 available/configured、applied=desired=2；专属 Proxy、Gateway、Backend、Policy、Route 的身份、规格和当前状态全通过，生成两副本 Envoy 的镜像及 small 容量与预期相符。
+
+浏览器长时间停留后成员编辑暴露版本断点：观测会推进 resource.version，desired_version 保持 2。真实旧版本 PATCH 返回 **HTTP 412 / VERSION_CONFLICT**（最初按 409 推断的临时验证不作为现场通过证据）。最终 Hook 在每次用户保存前强制单次 GET；仅有效 int64 desired_version 与编辑基线相同时使用新 resource.version 发一次 PATCH，配置意图变化则停止并提示核对；GET→PATCH 竞争仍按准确 412 刷新，不自动重放。Fedora 七组定向 harness/静态检查及最终 GitNexus 通过。浏览器实际观察到冲突刷新提示、输入保留，再由修复后的单次保存成功将权重 1→2；成员 ID 保持 `ede0fa6c-4b1d-469b-8652-3bf257e402be`，配置实际 applied=desired=3。前端提交 `95e7fde`、`1e032e4` 已通过 SSH 推送。
+
+## 真实数据面边界
+
+私网 VIP `10.73.0.100:8080` 的直接请求 **FAIL**，不能由 configured 或 Pod Ready 追认为通过。同 VPC 客户端直连两个 Envoy Pod 的 8080/19001 也 refused。实际 Envoy admin 为 PRE_INITIALIZING，xds_cluster DNS 更新失败 13 次、成功 0，hosts=0、连接尝试=0：尚未进入 xDS TLS/gRPC。客户端查询平台 DNS `10.96.0.3` 超时；到 EG Service `10.96.230.106:18000` 和 Pod endpoint `10.16.0.240:18000` 均 SYN_SENT 超时。EG Pod 经临时 port-forward 的 TCP/TLS1.3/ALPN h2 通过，相关两个 namespace 无 NetworkPolicy。
+
+现场阻塞已收敛到租户 VPC→平台 DNS UDP/TCP53 和 EG TCP18000 的内网往返路径；只改 DNS 名称不够，正向/回程丢包位置仍需网络层定位。本次没有修改 KCN/EG 代码、共享控制面或网络路由。原始证据 `live/evidence/{lb-first-vip-result.json,xds-admin-summary.json,envoy-resolution-stats.json,backend-dns-route-probe.txt,eg-tcp-state.txt,eg18000-listener-tls.json}`；临时 port-forward 已退出。
+
+公网/双入口、HTTPS/TLS、三档容量的真实流量：NOT_RUN，只有上表受控业务/adapter 证据；平台 Prometheus 未启 OTLP receiver，监控接入与指标健康验收：NOT_RUN。产品 data_plane_state 保留 unknown。
+
+## 清空、再激活与清理
+
+页面清空最后一个成员后保留监听器，desired=4。产品正常删除 Gateway/生成资源；等待默认 Envoy Pod 360 秒优雅终止后，Gateway、专属 Proxy、Backend、Policy、Route、Service、Deployment 和 Pod 均不存在，实际 Subnet 的 VIP `10.73.0.100` 已释放；公共 Class/Proxy UID 保持。未缩短 grace、去除 finalizer 或删除数据库行。证据 `live/evidence/{lb-cleared.json,lb-cleared-physical.json,lb-cleared-address-common.json}`。
+
+页面再次添加同一真实后端，实际达到 configured、applied=desired=5；新成员 `b542e9cb-d28b-4d00-b7ed-afe04c7545af`，新专属 Proxy `lb-envoy-proxy-96ce5471ce6f472eb14f83c49b279621`、UID `d9adedd9-ae93-418e-97a2-f6c54ac330b4`，新 Gateway `lb-4d559854214f444784fabbebaf7abd55`、UID `28887c64-596d-43a0-83ed-b579e8f3171f`。证据 `live/evidence/{lb-reactivated.json,lb-reactivated-objects.json,lb-reactivated-physical-before-delete.json}`。生成资源名称不能假定包含 LB ID，物理核对使用 Gateway 名称、UID 和 owner chain，记录 15 个实际对象 UID。
+
+随后经正常租户 API DELETE（operation `65419a41-434b-44f6-a5bf-7acdc28a23f0`），等待正常优雅终止至 deleted。上述 15 个关联对象及其子对象均已不存在，VIP 再次释放，公共 Class/Proxy 原 UID 仍在。证据 `live/evidence/{lb-delete-receipt.json,lb-deleted.json,lb-deleted-physical.json}`。这是配置生命周期与回收的 PASS，不改变上节真实流量 FAIL。
+
+LB 物理清理完成后，经正常产品 API 删除任务 CPU 实例 `b08324d2-63a7-4d02-98c2-12224ee6e247`，operation `7c1ca05d-676c-4dd5-9b9a-9d66471383e8` completed/done；observed deleted、network released，compute/workspace/networkCleaned 和 quotaReturned 全 true，任务 Pod/StatefulSet/PVC/PV/Notebook/VNic/VNicIP 剩余为空。任务 Image `img_9d5ce126ef8e4e20b91788c062c33b97` 正常注销（version=2），Harbor 唯一任务 tag 删除并读回 remaining_tags=[]；按范围保留产品 tombstone 和无 tag 的任务 manifest/layers，未动基础 BusyBox、共享 cache 或既有 VM，既有 VM 仍 Running/10.73.0.4。未使用 raw Kubernetes 删除或数据库写入。证据 `live/evidence/{backend-cleanup-result.json,backend-deleted-physical.json,backend-image-unregister-response.json,backend-registry-tag-deleted.json}`。
+
+本次独占 Vite 预览进程组 `3873916` 已停止、浏览器临时页已关闭，用户开发服务未修改。Console SSH 推送后的远端 branch SHA 为 `1e032e44c9c6e5058394781a89d1f6af90da20d0`，与本地 HEAD 一致。最后仅收尾文档，未重复已经通过的测试；新增/修改文档的 16 个相对链接目标及 `git diff --check` 通过。

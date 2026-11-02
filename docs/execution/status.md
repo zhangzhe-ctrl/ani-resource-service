@@ -1,5 +1,15 @@
 # Network 执行状态
 
+<a id="lb-usage-alignment-20261102"></a>
+
+## 2026-11-02：LB 使用方式对齐
+
+**前后端实现、Fedora 必要测试/静态检查/候选构建、现场真实 UI/API 配置生命周期及 LB 物理回收：PASS；真实私网 VIP 流量：FAIL。** Resource 使用公共 `lb-common` 和每 LB 专属、同 namespace 的 StrategicMerge EnvoyProxy，专属容量/ServiceType 与原组件账本、未知创建、清空再激活和回收接通；移除基础 Intranet 前置，保留 VPC/Subnet 自身 Provider 证明及成员/地址约束。Console 已接监听器/后端整组 PATCH、版本/幂等、空后端保存/编辑及公网无 VIP 用法；真实旧版本保存暴露的 412 冲突已用单次保存前 GET、配置版本校验和准确冲突刷新修复，无自动重放或新增轮询。Governance 现有正式合同足够，本次未改其源码。
+
+10～12 现场 Network 0026 迁移和候选 Resource 发布已完成；发布途中主线 VM 003 前置缺失及旧镜像拒绝 Network26 导致启动失败，经备份和原生既有迁移恢复后候选 Ready。正常租户通过独立 Console 源码预览完成空后端创建→真实后端激活→保留成员身份的权重修改→清空/实际回收→重新激活→正常删除；最终 15 个关联对象消失、VIP 释放、公共 pair UID 保留。测试后端实例及计算/工作区/网络/配额已正常回收，任务 Image 已注销、唯一镜像 tag 已删除；既有 VM 保留。预览已停止，Console 未生产部署。
+
+实际 Envoy 停在 PRE_INITIALIZING：租户 VPC 内平台 DNS 查询和 EG Service/Pod 的 TCP18000 均超时，xDS 尚未建立；现场三个镜像可用，EG Pod 经临时转发的 TLS/h2 通过。真实流量阻塞位于租户 VPC→平台 DNS/xDS 往返路径，未修改 KCN 或共享网络来掩盖该失败。公网/双入口/TLS 真实流量与监控接入：NOT_RUN；产品 data_plane_state 保留 unknown。固定输入、原始失败、必要检查及现场回执见[唯一记录](records/lb-usage-alignment-20261102.md)。按用户范围未运行全量 `make verify` 或 Console production build。
+
 ## 2026-11-02：VM 操作结束后的独立电源观测
 
 **源码、Fedora 真实 PostgreSQL 纵向回归、Resource 完整 `make verify`、新增并发路径 race 与 Console 定向交互/lint/typecheck：PASS；部署与现场 VM/浏览器验收：NOT_RUN。** 基于 Resource main `36da38a`、Console main `3daab52`。真实业务 worker 与 PG 已跑通 Create/Start 成功→操作结束→客机关机边界事实→独立观测更新 Stopped→已停止筛选命中；Kubernetes、React/Query 与 API transport 仅在外部边界使用受控替身，不冒充现场验收。
