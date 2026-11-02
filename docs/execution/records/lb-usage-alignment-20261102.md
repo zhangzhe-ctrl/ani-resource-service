@@ -113,3 +113,13 @@ VPC/Subnet Ready，Public EIP 正确绑定，Route/Backend Accepted。全量只�
 Fedora 的初次 HTTP 经透明 Meta 路由返回空响应，不能据此归因到 LB；因此另从 ani-01 已有 hostNetwork CNI Pod 执行只读 curl，实际源 `100.64.128.2`、经 `ovn0` 到公网 EIP，初始化观察后再次请求仍 connection refused、curl exit=7、HTTP000。这是实验环境 Public 池地址的外部 VPC 访问，不声称全球互联网可达。证据 `no-base-dns-xds-backend-probe.txt`、`envoy-direct-http-from-vpc.txt`、`envoy-initialization-observation.json`、`envoy-final-server-info.json`、`envoy-final-xds-stats.txt`、`final-public-http-from-ani01.txt` 和 `conclusion.json`。
 
 本试验表明该现场只绑定 LB 公网入口，不能替代 Envoy 到平台 DNS/xDS 的内网可达性。未添加基础 EIP/SNAT 来改变本次条件，未改共享网络、镜像、业务代码或重启控制器。临时 admin port-forward 均已停止；按用户明确要求，所有本次 VPC/Subnet/Public EIP/LB/Envoy/后端及相关数据暂不删除，前次私网试验和用户既有资源也保留。
+
+## 用户追加：同组公网 LB 补基础 EIP/SNAT
+
+2026-11-02 23:14～23:18 CST，用户进一步要求“在这组测试，再加上基础网络的 eip，看看公网 eip 能不能通”。在上述同一 VPC/LB 上执行，仅新增 Intranet EIP `lb-public-base-eip-20261102`（UID `20aa773f-56ef-4076-b130-f0378106487b`、地址 `10.250.250.3`、复用 `kcn-system/lb-base-net-20261102`），以及 Snat `lb-public-base-snat-20261102`（UID `87656f23-ec0e-4557-865d-b234b302a0aa`、vpc=`lb-public-no-base-vpc`、disable=false、phase=Bound）。新增资源及原所有试验数据继续保留。
+
+**结果 PASS：** 同一后端/客户端查询平台 DNS 成功，EG Service/Pod TCP18000 连接成功。原 Envoy 自动进入 LIVE，uptime=557s；xDS membership_total=1、update_success=19、upstream_cx_total=1，历史失败计数仍保留。前后逐一核对 Envoy Pod UID `ccdea7c7-8b58-4f98-81c2-39ef9d3a88c2`、两个容器的 containerID 和 restart count 完全相同，未重建或重启 Envoy；公网 EIP/VPC/Gateway/Service/后端 UID 及公网地址也保持不变，本阶段没有再次调整容量。
+
+23:16 CST 从 ani-01、ani-02 两个既有 hostNetwork CNI Pod 以 `curl --noproxy '*'` 访问同一个 `172.16.102.194:8080`，两者 curl exit=0、HTTP 200，响应均为原后端 `10.74.0.2:8080` 的 `lb-public-no-base-check-20261102`。这是该实验环境 Public 池入口的真实 VPC 外流量；不扩大为互联网路由、容量、TLS 或 Console/Resource 产品全链证明。
+
+证据在同一 public run 的 `evidence/{with-base-dns-xds-probe.txt,with-base-snat-bound.json,with-base-before-envoy-pod.json,with-base-after-envoy-pod.json,with-base-envoy-server-info.json,with-base-envoy-xds-stats.txt,with-base-public-http-ani-01.txt,with-base-public-http-ani-02.txt,with-base-public-http-summary.json,with-base-conclusion.json}` 及 `with-base-final-*.json`。原无基础条件的 `conclusion.json` 和全部 FAIL 回执未覆盖。临时 admin port-forward 已停止；没有清理任何原试验或新增资源，没有修改代码、镜像、公共配置或重启控制器。
