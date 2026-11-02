@@ -57,6 +57,8 @@ Governance 业务库同样完成完整 custom backup 及 TOC 校验，SHA-256 `5
 
 ### 环境阻塞与保护范围
 
+（本节保留 R1 发布时点的失败与归因；后续重放已定位为 Resource 的两项取证缺陷，不能继续把它们单独归因于 ani-03 故障，修复证据见下节。解除这两项误拒绝不要求先恢复 ani-03。）
+
 BOSS 正式 `http://172.16.101.10:30082/basic-networks` 浏览器已登录并填写新建表单，但 defaults 查询 503 `BASE_CONNECTIVITY_NOT_READY`，提交按钮禁用，未发池创建 POST。默认 VPC UID/Ready/代次、默认路由和 Service CIDR 覆盖都通过；现有 KCN `providerImages` 健康门禁因一个 Pending controller、一个自 10 月 30 日删除中的 ani-03 controller 返回缺失。ani-03 自该日 NotReady；既有 Fedora/本机 SSH key 均被拒，任务尚无可用节点登录方式。未更改 KCN 控制器、默认 VPC 或放宽门禁。开启自动分配、默认源切换、无人工 verification 的新 VPC 真实自动 EIP/SNAT，以及其删除仍待该环境前提恢复；真实 PG/adapter 行为测试与现场验收分别报告。
 
 产品公网池 `pool_1c5c2bebf286440fa7ed5006c2256021` 仍 degraded/`PROVIDER_UNAVAILABLE`、观测过期，租户产品 EIP 列表为空。仅一次正常 CreateEIP 在 `poolReady` 受理检查返回 503 `PUBLIC_EGRESS_NOT_READY`，request ID `f228d641-dcbc-49ac-b0cc-a6e90eb22cf5`，未持久化 EIP 或调用 Provider 创建。产品公网/双模式 LB 真实流量未运行；原手工公网 `.194` 流量试验不替代本次产品闭环。证据 `public-lb-prerequisite/result.json`。
@@ -68,3 +70,27 @@ large 固定6副本，每 Envoy requests4CPU/4Gi、limits8CPU/8Gi，另含 shutd
 用户授权的闲置样本清理释放旧 Inference 的 8 CPU/16Gi，以及 Notebook/KServe manual 样本的 1 CPU/1Gi；旧 Inference ani-03 上的 Pod 仍未物理删除，故其整体删除保持 pending，不强删 finalizer 或伪造完成。保留此前私网/公网 KCN 对照试验、基础 EIP `.2/.3`、公网 EIP `172.16.102.194`、平台默认 SNAT `.192`、用户 VM 和新正常 HTTP 后端/私网 LB 主样本；手工 CR 不采用为本次产品管理资源。43927 预览未修改或停止。
 
 本轮主保留资源：LB `lb_9d66811e2c954d23b4e34a5c9f354fd5`（`base-flow-private-small-20261103`、`10.73.0.101:8081`）；Instance `fb7502b6-3acd-4e33-aeb4-416ba4096ebf`（`base-lb-http-small-20261103`、`10.73.0.18:8080`）；上文100m preset、兼容 HTTP Image/tag、既有 VPC/Subnet。完整清单及已删除专用样本见 Fedora `lb-backend/evidence/final-retained-resources.json`。正式页面为 `http://172.16.101.10:30082/basic-networks` 和 `http://172.16.101.10:30081/load-balancers/lb_9d66811e2c954d23b4e34a5c9f354fd5`。四仓 PR 均不自动合并。
+
+## 后续诊断与 R2 修复（2026-11-03，发布验收待完成）
+
+R1 把 defaults 503 与产品公网池过期统一停在“ani-03 NotReady，等待节点恢复”，该归因不完整。Fedora 对真实现场事实重放并沿正式观察路径定位到以下两项 Resource 缺陷。ani-03 的实际故障仍保留，但不能用它替代修复这两项误拒绝。以下 PASS 仅表示诊断重放和相应代码测试通过，不表示 R2 已发布、自动分配主链或公网/双模式真实流量通过。
+
+### H1：额外不可用副本抹掉健康角色镜像证据
+
+使用原始 VPC、ConfigMap、ServiceCIDR、Pod 快照，经 Kubernetes dynamic fake 外部边界调用真实 `KCProvider.GetIntranetPoolDefaults`。旧实现下，身份、VPC Ready/当前代次、路由覆盖、控制器默认 router 与基础设施检查全部为 true，但 `providerImages=[]`，返回 503；仅保留快照中真实 Running、Ready、非删除的 Pod，其他事实不变，即返回原默认 VPC UID `d0235860-f51a-4e63-8f4f-1ca1b34bc04f`。再单独放回一个 Pending 或 Deleting controller，旧实现均再次 503。日志 `defaults-503-diagnosis/snapshot-replay.log` 的 PASS 表示成功复现旧错误，不是 defaults 通过。
+
+修复后以每个完整健康实例收集摘要：必须非删除、Running、PodReady=True、全部容器 Ready 且有合法实际 SHA-256；四个既定角色仍须全部有证据。Pending、Deleting、PodReady=False/Unknown/缺失、容器不完整或摘要非法的副本既不提供证据，也不清除同角色健康实例的证据。未移除镜像门禁，未把缓存的 containerReady 当作 Pod 当前 Ready，未修改 KCN 部署或强删 Pod。
+
+同一完整现场快照在 R2 中返回原 UID，取证日志保留真实摘要 `sha256:494432d2f7b896eb953647166c6aa18d6ea2113b133d40d82127cfcbe416712f`；完整快照、仅健康实例、额外 Pending、额外 Deleting 四组均通过，见 `defaults-503-diagnosis/snapshot-after-fix.log`。正式回归从真实 GetDefaults seam 先 RED 后 GREEN：额外 Pending 的 `red-scheduling.log` exit1 → `green-scheduling.log` exit0；每角色缺失/只有坏实例及健康实例旁存在坏副本的 `red-ready-role.log` exit1 → `green-ready-role.log` exit0（0.079 秒）。后者同时证实并修复旧实现误采 PodReady=False 的问题。日志位于 `resource/provider-evidence-fix/`；只替换 Kubernetes 外部边界，不模拟默认身份选择或业务门禁。
+
+### H2：已有绑定观察错误套用全员在线要求
+
+产品公网 EIP 受理先在持久池的 degraded/stale 状态返回 503。继续追踪为何无法刷新：现场 KC Public Subnet、Gateway、VLAN 的身份、规格、Ready、当前代次及关联条件通过，`underlayState.chassisNode=ani-02,ani-01`，两节点与各自 CNI 当前健康；完整冻结成员仍为 ani-01/02/03。`virtualSwitchInventoryMode(..., false)` 的末尾布尔参数在旧实现被忽略为 `_ bool`，导致已有绑定观察也要求所有冻结成员 Node/CNI 在线，ani-03 Unknown 即使未被选为当前出口，仍阻止池刷新。现场只读事实及调用链见 `defaults-503-diagnosis/public-gate/{result.json,recovery-analysis.md}`。
+
+R2 明确区分新物理配置准备与已有绑定观察。已有绑定仍校验完整冻结成员数量、名称/UID、allocated、priority、binding owner、组及设备确认、Provider UID/spec 和当前收集证明；不删除或替换 ani-03，不释放其接口占用。对已有 Underlay 池另外逐一核实当前选中 chassis：名称非空且不重复、属于冻结组、当前 Node/CNI Ready、有 chassis 身份且设备确认完整。选中出口失联、UID 被替换、缺少任一冻结成员或其设备确认、外来/重复 chassis 均拒绝。EIP/SNAT 使用该已有绑定及当前出口证据，不能被当成重新接管全部物理口。
+
+新 VlanNetwork 或新 Underlay Public Subnet 首次物理 POST 仍在持久受理后、发送前严格重查全部冻结成员健康；坏成员时不发送物理写，成员恢复后恰好发送一次。既有删除 fencing、UID/RV、未知写及 KCN 释放确认不改。真实 PostgreSQL + 正式 `KCProvider.Observe/EnsureEgress` HTTP 外部边界回归：`red-existing-pool.log` exit1 → `green-existing-pool.log` exit0；`green-complete-membership.log`、`green-boundaries.log`（30.074 秒）、`green-product-eip.log`（8.590 秒）均 PASS。覆盖完整冻结身份/当前出口反例、首次物理 POST 重查、产品 EIP 正常受理与创建，以及既有 VirtualSwitch 删除/租约边界；日志位于 `resource/public-chassis-fix/`。
+
+本节证据根目录为 Fedora `/home/chabking/tasks/base-network-20261103/`。R2 正式镜像发布、BOSS defaults/创建基础池、新 VPC 自动 EIP/SNAT 和公网/双模式真实流量结果待后续回执补齐；代码验证结果见下文，不提前记为现场通过。用户明确跳过 large 的范围保持不变。
+
+R2 首次完整 `make verify` 已 PASS。扩大到相关 54 项 PostgreSQL 测试时，52 项通过，两处旧测试未对齐当前输入：`public_pool_optional_verification_integration_test.go` 仍要求人工 Intranet verification 和已由 0027 删除的 CHECK；`public_eip_workflow_integration_test.go` 的外租户安全组未配置其外部 Namespace，尚未进入权限业务断言就失败。前者改为通过正式业务方法开放无人工证据的 Ready Intranet 池，并确认不会重新打开已关闭的 Public 分配；后者明确准备第二租户 Namespace、保留原租户 UID，继续验证越权拒绝、无部分持久化、初始 SG、幂等和替换。第二轮越权断言通过后还暴露旧整体 `reflect.DeepEqual` 对 PostgreSQL/JSON 时间内部表示的误判；修正为时间瞬间相等且其他业务字段全等，未跳过时间或幂等检查。原始失败保留于 `resource-r2/verification/{postgres,postgres-fixture-green}.log`，生产文件字节未因此改变；两项修正后的 PostgreSQL 补测均 PASS，其余52项未重跑；最终完整 `make verify` 于 Fedora 2026-11-02 21:48 UTC exit0（132.706秒）。全部生成差异为空，全部生产文件保持首次通过的字节；最终测试候选 manifest SHA-256 `e107effe843a185fcfdeb2cf9d6c0a20fe9e664bb947dd777d0f48e528470a3f`。正式命令、退出码和原失败分别保留于 `resource-r2/verification/{result-initial,fixture-attempt-1-result,result}.json` 及 `make-verify-final.log`，不因仅补文档而重复已通过门禁。

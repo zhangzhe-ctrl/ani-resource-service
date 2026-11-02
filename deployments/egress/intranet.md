@@ -12,7 +12,7 @@ BOSS 创建表单先通过 `GetIntranetPoolDefaults` 读取真实默认 VPC 身�
 - 默认 VPC 的 Valid/Initialized/Ready 及当前 observedGeneration；Intranet 池和 EIP 使用各自的类型、namespace、UID与代次合同。
 - `kcn-system/kcn-config` 的 `data.intranetNetworks` 是有效 IPv4 CIDR 列表，不能为 `0.0.0.0/0`；现有配置覆盖管理员声明的目标范围。声明和实际配置均须覆盖 Kubernetes `ServiceCIDR` 对象中的 IPv4 Service 网段。管理员还应在声明中包括实际 DNS、xDS 和其他平台依赖的目标网段。
 - 池 CIDR 不与已存在的地址池、节点、Pod 或 Service 基础设施地址重叠；本批基础内网池使用 Overlay，无 Underlay 配置。
-- 控制器、CNI、OVS 和 OVN Central 实际运行镜像的摘要可核验。现有 [RBAC](network-rbac.yaml) 已含所需 VPC、Subnet、ConfigMap、Pod 和 ServiceCIDR 读取；不新增配置写权限。
+- 控制器、CNI、OVS 和 OVN Central 四种角色各至少有一个当前 Running、Pod Ready、非删除中的实例，且该实例全部容器 Ready、实际镜像摘要合法。Pending、删除中或不就绪的副本不提供证据，也不抹掉同角色健康实例的证据；任一角色没有有效实例时仍拒绝。现有 [RBAC](network-rbac.yaml) 已含所需 VPC、Subnet、ConfigMap、Pod 和 ServiceCIDR 读取；不新增配置写权限。
 
 池最初关闭新分配。人工 `RecordIntranetPoolVerification` 为可选诊断记录，不作为开放分配或 VPC 创建的门禁，不以虚构证据替代真实 Provider 就绪。迁移 0027 移除人工证据数据库约束，现有记录保留。
 

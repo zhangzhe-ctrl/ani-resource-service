@@ -8,6 +8,8 @@
 
 Resource 业务源码 `1ddb5c6`（PR #46），新增真实 defaults 查询与单事务默认源/分配/rollout 开关，复用池版本、幂等和 rollout→platform 锁顺序；0027 移除人工 Intranet verification 前置，仍检查 Provider 身份/Ready/代次/路由覆盖/时效。BOSS 基于 main `9f917a4`，最终 `02dc75b`（PR #7）；Console `c0765b6`（PR #10）只读展示基础连接，VPC 仍仅提交正常创建；Governance `566c3b2`（PR #85），固定正式 Resource SDK，API/catalog/最小权限同步完成。备份后执行 Network27 与遗漏的主干 Atlas 迁移，正式登录/租户查询已恢复，不改账号或 Compute 权限。主链、实际镜像、原始失败和保留数据见[本轮记录](records/base-network-auto-allocation-20261103.md)。不做历史补齐、兼容路径、向导或新探针；旧 backfill fixture 的 namespace reader 失败单独保留，Gov Service vet 既有测试问题未记为通过。
 
+后续诊断纠正 R1 归因：Resource 镜像汇总遇到额外 Pending/Deleting 副本即清空健康角色证据；已有公网池观察又错误套用首次物理准备的全成员在线要求。两项真实调用链回归完成 RED→GREEN，保留四角色有效镜像、完整冻结成员身份/接管反馈与当前出口健康检查，首次物理 POST 仍严格。R2 已通过 Fedora 最终完整 `make verify` 与相关54项 PostgreSQL（52项首轮通过、2项旧测试修正后定向通过），正在固定提交准备发布，尚未宣布业务通过；解除这两项误拒绝不要求先恢复 ani-03，详见记录的后续诊断节。
+
 <a id="lb-usage-alignment-20261102"></a>
 
 ## 2026-11-02：LB 使用方式对齐
