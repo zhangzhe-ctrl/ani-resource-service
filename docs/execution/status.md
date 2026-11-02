@@ -4,7 +4,7 @@
 
 ## 2026-11-03：基础网络默认分配与 LB 产品主链
 
-**源码、Fedora Resource 完整 `make verify`、真实 PostgreSQL 基础 EIP/SNAT 生命周期与四仓 10 集群发布：PASS；完整产品自动分配主链：BLOCKED。** 正式页面完成私网 small 的真实业务后端/流量、权重更新、清空/物理撤流与新身份再激活；medium 固定四副本及 VIP HTTP200、专用样本删除和物理/地址释放均 PASS。缺省关闭时的新 VPC 创建/幂等/物理删除与管理权限现场边界均 PASS。BOSS 新建基础网络卡在 defaults503/KCN controller 不健康、ani-03 NotReady；产品公网池过期，正常 EIP 创建503，公网/双模式未运行；large 需要24.06CPU而 Ready 节点仅余8.80CPU，未运行。未绕过 Provider 门禁或降低 LB 固定规格，旧 VPC 手工 SNAT 的私网流量不冒充新 VPC 自动分配验收。
+**源码、Fedora Resource 完整 `make verify`、真实 PostgreSQL 基础 EIP/SNAT 生命周期与四仓 10 集群发布：PASS；完整产品自动分配主链：BLOCKED，业务交付未完成。** 正式页面完成私网 small 的真实业务后端/流量、权重更新、清空/物理撤流与新身份再激活；medium 固定四副本及 VIP HTTP200、专用样本删除和物理/地址释放均 PASS。缺省关闭时的新 VPC 创建/幂等/物理删除与管理权限现场边界均 PASS。BOSS 新建基础网络卡在 defaults503/KCN controller 不健康、ani-03 NotReady；产品公网池过期，正常 EIP 创建503，公网/双模式未运行；large 已按用户明确要求 SKIPPED（本轮跳过）。未绕过 Provider 门禁或降低 LB 固定规格，旧 VPC 手工 SNAT 的私网流量不冒充新 VPC 自动分配验收。
 
 Resource 业务源码 `1ddb5c6`（PR #46），新增真实 defaults 查询与单事务默认源/分配/rollout 开关，复用池版本、幂等和 rollout→platform 锁顺序；0027 移除人工 Intranet verification 前置，仍检查 Provider 身份/Ready/代次/路由覆盖/时效。BOSS 基于 main `9f917a4`，最终 `02dc75b`（PR #7）；Console `c0765b6`（PR #10）只读展示基础连接，VPC 仍仅提交正常创建；Governance `566c3b2`（PR #85），固定正式 Resource SDK，API/catalog/最小权限同步完成。备份后执行 Network27 与遗漏的主干 Atlas 迁移，正式登录/租户查询已恢复，不改账号或 Compute 权限。主链、实际镜像、原始失败和保留数据见[本轮记录](records/base-network-auto-allocation-20261103.md)。不做历史补齐、兼容路径、向导或新探针；旧 backfill fixture 的 namespace reader 失败单独保留，Gov Service vet 既有测试问题未记为通过。
 

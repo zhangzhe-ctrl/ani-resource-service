@@ -61,7 +61,9 @@ BOSS 正式 `http://172.16.101.10:30082/basic-networks` 浏览器已登录并填
 
 产品公网池 `pool_1c5c2bebf286440fa7ed5006c2256021` 仍 degraded/`PROVIDER_UNAVAILABLE`、观测过期，租户产品 EIP 列表为空。仅一次正常 CreateEIP 在 `poolReady` 受理检查返回 503 `PUBLIC_EGRESS_NOT_READY`，request ID `f228d641-dcbc-49ac-b0cc-a6e90eb22cf5`，未持久化 EIP 或调用 Provider 创建。产品公网/双模式 LB 真实流量未运行；原手工公网 `.194` 流量试验不替代本次产品闭环。证据 `public-lb-prerequisite/result.json`。
 
-large 固定6副本，每 Envoy requests4CPU/4Gi、limits8CPU/8Gi，另含 shutdown manager10m/32Mi，合计24.06CPU/24.1875Gi。最终样本恢复后，ani-01 已请求14.660/15.600CPU、余0.940，ani-02 已请求7.740/15.600CPU、余7.860，Ready 节点总余8.800CPU/21,881,091,710B，当前分箱最多1/6副本；ani-03 NotReady。即使回收本次主 small，也不足固定 large。故 large 运行验收 BLOCKED/NOT_RUN，不创建注定失败的六副本占用，也不缩小规格。证据 `lb-backend/evidence/reactivated-small/large-capacity-final.json`。
+large 固定6副本，每 Envoy requests4CPU/4Gi、limits8CPU/8Gi，另含 shutdown manager10m/32Mi，合计24.06CPU/24.1875Gi。最终样本恢复时，ani-01 已请求14.660/15.600CPU、余0.940，ani-02 已请求7.740/15.600CPU、余7.860，Ready 节点总余8.800CPU/21,881,091,710B，分箱最多1/6副本；ani-03 NotReady。该时点因容量不足未运行，未创建六副本占用或缩小规格，历史证据保留于 `lb-backend/evidence/reactivated-small/large-capacity-final.json`。用户随后明确“跳过大型”，本轮 large 运行验收现为 **SKIPPED（用户明确跳过）**，不再列作待完成场景；小/中规格和固定映射保持原样。
+
+跳过仅适用于大型规格。基础网络自动分配代码虽已实现并发布，真实 BOSS→新 VPC→基础 EIP/SNAT 主链仍卡在上述 defaults503，业务交付尚未完成；公网/双模式产品验收的前提阻塞也未解除。
 
 用户授权的闲置样本清理释放旧 Inference 的 8 CPU/16Gi，以及 Notebook/KServe manual 样本的 1 CPU/1Gi；旧 Inference ani-03 上的 Pod 仍未物理删除，故其整体删除保持 pending，不强删 finalizer 或伪造完成。保留此前私网/公网 KCN 对照试验、基础 EIP `.2/.3`、公网 EIP `172.16.102.194`、平台默认 SNAT `.192`、用户 VM 和新正常 HTTP 后端/私网 LB 主样本；手工 CR 不采用为本次产品管理资源。43927 预览未修改或停止。
 
