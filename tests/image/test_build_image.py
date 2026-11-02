@@ -31,6 +31,7 @@ class ImageBuildTests(unittest.TestCase):
         self.write("migrations/0001_initial.sql", 'CREATE TABLE example (id int);\n')
         self.write("migrations/compute/recovery/0001_restore.sql", "SELECT 1;\n")
         self.write("pkg/common/runtime.go", "package common\n")
+        self.write("internal/data/sandbox/filehelper/workspace.py", "def main(): pass\n")
         self.args = image.arguments(["--image", "registry.example/ani/resource:test",
                                      "--version", "test", "--source-revision", "a" * 40])
         self.image_id = "sha256:" + "1" * 64
@@ -131,6 +132,18 @@ class ImageBuildTests(unittest.TestCase):
             self.assertEqual((self.context / name).read_text(), content)
         manifest = json.loads(Path(result["source_manifest"]).read_text())
         self.assertTrue(set(modules).issubset({row["path"] for row in manifest}))
+
+    def test_snapshot_includes_sandbox_embedded_workspace_helper(self):
+        helper = "internal/data/sandbox/filehelper/workspace.py"
+        self.write("internal/data/sandbox/filehelper/private.key", "do not send\n")
+
+        result = self.build()
+
+        self.assertEqual((self.context / helper).read_text(),
+                         (self.root / helper).read_text())
+        self.assertFalse((self.context / "internal/data/sandbox/filehelper/private.key").exists())
+        manifest = json.loads(Path(result["source_manifest"]).read_text())
+        self.assertTrue(any(row["path"] == helper for row in manifest))
 
     def test_source_is_frozen_before_docker_runs(self):
         original = (self.root / "cmd/ani-resource-service/main.go").read_text()
