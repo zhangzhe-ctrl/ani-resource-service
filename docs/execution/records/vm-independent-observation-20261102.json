@@ -164,5 +164,50 @@
     "console_rollout": "NOT_RUN_USER_EXCLUDED",
     "stopped_by_user": true,
     "image_receipt": "/home/chabking/.codex/artifacts/resource-vm-observation-20261102/resource-image/build-result-fixed.json"
+  },
+  "migration_rbac_follow_up": {
+    "authorization": "User publishes the image; agent executes VM migration and adds read-only observation RBAC only.",
+    "source_commit": "2571860c1a76305518888c712c54d3b665a60d7a",
+    "finished_at": "2026-11-02T08:39:50.633388+00:00",
+    "migration": {
+      "status": "PASS",
+      "entrypoint": "server -vm-migrate",
+      "exit_code": 0,
+      "version": 3,
+      "checksum": "d506d4ad601cd5319c71b39d29662078b7d6d079500f4444507aea19f914d8b8",
+      "registered_vms": 10,
+      "missing_registrations": 0,
+      "runtime_crud": true,
+      "runtime_schema_usage": true,
+      "intent_identity_unchanged": true,
+      "backup_toc_check_exit_code": 0,
+      "backup_sha256": "2cd31adcf31cc08686c90c0829f03d1b1226ef955def8c444f1fa12b2c0fc5aa",
+      "private_dsn_and_temporary_binary_removed": true
+    },
+    "rbac": {
+      "status": "PASS",
+      "service_account": "ani-system/ani-resource-service",
+      "clusterrole": "ani-resource-vm-observation",
+      "clusterrolebinding": "ani-resource-vm-observation-ani-system",
+      "effective_list_watch_permissions": "6/6 yes",
+      "actual_lists": "VM, VMI and Pod: PASS"
+    },
+    "image_deployment_changes": 0,
+    "vm_operations": 0,
+    "resource_rollout": "NOT_RUN_AGENT_SCOPE",
+    "live_guest_and_browser_acceptance": "NOT_RUN",
+    "merge_base_refresh": "Merged main c9ae830; production build script is identical to main; overlapping helper tests consolidated while preserving private-file exclusion coverage.",
+    "merge_validation": {
+      "host": "fedora",
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/image -v",
+      "exit_code": 0,
+      "passing_tests": 9,
+      "files": {
+        "scripts/build-image.py": "92a0753a8bc2257bda9d4044ec46b9a8b9ca1b185e18ca06584639dea6516609",
+        "tests/image/test_build_image.py": "95d3e0b39dd68d8cbfd8d37ca8aebf2355aa37649d3b04c72e6572389daa5077"
+      },
+      "go_vm_source": "Unchanged from the previously verified candidate; original make verify, PostgreSQL and race results reused; full make verify not repeated after main merge.",
+      "raw_log": "/home/chabking/.codex/artifacts/resource-vm-observation-20261102/pr-merge-image-test.log"
+    }
   }
 }
