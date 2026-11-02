@@ -23,7 +23,7 @@ Resource 新增 `GetIntranetPoolDefaults` 和 `SetIntranetPoolAutoAllocationEnab
 
 配套仓库均在各自独占 Fedora 源码目录执行生成/必要检查和原生构建：Governance `make api`、新增平台方法/委托/错误与 VPC 摘要的定向行为测试、data/auth vet PASS，SDK 固定为 `v0.0.0-20261102171245-1ddb5c61eb17`；整个 Service vet 仍有未修改的 `vm_list_filter_test.go` mutex copy 及 tenant-space 测试 unkeyed literal 失败，未宣称全仓检查通过。BOSS/Console 的 lint、format、类型及 production build PASS；BOSS 真实 Hook/TanStack/API 的12场景受控 HTTP 边界验证、Console 摘要组件/既有 LB Hook 验证及最终依赖图检查 PASS。未为了末尾仅更新文档而重复已经通过的生成/构建/测试。
 
-## 发布与业务验收
+## R1 首次发布与业务验收
 
 目标为 `kubernetes-admin@ani-lab`，API `https://172.16.101.10:6443`，kube-system UID `5277649d-e28d-4a0a-ae76-8354365c63bc`。依次完成 Resource→Governance→BOSS/Console 发布；四套 Deployment 均核对 UID、实际 imageID、observedGeneration 和 Ready，正式前端 HTTP/bundle 与 Pod 文件哈希一致。镜像仓库前缀均为 `172.16.101.10:30003/icn-01a15337-release/`：
 
@@ -71,9 +71,9 @@ large 固定6副本，每 Envoy requests4CPU/4Gi、limits8CPU/8Gi，另含 shutd
 
 本轮主保留资源：LB `lb_9d66811e2c954d23b4e34a5c9f354fd5`（`base-flow-private-small-20261103`、`10.73.0.101:8081`）；Instance `fb7502b6-3acd-4e33-aeb4-416ba4096ebf`（`base-lb-http-small-20261103`、`10.73.0.18:8080`）；上文100m preset、兼容 HTTP Image/tag、既有 VPC/Subnet。完整清单及已删除专用样本见 Fedora `lb-backend/evidence/final-retained-resources.json`。正式页面为 `http://172.16.101.10:30082/basic-networks` 和 `http://172.16.101.10:30081/load-balancers/lb_9d66811e2c954d23b4e34a5c9f354fd5`。四仓 PR 均不自动合并。
 
-## 后续诊断与 R2 修复（2026-11-03，发布验收待完成）
+## 后续诊断与 R2 修复、发布和真实验收（2026-11-03）
 
-R1 把 defaults 503 与产品公网池过期统一停在“ani-03 NotReady，等待节点恢复”，该归因不完整。Fedora 对真实现场事实重放并沿正式观察路径定位到以下两项 Resource 缺陷。ani-03 的实际故障仍保留，但不能用它替代修复这两项误拒绝。以下 PASS 仅表示诊断重放和相应代码测试通过，不表示 R2 已发布、自动分配主链或公网/双模式真实流量通过。
+R1 把 defaults 503 与产品公网池过期统一停在“ani-03 NotReady，等待节点恢复”，该归因不完整。Fedora 对真实现场事实重放并沿正式观察路径定位到以下两项 Resource 缺陷。ani-03 的实际故障仍保留，但不能用它替代修复这两项误拒绝。下面先记录真实调用链回归，再分别记录 R2 实际发布与 BOSS→新 VPC→唯一基础 EIP/SNAT→三模式 LB 的真实流量；不以测试或 Deployment Ready 代替业务验收。
 
 ### H1：额外不可用副本抹掉健康角色镜像证据
 
@@ -94,3 +94,67 @@ R2 明确区分新物理配置准备与已有绑定观察。已有绑定仍校�
 本节证据根目录为 Fedora `/home/chabking/tasks/base-network-20261103/`。R2 正式镜像发布、BOSS defaults/创建基础池、新 VPC 自动 EIP/SNAT 和公网/双模式真实流量结果待后续回执补齐；代码验证结果见下文，不提前记为现场通过。用户明确跳过 large 的范围保持不变。
 
 R2 首次完整 `make verify` 已 PASS。扩大到相关 54 项 PostgreSQL 测试时，52 项通过，两处旧测试未对齐当前输入：`public_pool_optional_verification_integration_test.go` 仍要求人工 Intranet verification 和已由 0027 删除的 CHECK；`public_eip_workflow_integration_test.go` 的外租户安全组未配置其外部 Namespace，尚未进入权限业务断言就失败。前者改为通过正式业务方法开放无人工证据的 Ready Intranet 池，并确认不会重新打开已关闭的 Public 分配；后者明确准备第二租户 Namespace、保留原租户 UID，继续验证越权拒绝、无部分持久化、初始 SG、幂等和替换。第二轮越权断言通过后还暴露旧整体 `reflect.DeepEqual` 对 PostgreSQL/JSON 时间内部表示的误判；修正为时间瞬间相等且其他业务字段全等，未跳过时间或幂等检查。原始失败保留于 `resource-r2/verification/{postgres,postgres-fixture-green}.log`，生产文件字节未因此改变；两项修正后的 PostgreSQL 补测均 PASS，其余52项未重跑；最终完整 `make verify` 于 Fedora 2026-11-02 21:48 UTC exit0（132.706秒）。全部生成差异为空，全部生产文件保持首次通过的字节；最终测试候选 manifest SHA-256 `e107effe843a185fcfdeb2cf9d6c0a20fe9e664bb947dd777d0f48e528470a3f`。正式命令、退出码和原失败分别保留于 `resource-r2/verification/{result-initial,fixture-attempt-1-result,result}.json` 及 `make-verify-final.log`，不因仅补文档而重复已通过门禁。
+
+### R2 正式发布与自动分配现场闭环
+
+Resource 修复提交 `3fab1f19d570055f4508ee014538a39af144c5b0` 已通过 SSH 推至原 PR #46；实际运行版本 `base-network-r2-20261103-3fab1f1`、镜像 `172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:953f356c9a87ad81ec0c34809fde2d9cad7bd68bd51bf750d635451d19d7932f`。native 与镜像 `/app/bin/server` SHA-256 均为 `e44828665a805808a8a7931bf9e5b9d899e3b58191d4fa7e7d1a19994ffa9f7b`。Deployment 原 UID 不变、generation/observed=64、1/1 Ready/restart0；Config Secret UID/数据未变，未改 Schema、KCN、Governance 或前端。完整回执 `resource-r2/deployment/evidence/publication-result.json`。
+
+原始 HTTP 红循环正式复验 PASS：defaults GET 返回200，0.896秒，原默认 VPC UID `d0235860-f51a-4e63-8f4f-1ca1b34bc04f` 与真实三段路由保持，request ID `f60a1b2e-817b-43e3-bd02-4d3d6e558342`；证据 `defaults-503-diagnosis/defaults-http-latest.json`。已有产品公网池同样恢复 `available/fresh`、分配/默认开启，ani-03 仍 Unknown，未改变其成员或 Ready；见 `e2e-r2/r2-public-pool-readonly.json`。
+
+正式 BOSS 页面创建 `base-auto-main-20261103`：`pool_0b59b1d2f0e04508a243c2b58f245eec`、CIDR `10.250.251.0/28`、网关 `.1`，真实创建 operation `87461edc-8524-4df8-982e-f9872fd731b6` succeeded。随后页面单次“开启自动分配”操作成功，GET 证实 default/allocation/new_vpcs_enabled 均 true、verification=null。正式 Console 普通表单创建 `base-auto-vpc-main-20261103`：`vpc_bd5d4a4e965f465ba26f001ab11f16e9`、`10.75.0.0/16`，未传租户基础 EIP/SNAT 意图。实际工作流先 VPC Ready、EIP available、SNAT provisioning，再正常收敛为 VPC available/base ready/fresh；不是仅凭202宣称完成。
+
+最终只读 SQL 与原生复验：基础 EIP `eip_8c7e7b6fe6bd4ec7aaded2528c8f8c6b`、SNAT `snat_e6cbb53fcdde47feb56a397fc4a0e28a` 均 available，base/EIP/SNAT 恰好各1，create operation/幂等记录各1，三份原生对象和真实 UID 均存在；证据 `e2e-r2/r2-auto-ready-{db,native}`、`main-pool-ui-{created,enabled}.json`。LB 流量与开关/源切换/失败恢复/专用删除结果分别见下文，耗尽后的原对象自动恢复 FAIL 单独保留。
+
+### 新自动分配 VPC 的三模式 LB 真实验收
+
+本批正常业务后端为 Instance `f3e49e17-bfb5-4d75-a0e2-96dcbe3e1757`、Attachment `att_ebb20adc14b64c54a56067eec19299f2`，子网 `subnet_3545029eb11542e693eb75e4564a47eb`（`10.75.0.0/24`）。实际 Pod UID `3aea4057-1de7-47d1-b5af-01cc5a9b0b72`、`10.75.0.2:8080`、100m/128Mi，沿正式 Image→Instance→Attachment 接入，无原始 Pod 替代或安全上下文降级。
+
+| 模式 | 产品 LB | 实际入口与结果 |
+| --- | --- | --- |
+| private/small（正式 Console 创建） | `lb_70c22e8f491e4649beeaf3525ce051d9` | `10.75.0.101:8081` HTTP200 |
+| public/small | `lb_cac01579371949fe95c177ad5a72faeb` | `172.16.102.195:8082` HTTP200 |
+| both/small | `lb_e072d3e19ebc49409980e0e4a61d4b2e` | `10.75.0.103:8083` 与 `172.16.102.196:8083` 均 HTTP200 |
+
+私网请求来自上述真实业务 Pod（hostNetwork=false），公网来自 ani-01 上真实 Ready KCN hostNetwork Pod，记录 Pod/Node UID；四入口均返回 `base-lb-http-uid1000-20261103`。三个 LB 最终均 available/fresh、CONFIGURED、desired/target/applied=1，各自 operation succeeded；正式配置结束后再实测入口，而非仅凭 Gateway Ready 或前期HTTP200。三个实际 Deployment 均2/2 Envoy Ready，每副本 requests1CPU/1Gi、limits2CPU/2Gi、restart0，owner链 Gateway→Deployment→ReplicaSet→Pod 及专属 Proxy 证据完整；未缩小 LB 规格。中型固定四副本及完整删除结果仍沿用上文 R1 已完成样本，大型按用户要求 SKIPPED。
+
+独立公网 EIP `eip_138a817e83bd40a0af6d93dfdcda1390`、双模式 EIP `eip_5bf9f87a005e413f92cf2a65073ab909` 仅作为 LB 入口；主 VPC 的基础 SNAT 恰好一组，未额外给其绑定公网 SNAT。全部主样本保留，旧 `.194` 公网试验、`.192` 平台 SNAT、原 VM 及旧实验未变。
+
+原始过渡保留：新 Instance 曾 reserved/INSTANCE_NETWORK_CONFLICT，现有观察后自然 attached，三方 Pod UID 一致；首个公网 EIP 曾 context deadline，沿同一持久 operation 重试后 available；公网 LB 第一次300秒观察窗口结束时仍 applying，原 operation 后续正常 succeeded。未通过删除重建替代样本或改 DB/CR 伪造成功。主 VPC 在并发创建期也出现过真实 stale/degraded，后续原 EIP/SNAT 续报后恢复 Ready/fresh；未调宽现有 stale_after60s、observe_every10s、audit_interval30s、request_qps5/burst10。默认源切换只改变后续分配，主 VPC 的池/EIP/SNAT/Provider UID始终固定，期间私网和公网实际流量通过；不把 transient 状态掩盖为全程零错误。
+
+完整组装回执 `e2e-r2/result.json` 已核对全部原始 API、operation、native 和 curl 证据及实际 R2 镜像 digest。私网/公网最终 operation 分别为 `64a1fca0-ad2b-4cbf-89f5-e80e1a20d329`、`aade8246-a8ca-4e8b-a395-7c9855e3c924`，双模式为 `aa2dcc75-1d36-4b40-980e-3eceb2688fdd`；最终 API 服务器时间为 UTC22:07:16/17 和22:11:17。
+
+### 默认源切换、耗尽反馈与恢复边界
+
+专用辅助池 `pool_21c658cc5460444bbe205162524d48f4`（`10.250.252.0/30`，网关`.1`，唯一可分配地址`.2`）通过正式 SetDefault 切换，默认/分配/新 VPC 自动分配全 true。随后创建76 VPC `vpc_61629e6b2836499389d57f595ec76ab1`，基础 EIP获得`.2`；77 VPC `vpc_bc8172d7cc6a41178055354918b8a21f` 的基础 EIP `eip_67cc52dc452a413587df94cc841d1029` 无地址。两组启用态请求均实际同 body/key 再 POST，返回相同 VPC/operation，SQL create/idempotency和子资源各恰1，主 VPC 固定池/EIP/SNAT/Provider UID不变。
+
+耗尽反馈 PASS：77 EIP 原生 UID `018fc9d5-8b63-46d8-9487-dd4f82253bac`、generation1、Valid=False/Error/`Failed to allocate ip address`；同一辅助池 available0/using1/usingRange`.2`。正式 Console 显示 provisioning、基础连接“配置中”，原因是标准文本 `The requested configuration is not ready yet.`；没有地址不足专用前端文案，精确IPAM原因在原生证据中。早期仅看到 PROVIDER_UNAVAILABLE、EIP尚未创建时的结果明确保留为未分类，不提前冒充耗尽。固定原始0/1证据在 `auto-semantics/exhaustion-result.json` 的 state；辅助读取的同名pool文件后续会更新，不作为不可变原始状态。
+
+正常 DELETE76 的 operation `ad089c22-579b-4656-8ff0-bd9013eb1d19` succeeded，原 VPC/EIP/SNAT 全物理消失、活动claim/VPC占用0；辅助池恢复 available1/using0/availableRange`.2`。但是77原 EIP UID/gen与失败 condition 在释放四分钟后仍未变化，Resource正常观察未触发重新分配，**原对象自动恢复 FAIL**。没有为了通过而改 CR、换 UID、调阈值、重启 KC 或把正常删除重建冒充同对象重试。
+
+对应点时 KC 本地输入为 `/home/chabking/workspace/kc-networking`、main `6132623baabee50f17e9e179c0f5e9c1f380db04`，origin `git@gitlab.changqingyun.cn:kubercloud/sdn/kc-networking.git`。`internal/controller/networking/eip_controller.go:188-202` 分配失败只记录并返回nil，214-219写ValidFalse后返回nil，75-120成功结束无Requeue，670-687只监听EIP generation及Nat/Snat/Service、无Subnet变化；`internal/controller/handlers/misc.go:123-125` 空地址校验的invalid文本不带错误。现场与该逻辑吻合，未核对部署KC镜像的源码revision，不能把本地HEAD冒充部署证明。Resource已知UID分支沿正式观察，没有租户修改系统基础EIP或RetryEIP入口。本轮不扩大为KC代码/控制器发布；正常删除失败VPC后普通重建的恢复结果另行记录，与上述自动恢复FAIL分开。
+
+正常产品删除重建恢复 PASS（与原对象自动恢复 FAIL 分开）：77原 create_vpc/create_eip/bind_snat 终止为 CREATE_TERMINATED，正常 DELETE `b8a931d7-2887-4c21-bcc0-b7150240ab7c` succeeded，原三份 CR/活动占用均消失。以新 key 正常创建77b `vpc_6de14bcc58294acda27db68cea6bd075`、同CIDR `10.77.0.0/16`，operation `a0125c25-9af5-4fab-856d-e4f1631f748e`；同 body/key 实际重放返回相同新ID/operation。新基础EIP `eip_be7c2e8284344d74b57d9c6bc15e5dce` 重新获得已释放的 `10.250.252.2`，新SNAT `snat_0f983d2c95964542936cc19683ad183f`，新VPC available/baseReady/fresh。旧77 tombstone与失败证据未改，未复用旧key或伪造同UID恢复。证据 `auto-semantics/manual-recreate-proof.json`。
+
+关闭态 PASS：正式关闭后正常创建78 `vpc_89bfebfae1694c2bbe2c8a9a44eda218`（`10.78.0.0/16`），同body/key实际重放相同ID/operation，VPC available且base/EIP/SNAT均0、create/idempotency各1。77b provisioning期间一次正式 SetDefault 切回主池，GET证实主池 default/allocation/new_vpcs_enabled 全true；77b仍固定aux源/revision及其已受理子ID，随后Ready，主VPC的原池/子身份也保持。两方向切源、关闭只影响后续新建，不做历史补齐；证据 `off-result.json`、`main-restored-while-77b-inflight-result.json`。
+
+专用资源删除与地址释放 PASS：77b 正常 DELETE `9d740ec0-29e4-4a7e-bb34-4f33922b5953`、78 正常 DELETE `51a4691b-4185-4af1-94eb-4b1a9b0eb5a6` 均 succeeded；76/77/77b/78 的原生 VPC/EIP/SNAT 均消失，相关活动 claim/VPC/CIDR 占用为0。确认无依赖后正常关闭辅助池地址分配，再由正式 BOSS 页面删除且仅删除该辅助池，operation `f417c272-88ea-454e-9a03-1f925894311b` succeeded/reason空；只读核对原 Provider Subnet absence、持久 platform_state=deleted、retired=true、active_eips=0、active_claims=0。无强制 finalizer、手工 DB/CR 清理或重复 DELETE。
+
+最终主 VPC available/baseReady/fresh、reason空，基础池/EIP/SNAT/Provider UID 与初始冻结完全一致；主池 default/allocation/new_vpcs_enabled 仍全true。证据 `e2e-r2/auto-semantics/{restore-cleanup-result.json,verify-cleanup-result.json,aux-release-final.json,auto-main-final-ready-fresh.json,auto-main-final-pool.json}`；BOSS 正式列表已只保留主池且两项开关开启。原耗尽 EIP 自动恢复 FAIL、新对象正常恢复 PASS 的两份记录同时保留，不合并为一个绿色结论。
+
+### R2 最终保留与观察波动
+
+`e2e-r2/final-retained/final-retained-resources.json` 的结果为 `FINAL_CHECKS_PASS_WITH_KNOWN_LIMITATIONS`。主池三开关、主 VPC/基础连接、三 LB 配置版本及 fresh 均在最终收尾快照通过；服务器 UTC22:47:17～18 四入口各只做一次实际请求，均 HTTP200/正确 marker。原7份 KC VPC逐一保留同UID；手工公网`.194`、平台默认`.192`及其SNAT的UID/spec/原绑定未变。清单相对链接 R1 保留清单、R2 API/native/curl 与上述删除/失败恢复原证据，不重复跑已通过规格或编辑场景。
+
+不能把阶段 PASS 宣称为持续全绿：收尾时公网 LB 同 operation 在 UTC22:42:00 epoch79 出现 degraded/PROVIDER_UNAVAILABLE，22:42:37 GET 的观测年龄约73秒且配置投影 UNKNOWN；同 Gateway/Deployment/两 Pod UID 均不变，原生当前代次条件与2/2 Ready持续有效。22:43:12 epoch80 未经配置修改或重建即恢复 available。22:40～22:44 的349条日志没有该 LB 底层cause或明确 limiter/deadline/源集合失效证据，不能据 stale 推断限流/超时；背景其他资源冲突告警也不作为该 LB 根因。原红回执、一次正常恢复 GET 和原生证明保留于最终清单及 `e2e-r2/final-observation-diagnosis/`。
+
+### R3 补全正式 LB 错误诊断链
+
+进一步定位到日志缺口：LB worker 的观察错误分支只设置标准 Reason/Backoff，未填既有 `Progress.ProviderError`；正式 Observability 只有该字段非nil才记录原始 Cause。源码 `c8072f1405e1757f690fc1ac51194fa8ce442953` 仅给该分支补一行 `p.ProviderError = err`，沿用现有日志机制。新增行为回归从真实 Worker.Step 经正式 Observability 写 JSON 日志，Provider为外部错误边界，验证原始Cause/资源/operation/binding/epoch与原降级退避、无观察证明/无新Provider突变。
+
+Fedora 独占 `resource-r3/`：新测试在原3fab生产代码上 RED（Cause丢失，非编译失败），补上述一行后 GREEN；最终 `make verify` 于 UTC22:55:33～22:58:46 exit0，生成diff空、源码字节/模式与候选一致，manifest `bcf78fb4d4e7b64945ed037a620941c7a4d59fe4af028988a76b983a6ea705cc`。证据 `resource-r3/verification/{result.json,behavior-red-result.json,behavior-red.log,behavior-green.log,make-verify.log}`。纯错误日志转交不重复 PostgreSQL、其他服务、前端或真实流量；R2业务验收与已知失败保留。该源码已通过 SSH 推至原 PR #46。
+
+R3 实际发布：版本 `base-network-r3-20261103-c8072f1`，Registry 与运行 Pod imageID 均为 `ani-resource-service@sha256:c8782128a464baa018af985fa407cbd637c4c4ec3f1e44dc911c30a001ce17ef`；native 与镜像 `/app/bin/server` SHA-256 均为 `75ef349aceeb68a7c31a49a4e43b392ec3a0f068b8a1685b5ea43d87b583392c`。真实 Git commit/tree 与8545份候选源字节/模式一致，最终 commit manifest `4cec1ef6bd97c6bbfade134774eec92fcd0faf7bdb4700a2a61848443c655200`。Deployment 原UID不变、generation/observed=65、1/1 Ready，新Pod `ani-resource-service-75f8588c7d-w7845` restart0且日志确认R3版本；仅更新Resource镜像，原Config Secret UID/data、Schema与其他组件保持。回执 `resource-r3/deployment/evidence/publication-result.json`。后续只观察已有LB正常轮次，不以日志补丁重复业务流量或规格验收。
+
+R3 窄观察最终结果：原公网 `PROVIDER_UNAVAILABLE` 错误分支未复现，不能获得该次可信原Cause，R2底层cause仍 **UNKNOWN**。旧私网同operation在UTC23:05:43 epoch827短暂 PROVIDER_NOT_READY，23:05:55 epoch828自然恢复；新private70c22同期epoch128→129亦恢复，这些非错误返回没有原Cause，不能宣称日志补丁消除了波动。正式Observability仅对活动操作、失败或状态/Reason变化写INFO，稳定正常轮次无INFO不等于worker停顿。
+
+最后各只读一次正式GET：服务器UTC23:07:24，公网 observed23:07:13、available/configured/fresh、versions1/1/1、原operation不变；旧私网 observed23:07:03、available/configured/fresh、versions6/6/6、原operation不变，证明正常观察续新。证据 `e2e-r3/observation-cause/{final-result.json,resource-final.log}` 及该目录两份 final-api JSON；原R2红回执保留。未发业务写、探针、原生读取或流量重验，未无限等待全绿，也不把启动期readyz503当作原失败原因。

@@ -4,11 +4,13 @@
 
 ## 2026-11-03：基础网络默认分配与 LB 产品主链
 
-**源码、Fedora Resource 完整 `make verify`、真实 PostgreSQL 基础 EIP/SNAT 生命周期与四仓 10 集群发布：PASS；完整产品自动分配主链：BLOCKED，业务交付未完成。** 正式页面完成私网 small 的真实业务后端/流量、权重更新、清空/物理撤流与新身份再激活；medium 固定四副本及 VIP HTTP200、专用样本删除和物理/地址释放均 PASS。缺省关闭时的新 VPC 创建/幂等/物理删除与管理权限现场边界均 PASS。BOSS 新建基础网络卡在 defaults503/KCN controller 不健康、ani-03 NotReady；产品公网池过期，正常 EIP 创建503，公网/双模式未运行；large 已按用户明确要求 SKIPPED（本轮跳过）。未绕过 Provider 门禁或降低 LB 固定规格，旧 VPC 手工 SNAT 的私网流量不冒充新 VPC 自动分配验收。
+**R2 主链已 PASS：正式 BOSS 创建/开启默认自动分配 → Console 普通新 VPC → 唯一基础 EIP/SNAT → 私网、公网、双模式 LB 真实流量。** 三个新 small 均 available/configured、版本一致、operation succeeded，四入口 HTTP200；固定两副本规格已实证。R1 的 medium 四副本/流量/物理删除、权重/清空/再激活/412 与权限均保留 PASS；large 按用户要求 SKIPPED。默认源双向切换、开启/关闭态请求重放、关闭仅影响后续创建均 PASS，四个专用 VPC 与辅助池正常删除、物理及地址占用清零，主样本与旧实验保留。补充耗尽试验发现 **原 EIP 在释放地址后自动恢复：FAIL**；本地点时 KC 源码无分配失败 requeue/地址池变化 watch，与现场吻合但未冒充部署版本证明。正常产品删除失败 VPC 后普通重建并复用释放地址 PASS，未改 KC 或原生状态，不将新对象恢复替代原对象失败。
 
-Resource 业务源码 `1ddb5c6`（PR #46），新增真实 defaults 查询与单事务默认源/分配/rollout 开关，复用池版本、幂等和 rollout→platform 锁顺序；0027 移除人工 Intranet verification 前置，仍检查 Provider 身份/Ready/代次/路由覆盖/时效。BOSS 基于 main `9f917a4`，最终 `02dc75b`（PR #7）；Console `c0765b6`（PR #10）只读展示基础连接，VPC 仍仅提交正常创建；Governance `566c3b2`（PR #85），固定正式 Resource SDK，API/catalog/最小权限同步完成。备份后执行 Network27 与遗漏的主干 Atlas 迁移，正式登录/租户查询已恢复，不改账号或 Compute 权限。主链、实际镜像、原始失败和保留数据见[本轮记录](records/base-network-auto-allocation-20261103.md)。不做历史补齐、兼容路径、向导或新探针；旧 backfill fixture 的 namespace reader 失败单独保留，Gov Service vet 既有测试问题未记为通过。
+Resource 初批业务源码 `1ddb5c6`，R2 修复源码 `3fab1f1`（PR #46），新增真实 defaults 查询与单事务默认源/分配/rollout 开关，复用池版本、幂等和 rollout→platform 锁顺序；0027 移除人工 Intranet verification 前置，仍检查 Provider 身份/Ready/代次/路由覆盖/时效。BOSS 基于 main `9f917a4`，最终 `02dc75b`（PR #7）；Console `c0765b6`（PR #10）只读展示基础连接，VPC 仍仅提交正常创建；Governance `566c3b2`（PR #85），固定正式 Resource SDK，API/catalog/最小权限同步完成。备份后执行 Network27 与遗漏的主干 Atlas 迁移，正式登录/租户查询已恢复，不改账号或 Compute 权限。主链、实际镜像、原始失败和保留数据见[本轮记录](records/base-network-auto-allocation-20261103.md)。不做历史补齐、兼容路径、向导或新探针；旧 backfill fixture 的 namespace reader 失败单独保留，Gov Service vet 既有测试问题未记为通过。
 
-后续诊断纠正 R1 归因：Resource 镜像汇总遇到额外 Pending/Deleting 副本即清空健康角色证据；已有公网池观察又错误套用首次物理准备的全成员在线要求。两项真实调用链回归完成 RED→GREEN，保留四角色有效镜像、完整冻结成员身份/接管反馈与当前出口健康检查，首次物理 POST 仍严格。R2 已通过 Fedora 最终完整 `make verify` 与相关54项 PostgreSQL（52项首轮通过、2项旧测试修正后定向通过），正在固定提交准备发布，尚未宣布业务通过；解除这两项误拒绝不要求先恢复 ani-03，详见记录的后续诊断节。
+后续诊断纠正 R1 归因：Resource 镜像汇总遇到额外 Pending/Deleting 副本即清空健康角色证据；已有公网池观察又错误套用首次物理准备的全成员在线要求。两项真实调用链回归完成 RED→GREEN，保留四角色有效镜像、完整冻结成员身份/接管反馈与当前出口健康检查，首次物理 POST 仍严格。R2 已通过 Fedora 最终完整 `make verify` 与相关54项 PostgreSQL（52项首轮通过、2项旧测试修正后定向通过），并仅替换 Resource 镜像发布到10集群；原defaults503→200，完整新VPC三模式LB已实测通过；解除这两项误拒绝不要求先恢复 ani-03，详见记录的后续诊断节。
+
+收尾观察存在已保留的状态波动，不能以阶段流量通过宣称持续全绿。R3 `c8072f1` 修复 LB 错误未传入既有Cause日志的缺口，真实Worker→正式日志回归RED→GREEN及Fedora本轮 `make verify` PASS；实际镜像 `sha256:c8782128a464baa018af985fa407cbd637c4c4ec3f1e44dc911c30a001ce17ef` 已仅替换Resource发布，generation/observed65、1/1 Ready，配置/Schema未变。原公网 `PROVIDER_UNAVAILABLE` 在该窄窗口未复现，底层cause仍UNKNOWN；R3仍观察到同operation短暂NOT_READY后恢复，不能把日志补丁宣称为稳定性修复。最终只读GET显示公网与原私网均available/configured/fresh、观测正常续新；没有重复验流或修改业务资源。详见本轮记录的R3节。
 
 <a id="lb-usage-alignment-20261102"></a>
 
