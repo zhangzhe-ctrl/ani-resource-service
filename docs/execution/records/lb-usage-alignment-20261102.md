@@ -67,3 +67,25 @@ Console 采用任务独占 Fedora Vite 源码预览 `http://172.16.101.31:43927/
 LB 物理清理完成后，经正常产品 API 删除任务 CPU 实例 `b08324d2-63a7-4d02-98c2-12224ee6e247`，operation `7c1ca05d-676c-4dd5-9b9a-9d66471383e8` completed/done；observed deleted、network released，compute/workspace/networkCleaned 和 quotaReturned 全 true，任务 Pod/StatefulSet/PVC/PV/Notebook/VNic/VNicIP 剩余为空。任务 Image `img_9d5ce126ef8e4e20b91788c062c33b97` 正常注销（version=2），Harbor 唯一任务 tag 删除并读回 remaining_tags=[]；按范围保留产品 tombstone 和无 tag 的任务 manifest/layers，未动基础 BusyBox、共享 cache 或既有 VM，既有 VM 仍 Running/10.73.0.4。未使用 raw Kubernetes 删除或数据库写入。证据 `live/evidence/{backend-cleanup-result.json,backend-deleted-physical.json,backend-image-unregister-response.json,backend-registry-tag-deleted.json}`。
 
 本次独占 Vite 预览进程组 `3873916` 已停止、浏览器临时页已关闭，用户开发服务未修改。Console SSH 推送后的远端 branch SHA 为 `1e032e44c9c6e5058394781a89d1f6af90da20d0`，与本地 HEAD 一致。最后仅收尾文档，未重复已经通过的测试；新增/修改文档的 16 个相对链接目标及 `git diff --check` 通过。
+
+## 用户追加：基础网络 EIP/SNAT 前后对照
+
+2026-11-02 22:39 CST，用户要求“创建一个基础网络，然后给 vpc 分配一个基础网络的 eip 并做 snat，看看能不能通”。全部 API 驱动、Kubernetes 操作和流量探测仍在 Fedora，复核原 ani-lab API、kube-system UID 和 10～12 节点后执行。独立 run：`/home/chabking/tasks/lb-alignment-20261102/base-snat-check`；只测试原 tenant-a/test VPC，不操作既有 VM。平台/租户以正常登录获得本轮会话，凭据仅在 private。
+
+现场产品 Intranet 池为空，原 VPC 无基础 EIP/SNAT；现有 `kcn-config.intranetNetworks` 已覆盖 `172.16.101.0/24`、`10.96.0.0/16` 和 `10.16.0.0/16`。为直接验证网络因果关系，使用任务独立命名的 KCN 资源，不执行跨 VPC 补齐 CLI、不写 Resource 数据库、不伪造分配核验证据。创建前核对池 CIDR 不与现有 VPC/Subnet 重叠。
+
+| 资源 | 身份/结果 |
+| --- | --- |
+| 基础 Subnet | `kcn-system/lb-base-net-20261102`，Intranet `10.250.250.0/28`，网关 `kcn-system/kcn-cluster` / `10.250.250.1`；UID `f5329d9d-9050-46b7-a0b0-4e76d32221c6`，Ready/当前代次 |
+| 基础 EIP | 原 tenant-a namespace 的 `lb-base-eip-20261102`，地址 `10.250.250.2`；UID `553e3b83-6741-4879-8bd2-458c961fc196`，Bound 到本次 Snat/原 VPC |
+| 基础 Snat | 同 namespace 的 `lb-base-snat-20261102`，引用原 `vpc-6d7a163a92c24a359dd6536475cb68ad`；UID `9896c3ff-2b56-42e3-b198-e1d7e55c4952`，disable=false、phase=Bound |
+| 测试后端/客户端 | `lb-base-snat-check`，UID `7d917252-b113-4c32-9287-8c6c111f0d35`，ani-01、`10.73.0.11:8080`；响应 `lb-base-snat-check-20261102` |
+| 测试 LB | `lb-base-snat-gateway`（UID `1aac16f2-730f-4f90-99f2-6bacf2d858aa`）、专属 `lb-base-snat-proxy`、Backend/HTTPRoute；复用本轮已验证的公共 `lb-common` 和相同 small 私网投影，VIP `10.73.0.100:8080` |
+
+原 task 派生 BusyBox digest 仍在 registry，首次测试 Pod 未带既有 pull secret，拉取被正确拒绝；为本次测试 Pod 引用同 tenant namespace 原有 pull secret 后启动成功。未改 registry 权限、共享凭据或基础镜像，原失败回执保留。该 Pod/手工 LB 是本次 Provider 试验资源，不是前轮已删除的产品 Instance/LB，也不冒充新的产品创建验收。
+
+绑定 SNAT **之前**，同一后端直连正常，DNS 查询超时、EG Service `10.96.230.106:18000` 和 Pod `10.16.0.240:18000` 连接失败；Envoy admin 为 PRE_INITIALIZING，VIP connection refused。绑定 SNAT **之后**，同一客户端 DNS 返回正确 EG Service IP，两个 xDS TCP 连接成功，VIP 返回 HTTP 200 和上述业务标记。两个 Envoy 分别为 `10.73.0.13` / UID `b59fa179-3386-4606-95a6-4e9ab236bdc9`、`10.73.0.12` / UID `b7c00f28-50cc-46f3-b035-73bfd74cb902`；二者都从初始化进入 LIVE、UID 未变、restart=0，逐个 Pod 的 8080 也返回 HTTP 200。没有改镜像/业务代码、重启控制器或手改 kcn-config/default VPC。
+
+证据保存在 run 的 `evidence/{baseline-probe.txt,envoy-before-server-info.json,vip-before.txt,after-snat-probe.txt,envoy-live-summary.json,final-subnet.json,final-eip.json,final-snat.json}`；临时 admin port-forward 均在 finally 中停止。读取平台能力时 `load_balancer_ready=true`；`base_connectivity_ready=false` 仍如实保留，因为本次没有登记产品 Intranet 池及其验证证据，不能把底层流量成功冒充产品管理能力就绪。
+
+按本次创建和继续复验的用途，基础 Subnet/EIP/Snat、测试 LB 及后端 Pod 当前保留；原用户 VM、既有默认公网出口和共享控制器保持。Console 预览已按用户前一条要求重新打开，版本仍为 `1e032e4`。本次只追加运行试验与记录，未改 API 准入规则，也未扩大到公网/TLS/监控或全量测试。
