@@ -25,8 +25,7 @@ var (
 
 // TenantAccess provisions only the Sandbox permissions in an already verified
 // shared tenant namespace. Its Kubernetes identity must also be constrained by
-// an admission policy; RBAC create/bind alone cannot constrain subjects. This
-// adapter is not wired until that policy and the tenant lifecycle fence exist.
+// an admission policy; RBAC create/bind alone cannot constrain subjects.
 type TenantAccess struct {
 	Client                  dynamic.Interface
 	NamespacePrefix         string

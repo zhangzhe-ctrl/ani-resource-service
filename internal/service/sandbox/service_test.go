@@ -179,7 +179,7 @@ func serviceContext() context.Context {
 func newTestService(t *testing.T, selection compute.Selection) *Service {
 	t.Helper()
 	s, err := NewService(serviceRepo{}, serviceResolver{selection: selection}, Config{
-		ClusterID: testCluster, Namespace: "sandbox", RuntimeClass: "sandbox-kata", StorageClass: "sandbox-rwo", WorkspaceSize: "10Gi", ImagePrefixes: []string{"registry/"}, NamespaceResolver: &testNamespaceResolver{uid: "namespace-uid"},
+		ClusterID: testCluster, NamespacePrefix: "tenant-", RuntimeClass: "sandbox-kata", StorageClass: "sandbox-rwo", WorkspaceSize: "10Gi", ImagePrefixes: []string{"registry/"}, NamespaceResolver: &testNamespaceResolver{uid: "namespace-uid"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -266,33 +266,29 @@ func TestCreateDoesNotInitializeOrRecreateNamespace(t *testing.T) {
 	if _, err := s.ResolveCreateSpec(serviceContext(), validResolveRequest()); status.Code(err) != codes.Unavailable {
 		t.Fatalf("missing namespace accepted: %v", err)
 	}
-	obj := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "v1", "kind": "Namespace", "metadata": map[string]any{"name": "tenant-" + testTenant, "uid": "created-uid", "labels": map[string]any{storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: testTenant}}}}
+	obj := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "v1", "kind": "Namespace", "metadata": map[string]any{"name": "tenant-" + testTenant, "uid": "created-uid", "labels": map[string]any{storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: testTenant}}, "status": map[string]any{"phase": "Active"}}}
 	if err := client.Tracker().Create(schema.GroupVersionResource{Version: "v1", Resource: "namespaces"}, obj, ""); err != nil {
 		t.Fatal(err)
 	}
 	spec, err := s.ResolveCreateSpec(serviceContext(), validResolveRequest())
 	if err != nil || spec.NamespaceUid != "created-uid" {
-		t.Fatalf("resolve failed: %v", err)
+		t.Fatalf("resolve: %v", err)
 	}
 	accept := &pb.AcceptCreateRequest{Context: &pb.CommandContext{TenantId: testTenant, ResourceId: testSandbox, OperationId: testOp}, Spec: spec}
 	accept.Context.RequestDigest, err = commandDigest(accept.Context, "", spec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := client.Tracker().Delete(schema.GroupVersionResource{Version: "v1", Resource: "namespaces"}, "", "tenant-"+testTenant); err != nil {
+	if err = client.Tracker().Delete(schema.GroupVersionResource{Version: "v1", Resource: "namespaces"}, "", "tenant-"+testTenant); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.AcceptCreate(serviceContext(), accept); status.Code(err) != codes.Unavailable {
-		t.Fatalf("accept after namespace disappeared: %v", err)
+	if _, err = s.AcceptCreate(serviceContext(), accept); status.Code(err) != codes.Unavailable {
+		t.Fatalf("accept: %v", err)
 	}
-	creates := 0
-	for _, action := range client.Actions() {
-		if action.GetVerb() == "create" {
-			creates++
+	for _, a := range client.Actions() {
+		if a.GetVerb() == "create" || a.GetVerb() == "patch" {
+			t.Fatalf("forbidden action %s", a.GetVerb())
 		}
-	}
-	if creates != 0 {
-		t.Fatalf("request created the namespace: %d creates", creates)
 	}
 }
 
@@ -333,7 +329,7 @@ func TestResolveRejectsInvalidRequestsBeforeInitializingNamespace(t *testing.T) 
 
 func TestTenantNamespaceAndVariableWorkspaceAreValidatedOnAccept(t *testing.T) {
 	s := newTestService(t, validSelection())
-	// The shared Resource prefix wins over the old fixed-namespace setting.
+	// Every accepted specification uses the fixed standard tenant name.
 	s.config.NamespacePrefix = "tenant-"
 	req := validResolveRequest()
 	req.Data.WorkspaceSize = "25Gi"

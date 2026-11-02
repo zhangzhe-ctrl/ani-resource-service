@@ -18,7 +18,7 @@ func TestTenantAccessProvisioningIsIdempotentAndRejectsForeignBindings(t *testin
 	const tenant = "11111111-1111-4111-8111-111111111111"
 	const ns = "tenant-" + tenant
 	ctx := context.Background()
-	namespace := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "v1", "kind": "Namespace", "metadata": map[string]any{"name": ns, "uid": "uid-1", "labels": map[string]any{storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: tenant}}}}
+	namespace := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "v1", "kind": "Namespace", "status": map[string]any{"phase": "Active"}, "metadata": map[string]any{"name": ns, "uid": "uid-1", "labels": map[string]any{storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: tenant}}}}
 	client := fake.NewSimpleDynamicClient(runtime.NewScheme(), namespace)
 	access := TenantAccess{Client: client, NamespacePrefix: "tenant-", ServiceAccountNamespace: "ani-system", ServiceAccountName: "ani-resource-service"}
 	if err := access.ensure(ctx, tenant, "uid-1"); err != nil {
@@ -62,7 +62,7 @@ func reflectSubjectIsForeign(binding *unstructured.Unstructured) bool {
 
 func TestTenantAccessLostCreateResponseReadsReceipt(t *testing.T) {
 	const tenant = "11111111-1111-4111-8111-111111111111"
-	ns := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "v1", "kind": "Namespace", "metadata": map[string]any{"name": "tenant-" + tenant, "uid": "uid-1", "labels": map[string]any{storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: tenant}}}}
+	ns := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "v1", "kind": "Namespace", "status": map[string]any{"phase": "Active"}, "metadata": map[string]any{"name": "tenant-" + tenant, "uid": "uid-1", "labels": map[string]any{storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: tenant}}}}
 	client := fake.NewSimpleDynamicClient(runtime.NewScheme(), ns)
 	client.PrependReactor("create", "roles", func(action ktesting.Action) (bool, runtime.Object, error) {
 		obj := action.(ktesting.CreateAction).GetObject()
@@ -88,7 +88,7 @@ func TestTenantAccessLostCreateResponseReadsReceipt(t *testing.T) {
 
 func TestTenantAccessDoesNotBindAfterUnconfirmedRoleCreate(t *testing.T) {
 	const tenant = "11111111-1111-4111-8111-111111111111"
-	ns := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "v1", "kind": "Namespace", "metadata": map[string]any{"name": "tenant-" + tenant, "uid": "uid-1", "labels": map[string]any{storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: tenant}}}}
+	ns := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "v1", "kind": "Namespace", "status": map[string]any{"phase": "Active"}, "metadata": map[string]any{"name": "tenant-" + tenant, "uid": "uid-1", "labels": map[string]any{storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: tenant}}}}
 	client := fake.NewSimpleDynamicClient(runtime.NewScheme(), ns)
 	client.PrependReactor("create", "roles", func(ktesting.Action) (bool, runtime.Object, error) {
 		return true, nil, errors.New("response lost")
@@ -106,7 +106,7 @@ func TestTenantAccessDoesNotBindAfterUnconfirmedRoleCreate(t *testing.T) {
 
 func TestTenantAccessDoesNotOverwriteNamespaceMarker(t *testing.T) {
 	const tenant = "11111111-1111-4111-8111-111111111111"
-	ns := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "v1", "kind": "Namespace", "metadata": map[string]any{"name": "tenant-" + tenant, "uid": "uid-1", "labels": map[string]any{storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: tenant}, "annotations": map[string]any{tenantAccessNamespaceUID: "old-uid"}}}}
+	ns := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "v1", "kind": "Namespace", "status": map[string]any{"phase": "Active"}, "metadata": map[string]any{"name": "tenant-" + tenant, "uid": "uid-1", "labels": map[string]any{storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: tenant}, "annotations": map[string]any{tenantAccessNamespaceUID: "old-uid"}}}}
 	client := fake.NewSimpleDynamicClient(runtime.NewScheme(), ns)
 	access := TenantAccess{Client: client, NamespacePrefix: "tenant-", ServiceAccountNamespace: "ani-system", ServiceAccountName: "ani-resource-service"}
 	if err := access.ensure(context.Background(), tenant, "uid-1"); !errors.Is(err, biz.ErrOwnership) {
@@ -122,7 +122,7 @@ func TestTenantAccessDoesNotOverwriteNamespaceMarker(t *testing.T) {
 func TestTenantAccessChecksNamespaceAgainBeforeBinding(t *testing.T) {
 	const tenant = "11111111-1111-4111-8111-111111111111"
 	nsName := "tenant-" + tenant
-	ns := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "v1", "kind": "Namespace", "metadata": map[string]any{"name": nsName, "uid": "uid-1", "labels": map[string]any{storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: tenant}}}}
+	ns := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "v1", "kind": "Namespace", "status": map[string]any{"phase": "Active"}, "metadata": map[string]any{"name": nsName, "uid": "uid-1", "labels": map[string]any{storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: tenant}}}}
 	client := fake.NewSimpleDynamicClient(runtime.NewScheme(), ns)
 	client.PrependReactor("create", "roles", func(action ktesting.Action) (bool, runtime.Object, error) {
 		obj := action.(ktesting.CreateAction).GetObject()

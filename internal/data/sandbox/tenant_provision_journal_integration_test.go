@@ -43,6 +43,9 @@ func TestTenantSpaceJournaledProviderPostgres(t *testing.T) {
 			client.PrependReactor("create", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
 				obj := action.(ktesting.CreateAction).GetObject().(*unstructured.Unstructured).DeepCopy()
 				obj.SetUID(types.UID("server-" + uuid.NewString()))
+				if action.GetResource().Resource == "namespaces" {
+					obj.Object["status"] = map[string]any{"phase": "Active"}
+				}
 				if err := client.Tracker().Create(action.GetResource(), obj, action.GetNamespace()); err != nil {
 					t.Fatal(err)
 				}
@@ -134,6 +137,9 @@ func TestTenantSpaceWorkerReadyAndClosePostgres(t *testing.T) {
 	client.PrependReactor("create", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
 		obj := action.(ktesting.CreateAction).GetObject().(*unstructured.Unstructured).DeepCopy()
 		obj.SetUID(types.UID("server-" + uuid.NewString()))
+		if action.GetResource().Resource == "namespaces" {
+			obj.Object["status"] = map[string]any{"phase": "Active"}
+		}
 		if err := client.Tracker().Create(action.GetResource(), obj, action.GetNamespace()); err != nil {
 			t.Fatal(err)
 		}

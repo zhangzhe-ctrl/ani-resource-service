@@ -1496,3 +1496,30 @@ A05 受限调用者已真实通过：任务 user41/role34 仅有 backend/list/re
 此记录不改变 2026-10-30 真实集群验收的源码和镜像范围；截至本次检查，66 已换为其他 main 镜像，本合并候选尚未部署或进行真实集群验收。Gov 合入与跨仓验证另按实际结果记录，不以 Resource 测试替代。
 
 远端 PR CI 的 race 检查发现 Image 拉取 Secret 并发测试夹具对两个共享切片无锁追加；该问题位于测试替身。已为夹具写入加锁，并运行 `go test -race -count=10 -run ^TestEnsureTenantPullSecretConcurrentScopes$ ./internal/biz/image` **pass**；没有改动生产 Image 逻辑。
+
+## ModelDev dynamic tenant environment prerequisites (2026-11-01)
+
+Resource component implementation and required Fedora verification: PASS. Standard existing Namespace identity/UID, exact NULL-only Network maintenance backfill, and dynamic ModelDev pull Secret authorization are implemented. Inference static caller remains unchanged. Component/isolated PG evidence and exact scope are in [the implementation record](records/MODELDEV-TENANT-ENV-20261101/README.md). Live migration/backfill/deployment/A-B business acceptance: NOT_RUN, owned by coordinated task 09/10; no cluster writes performed here.
+
+
+Task09 temporary Network UID write barrier is now implemented: exact-manifest
+read-only plan / reviewed-SHA apply, schema24 freeze → official25 → atomic
+require-UID → guarded NULL-only backfill → original-writer-proven release.
+Final Fedora isolated PG race/backfill group and required `make verify` are
+**PASS** with unchanged runtime/test bytes; only execution documents followed.
+[Actual terminal logs/receipts and limits](records/MODELDEV-TENANT-ENV-20261101/README.md#temporary-uid-write-barrier-2026-11-01),
+[operational parameters](../runbooks/tenant-namespace-uid-window.md).
+Live constraints/migration/backfill/deployment/release remain **NOT_RUN**; current
+writer identities and a live Plan.SHA256 are not yet established.
+
+
+## 2026-11-02：Sandbox 更新主线与统一租户 Namespace
+
+在隔离工作树将 Resource Sandbox `6111d5b114da5e315029a6af36f88f234b686c24` 与主线 `14dcdb5589f2839e5d9566ebc7c417041b8b76f3`、Gov Sandbox `1aa8b99538dffbca810c580cf3103f0736864ca2` 与主线 `e70b109a9b98baa847b09a1f272a7fcdd7f331e3` 合并。初次合并时两边均未提交或推送；Resource 的 Namespace 创建和保护标记责任与主线只读合同冲突，已按下文用户确认处理。原工作区未修改，未提交文件的私有快照留在仓外。
+
+指定 `ssh ubuntu` 配置 `/home/chabking/.ssh/config` 不存在，本轮测试按允许的本机回退执行：Resource 合并中的标准租户身份、Sandbox 业务和 Image 包定向测试 **pass**；Gov 合并树 `1475bd761a5786b22c09b4ca7746464792b48417` 使用临时 Go workspace 指向 Resource 工作树，data/service/server 全包及两轮生成一致性 **pass**。Gov 使用正式依赖时，主线 ModelDev 依赖选择的旧 Resource SDK 缺少 Sandbox 新接口，编译 **fail**；不能把临时 workspace 的通过当作正式依赖可用。具体日志保存在仓外 `verification-artifacts/local-update-20261102/`。Resource 完整 `make verify`、联合数据库测试及真实集群验收均 **not_verified**，未部署、未运行迁移。
+
+
+2026-11-02 用户明确统一 Namespace 由 Sandbox 的租户开通流程负责：先读取 `tenant-<完整 UUID>`，已存在且身份合法时复用，否则仅在不存在时以持久写前日志创建；其余业务复用共享名称计算，不添加业务前后缀。Namespace 尚未 Active 时先保存创建 UID 回执并等待；并发 AlreadyExists 先记录未发送回执再读取核验，响应丢失继续保留 unknown 栅栏。共享合同见 [租户 Namespace](../contracts/tenant-namespace.md)。
+
+本机回退输入合并源码树 `81cecf745aeba8674becafbc9fb9adc145c38f48`：`GOWORK=off GOMAXPROCS=2 GOMEMLIMIT=1600MiB GOFLAGS=-p=2 make verify` **pass**；独占 PostgreSQL `go test -tags=sandboxintegration -count=1 -timeout=20m -v ./internal/data/sandbox` **pass**（113 个顶层测试）。首次 PG 测试的两条生命周期夹具因未提供主线要求的 Namespace 失败；修正夹具后完整重跑通过，失败与重跑日志均保留。测试容器已清理。指定远端配置不存在，本轮按允许规则回退本机；Gov 单仓正式 Resource SDK 依赖尚未更新，跨仓 workspace 验证不能代替正式依赖。合并候选未部署、未执行现场迁移或真实集群验收。

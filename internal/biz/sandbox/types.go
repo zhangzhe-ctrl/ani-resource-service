@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	compute "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/compute"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/tenantnamespace"
 )
 
 var (
@@ -66,14 +67,13 @@ func UUID(v string) bool {
 var digestRE = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
 var namespaceRE = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
 
-// TenantNamespace follows Resource's tenant namespace convention. The prefix
-// comes from trusted platform configuration, never from a Sandbox request.
+// TenantNamespace uses the shared standard tenant namespace identity.
 func TenantNamespace(tenant, prefix string) (string, error) {
-	if !UUID(tenant) {
+	if prefix != tenantnamespace.Prefix {
 		return "", ErrInvalid
 	}
-	namespace := prefix + tenant
-	if len(namespace) > 63 || !namespaceRE.MatchString(namespace) {
+	namespace, err := tenantnamespace.Name(tenant)
+	if err != nil {
 		return "", ErrInvalid
 	}
 	return namespace, nil

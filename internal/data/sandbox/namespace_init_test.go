@@ -23,6 +23,7 @@ func ownedNamespace(uid string) *unstructured.Unstructured {
 		"metadata": map[string]any{"name": "tenant-" + namespaceTenant, "uid": uid, "labels": map[string]any{
 			storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: namespaceTenant,
 		}},
+		"status": map[string]any{"phase": "Active"},
 	}}
 }
 

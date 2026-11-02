@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/sandbox"
 	storage "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/storage"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/tenantnamespace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -15,7 +16,7 @@ import (
 )
 
 // TenantNamespace uses the shared Network namespace ownership convention.
-// Provisioning writes are journaled; ordinary resolution is read-only.
+// Tenant provisioning may create it with a journal; ordinary resolution is read-only.
 type TenantNamespace struct {
 	Client          dynamic.Interface
 	NamespacePrefix string
@@ -27,8 +28,8 @@ func (n TenantNamespace) ProvisionJournaled(ctx context.Context, tenant, operati
 	if n.Client == nil || journal == nil || !biz.UUID(tenant) || !biz.UUID(operation) {
 		return "", biz.ErrInvalid
 	}
-	name, err := storage.NamespaceName(n.NamespacePrefix, tenant)
-	if err != nil {
+	name, err := tenantnamespace.Name(tenant)
+	if err != nil || n.NamespacePrefix != tenantnamespace.Prefix {
 		return "", biz.ErrInvalid
 	}
 	resource := n.Client.Resource(namespaceGVR)
@@ -49,11 +50,18 @@ func (n TenantNamespace) ProvisionJournaled(ctx context.Context, tenant, operati
 				storage.NamespaceManagedBy: storage.NamespaceOwner, storage.NamespaceTenantID: tenant,
 			}},
 		}}, metav1.CreateOptions{FieldManager: "ani-network-service"})
+		if apierrors.IsAlreadyExists(err) {
+			if _, finishErr := journal.FinishTenantSpaceMutation(ctx, tenant, operation, mutation, "not_sent", "already_exists"); finishErr != nil {
+				return "", finishErr
+			}
+			mutation = ""
+			namespace, err = resource.Get(ctx, name, metav1.GetOptions{})
+		}
 	}
 	if err != nil {
 		return "", fmt.Errorf("tenant namespace provision: %w", err)
 	}
-	if namespace == nil || namespace.GetName() != name || namespace.GetUID() == "" || namespace.GetDeletionTimestamp() != nil || namespace.GetLabels()[storage.NamespaceManagedBy] != storage.NamespaceOwner || namespace.GetLabels()[storage.NamespaceTenantID] != tenant {
+	if namespace == nil || namespace.GetDeletionTimestamp() != nil || tenantnamespace.Validate(tenant, tenantnamespace.Object{Name: namespace.GetName(), UID: string(namespace.GetUID()), Labels: namespace.GetLabels()}, "", false) != nil {
 		return "", fmt.Errorf("%w: tenant namespace is not usable", biz.ErrOwnership)
 	}
 	uid := string(namespace.GetUID())
@@ -65,6 +73,10 @@ func (n TenantNamespace) ProvisionJournaled(ctx context.Context, tenant, operati
 		if _, err = journal.PinTenantSpaceNamespace(ctx, tenant, operation, uid); err != nil {
 			return "", err
 		}
+	}
+	phase, _, _ := unstructured.NestedString(namespace.Object, "status", "phase")
+	if phase != "Active" {
+		return "", fmt.Errorf("%w: tenant namespace is not active", biz.ErrDependencyUnavailable)
 	}
 	return uid, nil
 }
@@ -94,11 +106,12 @@ func (n TenantNamespace) ResolveSandboxNamespaceUID(ctx context.Context, tenant 
 	if namespace == nil {
 		return "", biz.ErrDependencyUnavailable
 	}
-	labels := namespace.GetLabels()
+	phase, _, _ := unstructured.NestedString(namespace.Object, "status", "phase")
 	uid := string(namespace.GetUID())
-	if namespace.GetName() != name || uid == "" || namespace.GetDeletionTimestamp() != nil || labels[storage.NamespaceManagedBy] != storage.NamespaceOwner || labels[storage.NamespaceTenantID] != tenant {
-		return "", fmt.Errorf("%w: sandbox tenant namespace is not usable", biz.ErrOwnership)
+	if err := tenantnamespace.Validate(tenant, tenantnamespace.Object{Name: namespace.GetName(), UID: uid, Phase: phase, Labels: namespace.GetLabels(), Deleting: namespace.GetDeletionTimestamp() != nil}, "", true); err != nil {
+		return "", fmt.Errorf("%w: %v", biz.ErrOwnership, err)
 	}
+
 	return uid, nil
 }
 

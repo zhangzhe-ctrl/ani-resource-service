@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/tenantnamespace"
 )
 
 var (
@@ -83,17 +84,21 @@ func UUID(v string) bool { u, e := uuid.Parse(v); return e == nil && u != uuid.N
 var digest64 = regexp.MustCompile(`^[0-9a-f]{64}$`)
 var dnsName = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
 
+// ValidNamespaceName validates a persisted read-only location without selecting
+// or authorizing a target for new resource creation.
+func ValidNamespaceName(name string) bool {
+	return name != "" && len(name) <= 63 && dnsName.MatchString(name)
+}
+
 func ResolveNamespace(tenant, trusted, prefix string) (string, error) {
-	if !UUID(tenant) {
+	ns, err := tenantnamespace.Name(tenant)
+	if err != nil {
 		return "", ErrInvalid
 	}
-	ns := trusted
-	if ns == "" {
-		ns = prefix + tenant
+	if prefix != tenantnamespace.Prefix || (trusted != "" && trusted != ns) {
+		return "", fmt.Errorf("%w: invalid tenant namespace", ErrInvalid)
 	}
-	if len(ns) > 63 || !dnsName.MatchString(ns) {
-		return "", fmt.Errorf("%w: invalid namespace", ErrInvalid)
-	}
+
 	return ns, nil
 }
 
