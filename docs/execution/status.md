@@ -1,5 +1,12 @@
 # Network 执行状态
 
+## 2026-11-02：Sandbox 镜像打包与历史验收记录整理
+
+以 Resource main `36da38ac889ebd035c145a29226c8ad6f4fbe191` 为基线，保留主线统一租户 Namespace 和 Sandbox 实现，补入旧工作区遗漏的 2026-10-30 现场请求/响应记录。生产镜像的隔离构建上下文补入 Go `embed` 所需的 `internal/data/sandbox/filehelper/workspace.py`，避免最新 Sandbox 源码镜像编译失败。构建脚本与测试的变更和先前成功构建的 dirty 快照一致；该快照基线为 `36da38a`，快照 SHA-256 `2e1b1deef0b871f8248f894259275124da3ea9afadffe6bdc3c66c8cb503ab02`，本机镜像 ID `sha256:ff55765ffe1fd12189cabbe43e561020bdca1443df74e1ffa71975336ea93df1`，未推送、未部署。
+
+指定的 `/home/chabking/.ssh/config` 不存在，默认 `ssh ubuntu` 主机密钥未登记，本轮按允许规则回退本机 Ubuntu、Go 1.26.10：`PYTHONDONTWRITEBYTECODE=1 make test-image` **pass**（9 项）；`GOWORK=off GOMAXPROCS=2 GOMEMLIMIT=1600MiB GOFLAGS=-p=2 TMPDIR=/tmp/rsv make verify` **pass**。验收摘要和本条状态在门禁后整理；未重跑真实集群生命周期。`docs/execution/records/SANDBOX-LIVE-20261030/README.md` 保存的是 2026-10-30 的实际请求与结果，不作为本次源码的现场验收。
+
+
 ## 2026-11-02：删除终态与 VM 共享观测的请求预算修复
 
 **源码、Fedora 定向回归/真实 PG、静态检查及服务构建：PASS；新修复的发布与现场请求预算验收：NOT_RUN。** 实现基于 Resource `14dcdb5589f2839e5d9566ebc7c417041b8b76f3`，提交前同步最新 main `e9cdb164e35945d4c199ad4e4bc7ab5ce4a91346`，并核对 Governance main `e70b109a9b98baa847b09a1f272a7fcdd7f331e3`。修复集中在 Resource 内部，不改变公开 API 或数据库结构。无未决写入、活动操作或失败原因的已删除资源复用完整共享审计，干净终态的恢复周期默认 60 秒；事件唤醒、原 UID、迟到关系及未知写入围栏保留。VM 关系复用共享 Pod/VNic/VNicIP 集合，证明同时覆盖实际 VM/VMI 关系及 owner snapshot，保留精确身份、系统 Nic 清理和封闭后采集边界。已释放的受管连接复用持久封闭事实；SNAT 与 EIP 均不存在时仍按原 EIP 名称检查孤立 NAT/Service。
@@ -1494,6 +1501,10 @@ A05 受限调用者已真实通过：任务 user41/role34 仅有 backend/list/re
 
 指定 `/home/chabking/.ssh/config` 不存在，默认 `ssh ubuntu` 因主机密钥校验失败，按仓库允许的本地回退在当前主机使用 Go 1.26.10、固定 Buf 1.60.0 / sqlc 1.31.1 执行：`GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 GOWORK=off make verify` **pass**；使用本任务独占临时 PostgreSQL 17.11，Sandbox `sandboxintegration` 75 个顶层测试 **pass**，实例重启/PVC 定向回归 12 个顶层测试 **pass**，Image 引用定向回归 1 个顶层测试 **pass**。共享入口两项测试首次未配置 `NETWORK_TEST_ADMIN_DSN` 被 **skip**；补充独占数据库环境后单独执行，两项 **pass**。测试使用模拟 Kubernetes，不能代表真实 Sandbox 创建、暂停、恢复、删除已验收。临时数据库与凭据已清理；日志和输入清单位于仓外 `../verification-artifacts/resource-integration-review-20261029/`。GitHub PR 既有失败和新提交的 CI 状态需分别检查。
 
+
+## 2026-10-30：Sandbox 新租户自动开通与 66 真实生命周期
+
+66 使用 Resource `a778c1f25da0923272c6df9e7fbfb5ddce3abcf1` 和 Gov `6a8f766baf22f79a774797a0bee393b2fc6bd4ee` 时，新租户共享 Namespace 和 Sandbox 权限自动 READY；使用 `image_reference` 的创建、幂等重放、暂停、恢复和删除通过，未依赖父 Instance，Pod/PVC/PV 已回收。租户空间最终 OFF/CLOSED；租户删除因历史保护返回 409，共享 Namespace 和历史保留。原始请求、响应、镜像、状态、清理和未验范围见[当时的验收记录](records/SANDBOX-LIVE-20261030/README.md)。这是历史版本的现场结果，不推定后续 main 版本已在现场验收。
 
 ## 2026-10-31：Sandbox 合入最新主线候选
 
