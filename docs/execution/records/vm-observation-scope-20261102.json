@@ -62,5 +62,22 @@
     "docs/execution/status.md",
     "docs/execution/records/vm-observation-scope-20261102.json"
   ],
-  "raw_receipts": "/home/chabking/.codex/artifacts/vm-observation-scope-fix-20261102"
+  "raw_receipts": "/home/chabking/.codex/artifacts/vm-observation-scope-fix-20261102",
+  "deployment_followup": {
+    "first_image_revision": "784bb67d37bba4c643ceb8f05aa4a19aa6156cef",
+    "first_acceptance": "Guest shutdown and normal Start/Stop completed, but a replacement VMI later lost observation freshness. Network client remained near 20 QPS. Full acceptance did not pass.",
+    "regression": "The new callback fence rejected same-UID Delete events whose opaque resourceVersion differed from the cached object; a later same-name VMI could remain blocked behind stale cache state.",
+    "correction": "Delete is fenced by UID; Update retains its previous-resourceVersion fence. No numeric resourceVersion ordering or VM operation dependency was added.",
+    "targeted_test": "TestVMSharedStateDeletedVMIResourceVersionAllowsReplacement uses real SharedInformer delivery, replacement VMI/launcher, three fresh shared audits and a delayed old-UID Delete.",
+    "red_exit_code": 1,
+    "green_exit_code": 0,
+    "native_race_exit_code": 0,
+    "make_verify_exit_code": 0,
+    "make_verify_seconds": 167.794,
+    "execution_host": "fedora",
+    "native_source_sha256": "30a842ac51daa2b0297a834c5c53c77be2cb1936a25477f6bcfe739a5ab3a795",
+    "native_test_sha256": "f9eade6c68b6d96acf71e715f927e4456ef26be2a650173cac441ba245ad49e5",
+    "corrected_image_acceptance": "Pending deployment and real replacement-VMI freshness check at this commit.",
+    "raw_receipts": "/home/chabking/.codex/artifacts/vm-observation-deploy-20261102"
+  }
 }

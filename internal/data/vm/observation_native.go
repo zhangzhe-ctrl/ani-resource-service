@@ -163,7 +163,13 @@ func (o *StateObservation) changed(r *stateCache, old, value any) {
 		// Handlers run in informer order. Also fence delayed/duplicate
 		// callbacks against the version they replace; resourceVersions are
 		// opaque and must never be numerically ordered here.
-		if before == nil || before.GetUID() != u.GetUID() || (before.GetResourceVersion() != "" && before.GetResourceVersion() != u.GetResourceVersion()) {
+		if before == nil || before.GetUID() != u.GetUID() {
+			return
+		}
+		// A DELETED event carries its deletion revision, which need not
+		// match the last cached revision. UID still fences replacements;
+		// only an Update supplies the previous object version to match.
+		if after != nil && before.GetResourceVersion() != "" && before.GetResourceVersion() != u.GetResourceVersion() {
 			return
 		}
 		if after != nil && before.GetResourceVersion() == "" && u.GetResourceVersion() != "" {
