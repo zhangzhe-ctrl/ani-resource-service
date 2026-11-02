@@ -52,6 +52,8 @@ Network 实施基础为 `d8835a22d905e358b7f60756d3113baa97d7c762`（既有 EIP/
 
 安装器已经将物理口加入 `managedDevices` 并由 kc 接管时，应核验并登记该现成设备，再创建二层网络；不能将“已接管”本身判作环境阻塞。空闲接管与已有设备登记共用管理员接口，身份、并发与退役规则统一见[Public 方案 4.1](vpc-snat.md#41-underlay-的网卡发现与二层网络)。现场连通性和完整产品 API 数据面仍分别验证。
 
+BOSS 通过 `GetIntranetPoolDefaults` 读取并带入实际默认 VPC 身份和 `intranetNetworks`，管理员不手工填写 Provider UID。`SetIntranetPoolAutoAllocationEnabled` 使用池版本与幂等键，原子设置默认 Intranet 池、开放池分配及新 VPC 自动分配开关；关闭只影响未来 VPC，切换默认源不迁移已有资源。人工 Intranet verification 是可选诊断记录，不是分配门禁；Provider UID、Ready、当前代次、路由覆盖、观测时效与地址冲突检查仍保留。Intranet 池只读 `new_vpcs_enabled` 表示它是否是当前启用的默认自动分配源。
+
 每个部署集群分别配置默认 Intranet 池和默认 Public 池，池的 scope 创建后不可变。默认池选择只影响后续新申请，已受理操作持久固定池 ID、配置版本和 Provider placement；重试不能改选新默认池。关闭新分配不删除或解绑已有地址。
 
 Intranet Pool 映射为平台 namespace 的 `Subnet(type: Intranet)`，显式识别默认 VPC 网关，不能创建 scope Public 的 EIPGateway 来假冒。平台负责内网目标网段（含实际 DNS/xDS/Service 目标所需范围）的配置和验证，租户请求不得修改集群路由范围。Public 池沿用现有 Overlay/Underlay 与网关配置。

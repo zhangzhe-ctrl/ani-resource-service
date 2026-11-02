@@ -1182,17 +1182,10 @@ func emptyBoundResource(eip *unstructured.Unstructured) bool {
 	return ok && len(bound) == 0
 }
 
-func verifiedEgressExit(r egressResolved, set egressReadSet) bool {
-	// Public admission uses current component readiness, without requiring an
-	// administrator's manual forwarding evidence. Intranet remains independent.
-	if r.pool.Scope == "public" {
-		return len(providerImages(set.all[pods])) > 0
-	}
-	var evidence biz.PublicPoolVerification
-	if json.Unmarshal(r.pool.Verification, &evidence) != nil {
-		return false
-	}
-	return sameProviderImages(evidence.ProviderImageDigests, providerImages(set.all[pods])) && biz.ValidatePoolVerificationForScope(evidence, r.pool.Scope, time.Now()) == nil
+func verifiedEgressExit(_ egressResolved, set egressReadSet) bool {
+	// Both scopes use current provider facts. Manual forwarding records are
+	// diagnostic metadata, not a runtime gate for EIP/SNAT reconciliation.
+	return len(providerImages(set.all[pods])) > 0
 }
 
 // KCN publishes notReadyNodes as an optional comma-separated string. Older

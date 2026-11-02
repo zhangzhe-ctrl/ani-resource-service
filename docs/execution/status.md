@@ -1,5 +1,13 @@
 # Network 执行状态
 
+<a id="base-network-auto-allocation-20261103"></a>
+
+## 2026-11-03：基础网络默认分配与 LB 产品主链
+
+**源码及 Fedora Resource 完整 `make verify`、真实 PostgreSQL 新建 VPC 基础 EIP/SNAT 生命周期：PASS；10 集群发布和完整产品流量验收：进行中。** 新增平台创建表单真实 defaults 查询与单事务自动分配开关，复用池版本、幂等和 rollout→platform 锁顺序；默认源切换保留既有 VPC/子资源。Intranet 人工 verification 改为可选诊断数据，迁移 0027 同时登记新操作类型，Provider 身份/Ready/代次/路由覆盖/新鲜度等仍校验。真实适配器测试改由新命令开启自动分配，无人工 verification 或直接 SQL 设置开关。
+
+BOSS 基于 main `9f917a4`，提交 `221b4cd`；Console 延续 PR #10，提交 `c0765b6`，只读展示基础连接状态，不改 LB 三档固定映射。Governance 配套 DTO/平台接口与权限定向测试通过，正式 SDK 固定与发布待后续回执。主链、原始失败及实际验收边界见[本轮记录](records/base-network-auto-allocation-20261103.md)。未实现历史补齐、兼容迁移、向导或新增连通性探针；扩大 PG 检查中旧 backfill fixture 的 namespace reader 失败单独保留，不标为通过。
+
 <a id="lb-usage-alignment-20261102"></a>
 
 ## 2026-11-02：LB 使用方式对齐
