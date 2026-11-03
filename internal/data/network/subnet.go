@@ -163,6 +163,13 @@ func (p *Postgres) DeleteSubnet(ctx context.Context, tenant, id string) (biz.Sub
 	if row.State == string(biz.Deleting) || row.State == string(biz.Deleted) {
 		return subnet(row), nil
 	}
+	var manualCount int64
+	if err = tx.QueryRow(ctx, `SELECT count(*) FROM network_vnics WHERE tenant_id=$1 AND subnet_id=$2 AND state<>'deleted'`, tenant, id).Scan(&manualCount); err != nil {
+		return biz.Subnet{}, databaseFailure(err)
+	}
+	if manualCount > 0 {
+		return biz.Subnet{}, biz.Fail(biz.ResourceBusy, "Subnet contains retained manual VNICs")
+	}
 	lbCount, err := q.BlockingLBForSubnet(ctx, sqlcgen.BlockingLBForSubnetParams{TenantID: tenant, SubnetID: id})
 	if err != nil {
 		return biz.Subnet{}, databaseFailure(err)

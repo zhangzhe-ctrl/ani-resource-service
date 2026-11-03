@@ -1,0 +1,243 @@
+package biz
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"strings"
+	"time"
+	"unicode"
+	"unicode/utf8"
+)
+
+// VNic is a user-owned network interface. Runtime consumer deletion never deletes it.
+type VNic struct {
+	ID, TenantID, Name, Description, VPCID, SubnetID, VPCName, SubnetName string
+	State                                                                 ResourceState
+	Reason                                                                Reason
+	Version                                                               int64
+	MACAddress, PrimaryIP                                                 string
+	IPs, SecurityGroupIDs, SecurityGroupNames                             []string
+	Bindings                                                              []VNicBinding
+	ObservedAt                                                            *time.Time
+	ObservationStale                                                      bool
+	CreatedAt, UpdatedAt                                                  time.Time
+	LastOperationID                                                       string
+	// Trusted provider identity is an internal port, never accepted from callers.
+	ProviderName, ProviderUID, ClusterID, Namespace, NamespaceUID string
+}
+type VNicBinding struct {
+	ID, ConsumerKind, ConsumerID, Slot, ConsumerName, ComputeType string
+	RequestedRevision, AppliedRevision                            int64
+	Current, Target                                               bool
+}
+type CreateVNic struct {
+	TenantID, Name, Description, SubnetID, IdempotencyKey string
+	Attribution                                           Attribution
+}
+
+func (v CreateVNic) Fingerprint() string {
+	b, _ := json.Marshal([]string{v.TenantID, v.Name, v.Description, v.SubnetID})
+	h := sha256.Sum256(b)
+	return hex.EncodeToString(h[:])
+}
+
+type VNicFilter struct {
+	PageWindow
+	Name, SubnetID, State, BindingState, BindableToKind, BindableToID string
+}
+type VNicReservation struct {
+	TenantID, VNicID, ConsumerKind, ConsumerID, Slot, OperationID, SubnetID string
+	Revision                                                                int64
+}
+type VNicRepository interface {
+	AcceptVNic(context.Context, CreateVNic) (VNic, error)
+	GetVNic(context.Context, string, string) (VNic, error)
+	ListVNics(context.Context, string, VNicFilter) ([]VNic, int64, error)
+	DeleteVNic(context.Context, string, string) (VNic, error)
+	ReserveVNic(context.Context, VNicReservation) (VNic, error)
+	SyncVNicSecurityGroups(context.Context, string, string, string, string, []string) (VNic, error)
+	ReleaseVNicBindings(context.Context, string, string, string, []string) error
+	ApplyVNicBinding(context.Context, string, string, string, string, int64) error
+}
+
+func validateVNicName(name string) error {
+	if !utf8.ValidString(name) || utf8.RuneCountInString(name) < 1 || utf8.RuneCountInString(name) > 128 {
+		return Fail(InvalidArgument, "name must contain 1..128 Unicode characters")
+	}
+	for _, c := range name {
+		if unicode.IsControl(c) {
+			return Fail(InvalidArgument, "name must not contain control characters")
+		}
+	}
+	return nil
+}
+func validVNicID(id string) bool {
+	if len(id) != 37 || !strings.HasPrefix(id, "vnic_") {
+		return false
+	}
+	_, e := hex.DecodeString(id[5:])
+	return e == nil && strings.ToLower(id) == id
+}
+func (n *Network) vnicRepository() (VNicRepository, error) {
+	r, ok := n.repository.(VNicRepository)
+	if !ok {
+		return nil, Fail(ProviderUnavailable, "manual VNIC management unavailable")
+	}
+	return r, nil
+}
+func (n *Network) CreateVNic(ctx context.Context, r CreateVNic) (VNic, error) {
+	var err error
+	r.TenantID, err = ParseTenant(r.TenantID)
+	if err != nil {
+		return VNic{}, err
+	}
+	r.Name = strings.TrimSpace(r.Name)
+	r.Description = strings.TrimSpace(r.Description)
+	if err = validateVNicName(r.Name); err != nil {
+		return VNic{}, err
+	}
+	if !validSubnetID(r.SubnetID) || len(r.Description) > 1024 || len(r.IdempotencyKey) < 1 || len(r.IdempotencyKey) > 128 {
+		return VNic{}, Fail(InvalidArgument, "subnet, description or idempotency key invalid")
+	}
+	if err = validateAttribution(r.Attribution); err != nil {
+		return VNic{}, err
+	}
+	repo, err := n.vnicRepository()
+	if err != nil {
+		return VNic{}, err
+	}
+	return repo.AcceptVNic(ctx, r)
+}
+func (n *Network) GetVNic(ctx context.Context, tenant, id string) (VNic, error) {
+	tenant, e := ParseTenant(tenant)
+	if e != nil {
+		return VNic{}, e
+	}
+	if !validVNicID(id) {
+		return VNic{}, Fail(ResourceNotFound, "VNIC not found")
+	}
+	r, e := n.vnicRepository()
+	if e != nil {
+		return VNic{}, e
+	}
+	v, e := r.GetVNic(ctx, tenant, id)
+	return n.vnicObservation(v), e
+}
+func (n *Network) vnicObservation(v VNic) VNic {
+	v.ObservationStale = v.ObservedAt == nil || n.now().Sub(*v.ObservedAt) > n.freshness || v.ObservedAt.After(n.now())
+	return v
+}
+func (n *Network) ListVNics(ctx context.Context, tenant string, f VNicFilter) ([]VNic, int64, error) {
+	switch ResourceState(f.State) {
+	case "", Provisioning, Available, Degraded, Failed, Deleting, Deleted:
+	default:
+		return nil, 0, Fail(InvalidArgument, "invalid VNIC state")
+	}
+	tenant, e := ParseTenant(tenant)
+	if e != nil {
+		return nil, 0, e
+	}
+	f.Name = strings.TrimSpace(f.Name)
+	if f.Limit < 1 || f.Limit > 100 || f.Offset < 0 || (f.SubnetID != "" && !validSubnetID(f.SubnetID)) || (f.BindingState != "" && f.BindingState != "free" && f.BindingState != "bound" && f.BindingState != "reserved") || ((f.BindableToKind == "") != (f.BindableToID == "")) {
+		return nil, 0, Fail(InvalidArgument, "invalid VNIC filter")
+	}
+	if f.BindableToKind != "" && f.BindableToKind != "vm" && f.BindableToKind != "container" {
+		return nil, 0, Fail(InvalidArgument, "unsupported consumer kind")
+	}
+	r, e := n.vnicRepository()
+	if e != nil {
+		return nil, 0, e
+	}
+	vs, total, e := r.ListVNics(ctx, tenant, f)
+	for i := range vs {
+		vs[i] = n.vnicObservation(vs[i])
+	}
+	return vs, total, e
+}
+func (n *Network) DeleteVNic(ctx context.Context, tenant, id string) (VNic, error) {
+	tenant, e := ParseTenant(tenant)
+	if e != nil {
+		return VNic{}, e
+	}
+	if !validVNicID(id) {
+		return VNic{}, Fail(ResourceNotFound, "VNIC not found")
+	}
+	r, e := n.vnicRepository()
+	if e != nil {
+		return VNic{}, e
+	}
+	return r.DeleteVNic(ctx, tenant, id)
+}
+func (n *Network) ReserveVNic(ctx context.Context, v VNicReservation) (VNic, error) {
+	if v.Slot != "primary" || v.Revision < 1 || v.OperationID == "" || (v.ConsumerKind != "vm" && v.ConsumerKind != "container") || v.ConsumerID == "" || !validVNicID(v.VNicID) || !validSubnetID(v.SubnetID) {
+		return VNic{}, Fail(InvalidArgument, "invalid primary VNIC reservation")
+	}
+	var e error
+	v.TenantID, e = ParseTenant(v.TenantID)
+	if e != nil {
+		return VNic{}, e
+	}
+	r, e := n.vnicRepository()
+	if e != nil {
+		return VNic{}, e
+	}
+	return r.ReserveVNic(ctx, v)
+}
+func (n *Network) SyncVNicSecurityGroups(ctx context.Context, tenant, id, kind, consumer string, groups []string) (VNic, error) {
+	if _, e := n.GetVNic(ctx, tenant, id); e != nil {
+		return VNic{}, e
+	}
+	r, e := n.vnicRepository()
+	if e != nil {
+		return VNic{}, e
+	}
+	return r.SyncVNicSecurityGroups(ctx, tenant, id, kind, consumer, groups)
+}
+func (n *Network) ReleaseVNicBindings(ctx context.Context, tenant, kind, consumer string, keep []string) error {
+	tenant, e := ParseTenant(tenant)
+	if e != nil {
+		return e
+	}
+	if consumer == "" || (kind != "vm" && kind != "container") {
+		return Fail(InvalidArgument, "invalid VNIC consumer")
+	}
+	r, e := n.vnicRepository()
+	if e != nil {
+		return e
+	}
+	return r.ReleaseVNicBindings(ctx, tenant, kind, consumer, keep)
+}
+
+type VNicFacts struct {
+	MACAddress, PrimaryIP string
+	IPs                   []string
+}
+type VNicProvider interface {
+	EnsureVNic(context.Context, ProviderTarget) (ProviderObservation, error)
+}
+
+func (n *Network) ApplyVNicBinding(ctx context.Context, tenant, kind, consumer, id string, revision int64) error {
+	tenant, e := ParseTenant(tenant)
+	if e != nil {
+		return e
+	}
+	if revision < 1 || (id != "" && !validVNicID(id)) {
+		return Fail(InvalidArgument, "invalid applied VNIC revision")
+	}
+	r, e := n.vnicRepository()
+	if e != nil {
+		return e
+	}
+	return r.ApplyVNicBinding(ctx, tenant, kind, consumer, id, revision)
+}
+
+// VNicConsumerScope is supplied by the owning instance domain, never by public callers.
+type VNicConsumerScope struct {
+	TenantID, ConsumerKind, ConsumerID, SubnetID, ClusterID, Namespace, NamespaceUID string
+	Version                                                                          int64
+	Name, State, ComputeType                                                         string
+	SecurityGroupIDs                                                                 []string
+}
+type VNicConsumerResolver func(context.Context, string, string, string) (VNicConsumerScope, error)

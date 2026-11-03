@@ -195,6 +195,14 @@ func (p *Postgres) Finish(ctx context.Context, work biz.Work, progress biz.Progr
 			return databaseFailure(err)
 		}
 	}
+	if work.Resource.Kind == "vnic" && progress.State == biz.Deleted && progress.Observed {
+		if err = q.ReleaseSecurityGroupReferences(ctx, sqlcgen.ReleaseSecurityGroupReferencesParams{TenantID: work.Resource.TenantID, TargetType: "vnic", TargetID: work.Resource.ID, KeepIds: []string{}}); err != nil {
+			return databaseFailure(err)
+		}
+		if _, err = tx.Exec(ctx, `UPDATE network_security_group_targets SET payload=jsonb_set(payload,'{State}','"deleted"'::jsonb) WHERE tenant_id=$1 AND target_type='vnic' AND target_id=$2`, work.Resource.TenantID, work.Resource.ID); err != nil {
+			return databaseFailure(err)
+		}
+	}
 	row, err := advanceResource(ctx, q, work.Resource, progress)
 	if err != nil {
 		return databaseFailure(err)
@@ -232,7 +240,9 @@ func (p *Postgres) Finish(ctx context.Context, work biz.Work, progress biz.Progr
 	if work.ActiveOperation || work.Resource.State != progress.State || work.Resource.Reason != progress.Reason {
 		entry := sqlcgen.InsertHistoryParams{TenantID: row.TenantID, HistoryID: uuid.NewString(),
 			Event: "reconciled", ResourceState: string(row.State), Reason: string(row.Reason), CreatedAt: row.UpdatedAt}
-		if row.Kind == "load_balancer" {
+		if row.Kind == "vnic" {
+			entry.VnicID = row.ID
+		} else if row.Kind == "load_balancer" {
 			entry.LbID = row.ID
 		} else if row.Kind == "eip" {
 			entry.EipID = row.ID

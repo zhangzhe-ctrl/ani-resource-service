@@ -1,5 +1,11 @@
 # Network 执行状态
 
+<a id="kcn-vnic-management-20261103"></a>
+
+## 2026-11-03：手动 VNIC 管理
+
+当前主链已实现 Resource 手动申请/预留与 VM、Notebook 配置、Gov 正式入口和 Console 页面；尚未发布到集群、未完成页面与数据面验收。Fedora 受影响领域/API/adapter/service/装配测试 PASS，Network 3 项真实 PostgreSQL 主链测试 PASS；提交检查已按步骤完成：`make verify` 仅旧 socket 用例因长临时路径失败，短路径定向复验和剩余 vet/build/mod verify 均通过，保留原失败；见[本轮证据](records/KCN-VNIC-20261103/README.md)。Console `935321e` 已经 SSH 推送，Gov 等待正式 Resource SDK。指定集群已通过 Fedora→ubuntu@172.16.101.10 口令认证，kube-system UID `5277649d-e28d-4a0a-ae76-8354365c63bc`，10/11 Ready、12 NotReady。API 受理与实际接网分别记账；未修改 KCN。实施范围见[计划](../plans/kcn-vnic-management-20261103.md)。
+
 ## 2026-11-03：网络管理简化
 
 R7 业务源码 `caefebc` 已发布到 10/12，12 镜像由 `ubuntu@100.64.128.15` 独立构建并推送。Fedora 定向真实 PG 与完整 `make verify` PASS；最终 300 秒 GET/LIST：12 为 6000→1461（减少 75.65%，基础 LIST 9 轮），10 为 4728→1587（减少 66.43%，基础 LIST 13 轮，额外来源未逐次归因）。原 LB 身份四入口、五分钟无误降级、默认出口失败保留均通过。12 的完整 VM 生命周期和物理释放已在代码相同的 R6 路径通过，R7 窗口中原 5 台 VM 保持不变；采样的 37/40 条租户/平台 Deleted 停放且 epoch 不变。#48/#49 按各自现场证据关闭，#47 保留为 KCN 缺陷。Resource PR #50、Console PR #11 均未合并；Console 源码检查通过、生产部署/浏览器验收 NOT_RUN。完整网络 PG 集成组曾超时，不冒充全量通过。来源、失败回退、旧环境残留及回滚限制见[实施记录](records/network-management-simplification-20261103.md)。

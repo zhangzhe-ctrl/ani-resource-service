@@ -123,7 +123,7 @@ func (p *KCProvider) observeDirect(ctx context.Context, target biz.ProviderTarge
 	}
 	object, err := p.client.Resource(kcResource(binding)).Namespace(binding.Namespace).Get(ctx, binding.ProviderName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
-		if !target.Deleting {
+		if !target.Deleting || binding.ResourceKind == "vnic" {
 			return biz.ProviderObservation{}, nil
 		}
 		dependencies, err := p.hasDependencies(ctx, binding)
@@ -292,6 +292,9 @@ func (p *KCProvider) ensure(ctx context.Context, target biz.ProviderTarget) (biz
 }
 
 func (p *KCProvider) Delete(ctx context.Context, target biz.ProviderTarget) error {
+	if target.Kind == "vnic" {
+		return p.deleteVNic(ctx, target)
+	}
 	if egressKind(target.Kind) {
 		return p.deleteEgress(ctx, target)
 	}
@@ -357,6 +360,9 @@ func mutationFailure(err error) error {
 }
 
 func kcResource(b sqlcgen.NetworkProviderBinding) schema.GroupVersionResource {
+	if b.ResourceKind == "vnic" {
+		return kcManualVNics
+	}
 	if b.ResourceKind == "subnet" {
 		return kcSubnets
 	}
@@ -373,6 +379,9 @@ func (p *KCProvider) parentReference(ctx context.Context, b sqlcgen.NetworkProvi
 	return parent.Namespace + "/" + parent.ProviderName, nil
 }
 func (p *KCProvider) inspect(ctx context.Context, o *unstructured.Unstructured, b sqlcgen.NetworkProviderBinding, t biz.ProviderTarget) (biz.ProviderObservation, error) {
+	if b.ResourceKind == "vnic" {
+		return p.inspectVNic(ctx, o, b, t)
+	}
 	parent := ""
 	if b.ResourceKind == "subnet" {
 		var err error

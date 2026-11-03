@@ -49,7 +49,10 @@ type AttachmentObservation struct {
 type AttachmentProvider interface {
 	ObserveAttachment(context.Context, AttachmentWork) (AttachmentObservation, error)
 }
+type ManualVNicReference struct{ VNicID, ProviderName, ProviderUID, BindingID string }
+
 type ConsumerSubmission struct {
+	ManualVNics                                                            []ManualVNicReference
 	SnapshotRevision                                                       int64
 	DesiredRunState                                                        string
 	RootController                                                         WorkloadReference

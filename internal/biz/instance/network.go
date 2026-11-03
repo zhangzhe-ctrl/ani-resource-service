@@ -12,6 +12,8 @@ type WorkloadReference struct{ APIVersion, Kind, Namespace, Name, UID string }
 type ControllerReference struct{ Reference, Owner WorkloadReference }
 type PodReference struct{ Reference, Owner WorkloadReference }
 type NetworkRuntime struct {
+	CurrentVNicName, CurrentMACAddress               string
+	CurrentIPs                                       []string
 	SubmissionID, RequestKey                         string
 	Generation, SnapshotRevision                     int64
 	State, DesiredRunState, FinalizationID           string
@@ -31,8 +33,10 @@ type NetworkBinding struct {
 	Version                                          int64
 }
 type NetworkObservation struct {
-	State, Reason, PodUID     string
-	Version, SnapshotRevision int64
+	CurrentVNicName, CurrentMACAddress string
+	CurrentIPs                         []string
+	State, Reason, PodUID              string
+	Version, SnapshotRevision          int64
 }
 type NetworkPort interface {
 	ValidateSelection(context.Context, string, string, string, NetworkSelection) error

@@ -168,6 +168,12 @@ func (w *Worker) stepLifecycle(ctx context.Context, work Work, provider Lifecycl
 			break
 		}
 		if p.Operation.Action == "restart" {
+			if PrimaryNetworkInterface(p.Instance).PendingRestart() {
+				if err := w.applyNetworkTemplate(ctx, &p, obs); err != nil {
+					block(&p, err.Error())
+				}
+				return finish()
+			}
 			advance(&p, "starting")
 		} else {
 			advance(&p, "applying_mounts")
@@ -262,6 +268,10 @@ func (w *Worker) stepLifecycle(ctx context.Context, work Work, provider Lifecycl
 		}
 		if !networkReady {
 			block(&p, "WAITING_FOR_NETWORK")
+			break
+		}
+		if err := confirmNetworkInterface(&p.Instance, runtime); err != nil {
+			block(&p, err.Error())
 			break
 		}
 		e.VerifiedPodUID = runtime.PodUID

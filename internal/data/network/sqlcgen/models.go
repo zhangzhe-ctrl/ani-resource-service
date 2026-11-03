@@ -270,6 +270,7 @@ type NetworkIdempotency struct {
 	EipID              *string
 	SnatID             *string
 	LbID               *string
+	VnicID             *string
 }
 
 type NetworkLbCapability struct {
@@ -542,6 +543,7 @@ type NetworkOperation struct {
 	EipID          *string
 	SnatID         *string
 	LbID           *string
+	VnicID         *string
 }
 
 type NetworkPlatformHistory struct {
@@ -638,6 +640,7 @@ type NetworkProviderBinding struct {
 	ProviderObservedUid        string
 	ProviderGeneration         int64
 	ProviderObservedGeneration int64
+	VnicID                     *string
 }
 
 type NetworkPublicPool struct {
@@ -681,6 +684,7 @@ type NetworkReconciliation struct {
 	SnatID              *string
 	Retired             bool
 	LbID                *string
+	VnicID              *string
 }
 
 type NetworkResourceHistory struct {
@@ -701,6 +705,7 @@ type NetworkResourceHistory struct {
 	EipID            *string
 	SnatID           *string
 	LbID             *string
+	VnicID           *string
 }
 
 type NetworkSecurityGroup struct {
@@ -889,6 +894,40 @@ type NetworkVmNamespace struct {
 	Ready             bool
 	Reason            string
 	UpdatedAt         time.Time
+}
+
+type NetworkVnic struct {
+	TenantID         string
+	VnicID           string
+	VpcID            string
+	SubnetID         string
+	Name             string
+	Description      string
+	State            string
+	Reason           string
+	Version          int64
+	MacAddress       string
+	PrimaryIp        string
+	Ips              []string
+	SecurityGroupIds []string
+	ObservedAt       *time.Time
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	LastOperationID  string
+}
+
+type NetworkVnicBinding struct {
+	TenantID          string
+	BindingID         string
+	VnicID            string
+	ConsumerKind      string
+	ConsumerID        string
+	Slot              string
+	OperationID       string
+	RequestedRevision int64
+	AppliedRevision   int64
+	CreatedAt         time.Time
+	ReleasedAt        *time.Time
 }
 
 type NetworkVpc struct {

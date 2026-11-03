@@ -46,6 +46,8 @@ sql:
       - migrations/0024_vpc_provider_readiness.sql
       - migrations/0025_tenant_namespace_uid.sql
       - migrations/0026_lb_dedicated_envoy_proxy.sql
+      - migrations/0027_optional_intranet_pool_verification.sql
+      - migrations/0028_manual_vnics.sql
     queries: internal/data/network/queries
     gen:
       go:

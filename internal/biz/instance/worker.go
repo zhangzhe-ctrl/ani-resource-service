@@ -28,6 +28,9 @@ func (w *Worker) Step(ctx context.Context) (bool, error) {
 	if err != nil || work == nil {
 		return false, err
 	}
+	if work.Operation != nil && work.Operation.Action == "set-network-interface" {
+		return w.stepNetworkInterface(ctx, *work)
+	}
 	i := work.Instance
 	if work.Operation != nil && work.Operation.Action == "set-security-groups" {
 		return w.stepSecurityGroups(ctx, *work)
@@ -200,6 +203,13 @@ func (w *Worker) Step(ctx context.Context) (bool, error) {
 			m.PhaseSequence = work.Operation.Execution.PhaseSequence
 			m.ProviderMarkerExpected = true
 			if kind == "set_stopped" {
+				if PrimaryNetworkInterface(p.Instance).PendingRestart() && (i.RuntimeDesired == Running && obs.Stopped) {
+					p.Operation = cloneOperation(work.Operation)
+					if err := w.applyNetworkTemplate(ctx, &p, obs); err != nil {
+						p.Instance.Reason = err.Error()
+					}
+					return true, w.repo.Finish(ctx, *work, p)
+				}
 				stopped := i.RuntimeDesired == Stopped
 				m.StoppedTarget = &stopped
 			}
@@ -289,6 +299,15 @@ func (w *Worker) Step(ctx context.Context) (bool, error) {
 			p.Instance.Reason = ErrInvalid.Error()
 			return true, w.repo.Finish(ctx, *work, p)
 		}
+		if port, ok := w.network.(ManualNetworkPort); ok {
+			if err := port.ReleaseNetworkInterfaces(ctx, p.Instance, nil); err != nil {
+				p.Instance.Reason = err.Error()
+				return true, w.repo.Finish(ctx, *work, p)
+			}
+		} else if len(p.Instance.NetworkInterfaces) > 0 {
+			p.Instance.Reason = ErrNetworkUnavailable.Error()
+			return true, w.repo.Finish(ctx, *work, p)
+		}
 		if w.securityGroups != nil {
 			if err := w.securityGroups.ReleaseSecurityGroupBinding(ctx, i.TenantID, "container", i.ID, i.Version); err != nil {
 				p.Instance.Reason = err.Error()
@@ -350,6 +369,10 @@ func (w *Worker) Step(ctx context.Context) (bool, error) {
 				p.Instance.Reason = err.Error()
 				return true, w.repo.Finish(ctx, *work, p)
 			}
+		}
+		if err := confirmNetworkInterface(&p.Instance, obs); err != nil {
+			p.Instance.Reason = err.Error()
+			return true, w.repo.Finish(ctx, *work, p)
 		}
 		p.Instance.Observed = Running
 		p.Instance.Reason = ""

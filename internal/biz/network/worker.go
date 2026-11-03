@@ -49,10 +49,12 @@ type ProviderTarget struct {
 	// only after deletion and every uncertain mutation have already completed.
 	Tombstone                                            bool
 	TenantID, ResourceID, BindingID, KnownIdentity, CIDR string
+	SubnetID                                             string
 	Kind, VPCID, Gateway                                 string
 }
 
 type ProviderObservation struct {
+	VNic                           *VNicFacts
 	Generation, ObservedGeneration int64
 	SubnetIPRanges                 SubnetIPRanges
 	Egress                         *EgressAppliedFacts
@@ -79,6 +81,7 @@ type ResourceWork struct {
 	SystemManaged                                             bool
 	Egress                                                    *EgressWorkSpec
 	ID, TenantID, Kind, VPCID, CIDR, Gateway, LastOperationID string
+	SubnetID                                                  string
 	State                                                     ResourceState
 	Reason                                                    Reason
 	Version                                                   int64
@@ -104,6 +107,7 @@ type Work struct {
 }
 
 type Progress struct {
+	VNic                                           *VNicFacts
 	ProviderGeneration, ProviderObservedGeneration int64
 	// Diagnostic only; never persisted or returned in the public resource model.
 	ProviderError  error `json:"-"`
@@ -244,6 +248,7 @@ func (w *Worker) Step(ctx context.Context) (worked bool, stepErr error) {
 	} else {
 		progress = applyEgressFacts(progress, observation)
 		progress.SubnetIPRanges = observation.SubnetIPRanges
+		progress.VNic = observation.VNic
 		progress.ProviderGeneration, progress.ProviderObservedGeneration = observation.Generation, observation.ObservedGeneration
 		progress.Observed = true
 		progress.Proof = observation.Proof
@@ -327,6 +332,12 @@ func (w *Worker) ensure(ctx context.Context, work Work, target ProviderTarget, o
 		var err error
 		if isEgressKind(target.Kind) {
 			value, err = w.mutateEgress(callCtx, target, false)
+		} else if target.Kind == "vnic" {
+			if provider, ok := w.provider.(VNicProvider); ok {
+				value, err = provider.EnsureVNic(callCtx, target)
+			} else {
+				err = &ProviderError{Kind: ProviderReject}
+			}
 		} else if target.Kind == "subnet" {
 			value, err = w.provider.EnsureSubnet(callCtx, target)
 		} else {
@@ -355,6 +366,7 @@ func (w *Worker) ensure(ctx context.Context, work Work, target ProviderTarget, o
 		observed = value
 		progress = applyEgressFacts(progress, value)
 		progress.SubnetIPRanges = value.SubnetIPRanges
+		progress.VNic = value.VNic
 		progress.ProviderGeneration, progress.ProviderObservedGeneration = value.Generation, value.ObservedGeneration
 		if !value.Proof.CollectedAt.IsZero() {
 			progress.Proof = value.Proof
@@ -393,6 +405,7 @@ func (w *Worker) ensure(ctx context.Context, work Work, target ProviderTarget, o
 		observed = value
 		progress = applyEgressFacts(progress, value)
 		progress.SubnetIPRanges = value.SubnetIPRanges
+		progress.VNic = value.VNic
 		progress.ProviderGeneration, progress.ProviderObservedGeneration = value.Generation, value.ObservedGeneration
 		if !value.Proof.CollectedAt.IsZero() {
 			progress.Proof = value.Proof
