@@ -3,10 +3,13 @@ package data
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -130,47 +133,87 @@ func (p *KCProvider) deleteVNic(ctx context.Context, t biz.ProviderTarget) error
 	}
 	return nil
 }
+
+const vnicConsumerAnnotation = "network.ani.io/vnic-consumer"
+const vnicSGVersionAnnotation = "network.ani.io/vnic-security-groups-version"
+
+// Lock only Network's own selection and reservation. The transaction is
+// committed before any provider I/O; no owner-domain SQL or provider lock spans.
+func (p *KCProvider) lockVNicSGSelection(ctx context.Context, tx pgx.Tx, v biz.VNic, kind, consumer string, ids []string, initialize bool) (biz.SecurityGroupBinding, error) {
+	q := p.repository.queries.WithTx(tx)
+	if e := sgTenantLock(ctx, q, v.TenantID); e != nil {
+		return biz.SecurityGroupBinding{}, e
+	}
+	if e := q.LockSecurityGroupRequest(ctx, sqlcgen.LockSecurityGroupRequestParams{TenantID: v.TenantID, Action: kind, RequestKey: consumer}); e != nil {
+		return biz.SecurityGroupBinding{}, databaseFailure(e)
+	}
+	row, e := q.LockSecurityGroupTarget(ctx, sqlcgen.LockSecurityGroupTargetParams{TenantID: v.TenantID, TargetType: kind, TargetID: consumer})
+	selection := biz.SecurityGroupBinding{}
+	if errors.Is(e, pgx.ErrNoRows) && initialize && len(ids) == 0 {
+		selection = biz.SecurityGroupBinding{TenantID: v.TenantID, TargetType: kind, TargetID: consumer, VPCID: v.VPCID, Namespace: v.Namespace, Version: 1, State: "configured", SecurityGroupIDs: []string{}}
+		if e = sgSaveTarget(ctx, q, selection); e != nil {
+			return selection, e
+		}
+	} else if e != nil {
+		return selection, databaseFailure(e)
+	} else {
+		selection, e = sgTarget(row)
+		if e != nil {
+			return selection, e
+		}
+	}
+	if selection.State == "released" || selection.VPCID != v.VPCID || selection.Namespace != v.Namespace || !sameStrings(selection.SecurityGroupIDs, ids) {
+		return selection, biz.Fail(biz.VersionConflict, "consumer security group selection changed")
+	}
+	resource, e := q.LockVNicRow(ctx, sqlcgen.LockVNicRowParams{TenantID: v.TenantID, VnicID: v.ID})
+	if e != nil {
+		return selection, databaseFailure(e)
+	}
+	binding, e := q.GetBinding(ctx, sqlcgen.GetBindingParams{TenantID: v.TenantID, ResourceID: v.ID})
+	if e != nil {
+		return selection, databaseFailure(e)
+	}
+	if resource.State == "deleting" || resource.State == "deleted" || binding.ProviderUid != v.ProviderUID || binding.ProviderName != v.ProviderName || binding.Namespace != v.Namespace {
+		return selection, biz.Fail(biz.ResourceBusy, "manual VNIC identity is no longer available")
+	}
+	var active bool
+	e = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM network_vnic_bindings WHERE tenant_id=$1 AND vnic_id=$2 AND consumer_kind=$3 AND consumer_id=$4 AND released_at IS NULL)`, v.TenantID, v.ID, kind, consumer).Scan(&active)
+	if e != nil {
+		return selection, databaseFailure(e)
+	}
+	if !active {
+		return selection, biz.Fail(biz.ResourceBusy, "VNIC reservation does not belong to consumer")
+	}
+	return selection, nil
+}
+
 func (p *KCProvider) syncVNicSecurityGroups(ctx context.Context, tenant, id, kind, consumer string, ids []string) (biz.VNic, error) {
 	v, e := p.repository.GetVNic(ctx, tenant, id)
 	if e != nil {
 		return v, e
 	}
-	owned := false
-	for _, b := range v.Bindings {
-		if b.ConsumerKind == kind && b.ConsumerID == consumer {
-			owned = true
-		}
-	}
-	if !owned {
-		return v, biz.Fail(biz.ResourceBusy, "VNIC reservation does not belong to consumer")
-	}
-	names := make([]string, 0, len(ids))
-	// Reserve SG references before the provider mutation, retaining them on uncertain outcomes.
 	tx, e := p.repository.pool.Begin(ctx)
 	if e != nil {
 		return v, databaseFailure(e)
 	}
 	defer tx.Rollback(ctx)
-	q := p.repository.queries.WithTx(tx)
-	targetPayload, _ := json.Marshal(biz.SecurityGroupBinding{TenantID: tenant, TargetType: "vnic", TargetID: id, VPCID: v.VPCID, Namespace: v.Namespace, State: "available", SecurityGroupIDs: ids, Version: v.Version})
-	if e = q.UpsertSecurityGroupTarget(ctx, sqlcgen.UpsertSecurityGroupTargetParams{TenantID: tenant, TargetType: "vnic", TargetID: id, Version: v.Version, Payload: targetPayload}); e != nil {
-		return v, databaseFailure(e)
+	selection, e := p.lockVNicSGSelection(ctx, tx, v, kind, consumer, ids, true)
+	if e != nil {
+		return v, e
 	}
-	for _, id := range ids {
-		g, _, e := p.readMappedSecurityGroup(ctx, tenant, v.Namespace, id)
-		if e != nil {
-			return v, e
-		}
-		if g.State != biz.Available || g.ClusterID != v.ClusterID {
-			return v, biz.Fail(biz.ProviderNotReady, "security group unavailable")
-		}
-		if _, e = q.LockSecurityGroupRow(ctx, sqlcgen.LockSecurityGroupRowParams{TenantID: tenant, SecurityGroupID: id}); e != nil {
+	q := p.repository.queries.WithTx(tx)
+	names, e := resolveSecurityGroups(ctx, q, tenant, v.ClusterID, v.Namespace, ids)
+	if e != nil {
+		return v, e
+	}
+	target := biz.SecurityGroupBinding{TenantID: tenant, TargetType: "vnic", TargetID: id, VPCID: v.VPCID, Namespace: v.Namespace, State: "applying", SecurityGroupIDs: slices.Clone(ids), AppliedSecurityGroupIDs: slices.Clone(v.SecurityGroupIDs), Version: selection.Version}
+	if e = sgSaveTarget(ctx, q, target); e != nil {
+		return v, e
+	}
+	for _, gid := range ids {
+		if e = q.ReserveSecurityGroupReference(ctx, sqlcgen.ReserveSecurityGroupReferenceParams{TenantID: tenant, TargetType: "vnic", TargetID: id, SecurityGroupID: gid}); e != nil {
 			return v, databaseFailure(e)
 		}
-		if e = q.ReserveSecurityGroupReference(ctx, sqlcgen.ReserveSecurityGroupReferenceParams{TenantID: tenant, TargetType: "vnic", TargetID: v.ID, SecurityGroupID: id}); e != nil {
-			return v, databaseFailure(e)
-		}
-		names = append(names, g.ProviderName)
 	}
 	if e = tx.Commit(ctx); e != nil {
 		return v, databaseFailure(e)
@@ -183,15 +226,45 @@ func (p *KCProvider) syncVNicSecurityGroups(ctx context.Context, tenant, id, kin
 	if string(o.GetUID()) != v.ProviderUID || o.GetDeletionTimestamp() != nil {
 		return v, &biz.ProviderError{Kind: biz.ProviderConflict}
 	}
+	consumerKey := kind + ":" + consumer
+	version := strconv.FormatInt(selection.Version, 10)
+	annotations := o.GetAnnotations()
+	if annotations[vnicConsumerAnnotation] == consumerKey && annotations[vnicSGVersionAnnotation] != "" {
+		previous, parseErr := strconv.ParseInt(annotations[vnicSGVersionAnnotation], 10, 64)
+		if parseErr != nil || previous > selection.Version {
+			return v, biz.Fail(biz.VersionConflict, "VNIC already declares a newer consumer security group selection")
+		}
+	}
+	// A stalled worker must still own the same Network selection and reservation
+	// immediately before its conditional provider request.
+	check, e := p.repository.pool.Begin(ctx)
+	if e != nil {
+		return v, databaseFailure(e)
+	}
+	defer check.Rollback(ctx)
+	current, e := p.lockVNicSGSelection(ctx, check, v, kind, consumer, ids, false)
+	if e != nil {
+		return v, e
+	}
+	if current.Version != selection.Version {
+		return v, biz.Fail(biz.VersionConflict, "consumer security group version changed")
+	}
+	if e = check.Commit(ctx); e != nil {
+		return v, databaseFailure(e)
+	}
 	actual, _, _ := unstructured.NestedStringSlice(o.Object, "spec", "securityGroups")
-	if !sameStrings(actual, names) {
-		patch, _ := json.Marshal(map[string]any{"metadata": map[string]any{"uid": v.ProviderUID, "resourceVersion": o.GetResourceVersion()}, "spec": map[string]any{"securityGroups": names}})
-		_, e = r.Patch(ctx, v.ProviderName, types.MergePatchType, patch, metav1.PatchOptions{})
-		if e != nil {
+	if !sameStrings(actual, names) || annotations[vnicConsumerAnnotation] != consumerKey || annotations[vnicSGVersionAnnotation] != version {
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+		annotations[vnicConsumerAnnotation] = consumerKey
+		annotations[vnicSGVersionAnnotation] = version
+		patch, _ := json.Marshal([]map[string]any{{"op": "test", "path": "/metadata/uid", "value": v.ProviderUID}, {"op": "test", "path": "/metadata/resourceVersion", "value": o.GetResourceVersion()}, {"op": "add", "path": "/metadata/annotations", "value": annotations}, {"op": "add", "path": "/spec/securityGroups", "value": names}})
+		if _, e = r.Patch(ctx, v.ProviderName, types.JSONPatchType, patch, metav1.PatchOptions{}); e != nil {
 			return v, mutationFailure(e)
 		}
 	}
-	// Read only the affected old/new groups, including removals, rather than listing the tenant's whole SG inventory.
+	// Read only affected old/new groups, including removals.
 	all := append(append([]string{}, v.SecurityGroupIDs...), ids...)
 	for _, gid := range all {
 		g, sg, e := p.readMappedSecurityGroup(ctx, tenant, v.Namespace, gid)
@@ -207,6 +280,9 @@ func (p *KCProvider) syncVNicSecurityGroups(ctx context.Context, tenant, id, kin
 	if e != nil {
 		return v, readFailure(e)
 	}
+	if string(o.GetUID()) != v.ProviderUID || o.GetAnnotations()[vnicConsumerAnnotation] != consumerKey || o.GetAnnotations()[vnicSGVersionAnnotation] != version {
+		return v, biz.Fail(biz.VersionConflict, "VNIC consumer security group declaration changed")
+	}
 	applied, _, _ := unstructured.NestedMap(o.Object, "status", "appliedSecurityGroups")
 	appliedNames := make([]string, 0, len(applied))
 	for name := range applied {
@@ -220,10 +296,21 @@ func (p *KCProvider) syncVNicSecurityGroups(ctx context.Context, tenant, id, kin
 		return v, databaseFailure(e)
 	}
 	defer tx.Rollback(ctx)
-	q = p.repository.queries.WithTx(tx)
-	_, e = tx.Exec(ctx, `UPDATE network_vnics SET security_group_ids=$3 WHERE tenant_id=$1 AND vnic_id=$2`, tenant, id, ids)
+	current, e = p.lockVNicSGSelection(ctx, tx, v, kind, consumer, ids, false)
 	if e != nil {
+		return v, e
+	}
+	if current.Version != selection.Version {
+		return v, biz.Fail(biz.VersionConflict, "consumer security group version changed before completion")
+	}
+	q = p.repository.queries.WithTx(tx)
+	if _, e = tx.Exec(ctx, `UPDATE network_vnics SET security_group_ids=$3 WHERE tenant_id=$1 AND vnic_id=$2`, tenant, id, ids); e != nil {
 		return v, databaseFailure(e)
+	}
+	target.State = "applied"
+	target.AppliedSecurityGroupIDs = slices.Clone(ids)
+	if e = sgSaveTarget(ctx, q, target); e != nil {
+		return v, e
 	}
 	if e = q.ReleaseSecurityGroupReferences(ctx, sqlcgen.ReleaseSecurityGroupReferencesParams{TenantID: tenant, TargetType: "vnic", TargetID: id, KeepIds: ids}); e != nil {
 		return v, databaseFailure(e)
