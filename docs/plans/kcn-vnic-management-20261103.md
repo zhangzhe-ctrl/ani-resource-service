@@ -134,7 +134,7 @@ spec:
 - 管理页面在绑定期间只读展示继承结果，避免实例页面和 VNIC 页面分别修改两套绑定配置。实例没有组时，明确同步空集合，不能保留上一个实例的组。
 - 解绑或删除实例后，建议保留最后已应用的组配置并显示“未绑定”；再次绑定时完整替换为新实例的组，包括清空。它仍是实际 SG 引用，安全组删除保护不能因实例删除就漏掉该 VNIC。
 
-应用判断消费原 VNIC 的 `status.appliedSecurityGroups` 和相关 SG 的版本、`appliedVNics` 等已有结果；同时覆盖旧组移除。只观察本次相关对象，不能把 PATCH 成功或 VNIC Ready 当成策略已应用。
+应用判断以相关 SG 的 `status.appliedVNics` 包含目标 VNIC 为绑定成功依据，并保留 SG Ready 和版本校验；旧组移除须确认该 SG 的 `status.appliedVNics` 已不含目标 VNIC。按 KCN 确认的口径，不强制要求 VNIC 的 `status.appliedSecurityGroups` 回执。只观察本次相关对象，不能把 PATCH 成功或 VNIC Ready 当成策略已应用。
 
 “跟随实例”是本期单消费者策略。未来若同一 VNIC 关联多个实例，不能由各实例轮流覆盖同一个 `spec.securityGroups`；届时需明确共用同一安全组配置的准入条件，或改为 VNIC 统一管理策略。本期只集中这一规则的入口，不新增策略合并引擎，也不开放共享绑定。
 

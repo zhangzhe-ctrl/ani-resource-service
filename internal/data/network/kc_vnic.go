@@ -7,7 +7,6 @@ import (
 	"slices"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
@@ -264,7 +263,8 @@ func (p *KCProvider) syncVNicSecurityGroups(ctx context.Context, tenant, id, kin
 			return v, mutationFailure(e)
 		}
 	}
-	// Read only affected old/new groups, including removals.
+	// KCN confirms application through each SG's appliedVNics membership.
+	// Read only affected old/new groups, including removals; VNIC status is not an additional receipt.
 	all := append(append([]string{}, v.SecurityGroupIDs...), ids...)
 	for _, gid := range all {
 		g, sg, e := p.readMappedSecurityGroup(ctx, tenant, v.Namespace, gid)
@@ -282,14 +282,6 @@ func (p *KCProvider) syncVNicSecurityGroups(ctx context.Context, tenant, id, kin
 	}
 	if string(o.GetUID()) != v.ProviderUID || o.GetAnnotations()[vnicConsumerAnnotation] != consumerKey || o.GetAnnotations()[vnicSGVersionAnnotation] != version {
 		return v, biz.Fail(biz.VersionConflict, "VNIC consumer security group declaration changed")
-	}
-	applied, _, _ := unstructured.NestedMap(o.Object, "status", "appliedSecurityGroups")
-	appliedNames := make([]string, 0, len(applied))
-	for name := range applied {
-		appliedNames = append(appliedNames, strings.TrimPrefix(name, v.Namespace+"/"))
-	}
-	if !sameStrings(appliedNames, names) {
-		return v, &biz.ProviderError{Kind: biz.ProviderTemporary}
 	}
 	tx, e = p.repository.pool.Begin(ctx)
 	if e != nil {
