@@ -281,7 +281,13 @@ func (p *KCProvider) observeAttachment(ctx context.Context, w biz.AttachmentWork
 			}
 		}
 		eligible = eligible && address != "" && podIP == address
-		tracked[key] = attachmentRelation{Kind: "VNicIP", Namespace: o.GetNamespace(), Name: o.GetName(), UID: string(o.GetUID()), OwnerUID: owner, Address: address, Current: o.GetDeletionTimestamp() == nil, AddressEligible: eligible}
+		current := o.GetDeletionTimestamp() == nil
+		if manualVNics[owner] {
+			// Independent manual IPs survive their consumer. Their witnessed
+			// identity remains, but only a live endpoint makes the relation current.
+			current = current && currentVNics[owner]
+		}
+		tracked[key] = attachmentRelation{Kind: "VNicIP", Namespace: o.GetNamespace(), Name: o.GetName(), UID: string(o.GetUID()), OwnerUID: owner, Address: address, Current: current, AddressEligible: eligible}
 		liveIPs[o.GetNamespace()+"/"+o.GetName()] = string(o.GetUID())
 		result.HasDependencies = result.HasDependencies || !manualVNics[owner]
 	}
