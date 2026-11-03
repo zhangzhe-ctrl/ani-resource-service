@@ -445,6 +445,8 @@ Kind 多节点跨节点测试是多个 kind node 的验证，不外推物理多�
 
 普通 VM/Notebook 仍以 Subnet/安全组声明由 KCN 自动分配 VNIC，不创建手动产品记录。用户显式申请的 VNIC 由 Network 保存产品身份、原 Provider UID、分配事实、operation 和绑定关系；VNicIP/IPAM 继续归 KCN。
 
+创建可选 `requested_ip`、`requested_mac`，留空分别自动分配，创建后不可修改。请求值与实际 `primary_ip` / `mac_address` 分开持久化和展示；只有 KCN 确认实际值匹配才可用。IP 必须为所选子网内的 IPv4 主机地址，不能是网段、广播或网关；KCN 负责分配池和占用冲突，异步拒绝如实终止创建操作，地址占用以 `ADDRESS_CONFLICT` 表达。MAC 规范化为小写六段、非零单播地址，同子网未删除的手动产品网卡之间以数据库唯一约束保护（包含已自动分配的手动网卡）；不扫描或接管 KCN 自动网卡。实例停止、解绑或删除不释放手动网卡 MAC，显式删除网卡完成后才释放。
+
 手动 VNIC 使用独立 bindings 集合，本期仅开放 primary 槽位与单消费者独占；运行中当前 A 和目标 B 可同时保留。实例 owner 通过持久命令预留、同步最新安全组并保存目标，保存不改在线 Pod 或运行模板。平台重建端点时才应用模板；停止态展示下次启动配置。实例删除只释放其关系，VNIC/IP 保留，只有显式 DeleteVNic 才删除原 UID 对象。留存网卡继续保护 Subnet 与实际安全组引用。自动模式保留原 Pod-owner 核验，手动模式核验持久身份、有效消费者绑定及原 Pod 引用。
 
 正式 RPC 以 `api/network/v1/network.proto` 为字段合同；VM/Instance 各自拥有 GetNetworkInterfaces / SetNetworkInterface，网络配置读模型以 `api/network/v1/vnic.proto` 为准。普通读只消费数据库投影，分配、预留、模板和在线接入分别表达。实施顺序和验收范围见[实施计划](../plans/kcn-vnic-management-20261103.md)，实际结果见[执行状态](../execution/status.md#kcn-vnic-management-20261103)。

@@ -7,6 +7,7 @@ import (
 	"slices"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
@@ -19,6 +20,9 @@ import (
 )
 
 var kcManualVNics = schema.GroupVersionResource{Group: "networking.kubercloud.com", Version: "v1", Resource: "vnics"}
+var kcManualVNicIPs = schema.GroupVersionResource{Group: "networking.kubercloud.com", Version: "v1", Resource: "vnicips"}
+
+const requestedVNicIPUIDAnnotation = "network.ani.io/requested-ip-uid"
 
 func (p *KCProvider) inspectVNic(ctx context.Context, o *unstructured.Unstructured, b sqlcgen.NetworkProviderBinding, t biz.ProviderTarget) (biz.ProviderObservation, error) {
 	l := o.GetLabels()
@@ -35,9 +39,34 @@ func (p *KCProvider) inspectVNic(ctx context.Context, o *unstructured.Unstructur
 	}
 	subnet, _, _ := unstructured.NestedString(o.Object, "spec", "subnet")
 	kind, _, _ := unstructured.NestedString(o.Object, "spec", "type")
-	if o.GetAnnotations()["networking.kubercloud.com/allocate_ip_with_dhcp"] != "false" || kind != "VETH" || subnet != sb.Namespace+"/"+sb.ProviderName || sb.Namespace != b.Namespace || sb.ClusterID != b.ClusterID {
+	allocation, allocates := o.GetAnnotations()["networking.kubercloud.com/allocate_ip_with_dhcp"]
+	if (t.RequestedIP == "" && allocation != "false") || (t.RequestedIP != "" && allocates) || kind != "VETH" || subnet != sb.Namespace+"/"+sb.ProviderName || sb.Namespace != b.Namespace || sb.ClusterID != b.ClusterID {
 		return biz.ProviderObservation{}, &biz.ProviderError{Kind: biz.ProviderConflict}
 	}
+	return p.inspectVNicAddressFacts(ctx, o, b, t)
+}
+
+func vnicAddressConditions(o *unstructured.Unstructured) (map[string]bool, biz.Reason) {
+	good := map[string]bool{}
+	conditions, _, _ := unstructured.NestedSlice(o.Object, "status", "conditions")
+	for _, raw := range conditions {
+		if c, ok := raw.(map[string]any); ok {
+			typ, _ := c["type"].(string)
+			good[typ] = c["status"] == "True"
+			if typ == "Valid" && c["status"] == "False" {
+				reason, _ := c["reason"].(string)
+				message, _ := c["message"].(string)
+				if strings.Contains(strings.ToLower(reason+" "+message), "addressconflict") {
+					return good, biz.AddressConflict
+				}
+				return good, biz.ProviderRejected
+			}
+		}
+	}
+	return good, ""
+}
+
+func (p *KCProvider) inspectVNicAddressFacts(ctx context.Context, o *unstructured.Unstructured, b sqlcgen.NetworkProviderBinding, t biz.ProviderTarget) (biz.ProviderObservation, error) {
 	mac, _, _ := unstructured.NestedString(o.Object, "spec", "macAddress")
 	ip, _, _ := unstructured.NestedString(o.Object, "status", "primaryIP")
 	ipMap, _, _ := unstructured.NestedStringMap(o.Object, "status", "ips")
@@ -49,15 +78,130 @@ func (p *KCProvider) inspectVNic(ctx context.Context, o *unstructured.Unstructur
 	if ip != "" && !slices.Contains(ips, ip) {
 		ips = append(ips, ip)
 	}
-	good := map[string]bool{}
-	conditions, _, _ := unstructured.NestedSlice(o.Object, "status", "conditions")
-	for _, r := range conditions {
-		if c, ok := r.(map[string]any); ok {
-			typ, _ := c["type"].(string)
-			good[typ] = c["status"] == "True"
+	value := biz.ProviderObservation{Exists: true, Identity: string(o.GetUID()), VNic: &biz.VNicFacts{MACAddress: mac, PrimaryIP: ip, IPs: ips}}
+	// Failed address validation never prevents cleanup of the original VNIC.
+	if t.Deleting {
+		return value, nil
+	}
+	good, rejection := vnicAddressConditions(o)
+	value.RejectionReason = rejection
+	if t.RequestedMAC != "" && mac != "" && mac != t.RequestedMAC {
+		value.RejectionReason = biz.ProviderRejected
+	}
+	if t.RequestedIP != "" {
+		child, err := p.client.Resource(kcManualVNicIPs).Namespace(b.Namespace).Get(ctx, b.ProviderName, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			if o.GetAnnotations()[requestedVNicIPUIDAnnotation] != "" {
+				return value, &biz.ProviderError{Kind: biz.ProviderConflict}
+			}
+			value.NeedsUpdate = value.RejectionReason == ""
+			return value, nil
+		}
+		if err != nil {
+			return value, readFailure(err)
+		}
+		if err := inspectRequestedVNicIP(child, o, b, t); err != nil {
+			return value, err
+		}
+		childGood, childRejection := vnicAddressConditions(child)
+		if childRejection != "" {
+			value.RejectionReason = childRejection
+		}
+		if ip != "" && ip != t.RequestedIP {
+			value.RejectionReason = biz.ProviderRejected
+		}
+		if o.GetAnnotations()[requestedVNicIPUIDAnnotation] == "" {
+			value.NeedsUpdate = value.RejectionReason == ""
+			return value, nil
+		}
+		bound, _, _ := unstructured.NestedString(child.Object, "status", "vNic")
+		if child.GetDeletionTimestamp() != nil || !childGood["Valid"] || !childGood["Initialized"] || kcRef(bound, b.Namespace) != b.Namespace+"/"+b.ProviderName || ip != t.RequestedIP || ipMap[b.ProviderName] != t.RequestedIP {
+			return value, nil
 		}
 	}
-	return biz.ProviderObservation{Exists: true, Identity: string(o.GetUID()), Ready: o.GetDeletionTimestamp() == nil && mac != "" && ip != "" && good["Valid"] && good["Initialized"] && good["Ready"], VNic: &biz.VNicFacts{MACAddress: mac, PrimaryIP: ip, IPs: ips}}, nil
+	value.Ready = value.RejectionReason == "" && o.GetDeletionTimestamp() == nil && mac != "" && ip != "" && good["Valid"] && good["Initialized"] && good["Ready"]
+	return value, nil
+}
+
+func inspectRequestedVNicIP(child, parent *unstructured.Unstructured, b sqlcgen.NetworkProviderBinding, t biz.ProviderTarget) error {
+	l := child.GetLabels()
+	if child.GetAPIVersion() != "networking.kubercloud.com/v1" || child.GetKind() != "VNicIP" || child.GetNamespace() != b.Namespace || child.GetName() != b.ProviderName || child.GetUID() == "" || child.GetResourceVersion() == "" || l[ownerLabel] != "ani-network-service" || l[tenantLabel] != t.TenantID || l[resourceLabel] != t.ResourceID || l[bindingLabel] != b.BindingID {
+		return &biz.ProviderError{Kind: biz.ProviderConflict}
+	}
+	owners := child.GetOwnerReferences()
+	if len(owners) != 1 || owners[0].APIVersion != "networking.kubercloud.com/v1" || owners[0].Kind != "VNic" || owners[0].Name != b.ProviderName || owners[0].UID != parent.GetUID() || (owners[0].Controller != nil && *owners[0].Controller) {
+		return &biz.ProviderError{Kind: biz.ProviderConflict}
+	}
+	known := parent.GetAnnotations()[requestedVNicIPUIDAnnotation]
+	if known != "" && known != string(child.GetUID()) {
+		return &biz.ProviderError{Kind: biz.ProviderConflict}
+	}
+	subnet, _, _ := unstructured.NestedString(child.Object, "spec", "subnet")
+	parentSubnet, _, _ := unstructured.NestedString(parent.Object, "spec", "subnet")
+	vnic, _, _ := unstructured.NestedString(child.Object, "spec", "vNic")
+	family, _, _ := unstructured.NestedString(child.Object, "spec", "ipVersion")
+	address, _, _ := unstructured.NestedString(child.Object, "spec", "ipAddress")
+	dhcp, _, _ := unstructured.NestedBool(child.Object, "spec", "dhcp")
+	if subnet != parentSubnet || vnic != b.ProviderName || family != "IPv4" || address != t.RequestedIP || dhcp {
+		return &biz.ProviderError{Kind: biz.ProviderConflict}
+	}
+	return nil
+}
+
+func manualVNicObject(b sqlcgen.NetworkProviderBinding, t biz.ProviderTarget, subnet string) *unstructured.Unstructured {
+	annotations := map[string]any{}
+	if t.RequestedIP == "" {
+		annotations["networking.kubercloud.com/allocate_ip_with_dhcp"] = "false"
+	}
+	spec := map[string]any{"type": "VETH", "subnet": subnet}
+	if t.RequestedMAC != "" {
+		spec["macAddress"] = t.RequestedMAC
+	}
+	return &unstructured.Unstructured{Object: map[string]any{"apiVersion": "networking.kubercloud.com/v1", "kind": "VNic", "metadata": map[string]any{"name": b.ProviderName, "namespace": b.Namespace, "labels": map[string]any{ownerLabel: "ani-network-service", tenantLabel: t.TenantID, resourceLabel: t.ResourceID, bindingLabel: b.BindingID, "network.ani.io/vnic-id": t.ResourceID}, "annotations": annotations}, "spec": spec}}
+}
+
+func (p *KCProvider) ensureRequestedVNicIP(ctx context.Context, parent *unstructured.Unstructured, b sqlcgen.NetworkProviderBinding, t biz.ProviderTarget) (*unstructured.Unstructured, error) {
+	if t.RequestedIP == "" {
+		return parent, nil
+	}
+	if parent.GetUID() == "" || parent.GetResourceVersion() == "" || parent.GetDeletionTimestamp() != nil {
+		return nil, &biz.ProviderError{Kind: biz.ProviderConflict}
+	}
+	r := p.client.Resource(kcManualVNicIPs).Namespace(b.Namespace)
+	child, err := r.Get(ctx, b.ProviderName, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		if parent.GetAnnotations()[requestedVNicIPUIDAnnotation] != "" || parent.GetDeletionTimestamp() != nil {
+			return nil, &biz.ProviderError{Kind: biz.ProviderConflict}
+		}
+		subnet, _, _ := unstructured.NestedString(parent.Object, "spec", "subnet")
+		child = &unstructured.Unstructured{Object: map[string]any{"apiVersion": "networking.kubercloud.com/v1", "kind": "VNicIP", "metadata": map[string]any{"name": b.ProviderName, "namespace": b.Namespace, "labels": map[string]any{ownerLabel: "ani-network-service", tenantLabel: t.TenantID, resourceLabel: t.ResourceID, bindingLabel: b.BindingID}, "ownerReferences": []any{map[string]any{"apiVersion": "networking.kubercloud.com/v1", "kind": "VNic", "name": b.ProviderName, "uid": string(parent.GetUID())}}}, "spec": map[string]any{"subnet": subnet, "vNic": b.ProviderName, "ipVersion": "IPv4", "ipAddress": t.RequestedIP, "dhcp": false}}}
+		child, err = r.Create(ctx, child, metav1.CreateOptions{})
+		if apierrors.IsAlreadyExists(err) {
+			child, err = r.Get(ctx, b.ProviderName, metav1.GetOptions{})
+		}
+		if err != nil {
+			return nil, mutationFailure(err)
+		}
+	} else if err != nil {
+		return nil, readFailure(err)
+	}
+	if err := inspectRequestedVNicIP(child, parent, b, t); err != nil {
+		return nil, err
+	}
+	if parent.GetAnnotations()[requestedVNicIPUIDAnnotation] != "" {
+		return parent, nil
+	}
+	annotations := parent.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	annotations[requestedVNicIPUIDAnnotation] = string(child.GetUID())
+	patch, _ := json.Marshal([]map[string]any{{"op": "test", "path": "/metadata/uid", "value": string(parent.GetUID())}, {"op": "test", "path": "/metadata/resourceVersion", "value": parent.GetResourceVersion()}, {"op": "add", "path": "/metadata/annotations", "value": annotations}})
+	parent, err = p.client.Resource(kcManualVNics).Namespace(b.Namespace).Patch(ctx, b.ProviderName, types.JSONPatchType, patch, metav1.PatchOptions{})
+	if err != nil {
+		return nil, mutationFailure(err)
+	}
+	return parent, nil
 }
 func (p *KCProvider) EnsureVNic(ctx context.Context, t biz.ProviderTarget) (biz.ProviderObservation, error) {
 	b, e := p.binding(ctx, t)
@@ -67,6 +211,14 @@ func (p *KCProvider) EnsureVNic(ctx context.Context, t biz.ProviderTarget) (biz.
 	r := p.client.Resource(kcManualVNics).Namespace(b.Namespace)
 	existing, e := r.Get(ctx, b.ProviderName, metav1.GetOptions{})
 	if e == nil {
+		observed, err := p.inspectVNic(ctx, existing, b, t)
+		if err != nil || observed.RejectionReason != "" || t.RequestedIP == "" {
+			return observed, err
+		}
+		existing, err = p.ensureRequestedVNicIP(ctx, existing, b, t)
+		if err != nil {
+			return observed, err
+		}
 		return p.inspectVNic(ctx, existing, b, t)
 	}
 	if !apierrors.IsNotFound(e) {
@@ -93,13 +245,26 @@ func (p *KCProvider) EnsureVNic(ctx context.Context, t biz.ProviderTarget) (biz.
 	if string(sub.GetUID()) != sb.ProviderUid || sub.GetDeletionTimestamp() != nil {
 		return biz.ProviderObservation{}, &biz.ProviderError{Kind: biz.ProviderConflict}
 	}
-	o := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "networking.kubercloud.com/v1", "kind": "VNic", "metadata": map[string]any{"name": b.ProviderName, "namespace": b.Namespace, "labels": map[string]any{ownerLabel: "ani-network-service", tenantLabel: t.TenantID, resourceLabel: t.ResourceID, bindingLabel: b.BindingID, "network.ani.io/vnic-id": t.ResourceID}, "annotations": map[string]any{"networking.kubercloud.com/allocate_ip_with_dhcp": "false"}}, "spec": map[string]any{"type": "VETH", "subnet": sb.Namespace + "/" + sb.ProviderName}}}
+	o := manualVNicObject(b, t, sb.Namespace+"/"+sb.ProviderName)
 	o, e = r.Create(ctx, o, metav1.CreateOptions{})
 	if apierrors.IsAlreadyExists(e) {
 		o, e = r.Get(ctx, b.ProviderName, metav1.GetOptions{})
 	}
 	if e != nil {
 		return biz.ProviderObservation{}, mutationFailure(e)
+	}
+	if t.RequestedIP != "" {
+		observed, err := p.inspectVNic(ctx, o, b, t)
+		if err != nil {
+			return biz.ProviderObservation{}, &biz.ProviderError{Kind: biz.ProviderUncertain, Cause: err}
+		}
+		if observed.RejectionReason != "" {
+			return observed, nil
+		}
+		o, e = p.ensureRequestedVNicIP(ctx, o, b, t)
+		if e != nil {
+			return biz.ProviderObservation{}, e
+		}
 	}
 	return p.inspectVNic(ctx, o, b, t)
 }
@@ -119,6 +284,7 @@ func (p *KCProvider) deleteVNic(ctx context.Context, t biz.ProviderTarget) error
 	if e != nil {
 		return readFailure(e)
 	}
+	t.Deleting = true
 	if _, e = p.inspectVNic(ctx, o, b, t); e != nil {
 		return e
 	}

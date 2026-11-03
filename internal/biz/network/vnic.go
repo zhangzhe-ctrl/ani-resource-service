@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"net"
+	"net/netip"
 	"strings"
 	"time"
 	"unicode"
@@ -18,6 +20,7 @@ type VNic struct {
 	Reason                                                                Reason
 	Version                                                               int64
 	MACAddress, PrimaryIP                                                 string
+	RequestedIP, RequestedMAC                                             string
 	IPs, SecurityGroupIDs, SecurityGroupNames                             []string
 	Bindings                                                              []VNicBinding
 	ObservedAt                                                            *time.Time
@@ -34,11 +37,17 @@ type VNicBinding struct {
 }
 type CreateVNic struct {
 	TenantID, Name, Description, SubnetID, IdempotencyKey string
+	RequestedIP, RequestedMAC                             string
 	Attribution                                           Attribution
 }
 
 func (v CreateVNic) Fingerprint() string {
-	b, _ := json.Marshal([]string{v.TenantID, v.Name, v.Description, v.SubnetID})
+	fields := []string{v.TenantID, v.Name, v.Description, v.SubnetID}
+	// Preserve fingerprints of already accepted automatic-allocation requests.
+	if v.RequestedIP != "" || v.RequestedMAC != "" {
+		fields = append(fields, v.RequestedIP, v.RequestedMAC)
+	}
+	b, _ := json.Marshal(fields)
 	h := sha256.Sum256(b)
 	return hex.EncodeToString(h[:])
 }
@@ -95,6 +104,10 @@ func (n *Network) CreateVNic(ctx context.Context, r CreateVNic) (VNic, error) {
 	}
 	r.Name = strings.TrimSpace(r.Name)
 	r.Description = strings.TrimSpace(r.Description)
+	r.RequestedIP, r.RequestedMAC, err = normalizeVNicAddresses(r.RequestedIP, r.RequestedMAC)
+	if err != nil {
+		return VNic{}, err
+	}
 	if err = validateVNicName(r.Name); err != nil {
 		return VNic{}, err
 	}
@@ -109,6 +122,46 @@ func (n *Network) CreateVNic(ctx context.Context, r CreateVNic) (VNic, error) {
 		return VNic{}, err
 	}
 	return repo.AcceptVNic(ctx, r)
+}
+
+func normalizeVNicAddresses(ip, mac string) (string, string, error) {
+	ip, mac = strings.TrimSpace(ip), strings.TrimSpace(mac)
+	if ip != "" {
+		address, err := netip.ParseAddr(ip)
+		if err != nil || !address.Is4() || address.IsUnspecified() || address.IsMulticast() {
+			return "", "", Fail(InvalidArgument, "requested_ip must be an IPv4 host address")
+		}
+		ip = address.String()
+	}
+	if mac != "" {
+		address, err := net.ParseMAC(mac)
+		if err != nil || len(address) != 6 || address[0]&1 != 0 || address.String() == "00:00:00:00:00:00" {
+			return "", "", Fail(InvalidArgument, "requested_mac must be a nonzero unicast MAC address with six octets")
+		}
+		mac = address.String()
+	}
+	return ip, mac, nil
+}
+
+// ValidateVNicRequestedIP checks the product Subnet boundary; KCN owns the
+// allocation pool and concurrent IP reservation.
+func ValidateVNicRequestedIP(ip, cidr, gateway string) error {
+	if ip == "" {
+		return nil
+	}
+	address, err := netip.ParseAddr(ip)
+	prefix, prefixErr := netip.ParsePrefix(cidr)
+	if err != nil || prefixErr != nil || !address.Is4() || !prefix.Addr().Is4() || !prefix.Contains(address) {
+		return Fail(InvalidArgument, "requested_ip must belong to the selected Subnet")
+	}
+	bytes := prefix.Masked().Addr().As4()
+	for bit := prefix.Bits(); bit < 32; bit++ {
+		bytes[bit/8] |= byte(1 << (7 - bit%8))
+	}
+	if address == prefix.Masked().Addr() || address == netip.AddrFrom4(bytes) || ip == gateway {
+		return Fail(InvalidArgument, "requested_ip must not be the network, broadcast or gateway address")
+	}
+	return nil
 }
 func (n *Network) GetVNic(ctx context.Context, tenant, id string) (VNic, error) {
 	tenant, e := ParseTenant(tenant)

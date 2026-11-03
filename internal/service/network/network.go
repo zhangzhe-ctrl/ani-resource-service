@@ -158,7 +158,7 @@ func rpcError(err error) error {
 		code = codes.InvalidArgument
 	case biz.ResourceNotFound:
 		code = codes.NotFound
-	case biz.IdempotencyConflict, biz.CIDROverlap, biz.AttachmentConflict:
+	case biz.IdempotencyConflict, biz.CIDROverlap, biz.AttachmentConflict, biz.AddressConflict:
 		code = codes.AlreadyExists
 	case biz.EIPInUse, biz.VIPInUse, biz.BackendIdentityMismatch, biz.VPCSnatExists, biz.ProviderOwnership, biz.ProviderStateMismatch, biz.ResourceInUse, biz.ResourceBusy, biz.ParentNotReady, biz.NetworkNotReady, biz.PlacementMismatch, biz.VersionConflict:
 		code = codes.FailedPrecondition

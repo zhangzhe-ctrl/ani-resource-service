@@ -9,15 +9,16 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
 )
 
 func vnicRow(r sqlcgen.NetworkVnic) biz.VNic {
-	return biz.VNic{ID: r.VnicID, TenantID: r.TenantID, Name: r.Name, Description: r.Description, VPCID: r.VpcID, SubnetID: r.SubnetID, State: biz.ResourceState(r.State), Reason: biz.Reason(r.Reason), Version: r.Version, MACAddress: r.MacAddress, PrimaryIP: r.PrimaryIp, IPs: r.Ips, SecurityGroupIDs: r.SecurityGroupIds, ObservedAt: r.ObservedAt, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, LastOperationID: r.LastOperationID, Bindings: []biz.VNicBinding{}}
+	return biz.VNic{ID: r.VnicID, TenantID: r.TenantID, Name: r.Name, Description: r.Description, VPCID: r.VpcID, SubnetID: r.SubnetID, State: biz.ResourceState(r.State), Reason: biz.Reason(r.Reason), Version: r.Version, MACAddress: r.MacAddress, PrimaryIP: r.PrimaryIp, RequestedIP: r.RequestedIp, RequestedMAC: r.RequestedMac, IPs: r.Ips, SecurityGroupIDs: r.SecurityGroupIds, ObservedAt: r.ObservedAt, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, LastOperationID: r.LastOperationID, Bindings: []biz.VNicBinding{}}
 }
 func vnicWork(r sqlcgen.NetworkVnic) biz.ResourceWork {
-	return biz.ResourceWork{ID: r.VnicID, TenantID: r.TenantID, Kind: "vnic", VPCID: r.VpcID, SubnetID: r.SubnetID, State: biz.ResourceState(r.State), Reason: biz.Reason(r.Reason), Version: r.Version, UpdatedAt: r.UpdatedAt, ObservedAt: r.ObservedAt, LastOperationID: r.LastOperationID}
+	return biz.ResourceWork{ID: r.VnicID, TenantID: r.TenantID, Kind: "vnic", VPCID: r.VpcID, SubnetID: r.SubnetID, State: biz.ResourceState(r.State), Reason: biz.Reason(r.Reason), Version: r.Version, UpdatedAt: r.UpdatedAt, ObservedAt: r.ObservedAt, LastOperationID: r.LastOperationID, RequestedIP: r.RequestedIp, RequestedMAC: r.RequestedMac}
 }
 func vnicReplay(ctx context.Context, tx interface {
 	QueryRow(context.Context, string, ...any) pgx.Row
@@ -74,6 +75,9 @@ func (p *Postgres) AcceptVNic(ctx context.Context, r biz.CreateVNic) (biz.VNic, 
 	if parent.State != "available" || subnet.State != "available" {
 		return biz.VNic{}, biz.Fail(biz.ParentNotReady, "VPC and Subnet must be available")
 	}
+	if e = biz.ValidateVNicRequestedIP(r.RequestedIP, subnet.Cidr, subnet.Gateway); e != nil {
+		return biz.VNic{}, e
+	}
 	if e = p.acceptTenantNamespace(ctx, q, identity); e != nil {
 		return biz.VNic{}, e
 	}
@@ -93,8 +97,12 @@ func (p *Postgres) AcceptVNic(ctx context.Context, r biz.CreateVNic) (biz.VNic, 
 	if e != nil {
 		return biz.VNic{}, databaseFailure(e)
 	}
-	_, e = tx.Exec(ctx, `INSERT INTO network_vnics(tenant_id,vnic_id,vpc_id,subnet_id,name,description,state,created_at,updated_at,last_operation_id) VALUES($1,$2,$3,$4,$5,$6,'provisioning',$7,$7,$8)`, r.TenantID, id, subnet.VpcID, r.SubnetID, r.Name, r.Description, now, op)
+	_, e = tx.Exec(ctx, `INSERT INTO network_vnics(tenant_id,vnic_id,vpc_id,subnet_id,name,description,state,created_at,updated_at,last_operation_id,requested_ip,requested_mac) VALUES($1,$2,$3,$4,$5,$6,'provisioning',$7,$7,$8,$9,$10)`, r.TenantID, id, subnet.VpcID, r.SubnetID, r.Name, r.Description, now, op, r.RequestedIP, r.RequestedMAC)
 	if e != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(e, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "network_vnics_manual_mac_unique" {
+			return biz.VNic{}, biz.Fail(biz.AddressConflict, "MAC address is already reserved by a manual VNIC in this Subnet")
+		}
 		return biz.VNic{}, databaseFailure(e)
 	}
 	if e = q.InsertOperation(ctx, sqlcgen.InsertOperationParams{TenantID: r.TenantID, VnicID: id, OperationID: op, Kind: "create_vnic", CreatedAt: now}); e != nil {

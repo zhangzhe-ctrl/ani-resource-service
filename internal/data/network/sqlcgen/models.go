@@ -914,6 +914,8 @@ type NetworkVnic struct {
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	LastOperationID  string
+	RequestedIp      string
+	RequestedMac     string
 }
 
 type NetworkVnicBinding struct {

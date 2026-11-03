@@ -174,6 +174,24 @@ func (p *Postgres) Finish(ctx context.Context, work biz.Work, progress biz.Progr
 	if progress.Observed && !progress.Proof.Covers(work.Requirement) {
 		return biz.ErrLeaseLost
 	}
+	// Admission and completion hold the same parent lock. A generated MAC must
+	// also respect manual reservations, including an accepted custom request.
+	if work.Resource.Kind == "vnic" && progress.Observed && progress.VNic != nil && progress.VNic.MACAddress != "" && progress.State != biz.Deleted {
+		var conflict bool
+		queryErr := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM network_vnics WHERE tenant_id=$1 AND subnet_id=$2 AND vnic_id<>$3 AND state<>'deleted' AND lower(COALESCE(NULLIF(requested_mac,''),mac_address))=lower($4))`, work.Resource.TenantID, work.Resource.SubnetID, work.Resource.ID, progress.VNic.MACAddress).Scan(&conflict)
+		if queryErr != nil {
+			return databaseFailure(queryErr)
+		}
+		if conflict && progress.State != biz.Deleting {
+			progress.State, progress.Reason = biz.Failed, biz.AddressConflict
+			if work.ActiveOperation {
+				progress.OperationState = biz.OpFailed
+			}
+		}
+		if conflict {
+			progress.VNic = nil
+		}
+	}
 	now, err := q.DatabaseTime(ctx)
 	if err != nil {
 		return databaseFailure(err)

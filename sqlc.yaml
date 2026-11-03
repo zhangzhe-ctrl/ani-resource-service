@@ -48,6 +48,7 @@ sql:
       - migrations/0026_lb_dedicated_envoy_proxy.sql
       - migrations/0027_optional_intranet_pool_verification.sql
       - migrations/0028_manual_vnics.sql
+      - migrations/0029_vnic_requested_addresses.sql
     queries: internal/data/network/queries
     gen:
       go:

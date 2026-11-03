@@ -18,6 +18,7 @@ const (
 	ProviderUnknown     Reason = "PROVIDER_RESULT_UNKNOWN"
 	ProviderMissing     Reason = "PROVIDER_OBJECT_MISSING"
 	CleanupPending      Reason = "CLEANUP_PENDING"
+	AddressConflict     Reason = "ADDRESS_CONFLICT"
 )
 
 type ProviderFailure string
@@ -51,9 +52,11 @@ type ProviderTarget struct {
 	TenantID, ResourceID, BindingID, KnownIdentity, CIDR string
 	SubnetID                                             string
 	Kind, VPCID, Gateway                                 string
+	RequestedIP, RequestedMAC                            string
 }
 
 type ProviderObservation struct {
+	RejectionReason                Reason
 	VNic                           *VNicFacts
 	Generation, ObservedGeneration int64
 	SubnetIPRanges                 SubnetIPRanges
@@ -82,6 +85,7 @@ type ResourceWork struct {
 	Egress                                                    *EgressWorkSpec
 	ID, TenantID, Kind, VPCID, CIDR, Gateway, LastOperationID string
 	SubnetID                                                  string
+	RequestedIP, RequestedMAC                                 string
 	State                                                     ResourceState
 	Reason                                                    Reason
 	Version                                                   int64
@@ -227,6 +231,7 @@ func (w *Worker) Step(ctx context.Context) (worked bool, stepErr error) {
 		Deleting:    work.Resource.State == Deleting || work.Resource.State == Deleted,
 		Requirement: work.Requirement, Direct: work.ActiveOperation || work.PendingAction != "" || (work.Resource.State == Deleted && !tombstone), Tombstone: tombstone,
 		Kind: work.Resource.Kind, VPCID: work.Resource.VPCID, Gateway: work.Resource.Gateway,
+		RequestedIP: work.Resource.RequestedIP, RequestedMAC: work.Resource.RequestedMAC,
 	}
 	callCtx, cancel := context.WithTimeout(ctx, w.policy.RequestTimeout)
 	observation, observeErr := w.provider.Observe(callCtx, target)
@@ -375,7 +380,14 @@ func (w *Worker) ensure(ctx context.Context, work Work, target ProviderTarget, o
 		progress.ClearPending = true
 	}
 	if observed.NeedsUpdate {
-		if !work.ActiveOperation || work.Operation.Kind != "set_snat_enabled" || target.Kind != "snat" {
+		manualCreate := target.Kind == "vnic" && work.Operation.Kind == "create_vnic"
+		if manualCreate && work.ActiveOperation && (work.KnownIdentity == "" || work.PendingAction == "create") {
+			// Commit the observed original parent UID and resolve its create
+			// before a separately fenced child-allocation mutation can begin.
+			progress.Reason = ProviderNotReady
+			return progress, nil
+		}
+		if !work.ActiveOperation || (!manualCreate && (work.Operation.Kind != "set_snat_enabled" || target.Kind != "snat")) {
 			progress.State, progress.Reason = Degraded, ProviderStateMismatch
 			return progress, nil
 		}
@@ -384,7 +396,17 @@ func (w *Worker) ensure(ctx context.Context, work Work, target ProviderTarget, o
 		}
 		target.KnownIdentity = observed.Identity
 		callCtx, cancel := context.WithTimeout(ctx, w.policy.RequestTimeout)
-		value, err := w.mutateEgress(callCtx, target, true)
+		var value ProviderObservation
+		var err error
+		if manualCreate {
+			if provider, ok := w.provider.(VNicProvider); ok {
+				value, err = provider.EnsureVNic(callCtx, target)
+			} else {
+				err = &ProviderError{Kind: ProviderReject}
+			}
+		} else {
+			value, err = w.mutateEgress(callCtx, target, true)
+		}
 		cancel()
 		if err != nil {
 			progress.ProviderError = err
@@ -393,6 +415,8 @@ func (w *Worker) ensure(ctx context.Context, work Work, target ProviderTarget, o
 			progress.ClearPending = providerKind(err) != ProviderUncertain
 			if providerKind(err) == ProviderConflict {
 				progress.OperationState = Blocked
+			} else if manualCreate && providerKind(err) == ProviderReject {
+				progress.State, progress.OperationState = Failed, OpFailed
 			}
 			return progress, nil
 		}
@@ -414,7 +438,14 @@ func (w *Worker) ensure(ctx context.Context, work Work, target ProviderTarget, o
 	} else if work.PendingAction == "update" {
 		progress.ClearPending = true
 	}
-	if observed.Ready {
+	if observed.RejectionReason != "" {
+		progress.Reason = observed.RejectionReason
+		if work.ActiveOperation {
+			progress.State, progress.OperationState = Failed, OpFailed
+		} else {
+			progress.State = Degraded
+		}
+	} else if observed.Ready {
 		progress.State, progress.Reason = Available, ""
 		if work.ActiveOperation {
 			progress.OperationState = Succeeded

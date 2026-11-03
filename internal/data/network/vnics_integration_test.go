@@ -3,6 +3,7 @@ package data_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -51,7 +52,8 @@ func manualVNic(t *testing.T, f attachmentFixture, key string) biz.VNic {
 				f.api.Mu.Unlock()
 				t.Fatal("allocation annotation missing")
 			}
-			o["spec"].(map[string]any)["macAddress"] = "02:00:00:00:00:42"
+			mac := v.ID[len(v.ID)-10:]
+			o["spec"].(map[string]any)["macAddress"] = fmt.Sprintf("02:%s:%s:%s:%s:%s", mac[0:2], mac[2:4], mac[4:6], mac[6:8], mac[8:10])
 			o["status"] = map[string]any{"primaryIP": "10.42.1.42", "ips": map[string]any{"allocated-ip": "10.42.1.42"}, "conditions": []any{map[string]any{"type": "Valid", "status": "True"}, map[string]any{"type": "Initialized", "status": "True"}, map[string]any{"type": "Ready", "status": "True"}}}
 			f.api.Mu.Unlock()
 			for time.Now().Before(deadline) {
@@ -185,7 +187,7 @@ func TestManualVNicPGServiceTrustedCaller(t *testing.T) {
 	f := newAttachmentFixture(t)
 	s := service.NewNetworkService(f.n)
 	ctx := context.Background()
-	r := &pb.CreateVNicRequest{TargetTenantId: f.r.TenantID, Name: "through-service", SubnetId: f.r.SubnetID, IdempotencyKey: "service-create"}
+	r := &pb.CreateVNicRequest{TargetTenantId: f.r.TenantID, Name: "through-service", SubnetId: f.r.SubnetID, IdempotencyKey: "service-create", RequestedIp: "10.42.1.71", RequestedMac: "02:AB:CD:EF:00:71"}
 	if _, e := s.CreateVNic(ctx, r); status.Code(e) != codes.PermissionDenied {
 		t.Fatal("missing trusted caller accepted", e)
 	}
@@ -196,6 +198,9 @@ func TestManualVNicPGServiceTrustedCaller(t *testing.T) {
 	value, e := s.CreateVNic(trusted, r)
 	if e != nil {
 		t.Fatal(e)
+	}
+	if value.Vnic.RequestedIp != r.RequestedIp || value.Vnic.RequestedMac != "02:ab:cd:ef:00:71" || value.Vnic.PrimaryIp != "" || value.Vnic.MacAddress != "" {
+		t.Fatal("service did not preserve request intent separately from actual addresses", value.Vnic)
 	}
 	var actor, caller, correlation string
 	if e = f.owner.QueryRow(ctx, `SELECT actor_ref,caller_ref,correlation_id FROM network_resource_history WHERE tenant_id=$1 AND vnic_id=$2 AND event='create_accepted'`, f.r.TenantID, value.Vnic.Id).Scan(&actor, &caller, &correlation); e != nil {

@@ -12,7 +12,7 @@ func (s *NetworkService) CreateVNic(ctx context.Context, r *networkv1.CreateVNic
 	if e != nil {
 		return nil, rpcError(e)
 	}
-	v, e := s.network.CreateVNic(ctx, biz.CreateVNic{TenantID: tenant, Attribution: attribution, Name: r.GetName(), Description: r.GetDescription(), SubnetID: r.GetSubnetId(), IdempotencyKey: r.GetIdempotencyKey()})
+	v, e := s.network.CreateVNic(ctx, biz.CreateVNic{TenantID: tenant, Attribution: attribution, Name: r.GetName(), Description: r.GetDescription(), SubnetID: r.GetSubnetId(), IdempotencyKey: r.GetIdempotencyKey(), RequestedIP: r.GetRequestedIp(), RequestedMAC: r.GetRequestedMac()})
 	if e != nil {
 		return nil, rpcError(e)
 	}
@@ -61,6 +61,7 @@ func (s *NetworkService) ListVNics(ctx context.Context, r *networkv1.ListVNicsRe
 }
 func wireVNic(v biz.VNic) *networkv1.VNic {
 	out := &networkv1.VNic{Id: v.ID, TenantId: v.TenantID, Name: v.Name, Description: v.Description, VpcId: v.VPCID, SubnetId: v.SubnetID, VpcName: v.VPCName, SubnetName: v.SubnetName, SecurityGroupNames: v.SecurityGroupNames, State: statesToWire[v.State], Version: v.Version, MacAddress: v.MACAddress, PrimaryIp: v.PrimaryIP, Ips: v.IPs, SecurityGroupIds: v.SecurityGroupIDs, ObservedAt: optionalTime(v.ObservedAt), ObservationStale: v.ObservationStale, Reason: string(v.Reason), LastOperationId: v.LastOperationID, CreatedAt: timestamppb.New(v.CreatedAt), UpdatedAt: timestamppb.New(v.UpdatedAt), BindingState: "free", Bindings: make([]*networkv1.VNicBinding, 0, len(v.Bindings))}
+	out.RequestedIp, out.RequestedMac = v.RequestedIP, v.RequestedMAC
 	for _, b := range v.Bindings {
 		if b.Current {
 			out.BindingState = "bound"

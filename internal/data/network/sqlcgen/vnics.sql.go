@@ -16,7 +16,7 @@ UPDATE network_vnics SET state=$1,reason=$2,version=version+1,updated_at=clock_t
  mac_address=CASE WHEN $3::boolean AND $5::text<>'' THEN $5::text ELSE mac_address END,
  primary_ip=CASE WHEN $3::boolean AND $6::text<>'' THEN $6::text ELSE primary_ip END,
  ips=CASE WHEN $3::boolean AND cardinality($7::text[])>0 THEN $7::text[] ELSE ips END
-WHERE tenant_id=$8 AND vnic_id=$9 AND version=$10 RETURNING tenant_id, vnic_id, vpc_id, subnet_id, name, description, state, reason, version, mac_address, primary_ip, ips, security_group_ids, observed_at, created_at, updated_at, last_operation_id
+WHERE tenant_id=$8 AND vnic_id=$9 AND version=$10 RETURNING tenant_id, vnic_id, vpc_id, subnet_id, name, description, state, reason, version, mac_address, primary_ip, ips, security_group_ids, observed_at, created_at, updated_at, last_operation_id, requested_ip, requested_mac
 `
 
 type AdvanceVNicParams struct {
@@ -64,12 +64,14 @@ func (q *Queries) AdvanceVNic(ctx context.Context, arg AdvanceVNicParams) (Netwo
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.LastOperationID,
+		&i.RequestedIp,
+		&i.RequestedMac,
 	)
 	return i, err
 }
 
 const getVNicRow = `-- name: GetVNicRow :one
-SELECT tenant_id, vnic_id, vpc_id, subnet_id, name, description, state, reason, version, mac_address, primary_ip, ips, security_group_ids, observed_at, created_at, updated_at, last_operation_id FROM network_vnics WHERE tenant_id=$1 AND vnic_id=$2
+SELECT tenant_id, vnic_id, vpc_id, subnet_id, name, description, state, reason, version, mac_address, primary_ip, ips, security_group_ids, observed_at, created_at, updated_at, last_operation_id, requested_ip, requested_mac FROM network_vnics WHERE tenant_id=$1 AND vnic_id=$2
 `
 
 type GetVNicRowParams struct {
@@ -98,12 +100,14 @@ func (q *Queries) GetVNicRow(ctx context.Context, arg GetVNicRowParams) (Network
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.LastOperationID,
+		&i.RequestedIp,
+		&i.RequestedMac,
 	)
 	return i, err
 }
 
 const lockVNicRow = `-- name: LockVNicRow :one
-SELECT tenant_id, vnic_id, vpc_id, subnet_id, name, description, state, reason, version, mac_address, primary_ip, ips, security_group_ids, observed_at, created_at, updated_at, last_operation_id FROM network_vnics WHERE tenant_id=$1 AND vnic_id=$2 FOR UPDATE
+SELECT tenant_id, vnic_id, vpc_id, subnet_id, name, description, state, reason, version, mac_address, primary_ip, ips, security_group_ids, observed_at, created_at, updated_at, last_operation_id, requested_ip, requested_mac FROM network_vnics WHERE tenant_id=$1 AND vnic_id=$2 FOR UPDATE
 `
 
 type LockVNicRowParams struct {
@@ -132,6 +136,8 @@ func (q *Queries) LockVNicRow(ctx context.Context, arg LockVNicRowParams) (Netwo
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.LastOperationID,
+		&i.RequestedIp,
+		&i.RequestedMac,
 	)
 	return i, err
 }
