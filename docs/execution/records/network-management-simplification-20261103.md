@@ -137,3 +137,24 @@ R6 12 窗口的默认出口历史确认 5 次 `Available → Degraded/PROVIDER_U
 `r7-default-red.log` 在原 R6 业务代码上复现查询年龄误降级和 Degraded 普通读取的额外采集；测试停止夹具中独立的平台观察器，排除其 80ms 定时采集对计数的干扰。`r7-default-green.log` PASS（7.708s）：真实 PG/业务 worker/Provider adapter 验证失败保留、年龄不改结果、当前身份冲突拒绝、普通缺失快照不采集、未完成创建仍采集，以及原平台出口创建、未知响应恢复、未知未送达预留、删除解绑和过期租约。
 
 R7 的 Fedora `r7-final-verify.log` 完整 `make verify` PASS（包含生成一致性、故障构建、Go 测试/vet/build/module 检查）；对应业务源码尚待发布。R7 只改变默认出口观察，VM/LB 生命周期代码与已完成真实验收的 R6 一致；发布后复核原业务身份、实际 LB 流量和请求窗口，不重复创建已验证且本轮未改的 VM 用例。
+
+R7 发布业务源码 `caefebc2319a57edb0d4e2d9d3bc10b5ec23f6bf`，Fedora 与 15 的构建快照同为 `sha256:e50ff289f7e7bc3b78bb6660b2876f87a5b67f7729bd1a04b5d288583fa9c149`。10 镜像 `172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:bd4490ac023072ca6ea84870000f16e58b0a3fd44037a2026bd2f6bc33216e40`；12 镜像在 `ubuntu@100.64.128.15` 独立构建并直接推送为 `10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:49e5bd2e6fa0bb93ac2f6461233548ff2f5d61474ecd2a419bb7f7655d3f9841`。两集群只替换 Resource 镜像、保留原 Deployment UID，rollout 完成；原 R6 回执保留为 `live/{lab,full}/r6-rollout.json`。
+
+## 最终交付与验收边界
+
+R7 两个窗口的指标请求间隔均为 300 秒，21 个指标/11 个业务投影样本、同 Pod/container，无缺样、传输错误、audit/watch failure、来源重建或队列溢出，也没有窗口内持续 limiter/deadline 错误。
+
+| 环境 | 窗口 UTC（含收尾） | GET/LIST | 相对本环境基线 | 每类基础 LIST |
+| --- | --- | ---: | ---: | ---: |
+| 12 | 06:25:08–06:30:17 | 1461 | 6000 → 1461，减少 75.65% | 9 |
+| 10 | 06:23:23–06:28:24 | 1587 | 4728 → 1587，减少 66.43% | 13 |
+
+12 的 #48 原现场已回到约 30 秒共享周期，9 轮基础 LIST 无额外强制全量读取；7 个 VPC、4 个 Subnet 持续 Available，最大观测年龄为 33.64/32.72 秒；原 5 台 VM 的 11 个样本保留状态、原因、版本和 operation。采样的 37 条租户/平台 Deleted 全部停放且 epoch 不变，28 条 Released Attachment 无定时任务。活动 Attachment 在短暂观察不确定时仍可按既有退避调度，不能声称全窗口所有活动记录均无任务。
+
+10 的 4 个 LB 共 44 个样本全部 Available，最大年龄 48.57 秒；原 operation/配置版本及 15 个 Gateway/Deployment/Pod/Service UID 保留，每个 Deployment 2 Ready，最终私网、公网、双模式四入口 HTTP 200+原 marker 全通过。采样的 40 条租户/平台 Deleted 停放且 epoch 不变。13 次基础 LIST 的额外来源尚未逐次归因，不全部归为周期；既存 ownership conflict、1 条 Released Attachment 观察待确认仍保留，没有手改记录或声明所有历史网络异常已修复。#48 的关闭依据是其 12 集群固定现场及完整业务验收；10 窗口用于 #49 原 LB 状态与流量复核。
+
+两环境默认出口的 11 个样本均 Available；读取不确定时只保留 `PROVIDER_UNAVAILABLE`，观测最大年龄分别为 67.33/57.36 秒（12/10），没有改时间维持假新鲜。默认 VPC/EIP/SNAT 的原 UID、spec 和管理 operation 在发布前后保持。原件为 `live/{lab,full}/default-r7-{before,after}.json`、`window-after/`、`r7-final-*`；汇总为 Fedora 任务根 `final-acceptance.json`。VM 完整生命周期/物理释放证据固定在 R6，R7 的 3 个产品代码改动仅涉及平台默认出口；没有把未重跑的 VM 用例称为 R7 新执行。
+
+Resource [PR #50](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/50) 与 Console [PR #11](https://github.com/bykenkk/ani-console/pull/11) 分仓交付，均未合并。Console 源码检查 PASS，生产构建/部署/浏览器验收 NOT_RUN；后端通过不能替代前端验收。完整网络 PG 集成组曾超时未完成，仍不记为全量通过。#48、#49 依据上述各自现场证据关闭；#47 的 KCN 原 EIP 自动重试未修复，保持开放。KCN `6132623` 工作树仍干净，本轮没有修改其代码、配置、CRD 或镜像。
+
+代码回退需使用兼容 Network schema 27 的 Resource 镜像；12 原 schema 25 镜像不能直接回滚，配套数据库恢复须使用前述已核验备份。本 PR 没有新增 migration。
