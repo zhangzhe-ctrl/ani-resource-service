@@ -1,5 +1,11 @@
 # Network 执行状态
 
+<a id="subnet-creation-options-20261103"></a>
+
+## 2026-11-03：租户子网创建参数
+
+已完成网关 IP（复用原字段）及排除 IP、DHCP、DNS 的租户创建接线。Resource `d54aafa`（迁移30、generation89/Ready1）、Gov `0a285584` 已部署，Console `2b56757` 独占预览已更新，三仓均 SSH 推送。真实页面仅提交一次，子网 `subnet_2e5a7520556f469f8320ad3a051ef14e` 已 available，四项回显正确；实际 OVN DHCP 网关/DNS 选项及 KCN IPAM 排除范围通过，测试子网保留。未声称 guest/Pod 的 DNS 解析可达。相关 Fedora 检查与初始旧 fixture 失败边界见[实施记录](records/SUBNET-OPTIONS-20261103.md)。原排查资源及基础网络聚合规则未修改。详情页既有“关联实例”调用仍因公开接口不支持 subnet_id 过滤而400，此次未扩展后端查询能力。
+
 <a id="kcn-vnic-management-20261103"></a>
 
 ## 2026-11-03：手动 VNIC 管理
