@@ -1,5 +1,9 @@
 # Network 执行状态
 
+## 2026-11-04：观测故障隔离与终态恢复
+
+基于 main `d23828c` 修复 VM/VNIC 当前网络准入、Released 协议恢复与 Deleted LB 共享审计、基础 SNAT 事实保留/父子恢复通知、可选 LB 采集及来源失效范围。当前直接依赖与原 UID 有效时，出口聚合或投影异常不单独阻塞 VM/VNIC；身份、未决写、owner 封闭和物理清理检查保留。Fedora `make verify`、36 项相关 PG/领域回归及对应 race 均 PASS；线上部署及业务验收 NOT_RUN。来源和具名验证见[实施记录](records/network-observation-isolation-20261104.md)。
+
 <a id="subnet-creation-options-20261103"></a>
 
 ## 2026-11-03：租户子网创建参数
