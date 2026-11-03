@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"regexp"
+	"time"
 )
 
 const VNicAnnotation = "networking.kubercloud.com/vnic"
@@ -11,6 +12,7 @@ const VNicAnnotation = "networking.kubercloud.com/vnic"
 var vnicIDPattern = regexp.MustCompile(`^vnic_[0-9a-f]{32}$`)
 
 type NetworkInterfaceChoice struct {
+	Name         string   `json:"vnic_name,omitempty"`
 	Mode         string   `json:"mode"`
 	VNicID       string   `json:"vnic_id,omitempty"`
 	ProviderName string   `json:"provider_name,omitempty"`
@@ -177,4 +179,16 @@ func (w *Worker) confirmNetworkInterface(ctx context.Context, v *VM, x Observati
 	cfg.VerifiedPodUID = x.Launcher.UID
 	SetPrimaryNetworkInterface(v, cfg)
 	return nil
+}
+
+// NetworkInterfaceRuntime is an observed endpoint, separate from either choice.
+type NetworkInterfaceRuntime struct {
+	Mode, ProviderName, ProviderUID, MACAddress, PodUID, Reason string
+	IPs                                                         []string
+	ObservedAt                                                  time.Time
+	Confirmed                                                   bool
+}
+type NetworkInterfaceReadPort interface {
+	CurrentNetworkInterface(context.Context, VM) (NetworkInterfaceRuntime, error)
+	ResolveNetworkInterfaceChoice(context.Context, VM, NetworkInterfaceChoice) (NetworkInterfaceChoice, error)
 }

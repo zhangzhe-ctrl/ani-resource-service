@@ -107,21 +107,24 @@ func (x *NetworkInterfaceChoice) GetIps() []string {
 }
 
 type NetworkInterface struct {
-	state             protoimpl.MessageState  `protogen:"open.v1"`
-	Slot              string                  `protobuf:"bytes,1,opt,name=slot,proto3" json:"slot,omitempty"`
-	Desired           *NetworkInterfaceChoice `protobuf:"bytes,2,opt,name=desired,proto3" json:"desired,omitempty"`
-	Applied           *NetworkInterfaceChoice `protobuf:"bytes,3,opt,name=applied,proto3" json:"applied,omitempty"`
-	RequestedRevision int64                   `protobuf:"varint,4,opt,name=requested_revision,proto3" json:"requested_revision,omitempty"`
-	AppliedRevision   int64                   `protobuf:"varint,5,opt,name=applied_revision,proto3" json:"applied_revision,omitempty"`
-	PendingRestart    bool                    `protobuf:"varint,6,opt,name=pending_restart,proto3" json:"pending_restart,omitempty"`
-	EffectiveNow      bool                    `protobuf:"varint,7,opt,name=effective_now,proto3" json:"effective_now,omitempty"`
-	CurrentVnicName   string                  `protobuf:"bytes,8,opt,name=current_vnic_name,proto3" json:"current_vnic_name,omitempty"`
-	CurrentMacAddress string                  `protobuf:"bytes,9,opt,name=current_mac_address,proto3" json:"current_mac_address,omitempty"`
-	CurrentIps        []string                `protobuf:"bytes,10,rep,name=current_ips,proto3" json:"current_ips,omitempty"`
-	ObservedAt        *timestamppb.Timestamp  `protobuf:"bytes,11,opt,name=observed_at,proto3" json:"observed_at,omitempty"`
-	ObservationReason string                  `protobuf:"bytes,12,opt,name=observation_reason,proto3" json:"observation_reason,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state              protoimpl.MessageState  `protogen:"open.v1"`
+	Slot               string                  `protobuf:"bytes,1,opt,name=slot,proto3" json:"slot,omitempty"`
+	Desired            *NetworkInterfaceChoice `protobuf:"bytes,2,opt,name=desired,proto3" json:"desired,omitempty"`
+	Applied            *NetworkInterfaceChoice `protobuf:"bytes,3,opt,name=applied,proto3" json:"applied,omitempty"`
+	RequestedRevision  int64                   `protobuf:"varint,4,opt,name=requested_revision,proto3" json:"requested_revision,omitempty"`
+	AppliedRevision    int64                   `protobuf:"varint,5,opt,name=applied_revision,proto3" json:"applied_revision,omitempty"`
+	PendingRestart     bool                    `protobuf:"varint,6,opt,name=pending_restart,proto3" json:"pending_restart,omitempty"`
+	EffectiveNow       bool                    `protobuf:"varint,7,opt,name=effective_now,proto3" json:"effective_now,omitempty"`
+	CurrentVnicName    string                  `protobuf:"bytes,8,opt,name=current_vnic_name,proto3" json:"current_vnic_name,omitempty"`
+	CurrentMacAddress  string                  `protobuf:"bytes,9,opt,name=current_mac_address,proto3" json:"current_mac_address,omitempty"`
+	CurrentIps         []string                `protobuf:"bytes,10,rep,name=current_ips,proto3" json:"current_ips,omitempty"`
+	ObservedAt         *timestamppb.Timestamp  `protobuf:"bytes,11,opt,name=observed_at,proto3" json:"observed_at,omitempty"`
+	ObservationReason  string                  `protobuf:"bytes,12,opt,name=observation_reason,proto3" json:"observation_reason,omitempty"`
+	ConfigurationState string                  `protobuf:"bytes,13,opt,name=configuration_state,proto3" json:"configuration_state,omitempty"`
+	OperationId        string                  `protobuf:"bytes,14,opt,name=operation_id,proto3" json:"operation_id,omitempty"`
+	OperationReason    string                  `protobuf:"bytes,15,opt,name=operation_reason,proto3" json:"operation_reason,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *NetworkInterface) Reset() {
@@ -238,6 +241,27 @@ func (x *NetworkInterface) GetObservationReason() string {
 	return ""
 }
 
+func (x *NetworkInterface) GetConfigurationState() string {
+	if x != nil {
+		return x.ConfigurationState
+	}
+	return ""
+}
+
+func (x *NetworkInterface) GetOperationId() string {
+	if x != nil {
+		return x.OperationId
+	}
+	return ""
+}
+
+func (x *NetworkInterface) GetOperationReason() string {
+	if x != nil {
+		return x.OperationReason
+	}
+	return ""
+}
+
 type NetworkInterfaces struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Items             []*NetworkInterface    `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
@@ -318,7 +342,7 @@ const file_network_v1_vnic_proto_rawDesc = "" +
 	"\tvnic_name\x18\x03 \x01(\tR\tvnic_name\x12\"\n" +
 	"\fprovider_uid\x18\x04 \x01(\tR\fprovider_uid\x12 \n" +
 	"\vmac_address\x18\x05 \x01(\tR\vmac_address\x12\x10\n" +
-	"\x03ips\x18\x06 \x03(\tR\x03ips\"\xbe\x04\n" +
+	"\x03ips\x18\x06 \x03(\tR\x03ips\"\xc0\x05\n" +
 	"\x10NetworkInterface\x12\x12\n" +
 	"\x04slot\x18\x01 \x01(\tR\x04slot\x12<\n" +
 	"\adesired\x18\x02 \x01(\v2\".network.v1.NetworkInterfaceChoiceR\adesired\x12<\n" +
@@ -332,7 +356,10 @@ const file_network_v1_vnic_proto_rawDesc = "" +
 	"\vcurrent_ips\x18\n" +
 	" \x03(\tR\vcurrent_ips\x12<\n" +
 	"\vobserved_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vobserved_at\x12.\n" +
-	"\x12observation_reason\x18\f \x01(\tR\x12observation_reason\"\xaf\x01\n" +
+	"\x12observation_reason\x18\f \x01(\tR\x12observation_reason\x120\n" +
+	"\x13configuration_state\x18\r \x01(\tR\x13configuration_state\x12\"\n" +
+	"\foperation_id\x18\x0e \x01(\tR\foperation_id\x12*\n" +
+	"\x10operation_reason\x18\x0f \x01(\tR\x10operation_reason\"\xaf\x01\n" +
 	"\x11NetworkInterfaces\x122\n" +
 	"\x05items\x18\x01 \x03(\v2\x1c.network.v1.NetworkInterfaceR\x05items\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x03R\aversion\x12\x1c\n" +

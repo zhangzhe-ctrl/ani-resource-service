@@ -4,7 +4,12 @@
 
 ## 2026-11-03：手动 VNIC 管理
 
-当前主链已实现 Resource 手动申请/预留与 VM、Notebook 配置、Gov 正式入口和 Console 页面；尚未发布到集群、未完成页面与数据面验收。Fedora 受影响领域/API/adapter/service/装配测试 PASS，Network 3 项真实 PostgreSQL 主链测试 PASS；提交检查已按步骤完成：`make verify` 仅旧 socket 用例因长临时路径失败，短路径定向复验和剩余 vet/build/mod verify 均通过，保留原失败；见[本轮证据](records/KCN-VNIC-20261103/README.md)。Console `935321e` 已经 SSH 推送，Gov 等待正式 Resource SDK。指定集群已通过 Fedora→ubuntu@172.16.101.10 口令认证，kube-system UID `5277649d-e28d-4a0a-ae76-8354365c63bc`，10/11 Ready、12 NotReady。API 受理与实际接网分别记账；未修改 KCN。实施范围见[计划](../plans/kcn-vnic-management-20261103.md)。
+
+当前主链已完成正式页面申请 A/B、真实 KCN 分配 MAC/IP、同键重放原 CR 身份不变；默认自动 VM/Notebook 的实际 SSH 与双向 HTTP 通信通过。Resource `2145760`、Gov `e6d6e70c` 已部署，Console 正式分支已推送并以独占预览联调。新增读视图/配置阶段修正正在发布；手动重启应用、保留/释放及其余验收尚未完成。
+
+VM1 保存目标 A 正在等待 KCN SG 回执：SG Ready/appliedVNics 已包含 A，但 VNIC.status.appliedSecurityGroups 缺失。用户 2026-11-03 明确要求保留 KCN 排查现场：手动 A、allow SG、VM1 当前自动 VNIC/Nic，以及 VM1/launcher；不删除、解绑、重启或更改该组配置。SG 写围栏源码与当前只读修复分开，避免发布时给排查对象新增 metadata。继续独立 Notebook/B 及新 VM2/C 主链，不绕过 KCN 回执。
+
+此前空 ManualVNics 改变旧自动摘要的回归已在 `2145760` 修复并真实恢复原两台 Notebook，原 Pod UID/revision 保持；部署缺失的 VM 只读观察 RBAC 已补齐，长期 Unknown 已恢复。验证与精确证据见[本轮记录](records/KCN-VNIC-20261103/README.md)。
 
 ## 2026-11-03：网络管理简化
 

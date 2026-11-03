@@ -3,6 +3,7 @@ package instance
 import (
 	"context"
 	"strconv"
+	"strings"
 	"time"
 
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/instance"
@@ -124,7 +125,15 @@ func (n *InstanceNetwork) Observe(ctx context.Context, i biz.Instance) (biz.Netw
 	if a.ObservedAt == nil || time.Since(*a.ObservedAt) > n.freshness {
 		return biz.NetworkObservation{}, biz.ErrNetworkUnavailable
 	}
-	return biz.NetworkObservation{CurrentIPs: a.CurrentIPs, CurrentVNicName: a.CurrentVNicName, CurrentMACAddress: a.CurrentMACAddress, State: string(a.State), Reason: string(a.Reason), PodUID: a.PodUID, Version: a.Version, SnapshotRevision: a.SnapshotRevision}, nil
+	mode := "manual"
+	if strings.HasPrefix(a.CurrentVNicName, "auto-") {
+		mode = "automatic"
+	}
+	var observed time.Time
+	if a.ObservedAt != nil {
+		observed = *a.ObservedAt
+	}
+	return biz.NetworkObservation{Confirmed: a.State == networkbiz.Attached && a.Reason == "" && a.ConfirmedPodUID == a.PodUID && a.PodUID == i.PodUID, ObservedAt: observed, CurrentMode: mode, CurrentVNicUID: a.CurrentVNicUID, CurrentIPs: a.CurrentIPs, CurrentVNicName: a.CurrentVNicName, CurrentMACAddress: a.CurrentMACAddress, State: string(a.State), Reason: string(a.Reason), PodUID: a.PodUID, Version: a.Version, SnapshotRevision: a.SnapshotRevision}, nil
 }
 func (n *InstanceNetwork) Confirm(ctx context.Context, i biz.Instance) error {
 	if err := n.runtime(i); err != nil {

@@ -339,7 +339,7 @@ func (p *Postgres) ReserveVNic(ctx context.Context, r biz.VNicReservation) (biz.
 	if occupied {
 		return biz.VNic{}, biz.Fail(biz.ResourceBusy, "VNIC is reserved by another instance")
 	}
-	_, e = tx.Exec(ctx, `INSERT INTO network_vnic_bindings(tenant_id,binding_id,vnic_id,consumer_kind,consumer_id,slot,operation_id,requested_revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(tenant_id,consumer_kind,consumer_id,slot,operation_id,vnic_id) DO NOTHING`, r.TenantID, uuid.NewString(), r.VNicID, r.ConsumerKind, r.ConsumerID, r.Slot, r.OperationID, r.Revision)
+	_, e = tx.Exec(ctx, `INSERT INTO network_vnic_bindings(tenant_id,binding_id,vnic_id,consumer_kind,consumer_id,slot,operation_id,requested_revision) SELECT $1,$2,$3,$4,$5,$6,$7,$8 WHERE NOT EXISTS(SELECT 1 FROM network_vnic_bindings WHERE tenant_id=$1 AND vnic_id=$3 AND consumer_kind=$4 AND consumer_id=$5 AND slot=$6 AND requested_revision=$8 AND released_at IS NULL) ON CONFLICT(tenant_id,consumer_kind,consumer_id,slot,operation_id,vnic_id) DO NOTHING`, r.TenantID, uuid.NewString(), r.VNicID, r.ConsumerKind, r.ConsumerID, r.Slot, r.OperationID, r.Revision)
 	if e != nil {
 		return biz.VNic{}, databaseFailure(e)
 	}

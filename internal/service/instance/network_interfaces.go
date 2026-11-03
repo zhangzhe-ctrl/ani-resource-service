@@ -11,7 +11,7 @@ import (
 )
 
 func networkChoice(c biz.NetworkInterfaceChoice) *networkpb.NetworkInterfaceChoice {
-	return &networkpb.NetworkInterfaceChoice{Mode: c.Mode, VnicId: c.VNicID, VnicName: c.ProviderName, ProviderUid: c.ProviderUID, MacAddress: c.MACAddress, Ips: append([]string{}, c.IPs...)}
+	return &networkpb.NetworkInterfaceChoice{Mode: c.Mode, VnicId: c.VNicID, VnicName: c.Name, ProviderUid: c.ProviderUID, MacAddress: c.MACAddress, Ips: append([]string{}, c.IPs...)}
 }
 func (s *Service) GetNetworkInterfaces(ctx context.Context, r *pb.GetInstanceRequest) (*networkpb.NetworkInterfaces, error) {
 	if r == nil {
@@ -27,17 +27,76 @@ func (s *Service) GetNetworkInterfaces(ctx context.Context, r *pb.GetInstanceReq
 	if i.Spec.Network == nil || i.Spec.InstanceKind != biz.KindContainer {
 		return &networkpb.NetworkInterfaces{Version: i.Version, Supported: false, UnsupportedReason: "INSTANCE_NETWORK_NOT_SUPPORTED"}, nil
 	}
+
 	cfg := biz.PrimaryNetworkInterface(i)
-	item := &networkpb.NetworkInterface{Slot: "primary", Desired: networkChoice(cfg.Desired), Applied: networkChoice(cfg.Applied), RequestedRevision: cfg.RequestedRevision, AppliedRevision: cfg.AppliedRevision, PendingRestart: cfg.PendingRestart(), ObservationReason: i.Reason}
-	if !i.UpdatedAt.IsZero() {
-		item.ObservedAt = timestamppb.New(i.UpdatedAt)
+	item := &networkpb.NetworkInterface{ConfigurationState: "ready", Slot: "primary", RequestedRevision: cfg.RequestedRevision, AppliedRevision: cfg.AppliedRevision, PendingRestart: cfg.PendingRestart(), ObservationReason: i.Reason}
+	if reader, ok := s.network.(interface {
+		ResolveNetworkInterfaceChoice(context.Context, biz.Instance, biz.NetworkInterfaceChoice) (biz.NetworkInterfaceChoice, error)
+	}); ok {
+		var err error
+		cfg.Desired, err = reader.ResolveNetworkInterfaceChoice(ctx, i, cfg.Desired)
+		if err != nil {
+			item.ObservationReason = biz.ErrNetworkUnavailable.Error()
+		}
+		cfg.Applied, err = reader.ResolveNetworkInterfaceChoice(ctx, i, cfg.Applied)
+		if err != nil {
+			item.ObservationReason = biz.ErrNetworkUnavailable.Error()
+		}
 	}
-	if i.Observed == biz.Running && i.Desired != biz.Deleted && i.Network != nil && i.PodUID != "" && i.Network.NetworkState == "attached" {
-		item.CurrentVnicName = i.Network.CurrentVNicName
-		item.CurrentMacAddress = i.Network.CurrentMACAddress
-		item.CurrentIps = append([]string{}, i.Network.CurrentIPs...)
-		item.EffectiveNow = !cfg.PendingRestart() && (cfg.RequestedRevision == 0 || cfg.VerifiedPodUID == i.PodUID) && i.Network.Reason == "" && len(item.CurrentIps) > 0
+	if i.Observed != biz.Stopped && i.Desired != biz.Deleted && i.Network != nil {
+		n := *i.Network
+		confirmed := false
+		if s.network != nil {
+			if current, err := s.network.Observe(ctx, i); err == nil {
+				n.CurrentIPs = current.CurrentIPs
+				n.CurrentVNicName = current.CurrentVNicName
+				n.CurrentVNicUID = current.CurrentVNicUID
+				n.CurrentMACAddress = current.CurrentMACAddress
+				n.CurrentMode = current.CurrentMode
+				n.ObservedAt = current.ObservedAt
+				n.NetworkState = current.State
+				n.Reason = current.Reason
+				confirmed = current.Confirmed
+			} else {
+				n.Reason = biz.ErrNetworkUnavailable.Error()
+			}
+		}
+		item.CurrentVnicName = n.CurrentVNicName
+		item.CurrentMacAddress = n.CurrentMACAddress
+		item.CurrentIps = append([]string{}, n.CurrentIPs...)
+		if !n.ObservedAt.IsZero() {
+			item.ObservedAt = timestamppb.New(n.ObservedAt)
+		}
+		if n.Reason != "" {
+			item.ObservationReason = n.Reason
+		}
+		applied := n.CurrentMode == cfg.Applied.Mode
+		if n.CurrentMode == "manual" {
+			applied = applied && n.CurrentVNicUID == cfg.Applied.ProviderUID && n.CurrentVNicName == cfg.Applied.ProviderName
+			if applied {
+				item.CurrentVnicName = cfg.Applied.Name
+			}
+		}
+		item.EffectiveNow = !cfg.PendingRestart() && confirmed && applied && i.Observed == biz.Running && n.NetworkState == "attached" && len(item.CurrentIps) > 0 && item.ObservationReason == ""
 	}
+	if i.LastOperationID != "" {
+		op, err := s.repo.GetOperation(ctx, i.TenantID, i.LastOperationID)
+		if err != nil {
+			return nil, rpcError(err)
+		}
+		if op.Action == "set-network-interface" {
+			item.OperationId = op.ID
+			item.OperationReason = op.Reason
+			if op.State == "failed" {
+				item.ConfigurationState = "failed"
+			} else if !biz.TerminalOperation(op.State) {
+				item.ConfigurationState = "configuring"
+				item.PendingRestart = false
+				item.EffectiveNow = false
+			}
+		}
+	}
+	item.Desired, item.Applied = networkChoice(cfg.Desired), networkChoice(cfg.Applied)
 
 	return &networkpb.NetworkInterfaces{Items: []*networkpb.NetworkInterface{item}, Version: i.Version, Supported: true}, nil
 }

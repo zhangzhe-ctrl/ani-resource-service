@@ -11,6 +11,7 @@ const VNicAnnotation = "networking.kubercloud.com/vnic"
 var vnicIDPattern = regexp.MustCompile(`^vnic_[0-9a-f]{32}$`)
 
 type NetworkInterfaceChoice struct {
+	Name         string   `json:"vnic_name,omitempty"`
 	Mode         string   `json:"mode"`
 	VNicID       string   `json:"vnic_id,omitempty"`
 	ProviderName string   `json:"provider_name,omitempty"`

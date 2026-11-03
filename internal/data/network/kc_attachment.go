@@ -219,7 +219,6 @@ func (p *KCProvider) observeAttachment(ctx context.Context, w biz.AttachmentWork
 			if _, e = p.manualVNicIdentity(ctx, a.TenantID, a.InstanceID, a.Namespace, a.SubnetID, o, true); e != nil {
 				return result, e
 			}
-			owner = string(pod.GetUID())
 		}
 
 		podAnnotation := false
@@ -239,12 +238,13 @@ func (p *KCProvider) observeAttachment(ctx context.Context, w biz.AttachmentWork
 			return conflict()
 		}
 		uid := string(o.GetUID())
+		current := liveManual || (!manual && (!managed || (pod != nil && owner == string(pod.GetUID()))))
 		mac, _, _ := unstructured.NestedString(o.Object, "spec", "macAddress")
-		tracked[key] = attachmentRelation{Kind: "VNic", Namespace: o.GetNamespace(), Name: o.GetName(), UID: uid, OwnerUID: owner, MACAddress: mac, Current: o.GetDeletionTimestamp() == nil && (!managed || (pod != nil && owner == string(pod.GetUID())))}
+		tracked[key] = attachmentRelation{Kind: "VNic", Namespace: o.GetNamespace(), Name: o.GetName(), UID: uid, OwnerUID: owner, MACAddress: mac, Current: o.GetDeletionTimestamp() == nil && current}
 		vnicUIDs[uid] = true
 		vnicNames[o.GetNamespace()+"/"+o.GetName()] = uid
 		liveVNics[o.GetNamespace()+"/"+o.GetName()] = uid
-		currentVNics[uid] = liveManual || (!manual && (!managed || (pod != nil && owner == string(pod.GetUID()))))
+		currentVNics[uid] = o.GetDeletionTimestamp() == nil && current
 		result.HasDependencies = result.HasDependencies || !manual
 	}
 	ips, e := list(ctx, schema.GroupVersionResource{Group: kcVPCs.Group, Version: kcVPCs.Version, Resource: "vnicips"})

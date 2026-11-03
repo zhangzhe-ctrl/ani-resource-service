@@ -71,6 +71,9 @@ func (w *Worker) observeNetwork(ctx context.Context, i *Instance) bool {
 		return false
 	}
 	n.CurrentIPs = append([]string{}, o.CurrentIPs...)
+	n.CurrentVNicUID = o.CurrentVNicUID
+	n.CurrentMode = o.CurrentMode
+	n.ObservedAt = o.ObservedAt
 	n.CurrentVNicName = o.CurrentVNicName
 	n.CurrentMACAddress = o.CurrentMACAddress
 	n.AttachmentVersion = o.Version

@@ -29,7 +29,7 @@ func (n *InstanceNetwork) ReserveNetworkInterface(ctx context.Context, i biz.Ins
 	if x.ClusterID != i.Spec.ClusterID || x.Namespace != i.Spec.Namespace || x.ProviderUID == "" {
 		return biz.NetworkInterfaceChoice{}, biz.ErrNetworkConflict
 	}
-	return biz.NetworkInterfaceChoice{Mode: "manual", VNicID: x.ID, ProviderName: x.ProviderName, ProviderUID: x.ProviderUID, MACAddress: x.MACAddress, IPs: append([]string{}, x.IPs...)}, nil
+	return biz.NetworkInterfaceChoice{Mode: "manual", Name: x.Name, VNicID: x.ID, ProviderName: x.ProviderName, ProviderUID: x.ProviderUID, MACAddress: x.MACAddress, IPs: append([]string{}, x.IPs...)}, nil
 }
 func (n *InstanceNetwork) SyncNetworkInterfaces(ctx context.Context, i biz.Instance, ids []string) error {
 	for _, id := range biz.PrimaryNetworkInterface(i).KeepVNicIDs() {
@@ -115,4 +115,19 @@ func (n *Notebook) SetNetworkInterface(ctx context.Context, i biz.Instance, c bi
 		return biz.ErrNetworkUnavailable
 	}
 	return nil
+}
+
+func (n *InstanceNetwork) ResolveNetworkInterfaceChoice(ctx context.Context, i biz.Instance, c biz.NetworkInterfaceChoice) (biz.NetworkInterfaceChoice, error) {
+	if c.Mode != "manual" || c.Name != "" {
+		return c, nil
+	}
+	x, err := n.network.GetVNic(ctx, i.TenantID, c.VNicID)
+	if err != nil {
+		return c, instanceNetworkError(err)
+	}
+	if x.ProviderUID != c.ProviderUID || x.ProviderName != c.ProviderName {
+		return c, biz.ErrNetworkConflict
+	}
+	c.Name = x.Name
+	return c, nil
 }

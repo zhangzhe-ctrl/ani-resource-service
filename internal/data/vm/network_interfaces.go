@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"strings"
 
 	network "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/vm"
@@ -36,7 +37,7 @@ func (n *Network) ReserveNetworkInterface(ctx context.Context, v biz.VM, o biz.O
 	if x.ClusterID != v.Spec.ClusterID || x.Namespace != v.Spec.Namespace || x.NamespaceUID != v.Spec.NamespaceUID || x.ProviderUID == "" {
 		return biz.NetworkInterfaceChoice{}, biz.ErrChanged
 	}
-	return biz.NetworkInterfaceChoice{Mode: "manual", VNicID: x.ID, ProviderName: x.ProviderName, ProviderUID: x.ProviderUID, MACAddress: x.MACAddress, IPs: append([]string{}, x.IPs...)}, nil
+	return biz.NetworkInterfaceChoice{Mode: "manual", Name: x.Name, VNicID: x.ID, ProviderName: x.ProviderName, ProviderUID: x.ProviderUID, MACAddress: x.MACAddress, IPs: append([]string{}, x.IPs...)}, nil
 }
 func (n *Network) SyncNetworkInterfaces(ctx context.Context, v biz.VM, ids []string) error {
 	for _, id := range biz.PrimaryNetworkInterface(v).KeepVNicIDs() {
@@ -103,4 +104,44 @@ func (n *Native) SetNetworkInterface(ctx context.Context, v biz.VM, c biz.Networ
 	}
 	_, err = n.client.Resource(vmResource).Namespace(v.Spec.Namespace).Patch(ctx, v.Native.Name, types.JSONPatchType, raw, metav1.PatchOptions{})
 	return err
+}
+
+func (n *Network) ResolveNetworkInterfaceChoice(ctx context.Context, v biz.VM, c biz.NetworkInterfaceChoice) (biz.NetworkInterfaceChoice, error) {
+	if c.Mode != "manual" || c.Name != "" {
+		return c, nil
+	}
+	if n.vnics == nil {
+		return c, biz.ErrDependency
+	}
+	x, err := n.vnics.GetVNic(ctx, v.TenantID, c.VNicID)
+	if err != nil {
+		return c, err
+	}
+	if x.ProviderUID != c.ProviderUID || x.ProviderName != c.ProviderName {
+		return c, biz.ErrChanged
+	}
+	c.Name = x.Name
+	return c, nil
+}
+func (n *Network) CurrentNetworkInterface(ctx context.Context, v biz.VM) (biz.NetworkInterfaceRuntime, error) {
+	out := biz.NetworkInterfaceRuntime{}
+	if v.Closing || v.Observed == "Stopped" || v.Observed == "Deleted" {
+		return out, nil
+	}
+	a, err := n.attachment(ctx, v)
+	if err != nil {
+		return out, err
+	}
+	out.ProviderName, out.ProviderUID, out.MACAddress, out.PodUID, out.Reason = a.CurrentVNicName, a.CurrentVNicUID, a.CurrentMACAddress, a.PodUID, string(a.Reason)
+	if a.ObservedAt != nil {
+		out.ObservedAt = *a.ObservedAt
+	}
+	out.IPs = append([]string{}, a.CurrentIPs...)
+	if strings.HasPrefix(a.CurrentVNicName, "auto-") {
+		out.Mode = "automatic"
+	} else if a.CurrentVNicName != "" {
+		out.Mode = "manual"
+	}
+	out.Confirmed = a.State == network.Attached && a.Reason == "" && a.ConfirmedPodUID == a.PodUID && len(a.VMCurrentAddresses) > 0
+	return out, nil
 }
