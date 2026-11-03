@@ -295,6 +295,10 @@ func (o *KCObservation) flush(ctx context.Context) {
 		return
 	}
 	keys := o.pending
+	attachmentKeys := map[string]bool{}
+	for key := range keys {
+		attachmentKeys[key] = o.attachmentChanges[key] > v.sequence
+	}
 	o.pending = map[string]struct{}{}
 	o.pendingSince = time.Time{}
 	overflow := o.overflow
@@ -310,6 +314,12 @@ func (o *KCObservation) flush(ctx context.Context) {
 	} else {
 		for key := range keys {
 			for _, t := range v.targets[key] {
+				// Services/controllers can share an owner UID with an attachment
+				// without changing its Pod/NIC/IP/EIP facts. Do not turn those
+				// events into repeated owner reads and durable attachment work.
+				if t.kind == "attachment" && !attachmentKeys[key] {
+					continue
+				}
 				targets[t.key()] = t
 			}
 		}
@@ -444,8 +454,10 @@ func (o *KCObservation) collect(ctx context.Context) (*auditView, error) {
 		}
 	}
 	subnetRefs := map[string]string{}
+	parkedTargets := map[string]bool{}
 	for _, r := range resources {
 		t := observationTarget{r.TenantID, r.ResourceID, r.ResourceKind}
+		parkedTargets[t.key()] = !r.Recovery
 		v.generations[t.key()] = r.RequestedGeneration
 		if r.Recovery {
 			v.recovery = append(v.recovery, t)
@@ -481,6 +493,7 @@ func (o *KCObservation) collect(ctx context.Context) (*auditView, error) {
 	}
 	for _, r := range platforms {
 		t := observationTarget{"", r.ResourceID, r.Kind}
+		parkedTargets[t.key()] = !r.Recovery
 		v.generations[t.key()] = r.RequestedGeneration
 		if r.Recovery {
 			v.recovery = append(v.recovery, t)
@@ -497,11 +510,11 @@ func (o *KCObservation) collect(ctx context.Context) (*auditView, error) {
 			relation = "gateway"
 		}
 		keys := []string{"object:" + egressCRKind(r.Kind) + "/" + ns + "/" + r.ProviderName, relation + ":" + ns + "/" + r.ProviderName, "uid:" + r.ProviderUid}
-		if r.Kind == "device" || r.Kind == "vlan" {
+		if r.Recovery && (r.Kind == "device" || r.Kind == "vlan") {
 			keys = append(keys, "node-network")
 		}
 
-		if r.Kind == "public_pool" {
+		if r.Recovery && r.Kind == "public_pool" {
 			keys = append(keys, "provider-images", "object:ConfigMap/kcn-system/kcn-config", "intranet-service-ranges")
 		}
 		bind(keys, t)
@@ -511,6 +524,13 @@ func (o *KCObservation) collect(ctx context.Context) (*auditView, error) {
 		return nil, err
 	}
 	for _, edge := range edges {
+		target := observationTarget{edge.TenantID, edge.ResourceID, edge.Kind}
+		parked := parkedTargets[target.key()]
+		// Parked history still tracks its original object and EIP/SNAT
+		// orphan references, but unrelated platform churn cannot reopen it.
+		if parked && edge.RefKind != "eip" && edge.RefKind != "snat" {
+			continue
+		}
 		relation := edge.RefKind
 		if relation == "public_pool" {
 			relation = "pool"
@@ -518,7 +538,11 @@ func (o *KCObservation) collect(ctx context.Context) (*auditView, error) {
 		if relation == "egress_gateway" {
 			relation = "gateway"
 		}
-		bind([]string{"node-network", "object:" + egressCRKind(edge.RefKind) + "/" + edge.Namespace + "/" + edge.ProviderName, relation + ":" + edge.Namespace + "/" + edge.ProviderName, "uid:" + edge.ProviderUid}, observationTarget{edge.TenantID, edge.ResourceID, edge.Kind})
+		keys := []string{"object:" + egressCRKind(edge.RefKind) + "/" + edge.Namespace + "/" + edge.ProviderName, relation + ":" + edge.Namespace + "/" + edge.ProviderName, "uid:" + edge.ProviderUid}
+		if !parked {
+			keys = append(keys, "node-network")
+		}
+		bind(keys, target)
 	}
 	for _, a := range attachments {
 		t := observationTarget{a.TenantID, a.AttachmentID, "attachment"}

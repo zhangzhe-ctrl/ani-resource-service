@@ -50,12 +50,6 @@ WITH targets AS (
  SELECT b.tenant_id::text,b.vpc_id,'vpc'::text,b.pool_id,b.vpc_id,b.eip_id,b.snat_id
  FROM network_vpc_base_connectivity b WHERE b.cluster_id=sqlc.arg(cluster_id)
  UNION ALL
- SELECT l.tenant_id::text,l.lb_id,'load_balancer'::text,b.pool_id,l.vpc_id,b.eip_id,b.snat_id
- FROM network_load_balancers l JOIN network_vpc_base_connectivity b ON b.tenant_id=l.tenant_id AND b.vpc_id=l.vpc_id WHERE l.cluster_id=sqlc.arg(cluster_id) AND l.last_operation_id IS NOT NULL
- UNION ALL
- SELECT l.tenant_id::text,l.lb_id,'load_balancer'::text,e.pool_id,l.vpc_id,e.eip_id,NULL::text
- FROM network_load_balancers l JOIN network_eips e ON e.tenant_id=l.tenant_id AND e.eip_id=l.public_eip_id WHERE l.cluster_id=sqlc.arg(cluster_id) AND l.last_operation_id IS NOT NULL
- UNION ALL
  SELECT ''::text,p.resource_id,p.kind,p.resource_id,NULL::text,NULL::text,NULL::text
  FROM network_platform_resources p WHERE p.cluster_id=sqlc.arg(cluster_id) AND p.kind='public_pool'
 )
@@ -76,6 +70,15 @@ FROM targets t JOIN network_public_pools cfg ON cfg.cluster_id=sqlc.arg(cluster_
 -- name: ObservationLBEdges :many
 SELECT l.tenant_id,l.lb_id,('load-balancer:'||l.namespace||'/'||l.lb_id)::text AS relation_key
 FROM network_load_balancers l WHERE l.cluster_id=sqlc.arg(cluster_id) AND l.last_operation_id IS NOT NULL
+UNION ALL
+SELECT l.tenant_id,l.lb_id,('object:'||CASE b.resource_kind WHEN 'vpc' THEN 'VPC' WHEN 'subnet' THEN 'Subnet' ELSE 'EIP' END||'/'||b.namespace||'/'||b.provider_name)::text
+FROM network_load_balancers l JOIN network_provider_bindings b ON b.tenant_id=l.tenant_id AND b.cluster_id=l.cluster_id
+ AND (b.vpc_id=l.vpc_id OR b.subnet_id=l.subnet_id OR b.eip_id=l.public_eip_id)
+WHERE l.cluster_id=sqlc.arg(cluster_id) AND l.last_operation_id IS NOT NULL
+UNION ALL
+SELECT l.tenant_id,l.lb_id,('eip:'||b.namespace||'/'||b.provider_name)::text
+FROM network_load_balancers l JOIN network_provider_bindings b ON b.tenant_id=l.tenant_id AND b.cluster_id=l.cluster_id AND b.eip_id=l.public_eip_id
+WHERE l.cluster_id=sqlc.arg(cluster_id) AND l.last_operation_id IS NOT NULL
 UNION ALL
 SELECT c.tenant_id,c.lb_id,('object:'||CASE c.kind WHEN 'route' THEN 'HTTPRoute' WHEN 'policy' THEN 'BackendTrafficPolicy' ELSE 'Backend' END||'/'||c.namespace||'/'||c.provider_name)::text
 FROM network_lb_components c WHERE c.cluster_id=sqlc.arg(cluster_id)

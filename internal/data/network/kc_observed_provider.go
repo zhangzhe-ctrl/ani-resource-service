@@ -40,7 +40,7 @@ func (p *KCProvider) Observe(ctx context.Context, t biz.ProviderTarget) (biz.Pro
 			keys := []string{"object:" + kind + "/" + b.Namespace + "/" + b.ProviderName}
 			objects := indexedObjects(v.indices[kcResource(b)], keys)
 			if len(objects) == 1 && p.observation.valid(v, keys) {
-				proof := biz.ObservationProof{CollectedAt: v.collected, Hash: contentHash(objects[0].Object), CoveredGeneration: v.generations[observationTarget{t.TenantID, t.ResourceID, t.Kind}.key()]}
+				proof := biz.ObservationProof{CollectedAt: v.collected, Hash: contentHash(objects[0].Object), CoveredGeneration: t.Requirement.RequestedGeneration}
 				if proof.Covers(t.Requirement) {
 					value, err := p.inspect(ctx, &objects[0], b, t)
 					value.Proof = proof

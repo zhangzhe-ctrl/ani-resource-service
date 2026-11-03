@@ -49,3 +49,13 @@
 受控复现发现父/平台通知可提高 Attachment 的 requested_generation，但其 Pod/NIC/IP 事实并未变化；普通路径因此一直拒绝未改变的共享视图。修正仅让关系未变、来源 epoch 有效的普通视图覆盖这种通知，不改变 collected_at；初始化、消费者关闭、相关对象变化、UID 替换仍保留当前收集与 fencing。`hint-coverage.log` 通过 11.910s，包含旧时间不续签、真实关系变更拒绝、relist 与领取/观察/完成各阶段通知围栏。
 
 用户追加要求：12 集群的最终镜像改在 `ubuntu@100.64.128.15` 从固定源码重新构建并推送，再更新 12；Fedora 保留测试和 10 集群发布职责。
+
+## R2 真实回归及后续收敛
+
+`b9bd56e` 在 Fedora 和 15 分别构建，源码快照均为 `sha256:2482896381b041384b80f0b8174eacb2569b6dd408e834cde4864057cd487522`。15 已直接推送仓库，但未更新 12。10 的 300 秒窗口仍 FAIL：原 LB 发生状态退化；GET/LIST 为 5179 次，虽 LIST 降至每类约 33–34 次，普通身份读取仍过多。Attachment 能续新，但 Service 的共享 owner UID 通知仍反复唤醒它；LB/其他普通观察仍将这种未改变事实的持久通知当作需要重新采集。10 已只回退 Resource 镜像，原 LB 身份保留。原件 `live/lab/window-r2-failed/`、`r2-rollback.json`。
+
+确定性 LB 回归 `lb-hint-red.log` FAIL、`lb-hint-green.log` PASS（29.708s）：相同对象与时间的共享证明覆盖普通通知，同时真实 Pod 变更仍拒绝旧视图、关键路径仍通过两次 relist。`attachment-hint-filter.log` PASS（9.410s）：共享 owner UID 的 Service 事件不再制造 Attachment 工作，Pod/NIC/IP/EIP 变化及租约各阶段通知保护保留。后续将同一普通观测规则用于 VPC/Subnet/Egress 和已确认删除记录；停用终态的无关平台唤醒，LB 仅绑定直接 VPC/Subnet/EIP 及自身生成对象/成员事件，去掉已不用于运行判断的底层平台依赖通知。
+
+该现场还明确了另一条误判：`lbMemberIdentity` 将 Attachment 证据过期与实际 UID/归属不匹配都折叠成 `false`，触发 backend 撤出及 LB degraded。现区分这两种结果：当前管理身份/原生 Pod→VNic→VNicIP 地址链不符仍拒绝；身份链吻合但证明时间不足或 DB 读取失败时返回观测异常，保持最后结果与原时间，操作仍等待确认。没有延长 TTL、把旧时间改成当前时间或放行未知 backend。
+
+R3 发布前 Fedora：`r3-related.log` PASS（38.863s），`r3-backend-observation.log` PASS（31.895s，含真实 Worker/PG 保留配置与观测时间、future/expired 证据不可采用、过期情况下真实 UID 替换仍拒绝），最后 `r3-final-verify.log` 完整 `make verify` PASS。R3 真实环境验收仍待发布后验证。

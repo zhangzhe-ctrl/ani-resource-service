@@ -604,6 +604,9 @@ func (p *KCProvider) readEgressSetOnce(ctx context.Context, r egressResolved, cr
 			result.all[gvr] = indexedObjects(index, result.keys)
 		}
 		result.proof = biz.ObservationProof{CollectedAt: result.view.collected, CoveredGeneration: result.view.generations[observationTarget{r.target.TenantID, r.target.ResourceID, r.target.Kind}.key()]}
+		if !critical && p.observation.valid(result.view, result.keys) {
+			result.proof.CoveredGeneration = r.target.Requirement.RequestedGeneration
+		}
 	}
 	for key, ref := range refs {
 		var o *unstructured.Unstructured

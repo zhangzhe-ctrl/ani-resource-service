@@ -1,6 +1,7 @@
 package data_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -67,12 +68,22 @@ func TestLBBackendObservationUsesCurrentDatabaseTime(t *testing.T) {
 				t.Fatal("fixture did not renew after claim", observed, work.Now)
 			}
 			result, err := provider.ObserveLoadBalancer(f.f.ctx, work)
+			if !tc.eligible {
+				var unavailable *biz.ProviderError
+				if !errors.As(err, &unavailable) || unavailable.Kind != biz.ProviderTemporary || len(result.Members) != 0 {
+					t.Fatalf("unconfirmed timestamp fabricated an identity mismatch: %+v %v", result.Members, err)
+				}
+				return
+			}
 			if err != nil || len(result.Members) != 1 || result.Members[0].Eligible != tc.eligible {
 				t.Fatalf("freshness result=%+v err=%v; observed=%v claim=%v", result.Members, err, observed, work.Now)
 			}
 		})
 	}
-	// A newly timestamped but replaced address identity must still be rejected.
+	// A real replacement wins over projection uncertainty and is still fenced.
+	if _, err = f.f.owner.Exec(f.f.ctx, `UPDATE network_attachments SET observed_at=clock_timestamp()-interval '10 minutes' WHERE tenant_id=$1 AND attachment_id=$2`, f.f.tenant, attachment); err != nil {
+		t.Fatal(err)
+	}
 	ip := f.api.Object("vnicips", "tenant-"+f.f.tenant, "lb-backend-ip")
 	ip["metadata"].(map[string]any)["uid"] = uuid.NewString()
 	f.api.Change("vnicips", ip, false)

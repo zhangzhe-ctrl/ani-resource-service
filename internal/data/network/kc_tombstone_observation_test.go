@@ -50,7 +50,10 @@ func TestCleanVPCTombstonesShareCompleteAbsentAudit(t *testing.T) {
 				} else if !o.Proof.CollectedAt.Equal(collected) {
 					t.Fatal("shared tombstone observation renewed its source timestamp")
 				}
-				target.Requirement = biz.ObservationRequirement{AppliedAt: time.Now(), Hash: o.Proof.Hash}
+				if o.Proof.CoveredGeneration != target.Requirement.RequestedGeneration {
+					t.Fatal("unchanged tombstone failed to cover a parent hint")
+				}
+				target.Requirement = biz.ObservationRequirement{AppliedAt: time.Now(), Hash: o.Proof.Hash, RequestedGeneration: int64(i + 1)}
 			}
 			if collections.Load() != 1 {
 				t.Fatal("completed VPC/Subnet tombstones repeatedly recollected the network", collections.Load())
@@ -90,7 +93,10 @@ func TestCleanEgressTombstonesShareCompleteAbsentAudit(t *testing.T) {
 		} else if !set.proof.CollectedAt.Equal(originalCollected) {
 			t.Fatal("reading identical tombstones renewed the collection timestamp")
 		}
-		r.target.Requirement = biz.ObservationRequirement{AppliedAt: time.Now(), Hash: set.proof.Hash}
+		if set.proof.CoveredGeneration != r.target.Requirement.RequestedGeneration {
+			t.Fatal("unchanged egress tombstone failed to cover a parent hint")
+		}
+		r.target.Requirement = biz.ObservationRequirement{AppliedAt: time.Now(), Hash: set.proof.Hash, RequestedGeneration: int64(i + 1)}
 	}
 	if got := collections.Load(); got != 1 {
 		t.Fatalf("clean tombstones recollected the entire network instead of sharing: collections=%d", got)

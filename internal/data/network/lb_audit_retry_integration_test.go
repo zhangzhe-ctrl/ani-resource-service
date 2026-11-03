@@ -284,6 +284,29 @@ func TestLBOrdinaryObservationWaitsForSharedAuditAndCriticalRelistCompletes(t *t
 			if err != nil || probe.err != nil || baseline.ConfigurationState != "configured" || baseline.ObservationStale {
 				t.Fatalf("measured-provider precondition: lb=%+v adapter=%v read=%v", baseline, probe.err, err)
 			}
+			// A durable parent hint is not a changed Provider fact. Reuse the
+			// complete unchanged view without renewing its collection timestamp.
+			hinted := finishedWork
+			hinted.Requirement.RequestedGeneration++
+			hinted.Requirement.Hash = probe.observation.Proof.Hash
+			hinted.Requirement.AppliedAt = time.Now()
+			lists := obs.Snapshot()["requests_LIST_pods_total"]
+			hintResult, hintErr := provider.ObserveLoadBalancer(f.f.ctx, hinted)
+			if hintErr != nil || !hintResult.GeneratedReady || !hintResult.Proof.CollectedAt.Equal(probe.observation.Proof.CollectedAt) || hintResult.Proof.CoveredGeneration != hinted.Requirement.RequestedGeneration || obs.Snapshot()["requests_LIST_pods_total"] != lists {
+				t.Fatalf("unchanged LB hint must reuse the original proof without LIST: proof=%+v error=%v", hintResult.Proof, hintErr)
+			}
+			attachmentID := baseline.Backends[0].AttachmentID
+			if _, err = f.f.owner.Exec(f.f.ctx, `UPDATE network_attachments SET observed_at=clock_timestamp()-interval '10 minutes' WHERE tenant_id=$1 AND attachment_id=$2`, f.f.tenant, attachmentID); err != nil {
+				t.Fatal(err)
+			}
+			step()
+			pending, err := f.lbs.Get(f.f.ctx, "", initial.ID)
+			if err != nil || pending.State != biz.Available || pending.ConfigurationState != "configured" || !pending.ObservationStale || pending.Reason != biz.ProviderUnavailable || !pending.ObservedAt.Equal(*baseline.ObservedAt) {
+				t.Fatalf("old attachment projection fabricated a backend failure or renewed time: %+v %v", pending, err)
+			}
+			if _, err = f.f.owner.Exec(f.f.ctx, `UPDATE network_attachments SET observed_at=clock_timestamp() WHERE tenant_id=$1 AND attachment_id=$2`, f.f.tenant, attachmentID); err != nil {
+				t.Fatal(err)
+			}
 			beforeNotifications := obs.Snapshot()["notifications_total"]
 			pod := f.api.Object("pods", "tenant-"+f.f.tenant, "lb-backend")
 			metadata := pod["metadata"].(map[string]any)
