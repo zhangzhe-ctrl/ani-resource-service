@@ -5,9 +5,9 @@
 ## 2026-11-03：手动 VNIC 管理
 
 
-当前主链已完成正式页面申请 A/B、真实 KCN 分配 MAC/IP、同键重放原 CR 身份不变；默认自动 VM/Notebook 的实际 SSH 与双向 HTTP 通信通过。Resource `2145760`、Gov `e6d6e70c` 已部署，Console 正式分支已推送并以独占预览联调。新增读视图/配置阶段修正正在发布；手动重启应用、保留/释放及其余验收尚未完成。
+当前主链已完成正式页面申请 A/B/C、真实 KCN 分配 MAC/IP、同键重放原 CR 身份不变；默认自动 VM/Notebook 的实际 SSH 与双向 HTTP 通信通过。Resource `f4711fd`、Gov `aed3378a` 已部署，Console `e741b25` 已推送并以独占预览联调。当前/目标网卡与配置阶段字段已贯通；手动重启应用、保留/释放及其余验收尚未完成。
 
-VM1 保存目标 A 正在等待 KCN SG 回执：SG Ready/appliedVNics 已包含 A，但 VNIC.status.appliedSecurityGroups 缺失。用户 2026-11-03 明确要求保留 KCN 排查现场：手动 A、allow SG、VM1 当前自动 VNIC/Nic，以及 VM1/launcher；不删除、解绑、重启或更改该组配置。SG 写围栏源码与当前只读修复分开，避免发布时给排查对象新增 metadata。继续独立 Notebook/B 及新 VM2/C 主链，不绕过 KCN 回执。
+VM1 保存目标 A 原先等待 VNIC.status.appliedSecurityGroups；2026-11-03 用户转达 KCN 团队确认：以相关 SG.status.appliedVNics 包含目标 VNIC 认定绑定成功，无需该 VNIC 字段。正在按新口径修正 Resource，保留 SG 就绪/版本及旧组移除确认，并随既有 SG 写围栏一并发布。保留手动 A、allow SG、VM1 当前自动 VNIC/Nic 和 VM1/launcher，不删除、解绑或重启；允许原保存操作按新确认口径自然收敛。继续独立 Notebook/B 及 VM2/C 主链。
 
 此前空 ManualVNics 改变旧自动摘要的回归已在 `2145760` 修复并真实恢复原两台 Notebook，原 Pod UID/revision 保持；部署缺失的 VM 只读观察 RBAC 已补齐，长期 Unknown 已恢复。验证与精确证据见[本轮记录](records/KCN-VNIC-20261103/README.md)。
 

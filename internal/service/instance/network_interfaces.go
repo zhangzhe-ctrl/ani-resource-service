@@ -29,7 +29,7 @@ func (s *Service) GetNetworkInterfaces(ctx context.Context, r *pb.GetInstanceReq
 	}
 
 	cfg := biz.PrimaryNetworkInterface(i)
-	item := &networkpb.NetworkInterface{ConfigurationState: "ready", Slot: "primary", RequestedRevision: cfg.RequestedRevision, AppliedRevision: cfg.AppliedRevision, PendingRestart: cfg.PendingRestart(), ObservationReason: i.Reason}
+	item := &networkpb.NetworkInterface{ConfigurationState: "ready", Slot: "primary", RequestedRevision: cfg.RequestedRevision, AppliedRevision: cfg.AppliedRevision, PendingRestart: cfg.PendingRestart()}
 	if reader, ok := s.network.(interface {
 		ResolveNetworkInterfaceChoice(context.Context, biz.Instance, biz.NetworkInterfaceChoice) (biz.NetworkInterfaceChoice, error)
 	}); ok {

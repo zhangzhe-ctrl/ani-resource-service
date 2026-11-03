@@ -24,7 +24,7 @@ func (s *Service) GetNetworkInterfaces(ctx context.Context, r *pb.GetVMRequest) 
 	}
 
 	cfg := biz.PrimaryNetworkInterface(v)
-	item := &networkpb.NetworkInterface{ConfigurationState: "ready", Slot: "primary", RequestedRevision: cfg.RequestedRevision, AppliedRevision: cfg.AppliedRevision, PendingRestart: cfg.PendingRestart(), ObservationReason: v.Reason}
+	item := &networkpb.NetworkInterface{ConfigurationState: "ready", Slot: "primary", RequestedRevision: cfg.RequestedRevision, AppliedRevision: cfg.AppliedRevision, PendingRestart: cfg.PendingRestart()}
 	if reader, ok := s.addresses.(biz.NetworkInterfaceReadPort); ok {
 		var err error
 		cfg.Desired, err = reader.ResolveNetworkInterfaceChoice(ctx, v, cfg.Desired)

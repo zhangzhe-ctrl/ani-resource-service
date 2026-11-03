@@ -44,8 +44,9 @@ func TestNetworkViewUsesConfirmedEndpointInsteadOfTargetOrOwnerCache(t *testing.
 	cfg.RequestedRevision = 5
 	cfg.AppliedRevision = 5
 	repo.current.NetworkInterfaces = []biz.NetworkInterface{cfg}
+	repo.current.Reason = "VM_NETWORK_ADDRESS_NOT_CURRENT"
 	view, err = service.GetNetworkInterfaces(ctx, &pb.GetVMRequest{TenantId: tenant, VmId: id})
-	if err != nil || !view.Items[0].EffectiveNow || view.Items[0].PendingRestart {
+	if err != nil || !view.Items[0].EffectiveNow || view.Items[0].PendingRestart || view.Items[0].ObservationReason != "" {
 		t.Fatal("cancellation hid a still-confirmed automatic endpoint", view, err)
 	}
 	repo.current.Observed = "Stopped"
