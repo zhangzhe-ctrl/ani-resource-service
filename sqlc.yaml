@@ -49,6 +49,7 @@ sql:
       - migrations/0027_optional_intranet_pool_verification.sql
       - migrations/0028_manual_vnics.sql
       - migrations/0029_vnic_requested_addresses.sql
+      - migrations/0030_subnet_creation_options.sql
     queries: internal/data/network/queries
     gen:
       go:

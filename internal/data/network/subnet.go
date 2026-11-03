@@ -82,7 +82,7 @@ func (p *Postgres) AcceptSubnet(ctx context.Context, intent biz.SubnetIntent, at
 		return biz.Subnet{}, biz.Fail(biz.CIDROverlap, "subnet CIDR overlaps an unreleased subnet")
 	}
 	id, opID := "subnet_"+strings.ReplaceAll(uuid.NewString(), "-", ""), uuid.NewString()
-	row, err := q.InsertSubnet(ctx, sqlcgen.InsertSubnetParams{TenantID: intent.TenantID, SubnetID: id, VpcID: intent.VPCID, Name: intent.Name, Description: intent.Description, Cidr: intent.CIDR, Gateway: intent.Gateway, CreatedAt: now, LastOperationID: opID})
+	row, err := q.InsertSubnet(ctx, sqlcgen.InsertSubnetParams{TenantID: intent.TenantID, SubnetID: id, VpcID: intent.VPCID, Name: intent.Name, Description: intent.Description, Cidr: intent.CIDR, Gateway: intent.Gateway, CreatedAt: now, LastOperationID: opID, ExcludeIps: intent.ExcludeIPs, EnableDhcp: intent.EnableDHCP, DnsServers: intent.DNSServers})
 	if err != nil {
 		return biz.Subnet{}, databaseFailure(err)
 	}
@@ -217,5 +217,6 @@ func (p *Postgres) DeleteSubnet(ctx context.Context, tenant, id string) (biz.Sub
 func subnet(row sqlcgen.NetworkSubnet) biz.Subnet {
 	value := biz.Subnet{ID: row.SubnetID, TenantID: row.TenantID, VPCID: row.VpcID, Name: row.Name, Description: row.Description, CIDR: row.Cidr, Gateway: row.Gateway, State: biz.ResourceState(row.State), Reason: biz.Reason(row.Reason), Version: row.Version, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, ObservedAt: row.ObservedAt, LastOperationID: row.LastOperationID}
 	value.AvailableIPRange, value.UsedIPRange = row.AvailableIpRange, row.UsedIpRange
+	value.SubnetOptions = biz.SubnetOptions{ExcludeIPs: row.ExcludeIps, EnableDHCP: row.EnableDhcp, DNSServers: row.DnsServers}
 	return value
 }

@@ -76,6 +76,9 @@ Network 不复制 Membership/Tenant Access，不创建平行 Tenant，也不向 
 | `description` | 可选，最多 1024 个 Unicode 字符；缺省/null 规范化为空串；Subnet 也支持此字段 |
 | `cidr` | 必填 IPv4 CIDR，必须为规范网络地址，拒绝带 host bits 的输入；范围完整落于 RFC1918 私网之一；前缀不长于 /30 |
 | `gateway` | Subnet 可选 IPv4 地址；缺省/null 取该子网第一个可用地址，响应始终给出最终网关；拒绝空串、网段地址、广播地址及子网外地址 |
+| `exclude_ips` | Subnet 可选 IPv4 地址/范围列表，单地址或 `startIP..endIP`；端点须属于该子网且起止有序；规范化为排序、去重及合并后的排除集合 |
+| `enable_dhcp` | Subnet 可选布尔值，缺省为 false；控制 KCN DHCP 配置，IPAM 地址分配仍由 KCN 负责 |
+| `dns_servers` | Subnet 可选 IPv4 DNS 列表，规范化并保持首选顺序；DHCP 关闭时仍可保存，开启后通过 DHCP 下发，不直接修改 Pod/guest DNS |
 | `idempotency_key` | 创建必填，1–128 个 ASCII 可打印非空白字符；按原值区分大小写，不与 request/correlation ID 混用 |
 
 VPC CIDR 是租户的地址规划范围。Subnet CIDR 必须属于同租户父 VPC；同 VPC 中所有尚未 `deleted` 的子网不得重叠。
@@ -89,6 +92,7 @@ VPC CIDR 是租户的地址规划范围。Subnet CIDR 必须属于同租户父 V
 首次受理创建 Subnet 要求父 VPC `available` 且观测未过期。首次受理接入要求 VPC 与 Subnet 都满足此条件。
 已受理请求重放按第 4.3 / 7.1 节先识别持久记录，不重新应用这些动态准入条件。
 CIDR、父 VPC 和网关首片不可修改；不提供 PATCH、在线换网或 VPC 迁移。
+2026-11-03 用户指定开放子网创建的网关、排除 IP、DHCP 和 DNS。新增三项随创建事务、幂等快照和 Provider 目标持久化，并在 Get/List 回显；默认空列表/false 保持已受理旧请求的指纹。本期只开放创建，未增加已有子网的编辑接口。配置值必须通过正常 KCN 下发及原身份观察后才可用。
 
 并发创建 Subnet：数据层先锁定同租户父 VPC，再检查父状态及所有未删除子网的 CIDR，插入资源和 operation 后提交。
 所有入口及恢复路径都遵守这套串行规则。不能用进程 mutex 或“查完再独立 INSERT”代替事务保护。
@@ -106,7 +110,7 @@ REST 前缀继续为 `/api/v1`。下面路径保留现有产品形式；新增/�
 | `GET /networks/vpcs/{vpc_id}` | `GetVPC` | 200 + VPC；始终按租户查询 |
 | `GET /networks/vpcs` | `ListVPCs` | 200 + 分页；`name?,state?,page?,pageSize?`（Gov），旧 RPC 见下文 |
 | `DELETE /networks/vpcs/{vpc_id}` | `DeleteVPC` | 接受异步删除时 202 + VPC；已 deleted 时 200 + VPC |
-| `POST /networks/subnets` | `CreateSubnet` | `name,vpc_id,cidr,idempotency_key,description?,gateway?`；201 + Subnet |
+| `POST /networks/subnets` | `CreateSubnet` | `name,vpc_id,cidr,idempotency_key,description?,gateway?,exclude_ips?,enable_dhcp?,dns_servers?`；201 + Subnet |
 | `GET /networks/subnets/{subnet_id}` | `GetSubnet` | 200 + Subnet |
 | `GET /networks/subnets` | `ListSubnets` | 200 + 分页；`vpc_id?,name?,state?,limit?,cursor?` |
 | `DELETE /networks/subnets/{subnet_id}` | `DeleteSubnet` | 接受异步删除时 202 + Subnet；已 deleted 时 200 + Subnet |

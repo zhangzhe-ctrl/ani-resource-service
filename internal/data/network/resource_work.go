@@ -13,7 +13,7 @@ func vpcWork(v sqlcgen.NetworkVpc) biz.ResourceWork {
 	return biz.ResourceWork{ID: v.VpcID, TenantID: v.TenantID, Kind: "vpc", BaseRequired: v.BaseConnectivityRequired, CIDR: v.Cidr, State: biz.ResourceState(v.State), Reason: biz.Reason(v.Reason), Version: v.Version, UpdatedAt: v.UpdatedAt, ObservedAt: v.ObservedAt, LastOperationID: v.LastOperationID}
 }
 func subnetWork(s sqlcgen.NetworkSubnet) biz.ResourceWork {
-	return biz.ResourceWork{ID: s.SubnetID, TenantID: s.TenantID, Kind: "subnet", VPCID: s.VpcID, CIDR: s.Cidr, Gateway: s.Gateway, State: biz.ResourceState(s.State), Reason: biz.Reason(s.Reason), Version: s.Version, UpdatedAt: s.UpdatedAt, ObservedAt: s.ObservedAt, LastOperationID: s.LastOperationID}
+	return biz.ResourceWork{ID: s.SubnetID, TenantID: s.TenantID, Kind: "subnet", VPCID: s.VpcID, CIDR: s.Cidr, Gateway: s.Gateway, State: biz.ResourceState(s.State), Reason: biz.Reason(s.Reason), Version: s.Version, UpdatedAt: s.UpdatedAt, ObservedAt: s.ObservedAt, LastOperationID: s.LastOperationID, SubnetOptions: &biz.SubnetOptions{ExcludeIPs: s.ExcludeIps, EnableDHCP: s.EnableDhcp, DNSServers: s.DnsServers}}
 }
 func claimResource(ctx context.Context, q *sqlcgen.Queries) (biz.ResourceWork, error) {
 	rows, err := q.DueResourceCandidates(ctx)

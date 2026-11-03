@@ -802,6 +802,9 @@ type NetworkSubnet struct {
 	UsedIpCount      pgtype.Int8
 	AvailableIpRange *string
 	UsedIpRange      *string
+	ExcludeIps       []string
+	EnableDhcp       bool
+	DnsServers       []string
 }
 
 type NetworkTenantNamespace struct {

@@ -42,10 +42,11 @@ func (e *ProviderError) Unwrap() error { return e.Cause }
 // ProviderTarget contains only domain references and an opaque provider object
 // identity. The adapter resolves namespace/name/cluster from its persisted map.
 type ProviderTarget struct {
-	Deleting    bool
-	Egress      *EgressWorkSpec
-	Requirement ObservationRequirement
-	Direct      bool
+	SubnetOptions *SubnetOptions
+	Deleting      bool
+	Egress        *EgressWorkSpec
+	Requirement   ObservationRequirement
+	Direct        bool
 	// Tombstone permits reuse of complete shared absence/dependency evidence
 	// only after deletion and every uncertain mutation have already completed.
 	Tombstone                                            bool
@@ -79,6 +80,7 @@ var ErrLeaseLost = errors.New("resource execution lease lost")
 // ResourceWork is the immutable resource snapshot used by the shared lifecycle
 // worker. Resource kinds are closed at the repository boundary.
 type ResourceWork struct {
+	SubnetOptions                                             *SubnetOptions
 	LoadBalancer                                              *LoadBalancerWork
 	BaseRequired                                              bool
 	SystemManaged                                             bool
@@ -232,6 +234,7 @@ func (w *Worker) Step(ctx context.Context) (worked bool, stepErr error) {
 		Requirement: work.Requirement, Direct: work.ActiveOperation || work.PendingAction != "" || (work.Resource.State == Deleted && !tombstone), Tombstone: tombstone,
 		Kind: work.Resource.Kind, VPCID: work.Resource.VPCID, Gateway: work.Resource.Gateway,
 		RequestedIP: work.Resource.RequestedIP, RequestedMAC: work.Resource.RequestedMAC,
+		SubnetOptions: work.Resource.SubnetOptions,
 	}
 	callCtx, cancel := context.WithTimeout(ctx, w.policy.RequestTimeout)
 	observation, observeErr := w.provider.Observe(callCtx, target)
