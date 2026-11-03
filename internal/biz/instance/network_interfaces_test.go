@@ -46,3 +46,36 @@ func TestManualNetworkContainerCannotConfirmRunningOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestManualNetworkContainerPendingSelectionKeepsCurrentRuntimeRunning(t *testing.T) {
+	repo, network, worker := lifecycleNetworkFixture(t)
+	repo.instance.ActiveOperation = nil
+	repo.instance.Observed = "pending"
+	repo.instance.Reason = ErrNetworkUnavailable.Error()
+	cfg := PrimaryNetworkInterface(repo.instance)
+	cfg.Desired = NetworkInterfaceChoice{Mode: "manual", VNicID: "vnic_11111111111111111111111111111111", ProviderName: "target", ProviderUID: "target-uid"}
+	cfg.RequestedRevision = repo.instance.Version
+	SetPrimaryNetworkInterface(&repo.instance, cfg)
+	repo.instance.Network.ConfirmedSnapshotRevision = repo.instance.Network.SnapshotRevision
+	network.snapshot = repo.instance.Network.SnapshotRevision
+	provider := worker.provider.(*lifecycleNetworkProvider).cleanupWorkerProvider
+	provider.observation.PVCExists = true
+	provider.observation.PVCUID = "workspace-uid"
+	provider.observation.IntentVersion = repo.instance.Version
+	if _, err := worker.Step(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	current := PrimaryNetworkInterface(repo.instance)
+	if repo.instance.Observed != Running || repo.instance.Reason != "" || repo.instance.PodUID != "new-pod" || !current.PendingRestart() || current.Applied.Mode != "automatic" || current.VerifiedPodUID != "" || repo.progress.Receipt != nil || repo.instance.Pending != nil || network.confirms != 0 {
+		t.Fatalf("pending selection invalidated the confirmed current endpoint or confirmed its target: observed=%s reason=%s config=%+v progress=%+v", repo.instance.Observed, repo.instance.Reason, current, repo.progress)
+	}
+}
+
+func TestManualNetworkContainerPendingTargetCannotBeConfirmed(t *testing.T) {
+	applied := NetworkInterfaceChoice{Mode: "automatic"}
+	desired := NetworkInterfaceChoice{Mode: "manual", VNicID: "vnic_11111111111111111111111111111111"}
+	i := Instance{NetworkInterfaces: []NetworkInterface{{Slot: "primary", Desired: desired, Applied: applied, RequestedRevision: 2}}, Network: &NetworkRuntime{SnapshotRevision: 2, ConfirmedSnapshotRevision: 2, NetworkState: "attached"}}
+	if err := confirmNetworkInterface(&i, Observation{PodUID: "old-pod", PodReady: true}); err == nil {
+		t.Fatal("pending desired target was confirmed from the old running endpoint")
+	}
+}

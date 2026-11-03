@@ -370,9 +370,13 @@ func (w *Worker) Step(ctx context.Context) (bool, error) {
 				return true, w.repo.Finish(ctx, *work, p)
 			}
 		}
-		if err := confirmNetworkInterface(&p.Instance, obs); err != nil {
-			p.Instance.Reason = err.Error()
-			return true, w.repo.Finish(ctx, *work, p)
+		// A saved selection leaves the active Pod on its applied network.
+		// Lifecycle workers confirm the target after applying its template.
+		if !PrimaryNetworkInterface(p.Instance).PendingRestart() {
+			if err := confirmNetworkInterface(&p.Instance, obs); err != nil {
+				p.Instance.Reason = err.Error()
+				return true, w.repo.Finish(ctx, *work, p)
+			}
 		}
 		p.Instance.Observed = Running
 		p.Instance.Reason = ""
