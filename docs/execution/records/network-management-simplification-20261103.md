@@ -69,7 +69,7 @@ R3 发布前 Fedora：`r3-related.log` PASS（38.863s），`r3-backend-observati
 - 12 的 Resource `ani_resource` Network schema 从 25 正常迁移至 27，使用正式 `-migrate` 入口；迁移文件与 R3 一致。迁移前 custom-format 备份与 TOC 已核验，备份 SHA-256 `c4229acd454f2498c80150e509ab320213bdd210361114a40d16b015683d5a69`。这是 **Resource 数据库迁移，不是 KCN schema**。回执为 `live/full/migration.json`；原 25 版镜像不能直接回滚到 27 库。
 - KCN 源码仍为 `6132623baabee50f17e9e179c0f5e9c1f380db04`，工作树干净；没有修改 KCN 代码、镜像、配置或 CRD。
 
-10 集群 `live/lab/window-after/`：连续 300 秒、21 次指标采样、11 次投影采样，同一 Pod/container，采样全部成功。GET/LIST **1767 次，5.89 次/秒**，相对原同集群 4728 次下降 **62.6%**；基础 GVR 各 23 次 LIST。无传输错误计数增量、audit failure、watch error、queue overflow，也无窗口内 limiter/deadline 错误。此窗口仍有两个既存活动 VPC 的真实 ownership conflict 和平台 egress 观测待确认，不能称所有网络资源已健康，也不把 23 次 LIST 全部归为 30 秒定时器。
+10 集群 R3 的 `live/lab/window-r3-stable/`：连续 300 秒、21 次指标采样、11 次投影采样，同一 Pod/container，采样全部成功。GET/LIST **1767 次，5.89 次/秒**，相对原同集群 4728 次下降 **62.6%**；基础 GVR 各 23 次 LIST。无传输错误计数增量、audit failure、watch error、queue overflow，也无窗口内 limiter/deadline 错误。此窗口仍有两个既存活动 VPC 的真实 ownership conflict 和平台 egress 观测待确认，不能称所有网络资源已健康，也不把 23 次 LIST 全部归为 30 秒定时器。
 
 4 个 LB 的 44 个投影样本全部 Available，同 operation/配置版本；启动恢复阶段短暂 ProviderUnavailable，保留旧时间与配置，最大年龄 71.77 秒，随后正常续新。最终三条主样本 fresh/available/configured；原 **15 个 Gateway/Deployment/Pod/Service UID 全部保留**。观测前后私网、公网、双模式的 **四入口 HTTP 200 + 正确 marker 均 PASS**，没有重建 LB 或修改 backend/operation。回执 `r3-final-invariants.json`、`r3-final-lb-snapshot.json`、`r3-final-*-private-http.json` 和 `external-curl/r3-final-*.json`。本结论覆盖已复现的读失败/证明滞后误判，不追认所有历史 NOT_READY 的原因。
 
@@ -91,3 +91,17 @@ R3 的 12 集群完整 300 秒窗口为 1606 次 GET/LIST，较基线减少 73.2
 真实 PG + Provider/Worker 回归 `r4-stopped-red2.log` 确定性 FAIL（Stopped Reserved 仍设置 timer），`r4-stopped-green.log` PASS（9.220s）：停止后停放、父通知不重采或续签旧时间、最终释放仍新采集；另覆盖 VM 重新接入/原生 UID、未登记 launcher 拒绝、封闭释放及两次 Watch relist 清理。首个 RED 夹具遇启动观察待同步，补入真实初始 audit 后才得到上述目标失败，没有更改业务断言。
 
 R4 最终 `r4-final-verify.log` 完整 `make verify` PASS，生成一致性、边界、故障构建、单元测试/vet/build/module/diff 检查全部完成；三份 Go 文件与本地交付源的 SHA-256 一致。随后只补充文档和现场回执，不重新扩大测试范围。
+
+R4 业务源码 `018bda711fa4114ac8b3fe761803dbf04c9465c1`，两主机源快照均为 `sha256:b6d084991511efe58b6a43177d4a3d169f3de60474326c0a97bd23804ad8d6bb`。10 镜像为 `172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:d55f4b9363ad807238221c037b133e16216b0764d6b8507d7b3007cae2e9cada`；12 镜像仍由 15 主机重新构建并推送，为 `10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:1d34ea5d18f34bc7be06934cc84c34dc4ce6d939bb5698d3ed49bb22003395e2`。两个集群均在 2026-11-03 05:19 UTC 完成仅镜像更新，无新迁移、预算/TTL 调整或 KCN 变更；`live/{lab,full}/rollout.json` 为 R4，前版回执保留为 `r3-rollout.json`。
+
+R4 的 10 集群窗口为 1804 次 GET/LIST（较原 4728 次减少 61.84%），每类基础 LIST 26 次；4 个 LB 的 44 个样本全为 Available，窗口结束后原 15 个原生 UID、配置版本及 operation 保留，四入口 HTTP 与 marker 再次通过。启动恢复期间最大证明年龄 94.91 秒，观察异常明确显示，最终恢复 fresh；没有伪造时间。此结果不把额外 LIST 全部算作周期采集。
+
+## R5：真实 VM 验收发现的提交边界
+
+R4 新 VM `8e7937b1-8111-4d7c-a6e5-fac7b0e67073` 以停止态创建，其 Reserved Attachment 已停放；首次平台启动和客机网关 ping 3/3 成功，客机内关机后自动观察为 Stopped。但随后 Start `8b98ca51-04b4-49b0-b367-4cb8597f606f` 超过 360 秒仍为未知，不能把 R4 完整 VM 主链记为通过。
+
+只读核对确认原终态 VMI/launcher 已退出且未更换；两个 virt-api 的对应时间日志只记录首次 Start，没有第二次原生请求。Resource 在 Native.Start 的前置检查前持久写入 Submitted，adapter 的启动前失败未撤销该标记，后续因旧终态 VMI 仍存在而正确触发未知重发围栏，却无法继续原操作。确定性 PG 回归 `r5-start-pg-red.log` 复现“前置 Busy 后仍有 Pending”。
+
+修复只增加 adapter 明确的“未发送原生命令”结果，worker 收到后持久清除本次提交标记，沿原 operation/版本继续；实际 PUT 的错误/丢失响应和进程中断仍保留未知围栏，不从现状反推历史未发送。旧失败样本通过正常业务 Delete 终止并检查原生清理，不修改 DB、KubeVirt 或 KCN 来恢复其启动。
+
+`r5-start-green.log` PASS（VM data 包 47.702s）：真实 PG 关闭/重开后原 Start 继续，已发送丢失响应/保留旧终态 VMI 仍禁止重发，原生 HTTP 失败不误报未发送；UID/namespace/template 前置拒绝及终态启动失败、未知 Restart 恢复回归通过。`r5-final-verify.log` 完整 `make verify` PASS；6 个 Go 文件的 SHA-256 在本地与 Fedora 一致。R4 失败业务记录保存于 `live/full/r4-business/`，其中 VM、盘、网卡/IP、VPC/Subnet/EIP/SNAT 均已真实删除，共享 NAD 保留、Attachment released 且停放。
