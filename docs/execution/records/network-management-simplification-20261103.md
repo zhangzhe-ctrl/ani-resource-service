@@ -105,3 +105,19 @@ R4 新 VM `8e7937b1-8111-4d7c-a6e5-fac7b0e67073` 以停止态创建，其 Reserv
 修复只增加 adapter 明确的“未发送原生命令”结果，worker 收到后持久清除本次提交标记，沿原 operation/版本继续；实际 PUT 的错误/丢失响应和进程中断仍保留未知围栏，不从现状反推历史未发送。旧失败样本通过正常业务 Delete 终止并检查原生清理，不修改 DB、KubeVirt 或 KCN 来恢复其启动。
 
 `r5-start-green.log` PASS（VM data 包 47.702s）：真实 PG 关闭/重开后原 Start 继续，已发送丢失响应/保留旧终态 VMI 仍禁止重发，原生 HTTP 失败不误报未发送；UID/namespace/template 前置拒绝及终态启动失败、未知 Restart 恢复回归通过。`r5-final-verify.log` 完整 `make verify` PASS；6 个 Go 文件的 SHA-256 在本地与 Fedora 一致。R4 失败业务记录保存于 `live/full/r4-business/`，其中 VM、盘、网卡/IP、VPC/Subnet/EIP/SNAT 均已真实删除，共享 NAD 保留、Attachment released 且停放。
+
+R5 业务源码 `54d1a40a513001ca76eea5035c7754f8a8237e83`，两个构建主机快照一致为 `sha256:09c3b31c1a63f4e6f49fef384d9f89e36369d681c8ed0cd3c5bc3bf53c0db755`。Fedora 构建/推送 10 镜像 `172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:effbfd4ab96ae58fc98ca9f2a054f6d79d1f434c347272679ea17edb0a5299e9`；`ubuntu@100.64.128.15` 独立重建/推送 12 镜像 `10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:d7476d4b5f486b28734ed201798e235a062a6c52bbfbe7952aa466e4af3a5d50`。两处仅更新 Resource 镜像并完成 rollout；没有修改 KCN，未调整 QPS/Burst/audit/stale，未增加数据库迁移。当前回执为 `live/{lab,full}/rollout.json`，上一版为 `r4-rollout.json`。
+
+R5 的 12 集群 VM `16fd4897-e90a-4c40-901d-e24c8c43817a`：停止态创建→首次 Start→客机网关 ping 3/3→客机正常关机→原 VM 再次 Start→平台 Stop→Delete 全部完成。创建、首次/再次启动、关机、删除 5 个 operation 均 succeeded、reason 为空，版本依次 1–5；客机关机不制造新 operation 或业务版本。原 VM UID `e2cda88c-c6b9-4190-ab25-a7801f4b2ee4` 保留至删除，两个运行周期共 12 个原生 VM/VMI/launcher/VNic/VNicIP/DV/PVC/PV UID 均逐项确认 absent。停止态创建及平台关机后的 Reserved Attachment 均 reason 为空、`next_check_at=infinity`，没有释放预留关系。
+
+随后正常删除 VPC `vpc_19afd89a4e334bef8fafba35aa474856` 和 Subnet `subnet_01894b7907f34293b1ba0ffed8a2d45a`；它们及基础 EIP/SNAT 原对象均 absent，无残留 Subnet/VNic/VNicIP/SNAT/NAT/Service 引用，Attachment `att_9bf282df8e0e48e58a3ec23d643c9310` released 且停放；共享 NAD 原 UID 保留。对应 `live/full/r5-all-operations-final.json`、`parked-{initial,after-stop}.json`、`vm-native-cleanup.json`、`network-native-cleanup.json`，均为真实环境结果。
+
+R5 的 10 集群最终窗口 `live/lab/window-after/`（05:36:59–05:42:00 UTC；与集群日志按数据库时钟对齐）：21 个指标/11 个投影样本、同 Pod/container、无缺样。GET/LIST **1792 次，较原 4728 次减少 62.10%**；每类基础 LIST 25 次。4 个 LB 的 44 个样本全部 Available，最大观测年龄 34.03 秒，原 operation/配置版本保留；最终三条主样本 fresh/configured，原 15 个 Gateway/Deployment/Pod/Service UID 保留、每个 Deployment 2 Ready，私网/公网/双模式四入口 HTTP 200+正确 marker 均通过。一次 `LB audit needs a fresh collection` 只留下观测异常，没有错误退化资源或撤出后端。窗口没有传输错误、audit/watch failure 或队列溢出；既存网络 ownership conflict 和平台 egress 待确认仍如实保留，不能把 25 次 LIST 都称为周期采集。最终流量/身份回执为 `r5-final-*`。
+
+## R6：稳定交换机的普通节点读取
+
+R5 的 12 集群 300 秒窗口为 1577 GET/LIST（较 6000 次减少 73.72%），每类基础 LIST 19 次，尚未达到主要由 30 秒共享周期驱动的要求，故 #48 未关闭。只读检查时没有活动租户网络操作，也没有有限定时器的 Attachment；现存交换机为 Available/configured。其 `InspectVirtualSwitchNode` 仍调用节点完整实时采集，节点探测 ConfigMap 更新也会失效该采集，属于普通观察遗留放大。`r6-switch-red.log` 确定性复现：仅 ConfigMap 变化便发生第二次全量 LIST，并改用新的观测时间。
+
+只对已有 Prepared/Applied、非 Unknown 的 configured 交换机成员复用共享节点集合；节点成员/UID/归属相关变化使用独立的现有关系键失效，ConfigMap 探测更新不使这份节点身份事实失效。没有新缓存或后台任务；保留原 collected_at。新增/替换 Node、来源断点、过期视图拒绝旧证明并等待共享 audit；首次配置、未知变更和删除继续当前完整采集及原生 UID/RV fence。#49 已在 R5 的身份/实际流量复核后关闭；#47 仍开放且 KCN 未修改。
+
+`r6-switch-green.log` PASS（data 22.077s、biz 0.008s）：普通节点事实不重采/不续签，成员新增/替换、断线、过期仍拒绝，未知节点变更使用当前完整采集；真实 PG 两阶段受理/恢复、并发 VLAN 和删除等待旧租约退出通过，原生删除 fence 拒绝延迟旧 PATCH。`r6-final-verify.log` 完整 `make verify` PASS，3 个 Go 文件本地/Fedora SHA-256 一致。R5 VM 业务原件归档至 `live/full/r5-business/`，两环境窗口归档至 `window-r5-before-switch-fix/`；10 的 R5 窗口包含启动后的终态一次性恢复，不能作为终态完全静止窗口，12 的 33 条终态则全部停放且 epoch 不变。R6 最终窗口将先等待启动恢复完成，再统计固定 300 秒。

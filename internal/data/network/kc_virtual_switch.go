@@ -343,7 +343,30 @@ func (p *KCProvider) InspectVirtualSwitchNode(ctx context.Context, sw biz.Virtua
 	if sw.ClusterID != p.repository.placement.ClusterID || sw.BindingID == "" {
 		return member, switchConflict(fmt.Errorf("virtual switch %s cluster or binding identity invalid", sw.ID))
 	}
-	nodes, _, _, collected, err := p.nodeNetworkObjects(ctx)
+	var nodes []unstructured.Unstructured
+	var collected time.Time
+	var err error
+	if p.observation != nil && sw.State == biz.Available && sw.BindingState == "configured" && member.Prepared && member.Applied && !member.Unknown {
+		// Stable binding observation needs the frozen node identities, not a
+		// new cluster-wide collection after every node-probe ConfigMap update.
+		// Node changes and source boundaries still invalidate this proof;
+		// unresolved mutations and deletion retain current collection below.
+		var now time.Time
+		now, err = p.repository.readQueries(ctx).DatabaseTime(ctx)
+		if err != nil {
+			return member, readFailure(err)
+		}
+		view, readErr := p.observation.cachedSnapshot(now)
+		if readErr != nil {
+			return member, readFailure(readErr)
+		}
+		if !p.observation.valid(view, []string{"node-membership"}) {
+			return member, switchUnavailable(fmt.Errorf("switch node observation awaits shared audit"))
+		}
+		nodes, _, _, collected, err = nodeNetworkFromView(view)
+	} else {
+		nodes, _, _, collected, err = p.nodeNetworkObjects(ctx)
+	}
 	if err != nil {
 		return member, err
 	}
