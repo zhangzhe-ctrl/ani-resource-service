@@ -2,7 +2,7 @@
 
 ## 2026-11-03：网络管理简化
 
-实现已接通旧投影下的当前准入、观测异常保留最后结果、终态退休、共享恢复及运行期安装审计迁出；Console 同步显示待确认并移除单纯 stale 门禁。Fedora 对应 PostgreSQL 回归 PASS；最终 `make verify`、候选发布及真实 VM/LB/300 秒成本验收尚待完成。#47 保留为 KCN 缺陷，#48/#49 尚未关闭。来源与逐层证据见[实施记录](records/network-management-simplification-20261103.md)。
+R3 已发布到 10/12：同身份 LB 四入口及 12 集群 VM 创建、内网、客机关机、平台启动/关机/删除、真实磁盘/网卡/IP/网络释放通过。两环境 300 秒 GET/LIST 分别从 4728→1767、6000→1606；已完成终态停放，仍发现停止 VM 的 Reserved 连接重复采集。R4 已补齐该停止态分支，Fedora 对应真实 PG 与完整 `make verify` PASS，待最终镜像与现场复核。Console PR #11 源码检查通过、未生产部署/浏览器验收。#47 保留为 KCN 缺陷，#48/#49 尚未关闭。来源、失败回退与逐层证据见[实施记录](records/network-management-simplification-20261103.md)。
 
 <a id="base-network-auto-allocation-20261103"></a>
 

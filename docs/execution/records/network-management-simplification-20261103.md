@@ -58,4 +58,36 @@
 
 该现场还明确了另一条误判：`lbMemberIdentity` 将 Attachment 证据过期与实际 UID/归属不匹配都折叠成 `false`，触发 backend 撤出及 LB degraded。现区分这两种结果：当前管理身份/原生 Pod→VNic→VNicIP 地址链不符仍拒绝；身份链吻合但证明时间不足或 DB 读取失败时返回观测异常，保持最后结果与原时间，操作仍等待确认。没有延长 TTL、把旧时间改成当前时间或放行未知 backend。
 
-R3 发布前 Fedora：`r3-related.log` PASS（38.863s），`r3-backend-observation.log` PASS（31.895s，含真实 Worker/PG 保留配置与观测时间、future/expired 证据不可采用、过期情况下真实 UID 替换仍拒绝），最后 `r3-final-verify.log` 完整 `make verify` PASS。R3 真实环境验收仍待发布后验证。
+R3 发布前 Fedora：`r3-related.log` PASS（38.863s），`r3-backend-observation.log` PASS（31.895s，含真实 Worker/PG 保留配置与观测时间、future/expired 证据不可采用、过期情况下真实 UID 替换仍拒绝），最后 `r3-final-verify.log` 完整 `make verify` PASS。后续真实环境结果见下节。
+
+## R3 发布与真实环境结果
+
+业务源码固定为 `dbe3cd514a3cedb4f6ab1474ddc6906bb0be8440`，两个构建主机使用相同源快照 `sha256:7a7c37a9a9a22e601300775fe8b6a6339900d20b2ebe8cbb7f5406ea99a24f1b`。
+
+- 10 集群在 Fedora 构建并发布：`172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:fd46eaed0213d21e504d5fd4dd7c6fdb20f4ddf54316a0f1588ed0c54ace7abf`。
+- 12 集群按用户要求在 `ubuntu@100.64.128.15` 重建并推送：`10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:bdd19ba3317f2b39859b72b9894c2513d514cc89dfb1dc2d6fae37a4e0986e93`。两个 Deployment 均只替换镜像，原 UID 保留，滚动更新完成；QPS 20、Burst 40、30 秒 audit 和 60 秒 stale 参数未调整。
+- 12 的 Resource `ani_resource` Network schema 从 25 正常迁移至 27，使用正式 `-migrate` 入口；迁移文件与 R3 一致。迁移前 custom-format 备份与 TOC 已核验，备份 SHA-256 `c4229acd454f2498c80150e509ab320213bdd210361114a40d16b015683d5a69`。这是 **Resource 数据库迁移，不是 KCN schema**。回执为 `live/full/migration.json`；原 25 版镜像不能直接回滚到 27 库。
+- KCN 源码仍为 `6132623baabee50f17e9e179c0f5e9c1f380db04`，工作树干净；没有修改 KCN 代码、镜像、配置或 CRD。
+
+10 集群 `live/lab/window-after/`：连续 300 秒、21 次指标采样、11 次投影采样，同一 Pod/container，采样全部成功。GET/LIST **1767 次，5.89 次/秒**，相对原同集群 4728 次下降 **62.6%**；基础 GVR 各 23 次 LIST。无传输错误计数增量、audit failure、watch error、queue overflow，也无窗口内 limiter/deadline 错误。此窗口仍有两个既存活动 VPC 的真实 ownership conflict 和平台 egress 观测待确认，不能称所有网络资源已健康，也不把 23 次 LIST 全部归为 30 秒定时器。
+
+4 个 LB 的 44 个投影样本全部 Available，同 operation/配置版本；启动恢复阶段短暂 ProviderUnavailable，保留旧时间与配置，最大年龄 71.77 秒，随后正常续新。最终三条主样本 fresh/available/configured；原 **15 个 Gateway/Deployment/Pod/Service UID 全部保留**。观测前后私网、公网、双模式的 **四入口 HTTP 200 + 正确 marker 均 PASS**，没有重建 LB 或修改 backend/operation。回执 `r3-final-invariants.json`、`r3-final-lb-snapshot.json`、`r3-final-*-private-http.json` 和 `external-curl/r3-final-*.json`。本结论覆盖已复现的读失败/证明滞后误判，不追认所有历史 NOT_READY 的原因。
+
+12 集群使用正式 tenant-a API 新建 VPC `vpc_9913cae07ff54ce5a15a26263dfbb843`、Subnet `subnet_d3f07993e4f945ea939c5d69b5fa18ac` 和 VM `7aef1e31-0cc3-44a1-a30d-0a53007a0b51`：
+
+- VPC/Subnet Available，基础出口 Ready；VM 创建 Running，客机取得 `10.131.1.2/24`、默认网关 `10.131.1.1`，串口内真实 ping 网关 3/3 成功。
+- 客机内执行正常关机，串口记录 `reboot: Power down`，Resource 独立观察为 Stopped；desiredState=Running、version=1、原创建 operation 保持。随后正式平台 Start→Running/version2、Stop→Stopped/version3、Delete→Deleted 完成。没有网络过期前置拒绝。
+- 原 VM UID `1327ac91-dfdb-43d9-a688-34f264605eb2` 保留至删除。两个启动周期共捕获 12 个原生 UID：VM×1、VMI/launcher Pod/VNic/VNicIP 各×2、DV/PVC/PV 各×1；删除后逐项 GET 均 absent。
+- 正常删除 Subnet 和 VPC 完成；原 VPC/Subnet、基础 EIP `eip_2e8b9ec814be40d291baaf4f82e906bb`、SNAT `snat_42542a137e724234b98473b4f0f89907` 全部 absent，对应网卡/IP/NAT/Service 引用为空。共享 NAD `ani-vm-primary-v1` 原 UID 保留。该 VM Attachment `att_126daeb7b45c4f23819d50461e0106a8` 为 released、reason 为空、`next_check_at=infinity`、无 protocol block。
+
+R3 业务回执位于 `live/full/r3-business/`：`vm-flow.json`、`vm-first-running.json`、`guest-console-probe.json`、`guest-console-shutdown-final.json`、`vm-guest-stopped.json`、`vm-after-{start,stop,delete}.json`、`vm-native-cleanup.json`、`network-native-cleanup.json`。HTTP 400 的原始驱动失败保留：VM 幂等键要求 UUID、SSH 公钥不能带换行、Delete 不接受 force-stop 专用确认字段；修正验收请求后复用有效幂等键，没有改产品代码。串口首轮提示/ANSI 解析错误也保留，客机 ping 的原始完成输出已重新解析，没有重复业务操作冒充首次通过。辅助 SSH 端口转发曾报 no route to host，未修复该通道；本次内网与客机关机依据实际串口结果，不把 SSH 记为 PASS。
+
+## R4：停止 VM 的预留连接
+
+R3 的 12 集群完整 300 秒窗口为 1606 次 GET/LIST，较基线减少 73.2%，每类基础 LIST 19 次；无传输错误/limiter/deadline。25 条 Deleted 和 25 条 released Attachment 均不再周期调度，两个缺 UID 的历史 VPC 保留 ownership conflict 且 epoch 不增长，原残留 reason 的 SNAT 经真实观察完成确认。7 个现存 VPC 均 Available、观察及时；原 5 台 VM 的 11 组采样状态/版本/operation 不变。窗口保留于 `live/full/window-r3-before-stopped-fix/`。
+
+该窗口尚未满足成本收敛目标：既存停止 VM `e739fb1a-4921-472d-baa3-743616aa7c42` 的 `att_f07dd6c001e24641a7b7e261433c9f57` 为 Reserved、reason 为空，却仍使用独立定时器和首次接入采集分支。本轮没有操作该受保护 VM；修复仅让已接受 open/stopped 快照的 VM 预留连接按普通共享观察运行，保留占用。活动首次接入、封闭后释放和协议恢复继续当前证明。
+
+真实 PG + Provider/Worker 回归 `r4-stopped-red2.log` 确定性 FAIL（Stopped Reserved 仍设置 timer），`r4-stopped-green.log` PASS（9.220s）：停止后停放、父通知不重采或续签旧时间、最终释放仍新采集；另覆盖 VM 重新接入/原生 UID、未登记 launcher 拒绝、封闭释放及两次 Watch relist 清理。首个 RED 夹具遇启动观察待同步，补入真实初始 audit 后才得到上述目标失败，没有更改业务断言。
+
+R4 最终 `r4-final-verify.log` 完整 `make verify` PASS，生成一致性、边界、故障构建、单元测试/vet/build/module/diff 检查全部完成；三份 Go 文件与本地交付源的 SHA-256 一致。随后只补充文档和现场回执，不重新扩大测试范围。

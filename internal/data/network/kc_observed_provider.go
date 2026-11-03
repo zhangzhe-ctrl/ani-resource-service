@@ -87,7 +87,11 @@ func (p *KCProvider) ObserveAttachment(ctx context.Context, w biz.AttachmentWork
 		})
 	}
 	a := w.Attachment
-	critical := w.RequireFreshRelations || (a.State != biz.Attached && a.State != biz.Released)
+	// A stopped VM retains its reservation, but is no longer awaiting initial
+	// network attachment. Its ordinary projection uses the same shared facts
+	// as Attached; final closure/protocol recovery still demands a fresh audit.
+	stoppedReservation := a.State == biz.Reserved && a.WorkloadMode == "vm_managed" && w.ConsumerSnapshot != nil && w.ConsumerSnapshot.State == "open" && w.ConsumerSnapshot.DesiredRunState == "stopped"
+	critical := w.RequireFreshRelations || (a.State != biz.Attached && a.State != biz.Released && !stoppedReservation)
 	keys, err := attachmentObservationKeys(w)
 	if err != nil {
 		return biz.AttachmentObservation{}, readFailure(err)
