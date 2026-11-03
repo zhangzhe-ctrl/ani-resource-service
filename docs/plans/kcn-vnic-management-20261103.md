@@ -112,7 +112,7 @@ spec:
 2. 通过实例 owner 的命令入口，与 Start/Stop/Restart/Delete/网络变更互斥并检查配置版本。持久受理目标网卡及预留关系；确认本期未被其他实例占用后再修改目标 VNIC，不能在 Network 中绕过实例生命周期直接改 Pod。
 3. 将实例的安全组产品 ID 解析为同 namespace 的 KCN 名称，写入目标 VNIC 的 `spec.securityGroups`，并消费相应应用结果。记录实例配置和安全组版本；同步未完成显示“配置处理中”，不能提前宣告已具备重启应用条件。
 4. 保存实例期望配置。运行中完成“配置已保存、待重启生效”，保留当前 Pod、当前有效网卡及其占用；目标 VNIC 显示“已预留、待应用”。该配置操作完成后释放操作互斥，不能一直占着运行中 operation 阻止用户发起 Restart。
-5. 用户平台 Restart 或下一次 Stop → Start 时，重新核验目标身份、占用和最新安全组，锁定本次应用版本；旧运行端点退出后，在既有生命周期中应用模板再创建新 Pod。VM 写 `spec.template.metadata.annotations`，Notebook 写最终生成 Pod 的模板；停止态保存也可在确认无旧端点后先完成模板应用。仅更新期望配置期间，控制器自行重建 Pod 仍使用原有效模板。
+5. 用户平台 Restart 或下一次 Stop → Start 时，重新核验目标身份、占用和最新安全组，锁定本次应用版本；旧运行端点退出后，在既有生命周期中应用模板再创建新 Pod。VM 写 `spec.template.metadata.annotations`，Notebook 写根注解；其 v1.10 controller 不更新已有 StatefulSet 的模板 metadata，故仅在原 Notebook UID、受控 StatefulSet UID/RV、安全停止、零副本及无受控 Pod 再次确认后退休旧 StatefulSet，沿原 operation 等待 controller 重建并确认目标模板，不直接修改 StatefulSet/Pod。停止态保存也可在确认无旧端点后先完成模板应用。仅更新期望配置期间，控制器自行重建 Pod 仍使用原有效模板。
 6. 新 Pod 从创建时就携带 `networking.kubercloud.com/vnic: <裸名称>`；KCN 的 VNIC 引用优先于 Subnet。保留一致的 Subnet 声明，核验新 Pod/VMI/launcher 身份、目标配置版本和实际接网结果后更新生效结果。观察不明时保留最后确认信息和原因；不能把新 Pod Running 或 annotation 正确单独当成网络已生效。
 
 旧自动 VNIC 随旧 Pod 退出由 KCN 回收；Res 不把它改名、接管、移除 ownerReference，或自行删除其底层对象。旧手动 VNIC 在旧端点退出、不再被期望配置引用、且仍可能创建 Pod 的旧模板引用已撤下后解除本实例占用，资源和地址保留。目标 VNIC 在待应用期间禁止被其他实例抢占或删除；切换后 IP 可能不同，页面应在保存前展示目标地址。

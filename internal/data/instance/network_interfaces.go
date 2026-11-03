@@ -7,6 +7,7 @@ import (
 
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/instance"
 	network "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
@@ -94,6 +95,9 @@ func (n *Notebook) SetNetworkInterface(ctx context.Context, i biz.Instance, c bi
 	// Notebook owns StatefulSet propagation. Do not start before that template
 	// carries this exact revision, including removal when returning to automatic.
 	set, err := n.lifecycleGet(ctx, stsGVR, i.Spec.Namespace, i.Spec.NotebookName)
+	if apierrors.IsNotFound(err) {
+		return biz.ErrNetworkUnavailable // The Notebook controller is rebuilding it.
+	}
 	if err != nil {
 		return err
 	}
@@ -104,9 +108,7 @@ func (n *Notebook) SetNetworkInterface(ctx context.Context, i biz.Instance, c bi
 	if err != nil {
 		return err
 	}
-	if template[biz.VNicAnnotation] != value || template["network.ani.io/interface-revision"] != revisionText {
-		return biz.ErrNetworkUnavailable
-	}
+	matches := template[biz.VNicAnnotation] == value && template["network.ani.io/interface-revision"] == revisionText
 	after, err := n.ObserveIdentity(ctx, i)
 	if err != nil {
 		return err
@@ -114,7 +116,39 @@ func (n *Notebook) SetNetworkInterface(ctx context.Context, i biz.Instance, c bi
 	if !after.SafeStopped || after.PodExists || after.NotebookUID != obs.NotebookUID || after.StatefulSetUID != obs.StatefulSetUID {
 		return biz.ErrNetworkUnavailable
 	}
-	return nil
+	latestRoot, err := n.lifecycleGet(ctx, notebookGVR, i.Spec.Namespace, i.Spec.NotebookName)
+	if err != nil {
+		return err
+	}
+	if !owned(latestRoot, i, obs.NotebookUID) || !sameMountTemplateRead(root, latestRoot) {
+		return biz.ErrOwnership
+	}
+	latestSet, err := n.lifecycleGet(ctx, stsGVR, i.Spec.Namespace, i.Spec.NotebookName)
+	if apierrors.IsNotFound(err) {
+		return biz.ErrNetworkUnavailable
+	}
+	if err != nil {
+		return err
+	}
+	if !controlledBy(latestSet, "kubeflow.org", "Notebook", i.Spec.NotebookName, i.NotebookUID) || string(latestSet.GetUID()) != after.StatefulSetUID || !sameMountTemplateRead(set, latestSet) {
+		return biz.ErrOwnership
+	}
+	if matches {
+		return nil
+	}
+	// Notebook v1.10 propagates annotations only when creating its StatefulSet.
+	// Retire this stopped, empty controller child; the Notebook recreates it
+	// from the saved root annotations. UID/RV fencing makes response loss safe.
+	if latestSet.GetDeletionTimestamp() != nil || latestSet.GetResourceVersion() == "" {
+		return biz.ErrNetworkUnavailable
+	}
+	uid, rv := latestSet.GetUID(), latestSet.GetResourceVersion()
+	policy := metav1.DeletePropagationForeground
+	err = n.client.Resource(stsGVR).Namespace(i.Spec.Namespace).Delete(ctx, i.Spec.NotebookName, metav1.DeleteOptions{Preconditions: &metav1.Preconditions{UID: &uid, ResourceVersion: &rv}, PropagationPolicy: &policy})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return mutationError(err)
+	}
+	return biz.ErrNetworkUnavailable
 }
 
 func (n *InstanceNetwork) ResolveNetworkInterfaceChoice(ctx context.Context, i biz.Instance, c biz.NetworkInterfaceChoice) (biz.NetworkInterfaceChoice, error) {
