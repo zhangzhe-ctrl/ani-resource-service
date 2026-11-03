@@ -218,6 +218,9 @@ message Subnet {
   reserved "available_ip_count", "used_ip_count";
   optional string available_ip_range = 19;
   optional string used_ip_range = 20;
+  repeated string exclude_ips = 21;
+  bool enable_dhcp = 22;
+  repeated string dns_servers = 23;
 }
 message CreateSubnetRequest {
  string tenant_id = 1;
@@ -228,6 +231,9 @@ message CreateSubnetRequest {
  Attribution attribution = 6;
  string vpc_id = 7;
  optional string gateway = 8;
+ repeated string exclude_ips = 9;
+ optional bool enable_dhcp = 10;
+ repeated string dns_servers = 11;
 }
 message CreateSubnetResponse { Subnet subnet = 1; }
 message GetSubnetRequest { string tenant_id = 1; string subnet_id = 2; }

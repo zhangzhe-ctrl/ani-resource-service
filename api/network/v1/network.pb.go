@@ -1666,6 +1666,9 @@ type Subnet struct {
 	Gateway          string                 `protobuf:"bytes,16,opt,name=gateway,proto3" json:"gateway,omitempty"`
 	AvailableIpRange *string                `protobuf:"bytes,19,opt,name=available_ip_range,json=availableIpRange,proto3,oneof" json:"available_ip_range,omitempty"`
 	UsedIpRange      *string                `protobuf:"bytes,20,opt,name=used_ip_range,json=usedIpRange,proto3,oneof" json:"used_ip_range,omitempty"`
+	ExcludeIps       []string               `protobuf:"bytes,21,rep,name=exclude_ips,json=excludeIps,proto3" json:"exclude_ips,omitempty"`
+	EnableDhcp       bool                   `protobuf:"varint,22,opt,name=enable_dhcp,json=enableDhcp,proto3" json:"enable_dhcp,omitempty"`
+	DnsServers       []string               `protobuf:"bytes,23,rep,name=dns_servers,json=dnsServers,proto3" json:"dns_servers,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1826,6 +1829,27 @@ func (x *Subnet) GetUsedIpRange() string {
 	return ""
 }
 
+func (x *Subnet) GetExcludeIps() []string {
+	if x != nil {
+		return x.ExcludeIps
+	}
+	return nil
+}
+
+func (x *Subnet) GetEnableDhcp() bool {
+	if x != nil {
+		return x.EnableDhcp
+	}
+	return false
+}
+
+func (x *Subnet) GetDnsServers() []string {
+	if x != nil {
+		return x.DnsServers
+	}
+	return nil
+}
+
 type CreateSubnetRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	TenantId       string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
@@ -1836,6 +1860,9 @@ type CreateSubnetRequest struct {
 	Attribution    *Attribution           `protobuf:"bytes,6,opt,name=attribution,proto3" json:"attribution,omitempty"`
 	VpcId          string                 `protobuf:"bytes,7,opt,name=vpc_id,json=vpcId,proto3" json:"vpc_id,omitempty"`
 	Gateway        *string                `protobuf:"bytes,8,opt,name=gateway,proto3,oneof" json:"gateway,omitempty"`
+	ExcludeIps     []string               `protobuf:"bytes,9,rep,name=exclude_ips,json=excludeIps,proto3" json:"exclude_ips,omitempty"`
+	EnableDhcp     *bool                  `protobuf:"varint,10,opt,name=enable_dhcp,json=enableDhcp,proto3,oneof" json:"enable_dhcp,omitempty"`
+	DnsServers     []string               `protobuf:"bytes,11,rep,name=dns_servers,json=dnsServers,proto3" json:"dns_servers,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1924,6 +1951,27 @@ func (x *CreateSubnetRequest) GetGateway() string {
 		return *x.Gateway
 	}
 	return ""
+}
+
+func (x *CreateSubnetRequest) GetExcludeIps() []string {
+	if x != nil {
+		return x.ExcludeIps
+	}
+	return nil
+}
+
+func (x *CreateSubnetRequest) GetEnableDhcp() bool {
+	if x != nil && x.EnableDhcp != nil {
+		return *x.EnableDhcp
+	}
+	return false
+}
+
+func (x *CreateSubnetRequest) GetDnsServers() []string {
+	if x != nil {
+		return x.DnsServers
+	}
+	return nil
 }
 
 type CreateSubnetResponse struct {
@@ -5182,7 +5230,7 @@ const file_network_v1_network_proto_rawDesc = "" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12!\n" +
 	"\foperation_id\x18\x02 \x01(\tR\voperationId\"K\n" +
 	"\x14GetOperationResponse\x123\n" +
-	"\toperation\x18\x01 \x01(\v2\x15.network.v1.OperationR\toperation\"\xfa\x05\n" +
+	"\toperation\x18\x01 \x01(\v2\x15.network.v1.OperationR\toperation\"\xdd\x06\n" +
 	"\x06Subnet\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x12\n" +
@@ -5205,9 +5253,15 @@ const file_network_v1_network_proto_rawDesc = "" +
 	"\x0ereason_message\x18\x0f \x01(\tR\rreasonMessage\x12\x18\n" +
 	"\agateway\x18\x10 \x01(\tR\agateway\x121\n" +
 	"\x12available_ip_range\x18\x13 \x01(\tH\x00R\x10availableIpRange\x88\x01\x01\x12'\n" +
-	"\rused_ip_range\x18\x14 \x01(\tH\x01R\vusedIpRange\x88\x01\x01B\x15\n" +
+	"\rused_ip_range\x18\x14 \x01(\tH\x01R\vusedIpRange\x88\x01\x01\x12\x1f\n" +
+	"\vexclude_ips\x18\x15 \x03(\tR\n" +
+	"excludeIps\x12\x1f\n" +
+	"\venable_dhcp\x18\x16 \x01(\bR\n" +
+	"enableDhcp\x12\x1f\n" +
+	"\vdns_servers\x18\x17 \x03(\tR\n" +
+	"dnsServersB\x15\n" +
 	"\x13_available_ip_rangeB\x10\n" +
-	"\x0e_used_ip_rangeJ\x04\b\x11\x10\x12J\x04\b\x12\x10\x13R\x12available_ip_countR\rused_ip_count\"\xa2\x02\n" +
+	"\x0e_used_ip_rangeJ\x04\b\x11\x10\x12J\x04\b\x12\x10\x13R\x12available_ip_countR\rused_ip_count\"\x9a\x03\n" +
 	"\x13CreateSubnetRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -5216,9 +5270,17 @@ const file_network_v1_network_proto_rawDesc = "" +
 	"\x0fidempotency_key\x18\x05 \x01(\tR\x0eidempotencyKey\x129\n" +
 	"\vattribution\x18\x06 \x01(\v2\x17.network.v1.AttributionR\vattribution\x12\x15\n" +
 	"\x06vpc_id\x18\a \x01(\tR\x05vpcId\x12\x1d\n" +
-	"\agateway\x18\b \x01(\tH\x00R\agateway\x88\x01\x01B\n" +
+	"\agateway\x18\b \x01(\tH\x00R\agateway\x88\x01\x01\x12\x1f\n" +
+	"\vexclude_ips\x18\t \x03(\tR\n" +
+	"excludeIps\x12$\n" +
+	"\venable_dhcp\x18\n" +
+	" \x01(\bH\x01R\n" +
+	"enableDhcp\x88\x01\x01\x12\x1f\n" +
+	"\vdns_servers\x18\v \x03(\tR\n" +
+	"dnsServersB\n" +
 	"\n" +
-	"\b_gateway\"B\n" +
+	"\b_gatewayB\x0e\n" +
+	"\f_enable_dhcp\"B\n" +
 	"\x14CreateSubnetResponse\x12*\n" +
 	"\x06subnet\x18\x01 \x01(\v2\x12.network.v1.SubnetR\x06subnet\"L\n" +
 	"\x10GetSubnetRequest\x12\x1b\n" +
