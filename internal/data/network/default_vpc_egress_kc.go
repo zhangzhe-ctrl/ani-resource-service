@@ -130,7 +130,7 @@ func (p *DefaultEgressKCProvider) observe(ctx context.Context, x biz.DefaultEgre
 	if err != nil {
 		return o, nil, nil, err
 	}
-	r, set, ready, err := p.poolSet(ctx, x.Egress.PoolID, cleanup, cleanup || x.Egress.State != biz.Available || x.Egress.PendingAction != "")
+	r, set, ready, err := p.poolSet(ctx, x.Egress.PoolID, cleanup, cleanup || x.Egress.State == biz.Provisioning || x.Egress.PendingAction != "")
 	if err != nil {
 		return o, nil, nil, err
 	}

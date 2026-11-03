@@ -121,3 +121,19 @@ R5 的 12 集群 300 秒窗口为 1577 GET/LIST（较 6000 次减少 73.72%）�
 只对已有 Prepared/Applied、非 Unknown 的 configured 交换机成员复用共享节点集合；节点成员/UID/归属相关变化使用独立的现有关系键失效，ConfigMap 探测更新不使这份节点身份事实失效。没有新缓存或后台任务；保留原 collected_at。新增/替换 Node、来源断点、过期视图拒绝旧证明并等待共享 audit；首次配置、未知变更和删除继续当前完整采集及原生 UID/RV fence。#49 已在 R5 的身份/实际流量复核后关闭；#47 仍开放且 KCN 未修改。
 
 `r6-switch-green.log` PASS（data 22.077s、biz 0.008s）：普通节点事实不重采/不续签，成员新增/替换、断线、过期仍拒绝，未知节点变更使用当前完整采集；真实 PG 两阶段受理/恢复、并发 VLAN 和删除等待旧租约退出通过，原生删除 fence 拒绝延迟旧 PATCH。`r6-final-verify.log` 完整 `make verify` PASS，3 个 Go 文件本地/Fedora SHA-256 一致。R5 VM 业务原件归档至 `live/full/r5-business/`，两环境窗口归档至 `window-r5-before-switch-fix/`；10 的 R5 窗口包含启动后的终态一次性恢复，不能作为终态完全静止窗口，12 的 33 条终态则全部停放且 epoch 不变。R6 最终窗口将先等待启动恢复完成，再统计固定 300 秒。
+
+R6 业务源码 `4a41fe95c9f15d7d6cc70a3096abbac8075b068e`，两主机源码快照均为 `sha256:3364e0eca70f5de9110566f4c10db148d3c42ac6353b4f1be5fbe66fbc238305`。10 镜像 `172.16.101.10:30003/icn-01a15337-release/ani-resource-service@sha256:92aae5fa29ca33124695fcbd624767ad9b3a632ea42fe8947cb57bd64b590f28` 由 Fedora 构建推送；12 镜像 `10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:6efdfc029fb98b4449c398f0d7735ffae7b2f45813db9aadebf199a1b8fd4364` 由 `ubuntu@100.64.128.15` 独立构建推送。两个集群仅镜像更新并完成 rollout，没有新迁移、预算/TTL 或 KCN 变更。
+
+R6 的真实 VM `8a27c0cf-b38a-4906-87e7-0700b07703e6` 完成停止态创建、两次 Start、客机网关 ping 3/3、客机正常关机、平台 Stop、Delete；5 个 operation 均 succeeded 且 reason 为空。两个停止阶段的 Reserved 关系停放，随后 12 个原生 VM/运行/盘/网卡/IP 对象逐项 absent，VPC/Subnet/EIP/SNAT 正常删除、无孤儿引用，共享 NAD 原 UID 保留；Attachment `att_a38a7ac6483b48b39cdbc7fda8a54b5a` released 且停放。原件为 `live/full/r6-all-operations-final.json` 及当前 VM/网络清理回执，汇总 `r6-acceptance.json`。
+
+两环境 R6 指标请求间隔均为 300 秒，21 个指标/11 个投影样本、同 Pod/container；终态先等待恢复完成再采样。10：05:58:40–06:03:41 UTC，GET/LIST **1699 次（下降 64.07%）**、基础 LIST 17 次，40 条 Deleted 全部停放且 epoch 不变；4 个 LB 的 44 个样本全 Available，原 15 个原生 UID、operation/版本保留，四入口 HTTP 200+marker 通过。12：06:04:26–06:09:43 UTC（最后日志收尾另耗约 16 秒，不计入指标请求间隔），GET/LIST **1661 次（下降 72.32%）**、基础 LIST 15 次，37 条 Deleted 全部停放且 epoch 不变，7 个 VPC/4 个 Subnet 持续 Available、最大观测年龄分别 20.14/22.53 秒，原 5 台 VM 在 11 个样本中状态/原因/版本/operation 不变。两窗口无传输错误、audit/watch failure、队列溢出或持续 limiter/deadline 错误。归档为 `live/{lab,full}/window-r6-before-default-egress-fix/`。
+
+## R7：平台默认出口复用普通观察
+
+R6 12 窗口的默认出口历史确认 5 次 `Available → Degraded/PROVIDER_UNAVAILABLE → Available`，对应周期之外的 5 轮全量读取；原操作已成功且无 pending action。原件 `live/full/r6-default-egress-history.jsonl`。这是 Res 默认出口 worker 尚未采用统一观察语义，不能归为必要的 KCN 恢复采集，故 #48 继续开放。
+
+修复默认出口读取失败时保留最后状态、应用结果及原 observed_at；查询年龄只返回 stale。Available/Degraded 的普通读取缺少共享事实时等待，不主动收集；首次创建、未知发送和删除继续当前证明。持久 Finish 只允许保留原 Available，不能借观察异常从 Degraded 建立 Available 或提前清理。没有新增状态机、缓存、迁移或 KCN 逻辑。
+
+`r7-default-red.log` 在原 R6 业务代码上复现查询年龄误降级和 Degraded 普通读取的额外采集；测试停止夹具中独立的平台观察器，排除其 80ms 定时采集对计数的干扰。`r7-default-green.log` PASS（7.708s）：真实 PG/业务 worker/Provider adapter 验证失败保留、年龄不改结果、当前身份冲突拒绝、普通缺失快照不采集、未完成创建仍采集，以及原平台出口创建、未知响应恢复、未知未送达预留、删除解绑和过期租约。
+
+R7 的 Fedora `r7-final-verify.log` 完整 `make verify` PASS（包含生成一致性、故障构建、Go 测试/vet/build/module 检查）；对应业务源码尚待发布。R7 只改变默认出口观察，VM/LB 生命周期代码与已完成真实验收的 R6 一致；发布后复核原业务身份、实际 LB 流量和请求窗口，不重复创建已验证且本轮未改的 VM 用例。
