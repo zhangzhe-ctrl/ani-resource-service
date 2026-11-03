@@ -57,7 +57,7 @@ func (p *KCProvider) VirtualSwitchInventory(ctx context.Context, cluster string,
 	if err != nil {
 		return biz.VirtualSwitchInventory{}, readFailure(err)
 	}
-	now, err := p.repository.queries.DatabaseTime(ctx)
+	now, err := p.repository.readQueries(ctx).DatabaseTime(ctx)
 	if err != nil {
 		return biz.VirtualSwitchInventory{}, readFailure(err)
 	}
@@ -157,7 +157,7 @@ func (p *KCProvider) virtualSwitchDeviceState(ctx context.Context, sw biz.Virtua
 	if err != nil {
 		return false, false, proof, readFailure(err)
 	}
-	now, err := p.repository.queries.DatabaseTime(ctx)
+	now, err := p.repository.readQueries(ctx).DatabaseTime(ctx)
 	if err != nil {
 		return false, false, proof, readFailure(err)
 	}
@@ -351,7 +351,7 @@ func (p *KCProvider) InspectVirtualSwitchNode(ctx context.Context, sw biz.Virtua
 		if err = validateSwitchMembers(sw, nodes); err != nil {
 			return member, switchConflict(fmt.Errorf("virtual switch %s frozen membership changed: %w", sw.ID, err))
 		}
-		now, err := p.repository.queries.DatabaseTime(ctx)
+		now, err := p.repository.readQueries(ctx).DatabaseTime(ctx)
 		if err != nil {
 			return member, readFailure(err)
 		}

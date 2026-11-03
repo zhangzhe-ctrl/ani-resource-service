@@ -16,15 +16,20 @@ WHERE tenant_id=sqlc.arg(tenant_id) AND attachment_id=sqlc.arg(attachment_id);
 -- Complete range inventory for observer recovery only; not a product query.
 -- name: ObservationResources :many
 SELECT r.tenant_id,coalesce(r.vpc_id,r.subnet_id,r.eip_id,r.snat_id,r.lb_id)::text AS resource_id,
- r.requested_generation,b.resource_kind,b.namespace,b.provider_name,b.provider_uid
+ r.requested_generation,(coalesce(v.state,s.state,e.state,n.state,l.state)<>'deleted' OR r.next_run_at<>'infinity'::timestamptz)::boolean AS recovery,b.resource_kind,b.namespace,b.provider_name,b.provider_uid
 FROM network_reconciliations r JOIN network_provider_bindings b
  ON b.tenant_id=r.tenant_id AND coalesce(b.vpc_id,b.subnet_id,b.eip_id,b.snat_id,b.lb_id)=coalesce(r.vpc_id,r.subnet_id,r.eip_id,r.snat_id,r.lb_id)
+LEFT JOIN network_vpcs v ON v.tenant_id=r.tenant_id AND v.vpc_id=r.vpc_id
+LEFT JOIN network_subnets s ON s.tenant_id=r.tenant_id AND s.subnet_id=r.subnet_id
+LEFT JOIN network_eips e ON e.tenant_id=r.tenant_id AND e.eip_id=r.eip_id
+LEFT JOIN network_snat_bindings n ON n.tenant_id=r.tenant_id AND n.snat_id=r.snat_id
+LEFT JOIN network_load_balancers l ON l.tenant_id=r.tenant_id AND l.lb_id=r.lb_id
 WHERE b.cluster_id=sqlc.arg(cluster_id) AND NOT r.retired;
 
 -- name: ObservationAttachments :many
 SELECT a.tenant_id,a.attachment_id,a.subnet_id,a.vpc_id,a.namespace,a.pod_name,a.pod_uid,
  coalesce(a.plan->>'WorkloadMode','single_pod')::text AS workload_mode,a.provider_relations,a.requested_generation,
- coalesce(c.snapshot,'null'::jsonb) AS consumer_snapshot
+ (a.state<>'released' OR a.protocol_blocked OR a.next_check_at<>'infinity'::timestamptz)::boolean AS recovery,coalesce(c.snapshot,'null'::jsonb) AS consumer_snapshot
 FROM network_attachments a LEFT JOIN network_attachment_consumer_snapshots c
  ON c.tenant_id=a.tenant_id AND c.attachment_id=a.attachment_id AND coalesce(a.plan->>'WorkloadMode','single_pod')='vm_managed'
 WHERE a.cluster_id=sqlc.arg(cluster_id);
@@ -82,3 +87,13 @@ UNION ALL
 SELECT r.tenant_id,r.lb_id,('subnet:'||b.namespace||'/'||b.provider_name)::text FROM network_lb_subnet_refs r JOIN network_provider_bindings b ON b.tenant_id=r.tenant_id AND b.subnet_id=r.subnet_id AND b.cluster_id=r.cluster_id WHERE r.cluster_id=sqlc.arg(cluster_id) AND r.released_at IS NULL
 UNION ALL
 SELECT g.tenant_id,g.lb_id,('uid:'||g.provider_uid)::text FROM network_lb_generated_resources g WHERE g.cluster_id=sqlc.arg(cluster_id);
+
+-- Successful shared collection wakes application without inventing a new
+-- event generation. Notifications and fault backoff retain precedence.
+-- name: WakeAuditedResource :exec
+UPDATE network_reconciliations SET next_run_at=greatest(retry_not_before,least(next_run_at,clock_timestamp()))
+WHERE NOT retired AND tenant_id=sqlc.arg(tenant_id) AND coalesce(vpc_id,subnet_id,eip_id,snat_id,lb_id)=sqlc.arg(resource_id)::text;
+-- name: WakeAuditedPlatform :exec
+UPDATE network_platform_reconciliations SET next_run_at=greatest(retry_not_before,least(next_run_at,clock_timestamp())) WHERE resource_id=sqlc.arg(resource_id);
+-- name: WakeAuditedAttachment :exec
+UPDATE network_attachments SET next_check_at=greatest(retry_not_before,least(next_check_at,clock_timestamp())) WHERE tenant_id=sqlc.arg(tenant_id) AND attachment_id=sqlc.arg(attachment_id);

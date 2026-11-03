@@ -1,5 +1,9 @@
 # Network 执行状态
 
+## 2026-11-03：网络管理简化
+
+实现已接通旧投影下的当前准入、观测异常保留最后结果、终态退休、共享恢复及运行期安装审计迁出；Console 同步显示待确认并移除单纯 stale 门禁。Fedora 对应 PostgreSQL 回归 PASS；最终 `make verify`、候选发布及真实 VM/LB/300 秒成本验收尚待完成。#47 保留为 KCN 缺陷，#48/#49 尚未关闭。来源与逐层证据见[实施记录](records/network-management-simplification-20261103.md)。
+
 <a id="base-network-auto-allocation-20261103"></a>
 
 ## 2026-11-03：基础网络默认分配与 LB 产品主链

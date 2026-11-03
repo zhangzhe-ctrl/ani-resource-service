@@ -106,7 +106,7 @@ func (p *KCProvider) resolveLB(ctx context.Context, w biz.Work) (lbResolved, err
 		return r, err
 	}
 	for id, out := range map[string]*sqlcgen.NetworkProviderBinding{w.Resource.VPCID: &r.vpc, w.Resource.LoadBalancer.LoadBalancer.SubnetID: &r.subnet} {
-		*out, err = p.repository.queries.GetBinding(ctx, sqlcgen.GetBindingParams{TenantID: w.Resource.TenantID, ResourceID: id})
+		*out, err = p.repository.readQueries(ctx).GetBinding(ctx, sqlcgen.GetBindingParams{TenantID: w.Resource.TenantID, ResourceID: id})
 		if err != nil {
 			return r, readFailure(err)
 		}
@@ -115,7 +115,7 @@ func (p *KCProvider) resolveLB(ctx context.Context, w biz.Work) (lbResolved, err
 		}
 	}
 	if id := w.Resource.LoadBalancer.LoadBalancer.PublicEIPID; id != "" {
-		r.eip, err = p.repository.queries.GetBinding(ctx, sqlcgen.GetBindingParams{TenantID: w.Resource.TenantID, ResourceID: id})
+		r.eip, err = p.repository.readQueries(ctx).GetBinding(ctx, sqlcgen.GetBindingParams{TenantID: w.Resource.TenantID, ResourceID: id})
 		if err != nil {
 			return r, readFailure(err)
 		}
@@ -123,13 +123,14 @@ func (p *KCProvider) resolveLB(ctx context.Context, w biz.Work) (lbResolved, err
 			return r, &biz.ProviderError{Kind: biz.ProviderConflict}
 		}
 	}
-	now, err := p.repository.queries.DatabaseTime(ctx)
+	// Actual readiness is read from the original VPC/Subnet in this observation.
+	// The management record closes admission but its projection age is not a
+	// second runtime readiness authority.
+	parent, err := p.repository.readQueries(ctx).GetVPC(ctx, sqlcgen.GetVPCParams{TenantID: w.Resource.TenantID, VpcID: w.Resource.VPCID})
 	if err != nil {
 		return r, readFailure(err)
 	}
-	r.dependencies = p.repository.requireLBVPCProviderReady(ctx, p.repository.queries, w.Resource.TenantID, w.Resource.VPCID, now, p.repository.baseFreshnessLimit()) == nil
-	cap, capErr := p.repository.queries.GetLBCapability(ctx, sqlcgen.GetLBCapabilityParams{ClusterID: r.binding.ClusterID})
-	r.dependencies = r.dependencies && capErr == nil && cap.Ready && freshTime(&cap.ObservedAt, now, p.repository.baseFreshnessLimit())
+	r.dependencies = parent.NetworkVpc.State != "deleting" && parent.NetworkVpc.State != "deleted" && parent.NetworkVpc.State != "failed" && r.vpc.PendingAction == "" && r.subnet.PendingAction == ""
 	return r, nil
 }
 func lbComponentName(w biz.Work, kind string) string {
@@ -358,6 +359,7 @@ var errLBAuditInvalid = errors.New("LB audit needs a fresh collection")
 
 func (p *KCProvider) ObserveLoadBalancer(ctx context.Context, w biz.Work) (biz.LoadBalancerObservation, error) {
 	refresh := false
+	critical := w.ActiveOperation || w.PendingAction != "" || w.Resource.State == biz.Deleting || w.Resource.State == biz.Deleted
 	for {
 		if err := ctx.Err(); err != nil {
 			return biz.LoadBalancerObservation{}, readFailure(err)
@@ -369,7 +371,10 @@ func (p *KCProvider) ObserveLoadBalancer(ctx context.Context, w biz.Work) (biz.L
 			}
 			return o, err
 		}
-		// A Watch renewal invalidates the audit, not the Provider facts. Each
+		if !critical {
+			return biz.LoadBalancerObservation{}, readFailure(err)
+		}
+		// A relist invalidates the audit, not the Provider facts. Each
 		// retry collects after a new database boundary within the original
 		// deadline. Actual read errors and identity conflicts are not retried.
 		// Unbounded callers retain only one fresh-collection fallback.
@@ -388,7 +393,7 @@ func (p *KCProvider) observeLoadBalancerOnce(ctx context.Context, w biz.Work, re
 	if err != nil {
 		return o, err
 	}
-	now, err := p.repository.queries.DatabaseTime(ctx)
+	now, err := p.repository.readQueries(ctx).DatabaseTime(ctx)
 	if err != nil {
 		return o, readFailure(err)
 	}
@@ -411,13 +416,17 @@ func (p *KCProvider) observeLoadBalancerOnce(ctx context.Context, w biz.Work, re
 		}
 	}
 	var view *auditView
-	keys := []string{"load-balancer:" + r.binding.Namespace + "/" + w.Resource.ID, "uid:" + r.binding.ProviderUid, "lb-capability"}
+	keys := []string{"load-balancer:" + r.binding.Namespace + "/" + w.Resource.ID, "uid:" + r.binding.ProviderUid}
 	if p.observation != nil && p.loadBalancerInstallation != nil {
 		after := time.Time{}
-		if refresh || w.ActiveOperation || w.PendingAction != "" || w.Resource.State == biz.Deleted {
+		if refresh || w.ActiveOperation || w.PendingAction != "" || w.Resource.State == biz.Deleting || w.Resource.State == biz.Deleted {
 			after = now
 		}
-		view, err = p.observation.snapshot(ctx, after)
+		if after.IsZero() {
+			view, err = p.observation.cachedSnapshot(now)
+		} else {
+			view, err = p.observation.snapshot(ctx, after)
+		}
 		if err != nil {
 			return o, readFailure(err)
 		}
@@ -535,18 +544,18 @@ func lbOwnerAPIVersion(kind string) string {
 	return ""
 }
 func (p *KCProvider) lbMemberIdentity(ctx context.Context, r lbResolved, m biz.LoadBalancerMemberIdentity) bool {
-	a, err := p.repository.queries.GetAttachment(ctx, sqlcgen.GetAttachmentParams{TenantID: r.work.Resource.TenantID, AttachmentID: m.AttachmentID})
+	a, err := p.repository.readQueries(ctx).GetAttachment(ctx, sqlcgen.GetAttachmentParams{TenantID: r.work.Resource.TenantID, AttachmentID: m.AttachmentID})
 	if err != nil {
 		return false
 	}
 	// Attachment observation can advance while this LB waits for its audit.
 	// Read database time after the row, rather than treating a renewal after
 	// work claim as a future timestamp. Stale and truly future facts still fail.
-	now, err := p.repository.queries.DatabaseTime(ctx)
-	if err != nil || a.State != "attached" || a.ProtocolBlocked || a.Reason != "" || a.PodUid != m.PodUID || a.SubnetID != m.SubnetID || a.VpcID != r.work.Resource.VPCID || a.Namespace != r.binding.Namespace || a.ClusterID != r.binding.ClusterID || !freshTime(a.ObservedAt, now, p.repository.baseFreshnessLimit()) {
+	now, err := p.repository.readQueries(ctx).DatabaseTime(ctx)
+	if err != nil || a.State != "attached" || a.ProtocolBlocked || (a.Reason != "" && a.Reason != string(biz.ProviderUnavailable)) || a.PodUid != m.PodUID || a.SubnetID != m.SubnetID || a.VpcID != r.work.Resource.VPCID || a.Namespace != r.binding.Namespace || a.ClusterID != r.binding.ClusterID || !freshTime(a.ObservedAt, now, p.repository.baseFreshnessLimit()) {
 		return false
 	}
-	parent, err := p.repository.queries.GetBinding(ctx, sqlcgen.GetBindingParams{TenantID: a.TenantID, ResourceID: m.SubnetID})
+	parent, err := p.repository.readQueries(ctx).GetBinding(ctx, sqlcgen.GetBindingParams{TenantID: a.TenantID, ResourceID: m.SubnetID})
 	if err != nil || parent.ClusterID != r.binding.ClusterID || parent.Namespace != r.binding.Namespace || parent.ProviderUid == "" {
 		return false
 	}

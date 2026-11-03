@@ -87,6 +87,7 @@ func (p *KCProvider) ObserveAttachment(ctx context.Context, w biz.AttachmentWork
 		})
 	}
 	a := w.Attachment
+	critical := w.RequireFreshRelations || (a.State != biz.Attached && a.State != biz.Released)
 	keys, err := attachmentObservationKeys(w)
 	if err != nil {
 		return biz.AttachmentObservation{}, readFailure(err)
@@ -110,7 +111,16 @@ func (p *KCProvider) ObserveAttachment(ctx context.Context, w biz.AttachmentWork
 		if err := ctx.Err(); err != nil {
 			return biz.AttachmentObservation{}, readFailure(err)
 		}
-		v, err := p.observation.snapshot(ctx, after)
+		var v *auditView
+		if critical {
+			v, err = p.observation.snapshot(ctx, after)
+		} else {
+			now, e := p.repository.queries.DatabaseTime(ctx)
+			if e != nil {
+				return biz.AttachmentObservation{}, readFailure(e)
+			}
+			v, err = p.observation.cachedSnapshot(now)
+		}
 		if err != nil {
 			return biz.AttachmentObservation{}, readFailure(err)
 		}
@@ -133,6 +143,9 @@ func (p *KCProvider) ObserveAttachment(ctx context.Context, w biz.AttachmentWork
 		}
 		proof := biz.ObservationProof{CollectedAt: v.collected, CoveredGeneration: v.generations[observationTarget{a.TenantID, a.ID, "attachment"}.key()]}
 		if proof.CoveredGeneration < w.Requirement.RequestedGeneration || !p.observation.validAttachment(v, allKeys) {
+			if !critical {
+				return biz.AttachmentObservation{}, readFailure(fmt.Errorf("attachment shared observation is pending"))
+			}
 			after, err = p.repository.queries.DatabaseTime(ctx)
 			if err != nil {
 				return biz.AttachmentObservation{}, readFailure(err)
@@ -155,6 +168,9 @@ func (p *KCProvider) ObserveAttachment(ctx context.Context, w biz.AttachmentWork
 		// those facts before applying the same-content exception to an older audit.
 		proof.Hash = attachmentObservationHash(w, candidates, result)
 		if !proof.Covers(w.Requirement) || !p.observation.validAttachment(v, allKeys) {
+			if !critical {
+				return biz.AttachmentObservation{}, readFailure(fmt.Errorf("attachment shared observation is pending"))
+			}
 			after, err = p.repository.queries.DatabaseTime(ctx)
 			if err != nil {
 				return biz.AttachmentObservation{}, readFailure(err)

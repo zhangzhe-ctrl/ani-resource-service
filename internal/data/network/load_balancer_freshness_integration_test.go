@@ -47,18 +47,20 @@ func TestLBBackendObservationUsesCurrentDatabaseTime(t *testing.T) {
 	attachment := created.LoadBalancer.Backends[0].AttachmentID
 	for _, tc := range []struct {
 		name, offset string
+		reason       string
 		eligible     bool
 	}{
-		{"renewed_after_claim", "0 seconds", true},
-		{"future_timestamp", "10 minutes", false},
-		{"expired_timestamp", "-10 minutes", false},
-		{"fresh_again", "0 seconds", true},
+		{"renewed_after_claim", "0 seconds", "", true},
+		{"future_timestamp", "10 minutes", "", false},
+		{"expired_timestamp", "-10 minutes", "", false},
+		{"read_unavailable_with_current_native_facts", "0 seconds", string(biz.ProviderUnavailable), true},
+		{"fresh_again", "0 seconds", "", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var observed time.Time
 			// Model the concurrent Attachment worker completing a fresh read
 			// after LB work was claimed; only this controlled DB is adjusted.
-			if err := f.f.owner.QueryRow(f.f.ctx, `UPDATE network_attachments SET observed_at=clock_timestamp()+$3::interval WHERE tenant_id=$1 AND attachment_id=$2 RETURNING observed_at`, f.f.tenant, attachment, tc.offset).Scan(&observed); err != nil {
+			if err := f.f.owner.QueryRow(f.f.ctx, `UPDATE network_attachments SET observed_at=clock_timestamp()+$3::interval,reason=$4 WHERE tenant_id=$1 AND attachment_id=$2 RETURNING observed_at`, f.f.tenant, attachment, tc.offset, tc.reason).Scan(&observed); err != nil {
 				t.Fatal(err)
 			}
 			if tc.eligible && !observed.After(work.Now) {
