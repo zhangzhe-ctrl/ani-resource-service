@@ -4141,6 +4141,8 @@ type VNic struct {
 	VpcName            string                 `protobuf:"bytes,21,opt,name=vpc_name,json=vpcName,proto3" json:"vpc_name,omitempty"`
 	SubnetName         string                 `protobuf:"bytes,22,opt,name=subnet_name,json=subnetName,proto3" json:"subnet_name,omitempty"`
 	SecurityGroupNames []string               `protobuf:"bytes,23,rep,name=security_group_names,json=securityGroupNames,proto3" json:"security_group_names,omitempty"`
+	RequestedIp        string                 `protobuf:"bytes,24,opt,name=requested_ip,json=requestedIp,proto3" json:"requested_ip,omitempty"`
+	RequestedMac       string                 `protobuf:"bytes,25,opt,name=requested_mac,json=requestedMac,proto3" json:"requested_mac,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -4336,6 +4338,20 @@ func (x *VNic) GetSecurityGroupNames() []string {
 	return nil
 }
 
+func (x *VNic) GetRequestedIp() string {
+	if x != nil {
+		return x.RequestedIp
+	}
+	return ""
+}
+
+func (x *VNic) GetRequestedMac() string {
+	if x != nil {
+		return x.RequestedMac
+	}
+	return ""
+}
+
 type CreateVNicRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	TargetTenantId string                 `protobuf:"bytes,1,opt,name=target_tenant_id,json=targetTenantId,proto3" json:"target_tenant_id,omitempty"`
@@ -4343,6 +4359,8 @@ type CreateVNicRequest struct {
 	Name           string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	Description    string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
 	SubnetId       string                 `protobuf:"bytes,5,opt,name=subnet_id,json=subnetId,proto3" json:"subnet_id,omitempty"`
+	RequestedIp    string                 `protobuf:"bytes,6,opt,name=requested_ip,json=requestedIp,proto3" json:"requested_ip,omitempty"`
+	RequestedMac   string                 `protobuf:"bytes,7,opt,name=requested_mac,json=requestedMac,proto3" json:"requested_mac,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -4408,6 +4426,20 @@ func (x *CreateVNicRequest) GetDescription() string {
 func (x *CreateVNicRequest) GetSubnetId() string {
 	if x != nil {
 		return x.SubnetId
+	}
+	return ""
+}
+
+func (x *CreateVNicRequest) GetRequestedIp() string {
+	if x != nil {
+		return x.RequestedIp
+	}
+	return ""
+}
+
+func (x *CreateVNicRequest) GetRequestedMac() string {
+	if x != nil {
+		return x.RequestedMac
 	}
 	return ""
 }
@@ -5401,7 +5433,7 @@ const file_network_v1_network_proto_rawDesc = "" +
 	"\x06target\x18\b \x01(\bR\x06target\x12#\n" +
 	"\rconsumer_name\x18\t \x01(\tR\fconsumerName\x12!\n" +
 	"\fcompute_type\x18\n" +
-	" \x01(\tR\vcomputeType\"\xd4\x06\n" +
+	" \x01(\tR\vcomputeType\"\x9c\a\n" +
 	"\x04VNic\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12\x12\n" +
@@ -5432,13 +5464,17 @@ const file_network_v1_network_proto_rawDesc = "" +
 	"\bvpc_name\x18\x15 \x01(\tR\avpcName\x12\x1f\n" +
 	"\vsubnet_name\x18\x16 \x01(\tR\n" +
 	"subnetName\x120\n" +
-	"\x14security_group_names\x18\x17 \x03(\tR\x12securityGroupNames\"\xb9\x01\n" +
+	"\x14security_group_names\x18\x17 \x03(\tR\x12securityGroupNames\x12!\n" +
+	"\frequested_ip\x18\x18 \x01(\tR\vrequestedIp\x12#\n" +
+	"\rrequested_mac\x18\x19 \x01(\tR\frequestedMac\"\x81\x02\n" +
 	"\x11CreateVNicRequest\x12(\n" +
 	"\x10target_tenant_id\x18\x01 \x01(\tR\x0etargetTenantId\x12'\n" +
 	"\x0fidempotency_key\x18\x02 \x01(\tR\x0eidempotencyKey\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x1b\n" +
-	"\tsubnet_id\x18\x05 \x01(\tR\bsubnetId\":\n" +
+	"\tsubnet_id\x18\x05 \x01(\tR\bsubnetId\x12!\n" +
+	"\frequested_ip\x18\x06 \x01(\tR\vrequestedIp\x12#\n" +
+	"\rrequested_mac\x18\a \x01(\tR\frequestedMac\":\n" +
 	"\x12CreateVNicResponse\x12$\n" +
 	"\x04vnic\x18\x01 \x01(\v2\x10.network.v1.VNicR\x04vnic\"S\n" +
 	"\x0eGetVNicRequest\x12(\n" +

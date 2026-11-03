@@ -415,8 +415,9 @@ message VNic {
  repeated VNicBinding bindings=12; repeated string security_group_ids=13; google.protobuf.Timestamp observed_at=14;
  bool observation_stale=15; string reason=16; string last_operation_id=17;
  google.protobuf.Timestamp created_at=18; google.protobuf.Timestamp updated_at=19; string binding_state=20;string vpc_name=21;string subnet_name=22;repeated string security_group_names=23;
+ string requested_ip=24; string requested_mac=25;
 }
-message CreateVNicRequest { string target_tenant_id=1; string idempotency_key=2; string name=3; string description=4; string subnet_id=5; }
+message CreateVNicRequest { string target_tenant_id=1; string idempotency_key=2; string name=3; string description=4; string subnet_id=5; string requested_ip=6; string requested_mac=7; }
 message CreateVNicResponse { VNic vnic=1; }
 message GetVNicRequest { string target_tenant_id=1; string vnic_id=2; }
 message GetVNicResponse { VNic vnic=1; }
