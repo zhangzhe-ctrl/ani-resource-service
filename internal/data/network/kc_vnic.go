@@ -267,12 +267,12 @@ func (p *KCProvider) syncVNicSecurityGroups(ctx context.Context, tenant, id, kin
 	// Read only affected old/new groups, including removals; VNIC status is not an additional receipt.
 	all := append(append([]string{}, v.SecurityGroupIDs...), ids...)
 	for _, gid := range all {
-		g, sg, e := p.readMappedSecurityGroup(ctx, tenant, v.Namespace, gid)
+		_, sg, e := p.readMappedSecurityGroup(ctx, tenant, v.Namespace, gid)
 		if e != nil {
 			return v, e
 		}
 		applied, _, _ := unstructured.NestedStringSlice(sg.Object, "status", "appliedVNics")
-		if slices.Contains(applied, v.ProviderName) != slices.Contains(ids, gid) || slices.Contains(ids, gid) && (!securityGroupReady(sg) || g.State != biz.Available) {
+		if slices.Contains(applied, v.ProviderName) != slices.Contains(ids, gid) {
 			return v, &biz.ProviderError{Kind: biz.ProviderTemporary}
 		}
 	}

@@ -139,9 +139,13 @@ func TestManualVNicPGSecurityGroupMembershipIsApplicationReceipt(t *testing.T) {
 		}
 	}
 	setGroupStatus([]string{v.ProviderName}, 0, "True")
-	expectPending([]string{g.ID})
+	if _, e = f.n.SyncVNicSecurityGroups(ctx, v.TenantID, v.ID, "vm", consumer, []string{g.ID}); e != nil {
+		t.Fatal("membership receipt incorrectly waited for SG observedGeneration", e)
+	}
 	setGroupStatus([]string{v.ProviderName}, 1, "False")
-	expectPending([]string{g.ID})
+	if _, e = f.n.SyncVNicSecurityGroups(ctx, v.TenantID, v.ID, "vm", consumer, []string{g.ID}); e != nil {
+		t.Fatal("membership receipt incorrectly waited for SG Ready", e)
+	}
 	setGroupStatus([]string{}, 1, "True")
 	expectPending([]string{g.ID})
 	setGroupStatus([]string{v.ProviderName}, 1, "True")
@@ -150,7 +154,7 @@ func TestManualVNicPGSecurityGroupMembershipIsApplicationReceipt(t *testing.T) {
 	}
 	setVNicSelection([]any{}, "5")
 	expectPending([]string{}) // Old SG still contains this VNIC.
-	setGroupStatus([]string{}, 1, "True")
+	setGroupStatus([]string{}, 0, "False")
 	cleared, e := f.n.SyncVNicSecurityGroups(ctx, v.TenantID, v.ID, "vm", consumer, []string{})
 	if e != nil || len(cleared.SecurityGroupIDs) != 0 {
 		t.Fatal("old SG removal did not confirm clearing", cleared.SecurityGroupIDs, e)
