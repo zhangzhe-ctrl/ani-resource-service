@@ -142,7 +142,9 @@ func inspectRequestedVNicIP(child, parent *unstructured.Unstructured, b sqlcgen.
 	family, _, _ := unstructured.NestedString(child.Object, "spec", "ipVersion")
 	address, _, _ := unstructured.NestedString(child.Object, "spec", "ipAddress")
 	dhcp, _, _ := unstructured.NestedBool(child.Object, "spec", "dhcp")
-	if subnet != parentSubnet || vnic != b.ProviderName || family != "IPv4" || address != t.RequestedIP || dhcp {
+	// IPv4-only installed CRDs omit ipVersion. The accepted request and exact
+	// observed address already establish the family; an explicit IPv6 conflicts.
+	if subnet != parentSubnet || vnic != b.ProviderName || (family != "" && family != "IPv4") || address != t.RequestedIP || dhcp {
 		return &biz.ProviderError{Kind: biz.ProviderConflict}
 	}
 	return nil

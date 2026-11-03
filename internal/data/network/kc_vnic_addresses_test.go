@@ -112,13 +112,16 @@ func TestKCVNicRequestedIPCreateReplayAndResponseLoss(t *testing.T) {
 }
 
 func TestKCVNicRequestedIPObservationAndRejection(t *testing.T) {
-	for _, name := range []string{"ready", "address-conflict", "invalid-address", "invalid-vnic", "wrong-mac", "wrong-primary-ip", "replaced-ip", "foreign-owner", "foreign-tenant", "wrong-ip-spec", "missing-original-ip", "delete-invalid"} {
+	for _, name := range []string{"ready", "implicit-ipv4", "address-conflict", "invalid-address", "invalid-vnic", "wrong-mac", "wrong-primary-ip", "replaced-ip", "foreign-owner", "foreign-tenant", "wrong-ip-spec", "missing-original-ip", "delete-invalid"} {
 		t.Run(name, func(t *testing.T) {
 			b, target, parent, child := requestedVNicAddressFixture()
 			parent.SetAnnotations(map[string]string{requestedVNicIPUIDAnnotation: string(child.GetUID())})
 			wantRejection := biz.Reason("")
 			wantConflict := false
 			switch name {
+			case "implicit-ipv4":
+				// The deployed IPv4 CRD prunes this newer optional field.
+				unstructured.RemoveNestedField(child.Object, "spec", "ipVersion")
 			case "address-conflict", "invalid-address":
 				message := "AddressConflict"
 				wantRejection = biz.AddressConflict
@@ -171,7 +174,7 @@ func TestKCVNicRequestedIPObservationAndRejection(t *testing.T) {
 				}
 				return
 			}
-			if err != nil || got.Identity != b.ProviderUid || got.RejectionReason != wantRejection || got.Ready != (name == "ready") {
+			if err != nil || got.Identity != b.ProviderUid || got.RejectionReason != wantRejection || got.Ready != (name == "ready" || name == "implicit-ipv4") {
 				t.Fatal("requested address validation/rejection was not reported honestly", got, err)
 			}
 			if name == "delete-invalid" && len(client.Actions()) != 0 {
