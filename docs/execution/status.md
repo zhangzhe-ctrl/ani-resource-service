@@ -4,8 +4,10 @@
 
 ## 2026-11-03：手动 VNIC 管理
 
+自定义 IPv4/MAC 增量已完成：Resource `3e1ef97`（generation88/Ready1）、Gov `67e6c8e0` 已部署，Console `f2e517d` 预览已更新；三仓均 SSH 推送。页面原申请 `vnic_3b55300002864620b1abf0e601ef5ef8` 自然 available/free，原 UID 保持、申请/实际均 `.21 / 02:75:00:00:00:21`。新建仅指定 IP `.22` 自动分配 MAC、手动 MAC 重复409、实际 KCN IP 冲突 Failed/ADDRESS_CONFLICT均通过；临时正反样本及首个泛化失败样本均正常删除，成功 `.21` 留给用户查看。修复现场隐式IPv4字段及子IP身份写回的父版本并发重试，分别只复验相关行为。Harbor按用户确认在线扩到20Gi后发布成功。基础网络短暂降级的只读证据已交用户另开agent处理，本增量未改其聚合规则或原排查场景。详细来源与初始失败边界见[本轮增量](records/KCN-VNIC-20261103/README.md#自定义-ipv4mac-增量)。
 
-本计划 VM/容器范围已完成。正式源已 SSH 推送，Resource 业务源 `b70271b`、Gov `aed3378a` 已部署，Console `e741b25` 独占预览完成真实页面验收（未发布生产 Console）。默认自动创建、手动保存/取消/换绑与平台重启、停止启动复用、实际 MAC/IP/guest SSH/HTTP 均通过。SG deny8080、替换 allow、清空的实际策略通过，待重启 current/target 同步跟随 SG且预留禁止删除。VM/容器恢复自动模式通过；C 跨两台 VM 及容器复用，空组完整清除上个实例策略。VM2/Notebook 删除均完成而原手动 VNIC/IP 留存，空闲网卡继续保护 SG 引用；随后 B/C 显式删除、原 CR/VNicIP 与 .12/.13 分配消失，仅两 run-owned SG 正常 Deleted。测试 VM2/VM3/Notebook 已正常删除；保护场景六个原 UID 全部保留，原两台 Notebook 仍 version1/Running。详细证据和初始失败边界见[本轮记录](records/KCN-VNIC-20261103/README.md)。
+
+原手动 VNIC 的 VM/容器范围已完成，以下保留自定义地址增量前的验收时点。正式源已 SSH 推送，Resource 业务源 `b70271b`、Gov `aed3378a` 已部署，Console `e741b25` 独占预览完成真实页面验收（未发布生产 Console）。默认自动创建、手动保存/取消/换绑与平台重启、停止启动复用、实际 MAC/IP/guest SSH/HTTP 均通过。SG deny8080、替换 allow、清空的实际策略通过，待重启 current/target 同步跟随 SG且预留禁止删除。VM/容器恢复自动模式通过；C 跨两台 VM 及容器复用，空组完整清除上个实例策略。VM2/Notebook 删除均完成而原手动 VNIC/IP 留存，空闲网卡继续保护 SG 引用；随后 B/C 显式删除、原 CR/VNicIP 与 .12/.13 分配消失，仅两 run-owned SG 正常 Deleted。测试 VM2/VM3/Notebook 已正常删除；保护场景六个原 UID 全部保留，原两台 Notebook 仍 version1/Running。详细证据和初始失败边界见[本轮记录](records/KCN-VNIC-20261103/README.md)。
 
 VM1 保存目标 A 原先等待 VNIC.status.appliedSecurityGroups；2026-11-03 用户转达 KCN 团队确认：以相关 SG.status.appliedVNics 包含目标 VNIC 认定绑定成功，无需该 VNIC 字段，也不额外等待 SG Ready/generation 应用回执；旧组移除对应成员消失。原资源身份、租户/位置准入和 owner 版本围栏保留。新口径已发布；原 operation `8d2bc3dd` 已自然 succeeded，A 的 SG 继承已落库。手动 A、allow SG、VM1 当前自动 VNIC/Nic 和原 VMI/launcher 均保留，不删除、解绑或重启。
 

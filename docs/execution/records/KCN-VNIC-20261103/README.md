@@ -69,3 +69,17 @@ VM2 Stop 后 C 原 UID/IP/逻辑绑定保留，正常 Start `6949921d` succeeded
 | 保护VM1原VMI/launcher、A、原auto VNIC、原allow SG、原Nic共六个UID全部未变；VM1仍自动 .9/目标A待重启。原两Notebook仍version1/Running/attached；父网络未删除 | `private/protected-scene-final.json` |
 
 跨租户/可信caller、foreign controller身份边界、创建响应丢失、Reserve/Delete竞态、旧SG写入版本围栏和闭合恢复由对应真实PG/边界用例验证；未将其写成集群故障注入验收。无adapter的其他实例类型仍明确不可绑定，纯IPv6未验，不声明支持范围扩大。测试源码与新权限均已按本次关联行为验证，后续文档收口不重复全量检查。
+
+## 自定义 IPv4/MAC 增量
+
+2026-11-03 用户授权增加创建时可选地址；只约束同子网手动产品网卡 MAC 唯一，KCN 其他冲突如实报错。正式规则见[资源规格](../../../specs/vpc-subnet.md#手动-vnic-与实例选择)。源码 Resource `48badda` + `a854948` + `3e1ef97`（正式 SDK `8c3da37`），Gov `67e6c8e0`，Console `f2e517d` 均 SSH 推送。预览 `http://172.16.101.31:43928/vnics/` 已有输入与申请/实际分栏，生产 Console 未发布。
+
+- Fedora run：`/home/chabking/tasks/vnic-addresses-20261103/`，Go1.26.10/Buf1.60.0/sqlc1.31.1；本地仅编辑、Git和传输。`go test ./internal/biz/network`、`TestKCVNicRequested*`、真实PG的请求持久化/规范化重放/并发MAC占用/自动MAC保护及原保留删除/可信service用例 PASS；只替换外部KCN控制器，真实业务和PG未替换。现场隐式IPv4及父版本并发修正只复验相关provider组；版本冲突回归先RED、修复后GREEN，原父UID被替换仍拒绝。未追加全量make verify、数据库备份或额外发布门禁。
+- Gov正式SDK `v0.0.0-20261103134829-8c3da37dd6e0`（无replace），API生成及三个相关契约测试 PASS。Console三文件定向lint/format/typecheck与真实字段错误阻止提交 PASS。Gov已发布 `sha256:53bfd498aaf8db40bbc12f1f3cc55382c55997cd5d2e0ad6e8fb1de08a844329`。
+- Network迁移29、vnicips-create最小权限已应用；Resource初版48badda镜像 `sha256:8c377e2484f4edc707835226e1a34c8ed13c097aa54f15c13a99eec5dfd65123` Ready1/generation86。页面唯一请求key `86ef853c-e333-42f3-aa6a-1a0385c6bb7c`，产品 `vnic_3b55300002864620b1abf0e601ef5ef8`，operation `2595cf2b-2d3e-4b9c-ad1e-bd3c37d3f4e1`；POST200/provisioning时实际地址为空，未冒充分配成功。
+- KCN原VNic UID `985be981-822f-4f87-9642-06d6eb992130`、子IP UID `791bca0a-8ff7-4906-8df7-62fbaa354319`，实际IP/MAC为 `10.75.0.21 / 02:75:00:00:00:21`。现场CRD.spec只有dhcp/ipAddress/subnet/vNic，会裁掉ipVersion，导致原适配器 ownership-conflict；a854948接受省略为implicit IPv4，同时保留精确请求/实际、原parent UID/child UID及归属核验。a854948修复发布后，原申请/同operation自然available/free，申请值与实际值一致、child UID固定，未重提/重建；原JSON保留初始冲突和最终页面结果。
+- 首个IP冲突样本 `vnic_f6a77c90ea2e476d86d6e31d5396ff37` 为failed/PROVIDER_REJECTED，KCN子IP实际Valid=False/AddressConflict，保留该失败历史并正常删除。子IP UID条件写回存在父RV变化被422误判永久拒绝的边界，3e1ef97修复为重新核实同原UID且RV已变化后重试；不以版本冲突误报地址永久无效。该边界RED→GREEN，未放松原UID核验。
+- 最终Resource镜像 `sha256:34114dedc4c764e63d30063841e70b68572346fe91b92d89e4eeb4addb42d312`，generation88/observed88/Ready1。新鲜创建 `vnic_68c26deeaebd47878ab46b6c94dee776` 仅指定 `.22`、requested_mac为空，实际MAC自动为 `fa:00:17:5c:a5:42`，available；真实冲突 `vnic_3e9bd6cc1dce42399f0bdf4cdbd51515` 请求已占 `.21`，failed/ADDRESS_CONFLICT。二者均经正常产品DELETE到deleted，原 `.21` 成功样本仍available。手动MAC重复的实际409/ADDRESS_CONFLICT也PASS。
+- 镜像上传500已确认Harbor `/storage` 10Gi满；用户明确批准仅该卷在线扩到20Gi，CSI/文件系统完成（20G/已用10G/可用10G），随后同镜像推送与发布成功，没有删除共享镜像。未重建Harbor或KCN。
+- 原IP冲突测试先因父VPC基础聚合短降级返回412/PARENT_NOT_READY，未受理；自然恢复后沿同key正常受理。用户要求将此支线交另一个agent，已交API原回执、history时间线和源码入口；没有绕过父准入或修改该聚合。只读证据位于本地 `.work/vnic-addresses-20261103/base-observation-handoff.md`，具体底层观察失败原因未确定。
+- 最小原始记录：run内`{biz-final,pg-test,provider-test,provider-implicit-ipv4,service-pg-test}.log`、`cluster-release.log`、`private/{custom-vnic-cr-final,mac-conflict-proof,final-address-checks,ip-conflict-cleanup}.json`，`provider-version-race-{red,green}.log`与`final-live.log`；Console run的`ui-custom-vnic-create.json`及原冲突截图。原A/VM1/原SG等排查场景没有写入或删除。
