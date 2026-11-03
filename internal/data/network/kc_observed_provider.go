@@ -142,6 +142,13 @@ func (p *KCProvider) ObserveAttachment(ctx context.Context, w biz.AttachmentWork
 			}
 		}
 		proof := biz.ObservationProof{CollectedAt: v.collected, CoveredGeneration: v.generations[observationTarget{a.TenantID, a.ID, "attachment"}.key()]}
+		// Parent/platform hints can advance the durable generation without
+		// changing this attachment's Pod/NIC/IP facts. A complete, unchanged
+		// relationship view covers such a hint without changing its source time.
+		// Closure and initial attachment still require the post-claim audit.
+		if !critical && p.observation.validAttachment(v, allKeys) {
+			proof.CoveredGeneration = w.Requirement.RequestedGeneration
+		}
 		if proof.CoveredGeneration < w.Requirement.RequestedGeneration || !p.observation.validAttachment(v, allKeys) {
 			if !critical {
 				return biz.AttachmentObservation{}, readFailure(fmt.Errorf("attachment shared observation is pending"))

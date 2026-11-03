@@ -126,6 +126,13 @@ func TestAttachmentOrdinaryProjectionWaitsAndCleanupSurvivesRelists(t *testing.T
 		t.Fatalf("initial Attachment facts: %+v %v", first, err)
 	}
 	work.RequireFreshRelations = false
+	// Parent-only durable hints must not starve an unchanged attachment view.
+	work.Requirement.RequestedGeneration = first.Proof.CoveredGeneration + 1
+	unchanged, unchangedErr := provider.ObserveAttachment(f.f.ctx, work)
+	if unchangedErr != nil || !unchanged.Exists || unchanged.Proof.CollectedAt != first.Proof.CollectedAt || unchanged.Proof.CoveredGeneration != work.Requirement.RequestedGeneration {
+		t.Fatalf("unrelated hint starved or renewed unchanged facts: %+v %v", unchanged, unchangedErr)
+	}
+	work.Requirement.RequestedGeneration = 0
 	before := observer.Snapshot()["notifications_total"]
 	pod := f.api.Object("pods", a.Namespace, a.PodName)
 	annotations := pod["metadata"].(map[string]any)["annotations"].(map[string]any)

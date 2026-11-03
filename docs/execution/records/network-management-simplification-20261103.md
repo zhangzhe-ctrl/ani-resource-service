@@ -41,3 +41,11 @@
 - 12 集群 `ani_resource` 已完成 PostgreSQL custom-format 备份及服务端 TOC 检查；迁移尚未执行。这里的 network schema 25→27 属于 Res 数据库，非 KCN。
 
 - 最终 `verify-release.log`：PASS，含生成一致性、边界、故障构建、Go 单元测试/vet/build/module 校验。重任务均在 Fedora 执行。
+
+## R1 真实验收失败与回退
+
+2026-11-03，`2fc544f` 镜像在 10 集群滚动更新完成，原三 LB 四入口首次 HTTP 通过，但随后 Attachment 观测时间持续老化，LB 出现 BackendIdentityMismatch 并退化。已只回退 Res 镜像至原 `sha256:4c651e6e...`，原三 LB 同 operation/版本恢复 Available；未修改 KCN，12 集群尚未迁移或更新。
+
+受控复现发现父/平台通知可提高 Attachment 的 requested_generation，但其 Pod/NIC/IP 事实并未变化；普通路径因此一直拒绝未改变的共享视图。修正仅让关系未变、来源 epoch 有效的普通视图覆盖这种通知，不改变 collected_at；初始化、消费者关闭、相关对象变化、UID 替换仍保留当前收集与 fencing。`hint-coverage.log` 通过 11.910s，包含旧时间不续签、真实关系变更拒绝、relist 与领取/观察/完成各阶段通知围栏。
+
+用户追加要求：12 集群的最终镜像改在 `ubuntu@100.64.128.15` 从固定源码重新构建并推送，再更新 12；Fedora 保留测试和 10 集群发布职责。
