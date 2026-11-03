@@ -70,6 +70,9 @@ func Migrate(ctx context.Context, owner *pgxpool.Pool, runtimeRole string) error
 		return err
 	}
 	sort.Strings(files)
+	if err := bridgeReleasedVNicHistory(ctx, tx, files); err != nil {
+		return err
+	}
 	for index, name := range files {
 		body, err := migrations.Files.ReadFile(name)
 		if err != nil {

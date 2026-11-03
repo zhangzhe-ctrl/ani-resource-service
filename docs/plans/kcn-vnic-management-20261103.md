@@ -236,7 +236,7 @@ Console PR #11 尚未合入，实施前再次核对其状态：已合入则直�
 | VM 当前配置、Instance 当前配置 | `network_interfaces[]` 按 `slot` 保存 `desired/applied` 选择和配置版本，运行投影独立关联 Pod/VMI UID；本期只有 `primary` | 初始创建快照不改；缺省自然代表既有自动模式，不批量回填隐藏网卡；观察更新不覆盖较新的期望配置 |
 | SG targets/references | 允许独立 `vnic` 目标，保存 VNIC 实际引用的 SG 集合；沿用实例 SG 命令驱动当前和目标网卡 | VNIC 未绑定但仍保留组配置时，SG 删除保护继续有效。实例 SG 引用释放不等于独立 VNIC 引用释放 |
 
-Network 基线 schema 为 27；新增下一号迁移（当前可用号为 `0028_manual_vnics.sql`，实施时重新核对），由该迁移完整扩展资源类型约束和索引。VM/Instance 的新增配置优先沿用既有 JSON 当前配置与 operation execution；只有确需持久列/查询索引时才追加各域迁移，不能仅为新 JSON 字段复制整套状态表。
+Network 合并主干后保留已发布的 `0028_attachment_consumer_type.sql`，本任务三条迁移原字节顺移为 `0029_manual_vnics.sql`、`0030_vnic_requested_addresses.sql`、`0031_subnet_creation_options.sql`。显式 owner 迁移在同一事务与锁内，仅对此前已发布的本任务 28–30 精确校验和连续前缀补执行主干 28，再顺移既有账本版本并保留校验和及执行时间；未知、混合或空洞历史拒绝。运行时只接受统一后的 canonical 历史。VM/Instance 的新增配置优先沿用既有 JSON 当前配置与 operation execution；只有确需持久列/查询索引时才追加各域迁移，不能仅为新 JSON 字段复制整套状态表。
 
 新类型落在 `internal/biz/network/vnic.go`，Provider 实现在 `internal/data/network/kc_vnic.go`，PG 命令/查询在 `internal/data/network/vnics.go`、`queries/vnics.sql`。VNIC create/delete 接入既有 Network worker 的 kind 分支，分配就绪使用本方案第 3.1 节的 VNIC 特定事实；不能强套 VPC 的 CIDR/generation 判断。sqlc 和 protobuf 从输入生成，不手改生成文件。
 

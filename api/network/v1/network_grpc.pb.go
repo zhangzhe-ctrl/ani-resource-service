@@ -38,6 +38,7 @@ const (
 	NetworkService_GetAttachment_FullMethodName          = "/network.v1.NetworkService/GetAttachment"
 	NetworkService_ConfirmAttachment_FullMethodName      = "/network.v1.NetworkService/ConfirmAttachment"
 	NetworkService_ReleaseAttachment_FullMethodName      = "/network.v1.NetworkService/ReleaseAttachment"
+	NetworkService_ListNetworkInstances_FullMethodName   = "/network.v1.NetworkService/ListNetworkInstances"
 )
 
 // NetworkServiceClient is the client API for NetworkService service.
@@ -66,6 +67,7 @@ type NetworkServiceClient interface {
 	GetAttachment(ctx context.Context, in *GetAttachmentRequest, opts ...grpc.CallOption) (*GetAttachmentResponse, error)
 	ConfirmAttachment(ctx context.Context, in *ConfirmAttachmentRequest, opts ...grpc.CallOption) (*ConfirmAttachmentResponse, error)
 	ReleaseAttachment(ctx context.Context, in *ReleaseAttachmentRequest, opts ...grpc.CallOption) (*ReleaseAttachmentResponse, error)
+	ListNetworkInstances(ctx context.Context, in *ListNetworkInstancesRequest, opts ...grpc.CallOption) (*ListNetworkInstancesResponse, error)
 }
 
 type networkServiceClient struct {
@@ -266,6 +268,16 @@ func (c *networkServiceClient) ReleaseAttachment(ctx context.Context, in *Releas
 	return out, nil
 }
 
+func (c *networkServiceClient) ListNetworkInstances(ctx context.Context, in *ListNetworkInstancesRequest, opts ...grpc.CallOption) (*ListNetworkInstancesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListNetworkInstancesResponse)
+	err := c.cc.Invoke(ctx, NetworkService_ListNetworkInstances_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NetworkServiceServer is the server API for NetworkService service.
 // All implementations must embed UnimplementedNetworkServiceServer
 // for forward compatibility.
@@ -292,6 +304,7 @@ type NetworkServiceServer interface {
 	GetAttachment(context.Context, *GetAttachmentRequest) (*GetAttachmentResponse, error)
 	ConfirmAttachment(context.Context, *ConfirmAttachmentRequest) (*ConfirmAttachmentResponse, error)
 	ReleaseAttachment(context.Context, *ReleaseAttachmentRequest) (*ReleaseAttachmentResponse, error)
+	ListNetworkInstances(context.Context, *ListNetworkInstancesRequest) (*ListNetworkInstancesResponse, error)
 	mustEmbedUnimplementedNetworkServiceServer()
 }
 
@@ -358,6 +371,9 @@ func (UnimplementedNetworkServiceServer) ConfirmAttachment(context.Context, *Con
 }
 func (UnimplementedNetworkServiceServer) ReleaseAttachment(context.Context, *ReleaseAttachmentRequest) (*ReleaseAttachmentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReleaseAttachment not implemented")
+}
+func (UnimplementedNetworkServiceServer) ListNetworkInstances(context.Context, *ListNetworkInstancesRequest) (*ListNetworkInstancesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListNetworkInstances not implemented")
 }
 func (UnimplementedNetworkServiceServer) mustEmbedUnimplementedNetworkServiceServer() {}
 func (UnimplementedNetworkServiceServer) testEmbeddedByValue()                        {}
@@ -722,6 +738,24 @@ func _NetworkService_ReleaseAttachment_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _NetworkService_ListNetworkInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListNetworkInstancesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NetworkServiceServer).ListNetworkInstances(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NetworkService_ListNetworkInstances_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NetworkServiceServer).ListNetworkInstances(ctx, req.(*ListNetworkInstancesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // NetworkService_ServiceDesc is the grpc.ServiceDesc for NetworkService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -804,6 +838,10 @@ var NetworkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReleaseAttachment",
 			Handler:    _NetworkService_ReleaseAttachment_Handler,
+		},
+		{
+			MethodName: "ListNetworkInstances",
+			Handler:    _NetworkService_ListNetworkInstances_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

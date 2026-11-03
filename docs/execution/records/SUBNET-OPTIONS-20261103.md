@@ -27,3 +27,12 @@
 ## 既有详情页限制
 
 关联实例旧调用为 `/instances?limit=10&subnet_id=...`，正式公开实例列表没有subnet_id过滤；改分页仍无法满足该过滤，去掉过滤会返回全租户实例，不能冒充关联结果。已限定核对并停止，没有扩展后端或隐藏成空列表；四项创建/配置/回显验收不依赖该查询。
+
+<a id="pr53-merge-20261104"></a>
+
+## 2026-11-04：PR #53 合并收尾（未部署）
+
+- 分支来源 `35152639` 正常 merge 主干 `9aa96edf`，保留主干已发布的 `0028_attachment_consumer_type.sql` 原名与原字节；本任务三条 SQL 只顺移编号为29–31。显式 owner `Migrate` 在原事务/advisory lock内识别旧任务28–30的精确连续校验和，补执行主干28并倒序顺移账本，保留原checksum/applied_at；运行时仍严格校验canonical31，不放行旧历史。没有现场数据库升级或新镜像部署，实际运行仍为上文 `d54aafa`/schema30。
+- protobuf/sqlc通过 Fedora 固定 Go1.26.10/Buf1.60.0/sqlc1.31.1重新生成。合并交点中，主干新增关联实例查询的容器当前地址投影补上已接受手动VNIC的精确ProviderName/UID匹配，保留Pod/current/IP owner边界。
+- PASS：Network关联查询/consumer type、VNIC申请地址、Subnet参数业务定向；Provider申请地址/子网参数及当前地址投影定向；真实PG的main28升级、旧task30升级与canonical replay，验证原迁移checksum/applied_at、VNIC申请IP/MAC及Subnet选项保留、consumer_type回填；未知checksum/混合/空洞历史拒绝且不改schema/ledger；既有申请地址/子网选项PG定向；`go build ./cmd/ani-resource-service`。未运行全量verify或现场升级验收。
+- 初次PG fixture先因参数类型推断42P08、随后因缺租户Namespace外键前置失败；补齐fixture后仅重跑受影响迁移用例，未将前置失败记为升级成功。原始日志位于 Fedora `/home/chabking/tasks/vnic-pr53-merge-20261104/{merge-targeted,migration-targeted,released-migration-targeted}.log`，源码快照同目录 `source`。测试由既有 `scripts/integration` 创建并清理独占PostgreSQL容器。

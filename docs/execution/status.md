@@ -6,6 +6,8 @@
 
 已完成网关 IP（复用原字段）及排除 IP、DHCP、DNS 的租户创建接线。Resource `d54aafa`（迁移30、generation89/Ready1）、Gov `0a285584` 已部署，Console `2b56757` 独占预览已更新，三仓均 SSH 推送。真实页面仅提交一次，子网 `subnet_2e5a7520556f469f8320ad3a051ef14e` 已 available，四项回显正确；实际 OVN DHCP 网关/DNS 选项及 KCN IPAM 排除范围通过，测试子网保留。未声称 guest/Pod 的 DNS 解析可达。相关 Fedora 检查与初始旧 fixture 失败边界见[实施记录](records/SUBNET-OPTIONS-20261103.md)。原排查资源及基础网络聚合规则未修改。详情页既有“关联实例”调用仍因公开接口不支持 subnet_id 过滤而400，此次未扩展后端查询能力。
 
+2026-11-04 PR #53 收尾已正常合并主干 `9aa96edf` 的关联实例查询与consumer type迁移；修复其手动VNIC当前地址投影交点。统一源码采用canonical31，显式owner迁移精确桥接旧任务28–30，Fedora两条真实PG升级/拒绝路径及相关定向检查和服务构建通过。该合并源码未部署、canonical31未现场应用；实际运行仍为上述 `d54aafa`/schema30。来源、初始fixture失败及验证边界见[PR收尾记录](records/SUBNET-OPTIONS-20261103.md#pr53-merge-20261104)。
+
 <a id="kcn-vnic-management-20261103"></a>
 
 ## 2026-11-03：手动 VNIC 管理
