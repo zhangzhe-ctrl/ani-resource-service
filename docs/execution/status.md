@@ -5,9 +5,11 @@
 ## 2026-11-03：手动 VNIC 管理
 
 
-当前主链已完成正式页面申请 A/B/C、真实 KCN 分配 MAC/IP、同键重放原 CR 身份不变；默认自动 VM/Notebook 的实际 SSH 与双向 HTTP 通信通过。Resource `f4711fd`、Gov `aed3378a` 已部署，Console `e741b25` 已推送并以独占预览联调。当前/目标网卡与配置阶段字段已贯通；手动重启应用、保留/释放及其余验收尚未完成。
+本计划 VM/容器范围已完成。正式源已 SSH 推送，Resource 业务源 `b70271b`、Gov `aed3378a` 已部署，Console `e741b25` 独占预览完成真实页面验收（未发布生产 Console）。默认自动创建、手动保存/取消/换绑与平台重启、停止启动复用、实际 MAC/IP/guest SSH/HTTP 均通过。SG deny8080、替换 allow、清空的实际策略通过，待重启 current/target 同步跟随 SG且预留禁止删除。VM/容器恢复自动模式通过；C 跨两台 VM 及容器复用，空组完整清除上个实例策略。VM2/Notebook 删除均完成而原手动 VNIC/IP 留存，空闲网卡继续保护 SG 引用；随后 B/C 显式删除、原 CR/VNicIP 与 .12/.13 分配消失，仅两 run-owned SG 正常 Deleted。测试 VM2/VM3/Notebook 已正常删除；保护场景六个原 UID 全部保留，原两台 Notebook 仍 version1/Running。详细证据和初始失败边界见[本轮记录](records/KCN-VNIC-20261103/README.md)。
 
-VM1 保存目标 A 原先等待 VNIC.status.appliedSecurityGroups；2026-11-03 用户转达 KCN 团队确认：以相关 SG.status.appliedVNics 包含目标 VNIC 认定绑定成功，无需该 VNIC 字段。正在按新口径修正 Resource，保留 SG 就绪/版本及旧组移除确认，并随既有 SG 写围栏一并发布。保留手动 A、allow SG、VM1 当前自动 VNIC/Nic 和 VM1/launcher，不删除、解绑或重启；允许原保存操作按新确认口径自然收敛。继续独立 Notebook/B 及 VM2/C 主链。
+VM1 保存目标 A 原先等待 VNIC.status.appliedSecurityGroups；2026-11-03 用户转达 KCN 团队确认：以相关 SG.status.appliedVNics 包含目标 VNIC 认定绑定成功，无需该 VNIC 字段，也不额外等待 SG Ready/generation 应用回执；旧组移除对应成员消失。原资源身份、租户/位置准入和 owner 版本围栏保留。新口径已发布；原 operation `8d2bc3dd` 已自然 succeeded，A 的 SG 继承已落库。手动 A、allow SG、VM1 当前自动 VNIC/Nic 和原 VMI/launcher 均保留，不删除、解绑或重启。
+
+Notebook 重新保存 B 后同 Pod/原地址保持 Running，普通观察误 Pending 已修复。最初 Restart 503 为双端既有开关漏启用，随后已补 ANI_INSTANCE_RESTART_ENABLED=true。v1.10 不更新已有 STS 模板注解，现由实例 owner 在停止/无 Pod、原 Notebook 与受控 STS UID/RV 保护下正常重建；权限仅目标租户 writer Role。随后共享观察遗漏无 Pod owner 的手动 B 索引，`c710a54` 补原 UID/名称候选，`e1e4c49` 接既有正常 Confirm 严格恢复。原 b55 deadline failed 并安全停机的历史保留；新 Start `5ec174e4` 与普通 UI Restart `291f0488` 均 completed/runtime_verified。VM2 删除阶段保留的手动 IP 曾错误标为本消费者 Current，`b70271b` 修正关系语义并经真实 PG RED→GREEN；原 `3aa09f76` 自然 succeeded，未清 flag 或强制删除网卡/IP。最新镜像及证据见[本轮记录](records/KCN-VNIC-20261103/README.md)。
 
 此前空 ManualVNics 改变旧自动摘要的回归已在 `2145760` 修复并真实恢复原两台 Notebook，原 Pod UID/revision 保持；部署缺失的 VM 只读观察 RBAC 已补齐，长期 Unknown 已恢复。验证与精确证据见[本轮记录](records/KCN-VNIC-20261103/README.md)。
 
