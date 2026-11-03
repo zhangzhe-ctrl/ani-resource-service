@@ -8,10 +8,13 @@ import (
 
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/dynamic/fake"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -108,6 +111,31 @@ func TestKCVNicRequestedIPCreateReplayAndResponseLoss(t *testing.T) {
 				t.Fatal("created IP does not carry exact requested address and original parent identity", actual, err)
 			}
 		})
+	}
+}
+
+func TestKCVNicRequestedIPParentVersionConflictIsRetryable(t *testing.T) {
+	for _, replaced := range []bool{false, true} {
+		b, target, parent, child := requestedVNicAddressFixture()
+		current := parent.DeepCopy()
+		current.SetResourceVersion("8")
+		if replaced {
+			current.SetUID("foreign-vnic")
+		}
+		client := fake.NewSimpleDynamicClient(runtime.NewScheme(), current, child)
+		client.PrependReactor("patch", "vnics", func(ktesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierrors.NewInvalid(schema.GroupKind{Group: "networking.kubercloud.com", Kind: "VNic"}, b.ProviderName, field.ErrorList{field.Invalid(field.NewPath("metadata", "resourceVersion"), "7", "JSON patch test failed")})
+		})
+		p := &KCProvider{client: client}
+		_, err := p.ensureRequestedVNicIP(context.Background(), parent, b, target)
+		var failure *biz.ProviderError
+		want := biz.ProviderTemporary
+		if replaced {
+			want = biz.ProviderConflict
+		}
+		if !errors.As(err, &failure) || failure.Kind != want {
+			t.Fatalf("concurrent parent update incorrectly terminated address creation: replaced=%v error=%v", replaced, err)
+		}
 	}
 }
 

@@ -199,11 +199,27 @@ func (p *KCProvider) ensureRequestedVNicIP(ctx context.Context, parent *unstruct
 	}
 	annotations[requestedVNicIPUIDAnnotation] = string(child.GetUID())
 	patch, _ := json.Marshal([]map[string]any{{"op": "test", "path": "/metadata/uid", "value": string(parent.GetUID())}, {"op": "test", "path": "/metadata/resourceVersion", "value": parent.GetResourceVersion()}, {"op": "add", "path": "/metadata/annotations", "value": annotations}})
-	parent, err = p.client.Resource(kcManualVNics).Namespace(b.Namespace).Patch(ctx, b.ProviderName, types.JSONPatchType, patch, metav1.PatchOptions{})
+	parentUID, parentVersion := parent.GetUID(), parent.GetResourceVersion()
+	updated, err := p.client.Resource(kcManualVNics).Namespace(b.Namespace).Patch(ctx, b.ProviderName, types.JSONPatchType, patch, metav1.PatchOptions{})
 	if err != nil {
+		// A failed JSON-patch test is returned as 422 by Kubernetes. Confirm
+		// whether KCN only advanced the same parent's version before treating
+		// it as a permanently invalid address request.
+		if apierrors.IsInvalid(err) || apierrors.IsConflict(err) {
+			current, readErr := p.client.Resource(kcManualVNics).Namespace(b.Namespace).Get(ctx, b.ProviderName, metav1.GetOptions{})
+			if apierrors.IsNotFound(readErr) || (readErr == nil && current.GetUID() != parentUID) {
+				return nil, &biz.ProviderError{Kind: biz.ProviderConflict, Cause: err}
+			}
+			if readErr != nil {
+				return nil, readFailure(readErr)
+			}
+			if current.GetResourceVersion() != parentVersion {
+				return nil, &biz.ProviderError{Kind: biz.ProviderTemporary, Cause: err}
+			}
+		}
 		return nil, mutationFailure(err)
 	}
-	return parent, nil
+	return updated, nil
 }
 func (p *KCProvider) EnsureVNic(ctx context.Context, t biz.ProviderTarget) (biz.ProviderObservation, error) {
 	b, e := p.binding(ctx, t)
