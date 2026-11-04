@@ -305,6 +305,7 @@ func runInstanceNetworkVertical(t *testing.T, confirmFaults bool) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	configureVerticalPullSecret(t, f, c, boundary, notebook)
 	worker, err := biz.NewWorker(f.repo, notebook, "vertical-instance")
 	if err != nil {
 		t.Fatal(err)

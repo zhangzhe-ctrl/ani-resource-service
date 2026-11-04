@@ -143,6 +143,17 @@ func TestVMNetworkPreparationRetryIsFencedByLeaseAndDeletion(t *testing.T) {
 	f, _, _ := newAutoVMNetwork(t)
 	awaitAutoVMNetwork(t, f)
 	ctx := context.Background()
+	// Startup wakes the VPC as well as the Subnet. Finish that independent work
+	// before asserting which product the next explicit notification will claim.
+	for round := 0; ; round++ {
+		found, err := f.resourceWorker.Step(ctx)
+		if err != nil || round >= 4 {
+			t.Fatal("startup work did not park", found, err)
+		}
+		if !found {
+			break
+		}
+	}
 	if err := f.p.NotifyResource(ctx, f.r.TenantID, f.r.SubnetID); err != nil {
 		t.Fatal(err)
 	}

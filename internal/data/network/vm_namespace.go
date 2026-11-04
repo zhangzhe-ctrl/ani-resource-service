@@ -118,15 +118,15 @@ func (p *KCProvider) PrepareVMNetwork(ctx context.Context, target biz.ProviderTa
 }
 
 func (p *Postgres) RetryVMNetworkPreparation(ctx context.Context, w biz.Work, delay time.Duration) error {
-	// Finish already released this lease. A newer claim, product mutation or
-	// completed deletion makes this old preparation attempt unable to reschedule.
+	// Finish already advanced the resource version once and released this lease.
+	// Match that completed version; any later mutation or lease rejects the retry.
 	result, err := p.pool.Exec(ctx, `UPDATE network_reconciliations q SET
  requested_generation=q.requested_generation+1,
  retry_not_before=greatest(q.retry_not_before,clock_timestamp()+$6::bigint*interval '1 microsecond'),
  next_run_at=greatest(q.retry_not_before,clock_timestamp()+$6::bigint*interval '1 microsecond')
  FROM network_provider_bindings b JOIN network_subnets s USING(tenant_id,subnet_id)
  WHERE q.tenant_id=$1 AND q.subnet_id=$2 AND b.tenant_id=q.tenant_id AND b.subnet_id=q.subnet_id
- AND b.binding_id=$3 AND s.version=$4 AND q.lease_epoch=$5 AND q.lease_owner IS NULL
+ AND b.binding_id=$3 AND s.version=($4::bigint+1) AND q.lease_epoch=$5 AND q.lease_owner IS NULL
  AND NOT q.retired AND s.state NOT IN ('deleting','deleted')`, w.Resource.TenantID, w.Resource.ID, w.BindingID, w.Resource.Version, w.Epoch, delay.Microseconds())
 	if err != nil {
 		return databaseFailure(err)
