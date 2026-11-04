@@ -12,8 +12,25 @@ import (
 type Worker struct {
 	repo     WorkerRepository
 	provider Provider
+	preview  PreviewWorkRunner
 	owner    string
 	lease    time.Duration
+}
+
+// PreviewWorkRunner performs one bounded reconciliation using the current
+// worker lease. Cleanup remains guarded by PreviewLifecycleFence.
+type PreviewWorkRunner interface {
+	StepExperimentalPreview(context.Context, Work) error
+}
+
+// ConfigurePreviewWorkRunner must be called before starting worker goroutines.
+func (w *Worker) ConfigurePreviewWorkRunner(r PreviewWorkRunner) { w.preview = r }
+
+// PreviewLifecycleFence is optional for repositories that do not support
+// preview. A production preview implementation must retain this fence until
+// it has observed deletion of every journaled listener.
+type PreviewLifecycleFence interface {
+	ReconcilePreviewLifecycleFence(context.Context, Work) (bool, error)
 }
 
 func NewWorker(repo WorkerRepository, provider Provider, owner string, lease time.Duration) (*Worker, error) {
@@ -36,6 +53,25 @@ func (w *Worker) Step(ctx context.Context) (bool, error) {
 		persistCtx, done := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 		defer done()
 		return true, w.repo.Finish(persistCtx, *work, p)
+	}
+	if w.preview != nil {
+		if err := w.preview.StepExperimentalPreview(callCtx, *work); err != nil {
+			return true, err
+		}
+	}
+	if work.Sandbox.Desired == DesiredPaused || work.Sandbox.Desired == DesiredDeleted {
+		if fence, ok := w.repo.(PreviewLifecycleFence); ok {
+			required, err := fence.ReconcilePreviewLifecycleFence(callCtx, *work)
+			if err != nil {
+				return true, err
+			}
+			if required {
+				// This is a safety barrier, not a cleanup implementation. The
+				// candidate preview worker must remove it only after receipt.
+				p.Sandbox.Observed, p.Sandbox.Reason = ObservedUnknown, "PREVIEW_CLEANUP_PENDING"
+				return finish()
+			}
+		}
 	}
 	// A PV read can consume its entire observation deadline after the Pod has
 	// already been verified. Reserve a separate part of the lease budget for

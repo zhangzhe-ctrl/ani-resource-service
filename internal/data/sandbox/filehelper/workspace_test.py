@@ -47,6 +47,12 @@ class WorkspaceTests(unittest.TestCase):
             with self.assertRaises((OSError, ValueError)): w.delete_file(self.fd, name)
         self.assertEqual(victim.read_bytes(), b"untouched")
         self.assertFalse((self.out / "new").exists())
+    def test_missing_directory_is_not_an_empty_directory(self):
+        (self.root / "empty").mkdir()
+        self.assertEqual(w.list_files(self.fd, "empty"), {"items": []})
+        for path in ("missing", "empty/missing"):
+            with self.subTest(path=path), self.assertRaises(FileNotFoundError):
+                w.list_files(self.fd, path)
     def test_size_and_unsupported(self):
         with self.assertRaises(OverflowError): w.write_file(self.fd, "huge", b"x" * (w.MAX_BYTES+1), False)
         (self.root / "huge").write_bytes(b"x" * (w.MAX_BYTES+1))

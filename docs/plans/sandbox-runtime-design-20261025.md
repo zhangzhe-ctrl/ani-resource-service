@@ -474,6 +474,10 @@ code-run 受理和生命周期动作以相同数据库行锁确定顺序：暂�
 
 ### P4：端口、egress 和生产过期
 
+Sandbox 当前不能实施域名限制或全阻断。新的创建及克隆请求若声明 `allowlist`（包括空列表）或 `deny_all`，在新受理前返回 `SANDBOX_EGRESS_ENFORCEMENT_UNSUPPORTED`，不能将仅保存意图当作安全控制。未提交意图或声明 `internet` 的请求保持原有路径，`internet` 也不保证实际连通或覆盖其他网络策略。已有资源的原意图仍可读取并标记未执行，精确重放已受理的历史创建及克隆命令不受此能力检查影响；已由 Gov 记账但 Resource 未受理的历史命令需在升级前排查，其重试不会创建未受保护资源。NetworkPolicy/域名 enforcement 仍需本方案 P4 门禁及独立验收。
+
+启用上述保护的发布顺序：先升级 Gov 并排空旧 Gov 副本，再检查旧 Gov 已登记但 Resource 尚未确认受理的受限创建和克隆，保留未知状态及屏障；最后升级 Resource 并排空旧 Resource 副本。旧 Gov 副本仍在运行时，新 Gov 的只读检查无法阻止其在检查之后登记新命令，不能宣称保护已形成一致边界。
+
 端口由 Sandbox 自己创建和观察受控 Service/endpoint；NodePort 只能实验开关。NetworkPolicy 由同一 Kubernetes adapter Prepare/Observe/Release。重启 worker/Resource 后仍能完成 session/idle expiry，且重复扫描不重复操作。
 
 退出条件：端口创建、访问、撤销、TTL 到期和清理有独立证据；egress deny/allowlist/internet 分别有 Provider 观察结果；到期动作在服务重启和 Provider unknown 后仍能恢复。

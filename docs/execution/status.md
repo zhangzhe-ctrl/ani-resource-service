@@ -1,5 +1,13 @@
 # Network 执行状态
 
+## 2026-11-04：Sandbox 详情及独立终端提交候选
+
+本分支以 Resource main `5dc539d` 为基础，整理此前独立 Sandbox 详情、文件分页、操作历史、代码执行时间、日志与事件、预览端口、检查点及终端变更；不回退主线 Network 修改。监控交由 Observability 服务；安全事件无可信数据源，Host 白名单尚无实际执行数据面，相关源码明确不可用或拒绝不受支持的声明。预览默认禁用，检查点仅支持文件系统快照；接口权限、存储能力和部署约束见 Sandbox 部署说明及调用合同。
+
+66 已以现场兼容源码部署并验收独立 Sandbox 终端和二进制普通上传；WebSocket 两轮交互、跨租户和版本拒绝及票据重放拒绝均通过，上传读回哈希一致。终端权限验收后恢复 OFF；测试 Pod/PVC/PV 已回收，租户空间仍有保留。实际镜像构建使用旧现场基线加选择性移植，**不是本分支源码快照**；此前详情的其他真实验收与未解决限制见工作区证据，不能把现场结果当作本分支完整回归。Gov 与 Session Gateway 需各自固定可发布 API 依赖、完成权限启用和集成验证。
+
+`ssh -F /home/chabking/.ssh/config ubuntu` 失败（指定配置文件不存在），按允许规则回退本机 Ubuntu、Go 1.26.10。以 main `5dc539d` 和终端 SDK 提交 `a26e1a0` 为基础，测试输入 Git tree `336df0de269509a9b695950187530292463988d0`；`GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 TMPDIR=/tmp make verify`（Buf 1.60.0，SQLC 1.31.1）**pass**，随后仅更新本段执行记录。首次门禁因根 Buf 工作区误扫描终端子模块 **fail**，第二次因本地 replace 违反依赖边界 **fail**；修正工作区排除规则并固定已推送 SDK 伪版本后完整重跑通过。门禁包含生成一致性、架构边界、全量 Go 测试、vet、编译与模块校验，不包含真实 PostgreSQL 集成测试或将此源码部署到 66。
+
 ## 2026-11-04：观测故障隔离与终态恢复
 
 基于 main `d23828c` 修复 VM/VNIC 当前网络准入、终态共享审计、SNAT 事实保留与可选 LB 隔离；现场验收补修默认自动网卡删除收尾及共享观察等待误装故障退避。最终 Resource `99a03a1` 已部署 10–12，generation/observed 92、Ready1/restart0；真实 VM 平台启停/删除、VNIC 实际分配/删除与原 UID 清理通过，原用户 VM 保持。303.35s 静稳 GET/LIST 10.216 QPS，14 类基础 LIST 各9次、基础审计失败0，29组 VPC/base 全 available/ready；精确 EIP/SNAT Watch 均原UID/Bound且无事件。聚合时间仍滞后及一次可选 LB 审计失败未称修复，前者跟踪 Issue #55；guest 内部启动/关机 NOT_VERIFIED。Fedora 定向回归及最终 `make verify` PASS，未提高 QPS/TTL。来源、失败窗口与并行 Gov 原镜像重启的范围说明见[实施记录](records/network-observation-isolation-20261104.md)。

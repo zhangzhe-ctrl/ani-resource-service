@@ -14,6 +14,7 @@ import (
 	imagev1 "github.com/zhangzhe-ctrl/ani-resource-service/api/image/v1"
 	instancev1 "github.com/zhangzhe-ctrl/ani-resource-service/api/instance/v1"
 	networkv1 "github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1"
+	terminalpb "github.com/zhangzhe-ctrl/ani-resource-service/api/sandbox/terminal/v1"
 	sandboxv1 "github.com/zhangzhe-ctrl/ani-resource-service/api/sandbox/v1"
 	storagev1 "github.com/zhangzhe-ctrl/ani-resource-service/api/storage/v1"
 	vmv1 "github.com/zhangzhe-ctrl/ani-resource-service/api/vm/v1"
@@ -128,6 +129,20 @@ func buildApp(bc *conf.Bootstrap, logger *slog.Logger) (*kratos.App, error) {
 		return nil, err
 	}
 	attachments.UseConsumerDirectory(networkConsumerDirectory(instances, vms))
+	var sandboxTerminal *server.InstanceTerminalServer
+	if sandboxes != nil && sandboxes.terminal != nil {
+		if instances != nil && instances.terminal != nil {
+			instances.terminal.RegisterSandboxTerminal(sandboxes.terminal)
+		} else if vms != nil && vms.console != nil {
+			vms.console.RegisterSandboxTerminal(sandboxes.terminal)
+		} else if address := os.Getenv("ANI_TERMINAL_ADDRESS"); address != "" {
+			sandboxTerminal, err = server.NewSandboxTerminalServer(address, os.Getenv("ANI_NETWORK_CLIENT_CA"), os.Getenv("ANI_NETWORK_TLS_CERT"), os.Getenv("ANI_NETWORK_TLS_KEY"), sandboxes.terminal)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	defer func() {
 		if !configured {
 			vms.Close()
@@ -216,12 +231,16 @@ func buildApp(bc *conf.Bootstrap, logger *slog.Logger) (*kratos.App, error) {
 	}
 	if sandboxes != nil {
 		sandboxv1.RegisterSandboxServiceServer(grpcServer, sandboxes.service)
+		terminalpb.RegisterSandboxTerminalServiceServer(grpcServer, sandboxes.terminal)
 	}
 	if vms != nil {
 		vmv1.RegisterVMServiceServer(grpcServer, vms.service)
 	}
 	adminServer := server.NewAdminServer(bc.Server.Admin, readiness, observability.Gatherer(), middlewares...)
 	servers := []transport.Server{grpcServer, adminServer, observation, execution}
+	if sandboxTerminal != nil {
+		servers = append(servers, sandboxTerminal)
+	}
 	if storageComponents.worker != nil {
 		servers = append(servers, storageComponents.worker)
 	}

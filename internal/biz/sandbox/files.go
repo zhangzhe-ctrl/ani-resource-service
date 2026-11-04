@@ -17,6 +17,8 @@ type FileRequest struct {
 	Overwrite                   bool
 	Limit                       uint32
 	Cursor                      string
+	Page                        uint32 `json:",omitempty"`
+	PageSize                    uint32 `json:",omitempty"`
 }
 
 type FileEntry struct {
@@ -52,7 +54,7 @@ func ValidateFileRequest(r FileRequest) error {
 		}
 	}
 	if r.Action == "list" {
-		if r.Limit > 500 {
+		if r.Limit > 500 || r.PageSize > 100 || ((r.Page != 0 || r.PageSize != 0) && (r.Limit != 0 || r.Cursor != "")) {
 			return ErrInvalid
 		}
 		if r.Cursor != "" {
@@ -61,7 +63,7 @@ func ValidateFileRequest(r FileRequest) error {
 				return ErrInvalid
 			}
 		}
-	} else if r.Limit != 0 || r.Cursor != "" {
+	} else if r.Limit != 0 || r.Cursor != "" || r.Page != 0 || r.PageSize != 0 {
 		return ErrInvalid
 	}
 	if r.Action != "write" {

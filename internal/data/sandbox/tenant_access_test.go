@@ -162,6 +162,93 @@ func TestTenantAccessRejectsMissingOrEscalatedClusterRole(t *testing.T) {
 	if err := access.verifyTenantClusterRole(context.Background()); err != nil {
 		t.Fatalf("expected exact role: %v", err)
 	}
+	role.Object["rules"] = append(role.Object["rules"].([]any), map[string]any{"apiGroups": []any{""}, "resources": []any{"events"}, "verbs": []any{"list"}})
+	if _, err := client.Resource(tenantClusterRoleGVR).Update(context.Background(), role, metav1.UpdateOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := access.verifyTenantClusterRole(context.Background()); err != nil {
+		t.Fatalf("exact extended role rejected: %v", err)
+	}
+	role.Object["rules"] = append(role.Object["rules"].([]any), map[string]any{"apiGroups": []any{""}, "resources": []any{"pods/log"}, "verbs": []any{"get"}})
+	if _, err := client.Resource(tenantClusterRoleGVR).Update(context.Background(), role, metav1.UpdateOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := access.verifyTenantClusterRole(context.Background()); err != nil {
+		t.Fatalf("exact event and log role rejected: %v", err)
+	}
+	role.Object["rules"] = append(role.Object["rules"].([]any), map[string]any{"apiGroups": []any{"networking.k8s.io"}, "resources": []any{"networkpolicies"}, "verbs": []any{"list"}})
+	if _, err := client.Resource(tenantClusterRoleGVR).Update(context.Background(), role, metav1.UpdateOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := access.verifyTenantClusterRole(context.Background()); err != nil {
+		t.Fatalf("exact network policy role rejected: %v", err)
+	}
+	role.Object["rules"] = append(role.Object["rules"].([]any), map[string]any{"apiGroups": []any{""}, "resources": []any{"services"}, "verbs": []any{"get", "create", "delete"}}, map[string]any{"apiGroups": []any{"discovery.k8s.io"}, "resources": []any{"endpointslices"}, "verbs": []any{"list"}})
+	if _, err := client.Resource(tenantClusterRoleGVR).Update(context.Background(), role, metav1.UpdateOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := access.verifyTenantClusterRole(context.Background()); err != nil {
+		t.Fatalf("exact preview role rejected: %v", err)
+	}
+	role.Object["rules"] = append(role.Object["rules"].([]any),
+		map[string]any{"apiGroups": []any{"snapshot.storage.k8s.io"}, "resources": []any{"volumesnapshots"}, "verbs": []any{"get"}},
+		map[string]any{"apiGroups": []any{""}, "resources": []any{"persistentvolumeclaims"}, "verbs": []any{"patch"}},
+		map[string]any{"apiGroups": []any{"snapshot.storage.k8s.io"}, "resources": []any{"volumesnapshots"}, "verbs": []any{"create", "delete"}})
+	if _, err := client.Resource(tenantClusterRoleGVR).Update(context.Background(), role, metav1.UpdateOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := access.verifyTenantClusterRole(context.Background()); err != nil {
+		t.Fatalf("preview plus checkpoint role rejected: %v", err)
+	}
+	role.Object["rules"].([]any)[9].(map[string]any)["verbs"] = []any{"patch", "update"}
+	if _, err := client.Resource(tenantClusterRoleGVR).Update(context.Background(), role, metav1.UpdateOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := access.verifyTenantClusterRole(context.Background()); !errors.Is(err, biz.ErrOwnership) {
+		t.Fatalf("escalated checkpoint role accepted: %v", err)
+	}
+	role.Object["rules"] = role.Object["rules"].([]any)[:8]
+	role.Object["rules"].([]any)[6].(map[string]any)["verbs"] = []any{"get", "create", "delete", "update"}
+	if _, err := client.Resource(tenantClusterRoleGVR).Update(context.Background(), role, metav1.UpdateOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := access.verifyTenantClusterRole(context.Background()); !errors.Is(err, biz.ErrOwnership) {
+		t.Fatalf("escalated preview role accepted: %v", err)
+	}
+	role.Object["rules"] = role.Object["rules"].([]any)[:6]
+	role.Object["rules"].([]any)[5].(map[string]any)["verbs"] = []any{"list", "get"}
+	if _, err := client.Resource(tenantClusterRoleGVR).Update(context.Background(), role, metav1.UpdateOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := access.verifyTenantClusterRole(context.Background()); !errors.Is(err, biz.ErrOwnership) {
+		t.Fatalf("escalated network policy role accepted: %v", err)
+	}
+	role.Object["rules"] = role.Object["rules"].([]any)[:5]
+	role.Object["rules"].([]any)[4].(map[string]any)["verbs"] = []any{"get", "list"}
+	if _, err := client.Resource(tenantClusterRoleGVR).Update(context.Background(), role, metav1.UpdateOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := access.verifyTenantClusterRole(context.Background()); !errors.Is(err, biz.ErrOwnership) {
+		t.Fatalf("escalated log role accepted: %v", err)
+	}
+	role.Object["rules"].([]any)[4].(map[string]any)["verbs"] = []any{"get"}
+	role.Object["rules"] = append(append([]any{}, role.Object["rules"].([]any)[:3]...), role.Object["rules"].([]any)[4])
+	if _, err := client.Resource(tenantClusterRoleGVR).Update(context.Background(), role, metav1.UpdateOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := access.verifyTenantClusterRole(context.Background()); !errors.Is(err, biz.ErrOwnership) {
+		t.Fatalf("log-only role accepted: %v", err)
+	}
+	role.Object["rules"] = role.Object["rules"].([]any)[:4]
+	role.Object["rules"].([]any)[3] = map[string]any{"apiGroups": []any{""}, "resources": []any{"events"}, "verbs": []any{"list"}}
+	role.Object["rules"].([]any)[3].(map[string]any)["verbs"] = []any{"list", "get"}
+	if _, err := client.Resource(tenantClusterRoleGVR).Update(context.Background(), role, metav1.UpdateOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := access.verifyTenantClusterRole(context.Background()); !errors.Is(err, biz.ErrOwnership) {
+		t.Fatalf("escalated event role accepted: %v", err)
+	}
+	role.Object["rules"] = role.Object["rules"].([]any)[:3]
 	role.Object["rules"].([]any)[2].(map[string]any)["verbs"] = []any{"create", "get"}
 	if _, err := client.Resource(tenantClusterRoleGVR).Update(context.Background(), role, metav1.UpdateOptions{}); err != nil {
 		t.Fatal(err)

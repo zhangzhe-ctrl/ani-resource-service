@@ -71,6 +71,17 @@ func TestVerifyDataPlaneTargetRejectsProviderDrift(t *testing.T) {
 				t.Fatal(err)
 			}
 		}},
+		{"constant UID env is rejected", func(t *testing.T, p *KubernetesProvider, s *biz.Sandbox, _ *biz.DataPlaneTarget) {
+			pod, err := p.client.Resource(podGVR).Namespace(s.Snapshot.Namespace).Get(context.Background(), s.ProviderRefs.PodName, metav1.GetOptions{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			containers := pod.Object["spec"].(map[string]any)["containers"].([]any)
+			containers[0].(map[string]any)["env"] = []any{map[string]any{"name": "ANI_SANDBOX_POD_UID", "value": s.ProviderRefs.PodUID}}
+			if _, err = p.client.Resource(podGVR).Namespace(s.Snapshot.Namespace).Update(context.Background(), pod, metav1.UpdateOptions{}); err != nil {
+				t.Fatal(err)
+			}
+		}},
 		{"pause", func(_ *testing.T, _ *KubernetesProvider, s *biz.Sandbox, _ *biz.DataPlaneTarget) {
 			s.Desired = biz.DesiredPaused
 		}},

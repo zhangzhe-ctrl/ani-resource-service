@@ -10,6 +10,7 @@ import (
 	"github.com/go-kratos/kratos/v3/transport"
 	"github.com/google/uuid"
 
+	terminalpb "github.com/zhangzhe-ctrl/ani-resource-service/api/sandbox/terminal/v1"
 	sandboxpb "github.com/zhangzhe-ctrl/ani-resource-service/api/sandbox/v1"
 	imagebiz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/image"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/sandbox"
@@ -28,6 +29,7 @@ import (
 type sandboxComponents struct {
 	repo      *data.Postgres
 	service   sandboxpb.SandboxServiceServer
+	terminal  terminalpb.SandboxTerminalServiceServer
 	provider  *data.KubernetesProvider
 	worker    *biz.Worker
 	execution transport.Server
@@ -74,9 +76,9 @@ func openSandbox(ctx context.Context, network *conf.Network, compute *computeCom
 		if err != nil || component.repo == nil {
 			return nil, err
 		}
-		return &sandboxRetryTarget{service: component.service, execution: component.execution, close: component.Close}, nil
+		return &sandboxRetryTarget{service: component.service, terminal: component.terminal, execution: component.execution, close: component.Close}, nil
 	}, 5*time.Second)
-	return &sandboxComponents{service: retry, execution: retry, retry: retry}, nil
+	return &sandboxComponents{service: retry, terminal: retry, execution: retry, retry: retry}, nil
 }
 
 func openSandboxOnce(ctx context.Context, network *conf.Network, compute *computeComponents, images *imageComponents, logger *slog.Logger) (*sandboxComponents, error) {
@@ -86,7 +88,7 @@ func openSandboxOnce(ctx context.Context, network *conf.Network, compute *comput
 		} else {
 			logger.Warn("sandbox unavailable", "reason", reason)
 		}
-		return &sandboxComponents{service: unavailableSandbox{}}, nil
+		return &sandboxComponents{service: unavailableSandbox{}, terminal: sandbox.NewTerminalBinding(nil, nil)}, nil
 	}
 	if compute == nil || compute.resolver == nil {
 		return unavailable("compute is not configured", nil)
@@ -171,6 +173,11 @@ func openSandboxOnce(ctx context.Context, network *conf.Network, compute *comput
 		repo.Close()
 		return unavailable("sandbox file service initialization failed", err)
 	}
+	logReader, err := data.NewKubernetesSandboxLogs(rest, provider, repo)
+	if err != nil {
+		repo.Close()
+		return unavailable("sandbox log source initialization failed", err)
+	}
 	var tokenService *biz.TokenService
 	// Token signing keys are optional and separate from shared database config.
 	// Missing or invalid keys keep token methods unavailable without disabling Sandbox.
@@ -188,15 +195,24 @@ func openSandboxOnce(ctx context.Context, network *conf.Network, compute *comput
 			logger.Warn("sandbox token signing unavailable")
 		}
 	}
+	// Direct NodePort is unauthenticated and must be explicitly enabled.
+	previewEnabled := os.Getenv("ANI_SANDBOX_EXPERIMENTAL_NODEPORT_ENABLED") == "true"
 	handler, err := sandbox.NewService(repo, compute.resolver, sandbox.Config{
 		ClusterID: compute.settings.ClusterID, NamespacePrefix: "tenant-",
 		WorkspaceSize: "5Gi", RuntimeClassResolver: data.RuntimeClass{Client: client},
-		ImageResolver:        data.Image{Runtime: imageRuntime},
-		StorageClassResolver: data.StorageClass{Classes: storageUseCase, Namespaces: classes, Client: client, NamespacePrefix: "tenant-"},
-		NamespaceResolver:    data.TenantNamespace{Client: client, NamespacePrefix: "tenant-"},
-		CodeRunner:           codeRunner,
-		FileService:          fileService,
-		TokenService:         tokenService,
+		ImageResolver:               data.Image{Runtime: imageRuntime},
+		StorageClassResolver:        data.StorageClass{Classes: storageUseCase, Namespaces: classes, Client: client, NamespacePrefix: "tenant-"},
+		NamespaceResolver:           data.TenantNamespace{Client: client, NamespacePrefix: "tenant-"},
+		CodeRunner:                  codeRunner,
+		FileService:                 fileService,
+		TokenService:                tokenService,
+		PreviewEnabled:              previewEnabled,
+		EnvironmentReader:           provider,
+		EventReader:                 provider,
+		CheckpointObserver:          provider,
+		CheckpointTransferPreflight: provider,
+		EgressReader:                provider,
+		LogReader:                   logReader,
 	})
 	if err != nil {
 		repo.Close()
@@ -207,6 +223,32 @@ func openSandboxOnce(ctx context.Context, network *conf.Network, compute *comput
 		repo.Close()
 		return unavailable("sandbox worker initialization failed", err)
 	}
+	previewWorker, err := data.NewExperimentalPreviewWorker(repo, provider, previewEnabled)
+	if err != nil {
+		repo.Close()
+		return unavailable("sandbox preview worker initialization failed", err)
+	}
+	worker.ConfigurePreviewWorkRunner(previewWorker)
+	checkpointWorker, err := biz.NewCheckpointWorker(repo, provider, uuid.NewString(), 45*time.Second, time.Second)
+	if err != nil {
+		repo.Close()
+		return unavailable("sandbox checkpoint worker initialization failed", err)
+	}
+	checkpointCleanupWorker, err := biz.NewCheckpointCleanupWorker(repo, provider, uuid.NewString(), 45*time.Second, 5*time.Second)
+	if err != nil {
+		repo.Close()
+		return unavailable("sandbox checkpoint cleanup worker initialization failed", err)
+	}
+	transferWorker, err := biz.NewCheckpointTransferWorker(repo, provider, uuid.NewString(), 45*time.Second, 5*time.Second)
+	if err != nil {
+		repo.Close()
+		return unavailable("sandbox checkpoint transfer worker initialization failed", err)
+	}
+	generationCleanupWorker, err := biz.NewWorkspaceGenerationCleanupWorker(repo, provider, uuid.NewString(), 45*time.Second, 5*time.Second)
+	if err != nil {
+		repo.Close()
+		return unavailable("sandbox workspace generation cleanup worker initialization failed", err)
+	}
 	spaceWorker, err := biz.NewTenantSpaceWorker(repo, data.TenantSpaceProvisioner{
 		Namespace: data.TenantNamespace{Client: client, NamespacePrefix: "tenant-"},
 		Access:    data.TenantAccess{Client: client, NamespacePrefix: "tenant-"},
@@ -215,7 +257,7 @@ func openSandboxOnce(ctx context.Context, network *conf.Network, compute *comput
 		repo.Close()
 		return unavailable("tenant space worker initialization failed", err)
 	}
-	return &sandboxComponents{repo: repo, service: handler, provider: provider, worker: worker, execution: server.NewSandboxWorkerServer(worker, logger, spaceWorker)}, nil
+	return &sandboxComponents{repo: repo, service: handler, terminal: sandbox.NewTerminalBinding(repo, provider), provider: provider, worker: worker, execution: server.NewSandboxWorkerServer(worker, logger, spaceWorker, checkpointWorker, checkpointCleanupWorker, transferWorker, generationCleanupWorker)}, nil
 }
 
 type sandboxPullMaterial interface {
@@ -237,6 +279,9 @@ type unavailableSandbox struct {
 func sandboxUnavailable() error {
 	return status.Error(codes.Unavailable, "SANDBOX_DEPENDENCY_UNAVAILABLE")
 }
+func (unavailableSandbox) CreateSandboxCheckpoint(context.Context, *sandboxpb.CreateSandboxCheckpointRequest) (*sandboxpb.CreateSandboxCheckpointResponse, error) {
+	return nil, sandboxUnavailable()
+}
 func (unavailableSandbox) OpenTenantSpace(context.Context, *sandboxpb.OpenTenantSpaceRequest) (*sandboxpb.OpenTenantSpaceResponse, error) {
 	return nil, sandboxUnavailable()
 }
@@ -252,10 +297,22 @@ func (unavailableSandbox) ResolveCreateSpec(context.Context, *sandboxpb.ResolveC
 func (unavailableSandbox) AcceptCreate(context.Context, *sandboxpb.AcceptCreateRequest) (*sandboxpb.AcceptCreateResponse, error) {
 	return nil, sandboxUnavailable()
 }
+func (unavailableSandbox) AcceptSandboxClone(context.Context, *sandboxpb.AcceptSandboxCloneRequest) (*sandboxpb.AcceptSandboxCloneResponse, error) {
+	return nil, sandboxUnavailable()
+}
+func (unavailableSandbox) RestoreSandboxCheckpoint(context.Context, *sandboxpb.RestoreSandboxCheckpointRequest) (*sandboxpb.RestoreSandboxCheckpointResponse, error) {
+	return nil, sandboxUnavailable()
+}
 func (unavailableSandbox) GetSandbox(context.Context, *sandboxpb.GetSandboxRequest) (*sandboxpb.GetSandboxResponse, error) {
 	return nil, sandboxUnavailable()
 }
 func (unavailableSandbox) ListSandboxes(context.Context, *sandboxpb.ListSandboxesRequest) (*sandboxpb.ListSandboxesResponse, error) {
+	return nil, sandboxUnavailable()
+}
+func (unavailableSandbox) ListOperations(context.Context, *sandboxpb.ListOperationsRequest) (*sandboxpb.ListOperationsResponse, error) {
+	return nil, sandboxUnavailable()
+}
+func (unavailableSandbox) ListEnvironmentVariables(context.Context, *sandboxpb.ListEnvironmentVariablesRequest) (*sandboxpb.ListEnvironmentVariablesResponse, error) {
 	return nil, sandboxUnavailable()
 }
 func (unavailableSandbox) GetOperation(context.Context, *sandboxpb.GetOperationRequest) (*sandboxpb.GetOperationResponse, error) {

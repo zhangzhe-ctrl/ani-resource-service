@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	pb "github.com/zhangzhe-ctrl/ani-resource-service/api/instance/terminal/v1"
+	sandboxterminal "github.com/zhangzhe-ctrl/ani-resource-service/api/sandbox/terminal/v1"
 	console "github.com/zhangzhe-ctrl/ani-resource-service/api/vm/console/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -23,7 +24,23 @@ type InstanceTerminalServer struct {
 }
 
 func NewInstanceTerminalServer(address, caFile, certFile, keyFile string, handler pb.InstanceTerminalServiceServer, vmHandler ...console.VMConsoleServiceServer) (*InstanceTerminalServer, error) {
-	if address == "" || (handler == nil && (len(vmHandler) != 1 || vmHandler[0] == nil)) || len(vmHandler) > 1 {
+	return newTerminalServer(address, caFile, certFile, keyFile, handler, false, vmHandler...)
+}
+
+func NewSandboxTerminalServer(address, caFile, certFile, keyFile string, handler sandboxterminal.SandboxTerminalServiceServer) (*InstanceTerminalServer, error) {
+	if handler == nil {
+		return nil, fmt.Errorf("sandbox terminal validation required")
+	}
+	s, err := newTerminalServer(address, caFile, certFile, keyFile, nil, true)
+	if err != nil {
+		return nil, err
+	}
+	s.RegisterSandboxTerminal(handler)
+	return s, nil
+}
+
+func newTerminalServer(address, caFile, certFile, keyFile string, handler pb.InstanceTerminalServiceServer, allowEmpty bool, vmHandler ...console.VMConsoleServiceServer) (*InstanceTerminalServer, error) {
+	if address == "" || (!allowEmpty && handler == nil && (len(vmHandler) != 1 || vmHandler[0] == nil)) || len(vmHandler) > 1 {
 		return nil, fmt.Errorf("instance terminal address and validation required")
 	}
 	ca, e := os.ReadFile(caFile)
@@ -67,6 +84,12 @@ func NewInstanceTerminalServer(address, caFile, certFile, keyFile string, handle
 func (s *InstanceTerminalServer) RegisterVMConsole(handler console.VMConsoleServiceServer) {
 	console.RegisterVMConsoleServiceServer(s.server, handler)
 	s.methods["/vm.console.v1.VMConsoleService/ValidateConsoleSession"] = true
+}
+
+// RegisterSandboxTerminal exposes only validation to the existing SG identity.
+func (s *InstanceTerminalServer) RegisterSandboxTerminal(handler sandboxterminal.SandboxTerminalServiceServer) {
+	sandboxterminal.RegisterSandboxTerminalServiceServer(s.server, handler)
+	s.methods["/sandbox.terminal.v1.SandboxTerminalService/ValidateTerminalSession"] = true
 }
 func (s *InstanceTerminalServer) Start(context.Context) error {
 	listener, e := net.Listen("tcp", s.address)

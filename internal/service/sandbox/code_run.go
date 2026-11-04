@@ -7,10 +7,17 @@ import (
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/sandbox"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func codeRunResponse(intent biz.CodeRunIntent) *pb.CodeRun {
 	response := &pb.CodeRun{RunId: intent.RunID, SandboxId: intent.SandboxID, State: intent.State, Reason: intent.Reason, Stdout: intent.Stdout, Stderr: intent.Stderr, Truncated: intent.Truncated, Replayed: intent.Replayed}
+	if !intent.CreatedAt.IsZero() {
+		response.CreatedAt = timestamppb.New(intent.CreatedAt)
+	}
+	if intent.CompletedAt != nil {
+		response.CompletedAt = timestamppb.New(*intent.CompletedAt)
+	}
 	if intent.ExitCode != nil {
 		code := int32(*intent.ExitCode)
 		response.ExitCode = &code

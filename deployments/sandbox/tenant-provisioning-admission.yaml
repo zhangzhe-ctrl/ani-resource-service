@@ -212,9 +212,10 @@ spec:
     message: Sandbox Pods cannot use service account tokens, host namespaces or extra containers
   - expression: >-
       !variables.managedTenant || (has(object.spec.volumes) && size(object.spec.volumes) == 1 && object.spec.volumes[0].name
-      == 'workspace' && has(object.spec.volumes[0].persistentVolumeClaim) && object.spec.volumes[0].persistentVolumeClaim.claimName
-      == 'workspace-' + object.metadata.labels['ani.io/sandbox-owner'] && (!has(object.spec.volumes[0].persistentVolumeClaim.readOnly)
-      || !object.spec.volumes[0].persistentVolumeClaim.readOnly) && (!has(object.spec.imagePullSecrets) || (size(object.spec.imagePullSecrets)
+      == 'workspace' && has(object.spec.volumes[0].persistentVolumeClaim) &&
+      (object.spec.volumes[0].persistentVolumeClaim.claimName == 'workspace-' + object.metadata.labels['ani.io/sandbox-owner'] ||
+       object.spec.volumes[0].persistentVolumeClaim.claimName.matches('^workspace-' + object.metadata.labels['ani.io/sandbox-owner'] + '-[0-9a-f]{16}$')) &&
+      (!has(object.spec.volumes[0].persistentVolumeClaim.readOnly) || !object.spec.volumes[0].persistentVolumeClaim.readOnly) && (!has(object.spec.imagePullSecrets) || (size(object.spec.imagePullSecrets)
       == 1 && object.spec.imagePullSecrets[0].name == 'ani-sandbox-pull-' + namespaceObject.metadata.labels['network.ani.io/tenant-id'])))
     message: Sandbox Pods may mount only their own workspace and pull secret
   - expression: >-

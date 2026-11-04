@@ -199,7 +199,7 @@ func (p *KubernetesProvider) reviewObject(ctx context.Context, gvr schema.GroupV
 		ns, _, _ := unstructured.NestedString(o.Object, "spec", "claimRef", "namespace")
 		claim, _, _ := unstructured.NestedString(o.Object, "spec", "claimRef", "name")
 		if s.ProviderRefs.PVCUID != "" {
-			matches := uid == s.ProviderRefs.PVCUID && ns == s.Snapshot.Namespace && claim == "workspace-"+s.ID && (s.ProviderRefs.PVUID == "" || s.ProviderRefs.PVUID == result.UID)
+			matches := biz.ValidWorkspaceName(s.ID, s.ProviderRefs.PVCName) && uid == s.ProviderRefs.PVCUID && ns == s.Snapshot.Namespace && claim == s.ProviderRefs.PVCName && (s.ProviderRefs.PVUID == "" || s.ProviderRefs.PVUID == result.UID)
 			result.ClaimIdentityMatches = &matches
 		}
 	}

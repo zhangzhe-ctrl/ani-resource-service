@@ -160,6 +160,8 @@ github.com/zhangzhe-ctrl/ani-governance/api/quota v0.0.0-20261017184327-1c605c79
 github.com/zhangzhe-ctrl/ani-governance/api/quota v0.0.0-20261017184327-1c605c793b88/go.mod h1:OmpTNUUTOEMzeXx5cOUdOYqNxrmA+KBthlt44mfZ4s8=
 github.com/zhangzhe-ctrl/ani-resource-service/api/instance/terminal v0.0.0-20261013075021-0937f5aa9c6c h1:+Z/R4AX9U0RpY+smnrCO9cVFTxLqjjp0r7NbUWdchNE=
 github.com/zhangzhe-ctrl/ani-resource-service/api/instance/terminal v0.0.0-20261013075021-0937f5aa9c6c/go.mod h1:8N+MSiQHH8SrwQ6HOvEunPq37KNHiTr2/78mhzraFSw=
+github.com/zhangzhe-ctrl/ani-resource-service/api/sandbox/terminal v0.0.0-20261104041614-a26e1a00c9f4 h1:727lcvgZbr8MicTBGKVhyjIPXRSa8L5N47V6bMKGPnU=
+github.com/zhangzhe-ctrl/ani-resource-service/api/sandbox/terminal v0.0.0-20261104041614-a26e1a00c9f4/go.mod h1:dQ4RWkTsxGOLTXl5rqEMlCSClREtv4TFB5BERFE2oRY=
 github.com/zhangzhe-ctrl/ani-resource-service/api/vm/console v0.0.0-20261023185414-0a53b99c8d9f h1:dC5v8SPszcnt5W0pl5rBOSCL85nDJnQJkjy1YcWFZLs=
 github.com/zhangzhe-ctrl/ani-resource-service/api/vm/console v0.0.0-20261023185414-0a53b99c8d9f/go.mod h1:aFsjlMnejbYpMPxuooE0xAmyzwcjyDRjZAjS2YoroE8=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=

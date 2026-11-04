@@ -17,6 +17,7 @@ var (
 	ErrDenied                = errors.New("SANDBOX_SCOPE_DENIED")
 	ErrNotFound              = errors.New("SANDBOX_NOT_FOUND")
 	ErrConflict              = errors.New("SANDBOX_IDEMPOTENCY_CONFLICT")
+	ErrCheckpointReferenced  = errors.New("SANDBOX_CHECKPOINT_REFERENCED_BY_CLONE")
 	ErrVersion               = errors.New("SANDBOX_VERSION_CONFLICT")
 	ErrUnsupported           = errors.New("SANDBOX_CAPABILITY_UNSUPPORTED")
 	ErrOwnership             = errors.New("SANDBOX_PROVIDER_OWNERSHIP_CONFLICT")
@@ -109,6 +110,7 @@ type RuntimeClassResolver interface {
 }
 
 type CreateSpec struct {
+	EgressIntentJSON                                                                 string `json:",omitempty"`
 	Name, ImageReference, ImageDigest, PresetID, PresetCode, PresetName, ComputeType string
 	ImageID                                                                          string `json:"ImageID,omitempty"`
 	ImageScope                                                                       string `json:"ImageScope,omitempty"`
@@ -117,6 +119,7 @@ type CreateSpec struct {
 	Workspace                                                                        WorkspaceSpec
 }
 type Snapshot struct {
+	EgressIntentJSON                                                                                                                                                string `json:",omitempty"`
 	Name, ImageReference, PresetID, PresetCode, PresetName, ImageDigest, ComputeType, ClusterID, Namespace, NamespaceUID, RuntimeClass, SelectionDigest, SpecDigest string
 	ImageID                                                                                                                                                         string `json:"ImageID,omitempty"`
 	ImageScope                                                                                                                                                      string `json:"ImageScope,omitempty"`
@@ -126,6 +129,14 @@ type Snapshot struct {
 type ProviderRefs struct {
 	PVCName, PVCUID, PodName, PodUID, PVName, PVUID string
 	PVCResourceVersion, PodResourceVersion          string
+	// These immutable source facts are populated only by a committed generation
+	// switch. They let ordinary lifecycle observation distinguish the restored
+	// PVC from an unsolicited dataSource on a normal workspace.
+	PVCSourceSnapshotName   string `json:",omitempty"`
+	PVCSourceSnapshotUID    string `json:",omitempty"`
+	PVCSourceContentUID     string `json:",omitempty"`
+	PVCSourceSnapshotHandle string `json:",omitempty"`
+	PVCSourceMutationID     string `json:",omitempty"`
 	// ResourceVersion is retained for wire compatibility; new code should use
 	// the resource-specific versions above.
 	ResourceVersion, CleanupReceipt string
@@ -144,6 +155,9 @@ type Operation struct {
 	ID, TenantID, SandboxID, InstanceID, Action, IdempotencyKey, State, Reason string
 	IntentVersion                                                              int64
 	CreatedAt                                                                  time.Time
+	// CompletedAt is absent for in-flight operations and historical operations
+	// whose actual completion time was not recorded.
+	CompletedAt *time.Time
 }
 type Create struct {
 	TenantID, ID, InstanceID, OperationID, RequestDigest, IntentDigest string
@@ -230,5 +244,6 @@ type Repository interface {
 	Get(context.Context, string, string) (Sandbox, error)
 	List(context.Context, string, ListFilter) ([]Sandbox, int64, error)
 	GetOperation(context.Context, string, string) (Operation, error)
+	ListOperations(context.Context, string, string, uint32, uint32) ([]Operation, int64, error)
 	Change(context.Context, Command) (ACK, error)
 }

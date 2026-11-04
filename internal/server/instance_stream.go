@@ -4,6 +4,7 @@ import (
 	"context"
 
 	instancebiz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/instance"
+	sandboxbiz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/sandbox"
 	vmbiz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/vm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -14,6 +15,7 @@ import (
 const (
 	InstanceLogsMethod = "/instance.v1.InstanceService/StreamInstanceLogs"
 	VMLogsMethod       = "/vm.v1.VMService/StreamVMLogs"
+	SandboxLogsMethod  = "/sandbox.v1.SandboxService/StreamSandboxLogs"
 )
 
 // Each permitted stream injects the caller type its service consumes.
@@ -23,6 +25,9 @@ var governanceStreamCallers = map[string]func(context.Context, governancePrincip
 	},
 	VMLogsMethod: func(ctx context.Context, p governancePrincipal) context.Context {
 		return vmbiz.WithCaller(ctx, vmbiz.Caller{TenantID: p.TenantID, Actor: p.Actor})
+	},
+	SandboxLogsMethod: func(ctx context.Context, p governancePrincipal) context.Context {
+		return sandboxbiz.WithCaller(ctx, sandboxbiz.Caller{TenantID: p.TenantID, Actor: p.Actor})
 	},
 }
 

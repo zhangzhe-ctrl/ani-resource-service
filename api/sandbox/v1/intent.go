@@ -16,16 +16,25 @@ func CreateIntentDigest(instanceID string, data *CreateSandboxData) (string, err
 	if data == nil {
 		return "", errors.New("INVALID_SANDBOX_REQUEST")
 	}
+	egress, err := NormalizeEgressIntent(data.EgressIntent)
+	if err != nil {
+		return "", err
+	}
 	value := struct {
-		InstanceID     string `json:"instance_id"`
-		Name           string `json:"name"`
-		ImageReference string `json:"image_reference"`
-		PresetID       string `json:"preset_id"`
-		WorkspaceSize  string `json:"workspace_size"`
-		ImageID        string `json:"image_id,omitempty"`
-		ImageScope     string `json:"image_scope,omitempty"`
-	}{instanceID, strings.TrimSpace(data.Name), strings.TrimSpace(data.ImageReference), data.PresetId, data.WorkspaceSize, data.ImageId, data.ImageScope}
-	return digest("sandbox-intent-v1\n", value)
+		InstanceID     string               `json:"instance_id"`
+		Name           string               `json:"name"`
+		ImageReference string               `json:"image_reference"`
+		PresetID       string               `json:"preset_id"`
+		WorkspaceSize  string               `json:"workspace_size"`
+		ImageID        string               `json:"image_id,omitempty"`
+		ImageScope     string               `json:"image_scope,omitempty"`
+		EgressIntent   *SandboxEgressIntent `json:"egress_intent,omitempty"`
+	}{instanceID, strings.TrimSpace(data.Name), strings.TrimSpace(data.ImageReference), data.PresetId, data.WorkspaceSize, data.ImageId, data.ImageScope, egress}
+	prefix := "sandbox-intent-v1\n"
+	if egress != nil {
+		prefix = "sandbox-intent-v2\n"
+	}
+	return digest(prefix, value)
 }
 
 // CommandDigest binds the accepted frozen specification and, for new clients,
@@ -44,14 +53,18 @@ func CommandDigest(c *CommandContext, instanceID string, spec *ResolveCreateSpec
 		Spec         *ResolveCreateSpecResponse `json:"spec"`
 		IntentDigest string                     `json:"create_intent_digest,omitempty"`
 	}{c.TenantId, c.ResourceId, c.OperationId, instanceID, spec, intentDigest}
-	return digest("sandbox-create-v1\n", value)
+	prefix := "sandbox-create-v1\n"
+	if spec.EgressIntent != nil {
+		prefix = "sandbox-create-v2\n"
+	}
+	return digest(prefix, value)
 }
 
 // MatchLegacyCreateIntent uses only the accepted snapshot. Historical rows did
 // not record whether workspace size was defaulted, so an omitted size matches
 // their original frozen size without consulting today's configuration.
 func MatchLegacyCreateIntent(data *CreateSandboxData, snapshot *SandboxSnapshot) bool {
-	return data != nil && snapshot != nil && snapshot.Workspace != nil &&
+	return data != nil && data.EgressIntent == nil && snapshot != nil && snapshot.Workspace != nil &&
 		strings.TrimSpace(data.Name) == snapshot.Name && strings.TrimSpace(data.ImageReference) == snapshot.ImageReference &&
 		data.PresetId == snapshot.PresetId && (data.WorkspaceSize == "" || data.WorkspaceSize == snapshot.Workspace.Size)
 }

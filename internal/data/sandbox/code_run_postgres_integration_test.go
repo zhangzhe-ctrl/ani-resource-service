@@ -74,15 +74,17 @@ func TestCodeRunDurableIdempotencyAndDispatch(t *testing.T) {
 	close(results)
 	created := 0
 	var runID string
+	var createdAt time.Time
 	for r := range results {
 		if r.err != nil {
 			t.Fatalf("accept: %v", r.err)
 		}
 		if runID == "" {
 			runID = r.intent.RunID
+			createdAt = r.intent.CreatedAt
 		}
-		if r.intent.RunID != runID {
-			t.Fatal("one key created multiple runs")
+		if r.intent.RunID != runID || r.intent.CreatedAt.IsZero() || !r.intent.CreatedAt.Equal(createdAt) || r.intent.CompletedAt != nil {
+			t.Fatalf("one key returned inconsistent acceptance: %+v", r.intent)
 		}
 		if !r.intent.Replayed {
 			created++
@@ -124,7 +126,7 @@ func TestCodeRunDurableIdempotencyAndDispatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	intent, send, err := f.repo.BeginCodeRunDispatch(ctx, command)
-	if err != nil || send || intent.State != "unknown" || string(intent.Stdout) != "partial" {
+	if err != nil || send || intent.State != "unknown" || string(intent.Stdout) != "partial" || intent.CompletedAt != nil || !intent.CreatedAt.Equal(createdAt) {
 		t.Fatalf("unknown was retried: %+v %v %v", intent, send, err)
 	}
 	other := uuid.NewString()
@@ -145,11 +147,11 @@ func TestCodeRunPausePreventsDispatchAndNewAcceptance(t *testing.T) {
 		t.Fatal(err)
 	}
 	intent, send, err := f.repo.BeginCodeRunDispatch(ctx, command)
-	if err != nil || send || intent.State != "cancelled" {
+	if err != nil || send || intent.State != "cancelled" || intent.CompletedAt == nil || intent.CompletedAt.Before(intent.CreatedAt) {
 		t.Fatalf("paused dispatch: %+v %v %v", intent, send, err)
 	}
 	replay, err := f.repo.AcceptCodeRun(ctx, command)
-	if err != nil || !replay.Replayed || replay.RunID != intent.RunID || replay.State != "cancelled" {
+	if err != nil || !replay.Replayed || replay.RunID != intent.RunID || replay.State != "cancelled" || replay.CompletedAt == nil || !replay.CompletedAt.Equal(*intent.CompletedAt) {
 		t.Fatalf("paused replay: %+v %v", replay, err)
 	}
 	command.RunID, command.IdempotencyKey, command.ExpectedVersion = uuid.NewString(), "new", 0
@@ -212,12 +214,12 @@ func TestCodeRunnerUsesDurableResultOnReplay(t *testing.T) {
 		t.Fatal(err)
 	}
 	first, err := runner.Run(ctx, command)
-	if err != nil || first.State != "succeeded" || string(first.Stdout) != "ok" {
+	if err != nil || first.State != "succeeded" || string(first.Stdout) != "ok" || first.CreatedAt.IsZero() || first.CompletedAt == nil || first.CompletedAt.Before(first.CreatedAt) {
 		t.Fatalf("first=%+v err=%v", first, err)
 	}
 	command.RunID = uuid.NewString()
 	replay, err := runner.Run(ctx, command)
-	if err != nil || !replay.Replayed || replay.RunID != first.RunID || replay.State != "succeeded" || string(replay.Stdout) != "ok" || calls.Load() != 1 {
+	if err != nil || !replay.Replayed || replay.RunID != first.RunID || replay.State != "succeeded" || string(replay.Stdout) != "ok" || calls.Load() != 1 || !replay.CreatedAt.Equal(first.CreatedAt) || replay.CompletedAt == nil || !replay.CompletedAt.Equal(*first.CompletedAt) {
 		t.Fatalf("replay=%+v calls=%d err=%v", replay, calls.Load(), err)
 	}
 }
@@ -236,7 +238,7 @@ func TestCodeRunnerRecordsFailedTargetBeforeDispatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	accepted, err := runner.Submit(ctx, command)
-	if err != nil || accepted.State != "accepted" {
+	if err != nil || accepted.State != "accepted" || accepted.CreatedAt.IsZero() || accepted.CompletedAt != nil {
 		t.Fatalf("accept=%+v err=%v", accepted, err)
 	}
 	deadline := time.Now().Add(5 * time.Second)
@@ -246,7 +248,7 @@ func TestCodeRunnerRecordsFailedTargetBeforeDispatch(t *testing.T) {
 			t.Fatal(err)
 		}
 		if intent.State == "failed" {
-			if intent.Reason != "SANDBOX_TARGET_UNAVAILABLE" || intent.ExitCode != nil {
+			if intent.Reason != "SANDBOX_TARGET_UNAVAILABLE" || intent.ExitCode != nil || intent.CompletedAt == nil || intent.CompletedAt.Before(intent.CreatedAt) || !intent.CreatedAt.Equal(accepted.CreatedAt) {
 				t.Fatalf("invalid failed target state: %+v", intent)
 			}
 			return
@@ -268,10 +270,29 @@ func TestCodeRunStaleDispatchBecomesUnknownWithoutReplay(t *testing.T) {
 		t.Fatal(err)
 	}
 	intent, err := f.repo.GetCodeRun(ctx, command.TenantID, command.SandboxID, command.RunID)
-	if err != nil || intent.State != "unknown" || intent.Reason != "SANDBOX_DISPATCH_OUTCOME_UNKNOWN" {
+	if err != nil || intent.State != "unknown" || intent.Reason != "SANDBOX_DISPATCH_OUTCOME_UNKNOWN" || intent.CompletedAt != nil || intent.CreatedAt.IsZero() {
 		t.Fatalf("stale dispatch: %+v %v", intent, err)
 	}
 	if _, send, err := f.repo.BeginCodeRunDispatch(ctx, command); err != nil || send {
 		t.Fatalf("unknown dispatch replay: %v %v", send, err)
+	}
+}
+
+func TestCodeRunConfirmedFailedExitHasCompletionTime(t *testing.T) {
+	f, ctx, command := codeRunFixture(t)
+	accepted, err := f.repo.AcceptCodeRun(ctx, command)
+	if err != nil || accepted.CreatedAt.IsZero() || accepted.CompletedAt != nil {
+		t.Fatalf("accepted: %+v %v", accepted, err)
+	}
+	if _, dispatch, err := f.repo.BeginCodeRunDispatch(ctx, command); err != nil || !dispatch {
+		t.Fatalf("dispatch: %v %v", dispatch, err)
+	}
+	exitCode := 1
+	if err := f.repo.FinishCodeRun(ctx, command.TenantID, command.SandboxID, command.RunID, &exitCode, nil, nil, false); err != nil {
+		t.Fatal(err)
+	}
+	failed, err := f.repo.GetCodeRun(ctx, command.TenantID, command.SandboxID, command.RunID)
+	if err != nil || failed.State != "failed" || failed.CompletedAt == nil || failed.CompletedAt.Before(accepted.CreatedAt) || !failed.CreatedAt.Equal(accepted.CreatedAt) {
+		t.Fatalf("failed: %+v %v", failed, err)
 	}
 }

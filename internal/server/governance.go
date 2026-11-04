@@ -348,6 +348,8 @@ func governanceUnary(readOnly bool) grpc.UnaryServerInterceptor {
 			switch v := r.(type) {
 			case *sandboxpb.AcceptCreateRequest:
 				tenant = v.GetContext().GetTenantId()
+			case *sandboxpb.AcceptSandboxCloneRequest:
+				tenant = v.GetContext().GetTenantId()
 			default:
 				if fd := r.ProtoReflect().Descriptor().Fields().ByName("tenant_id"); fd != nil {
 					tenant = r.ProtoReflect().Get(fd).String()
