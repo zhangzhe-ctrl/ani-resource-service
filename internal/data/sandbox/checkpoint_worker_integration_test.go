@@ -18,6 +18,7 @@ type checkpointTestProvider struct {
 	calls                                                         map[string]int
 	createUnknown, allowObservation, rejectCreate, releaseUnknown bool
 	snapshotUID, contentUID, handle                               string
+	releaseOutcome                                                string
 	createEntered, unblockCreate                                  chan struct{}
 }
 
@@ -48,6 +49,10 @@ func (p *checkpointTestProvider) ApplyCheckpointMutation(_ context.Context, _ bi
 			out.Outcome = biz.MutationRejected
 			out.UID = ""
 		}
+	}
+	if m.Kind == "release" && p.releaseOutcome != "" {
+		out.Outcome = p.releaseOutcome
+		out.UID = ""
 	}
 	if m.Kind == "release" && p.releaseUnknown {
 		out.Outcome = biz.MutationUnknown
@@ -270,5 +275,42 @@ func TestCheckpointWorkerPersistsSanitizedPendingDiagnosticsAndRecovers(t *testi
 	cp, err := f.repo.GetCheckpoint(ctx, c.TenantID, c.ID, cmd.CheckpointID)
 	if err != nil || cp.State != "ready" || cp.Reason != "" {
 		t.Fatalf("recovery=%+v err=%v", cp, err)
+	}
+}
+
+func TestCheckpointReleaseFirstDefiniteFailureCanRetry(t *testing.T) {
+	for _, outcome := range []string{biz.MutationNotSent, biz.MutationRejected} {
+		t.Run(outcome, func(t *testing.T) {
+			f := sandboxDatabase(t)
+			ctx, c, cmd := runningCheckpointFixture(t, f)
+			if _, err := f.repo.AcceptCheckpoint(ctx, cmd); err != nil {
+				t.Fatal(err)
+			}
+			p := &checkpointTestProvider{calls: map[string]int{}, snapshotUID: uuid.NewString(), contentUID: uuid.NewString(), handle: "snapshot-handle", releaseOutcome: outcome}
+			w, err := biz.NewCheckpointWorker(f.repo, p, "worker", time.Minute, time.Minute)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for i := 0; i < 5; i++ {
+				checkpointStep(t, f, ctx, c, w)
+			}
+			got, err := f.repo.GetCheckpoint(ctx, c.TenantID, c.ID, cmd.CheckpointID)
+			if err != nil || got.Phase != "release" || got.State != "running" || got.MutationID != "" {
+				t.Fatalf("definite failure did not remain retryable: %#v %v", got, err)
+			}
+			pause := biz.Command{TenantID: c.TenantID, ID: c.ID, OperationID: uuid.NewString(), Action: "pause", IdempotencyKey: "pause", RequestDigest: biz.ActionDigest(c.InstanceID, 1, "pause"), ExpectedVersion: 1}
+			if _, err := f.repo.Change(ctx, pause); !errors.Is(err, biz.ErrConflict) {
+				t.Fatalf("lifecycle crossed release barrier: %v", err)
+			}
+			p.releaseOutcome = ""
+			checkpointStep(t, f, ctx, c, w)
+			got, err = f.repo.GetCheckpoint(ctx, c.TenantID, c.ID, cmd.CheckpointID)
+			if err != nil || got.State != "ready" || p.calls["release"] != 2 {
+				t.Fatalf("release did not recover: %#v calls=%v %v", got, p.calls, err)
+			}
+			if _, err := f.repo.Change(ctx, pause); err != nil {
+				t.Fatalf("completed release blocked lifecycle: %v", err)
+			}
+		})
 	}
 }

@@ -104,3 +104,24 @@ func TestCheckpointCleanupAfterWorkspaceSwitchAndTemporaryNotReady(t *testing.T)
 		t.Fatalf("old checkpoint cleanup=%+v err=%v", receipt, err)
 	}
 }
+
+func TestCheckpointCleanupRetryRefusesReplacementSnapshot(t *testing.T) {
+	p, s, c := checkpointCleanupFixture(t)
+	ctx := context.Background()
+	snapshot, err := p.client.Resource(checkpointSnapshotGVR).Namespace(s.Snapshot.Namespace).Get(ctx, c.SnapshotName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot.SetUID("replacement-snapshot")
+	if _, err = p.client.Resource(checkpointSnapshotGVR).Namespace(s.Snapshot.Namespace).Update(ctx, snapshot, metav1.UpdateOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = p.DeleteCheckpointSnapshot(ctx, s, c); !errors.Is(err, biz.ErrOwnership) {
+		t.Fatalf("replacement delete: %v", err)
+	}
+	for _, action := range p.client.(*fake.FakeDynamicClient).Actions() {
+		if action.GetVerb() == "delete" && action.GetResource().Resource == "volumesnapshots" {
+			t.Fatal("deleted replacement snapshot")
+		}
+	}
+}

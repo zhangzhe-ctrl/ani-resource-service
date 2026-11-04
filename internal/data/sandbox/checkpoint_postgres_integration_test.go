@@ -190,6 +190,17 @@ func TestCheckpointJournalUnknownAndConfirmedCompletion(t *testing.T) {
 	if ok, err := f.repo.PrepareCheckpointMutation(ctx, *w, release); err != nil || !ok {
 		t.Fatalf("release prepare: %v %v", ok, err)
 	}
+	// A later negative receipt must not erase an earlier uncertain release.
+	if err = f.repo.FinishCheckpointMutation(ctx, *w, release, biz.MutationUnknown, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err = f.repo.FinishCheckpointMutation(ctx, *w, release, biz.MutationRejected, ""); err != nil {
+		t.Fatal(err)
+	}
+	got, err = f.repo.GetCheckpoint(ctx, c.TenantID, c.ID, command.CheckpointID)
+	if err != nil || got.State != "unknown" || got.MutationID != release.ID {
+		t.Fatalf("unknown release barrier lost: %#v %v", got, err)
+	}
 	if err = f.repo.FinishCheckpointMutation(ctx, *w, release, biz.MutationApplied, source.PVCUID); err != nil {
 		t.Fatal(err)
 	}

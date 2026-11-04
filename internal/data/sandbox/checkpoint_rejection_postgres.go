@@ -30,7 +30,8 @@ func restoreRejection(ctx context.Context, q rejectionReader, c biz.CheckpointTr
 func cloneRejection(ctx context.Context, q rejectionReader, c biz.CheckpointCloneCommand, digest string) error {
 	t := c.Transfer
 	var found, exact bool
-	err := q.QueryRow(ctx, `SELECT count(*)>0,COALESCE(bool_and(request_digest=$8 AND target_sandbox_id=$2 AND operation_id=$3 AND create_operation_id=$7 AND source_sandbox_id=$4 AND checkpoint_id=$5 AND idempotency_key=$6),false) FROM sandbox.checkpoint_transfer_rejections WHERE tenant_id=$1 AND kind='clone' AND (target_sandbox_id=$2 OR operation_id IN ($3,$7) OR create_operation_id IN ($3,$7) OR (source_sandbox_id=$4 AND checkpoint_id=$5 AND idempotency_key=$6))`, t.TenantID, t.TargetSandboxID, t.OperationID, t.SourceSandboxID, t.CheckpointID, t.IdempotencyKey, c.Sandbox.OperationID, digest).Scan(&found, &exact)
+	var reason string
+	err := q.QueryRow(ctx, `SELECT count(*)>0,COALESCE(bool_and(request_digest=$8 AND target_sandbox_id=$2 AND operation_id=$3 AND create_operation_id=$7 AND source_sandbox_id=$4 AND checkpoint_id=$5 AND idempotency_key=$6),false),COALESCE(min(reason),'') FROM sandbox.checkpoint_transfer_rejections WHERE tenant_id=$1 AND kind='clone' AND (target_sandbox_id=$2 OR operation_id IN ($3,$7) OR create_operation_id IN ($3,$7) OR (source_sandbox_id=$4 AND checkpoint_id=$5 AND idempotency_key=$6))`, t.TenantID, t.TargetSandboxID, t.OperationID, t.SourceSandboxID, t.CheckpointID, t.IdempotencyKey, c.Sandbox.OperationID, digest).Scan(&found, &exact, &reason)
 	if err != nil {
 		return err
 	}
@@ -40,7 +41,67 @@ func cloneRejection(ctx context.Context, q rejectionReader, c biz.CheckpointClon
 	if !exact {
 		return biz.ErrConflict
 	}
-	return biz.ErrCheckpointWFFCUnsupported
+	switch reason {
+	case "SANDBOX_TRANSFER_WFFC_UNSUPPORTED":
+		return biz.ErrCheckpointWFFCUnsupported
+	case "SANDBOX_CLONE_REJECTED_NOT_FOUND":
+		return biz.ErrCloneRejectedNotFound
+	case "SANDBOX_CLONE_REJECTED_VERSION":
+		return biz.ErrCloneRejectedVersion
+	case "SANDBOX_CLONE_REJECTED_CONFLICT":
+		return biz.ErrCloneRejectedConflict
+	default:
+		return errors.New("unknown checkpoint clone rejection")
+	}
+}
+
+// Exact identity-conflict receipts do not reserve any target or operation ID.
+// An unrelated owner keeps its existing replay path unchanged.
+func exactCloneIdentityConflict(ctx context.Context, q rejectionReader, c biz.CheckpointCloneCommand, digest string) error {
+	var found bool
+	if err := q.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sandbox.checkpoint_clone_identity_conflicts WHERE tenant_id=$1 AND request_digest=$2 AND idempotency_key=$3)`, c.Transfer.TenantID, digest, c.Transfer.IdempotencyKey).Scan(&found); err != nil {
+		return err
+	}
+	if found {
+		return biz.ErrCloneRejectedConflict
+	}
+	return nil
+}
+
+func persistCloneIdentityConflict(ctx context.Context, tx pgx.Tx, c biz.CheckpointCloneCommand, digest string) (biz.CheckpointTransfer, error) {
+	var zero biz.CheckpointTransfer
+	t := c.Transfer
+	_, err := tx.Exec(ctx, `INSERT INTO sandbox.checkpoint_clone_identity_conflicts(tenant_id,request_digest,source_sandbox_id,checkpoint_id,target_sandbox_id,operation_id,create_operation_id,idempotency_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(tenant_id,request_digest,idempotency_key) DO NOTHING`, t.TenantID, digest, t.SourceSandboxID, t.CheckpointID, t.TargetSandboxID, t.OperationID, c.Sandbox.OperationID, t.IdempotencyKey)
+	if err != nil {
+		return zero, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return zero, err
+	}
+	return zero, biz.ErrCloneRejectedConflict
+}
+
+// The caller holds the clone and target/operation serialization locks. Commit
+// the immutable command decision before returning a receipt that permits Gov to
+// stop dispatching it. A lost commit response stays ambiguous and is replayed.
+func persistCloneRejection(ctx context.Context, tx pgx.Tx, c biz.CheckpointCloneCommand, digest string, rejection error) (biz.CheckpointTransfer, error) {
+	var zero biz.CheckpointTransfer
+	t := c.Transfer
+	if rejection != biz.ErrCheckpointWFFCUnsupported && rejection != biz.ErrCloneRejectedNotFound && rejection != biz.ErrCloneRejectedVersion && rejection != biz.ErrCloneRejectedConflict {
+		return zero, biz.ErrInvalid
+	}
+	reason := rejection.Error()
+	if rejection == biz.ErrCheckpointWFFCUnsupported {
+		reason = "SANDBOX_TRANSFER_WFFC_UNSUPPORTED"
+	}
+	_, err := tx.Exec(ctx, `INSERT INTO sandbox.checkpoint_transfer_rejections(tenant_id,kind,target_sandbox_id,source_sandbox_id,checkpoint_id,operation_id,create_operation_id,idempotency_key,request_digest,reason) VALUES($1,'clone',$2,$3,$4,$5,$8,$6,$7,$9)`, t.TenantID, t.TargetSandboxID, t.SourceSandboxID, t.CheckpointID, t.OperationID, t.IdempotencyKey, digest, c.Sandbox.OperationID, reason)
+	if err != nil {
+		return zero, checkpointUniqueConflict(err)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return zero, err
+	}
+	return zero, rejection
 }
 
 func (p *Postgres) RejectCheckpointTransferWFFC(ctx context.Context, c biz.CheckpointTransferCommand) (biz.CheckpointTransfer, error) {
@@ -116,6 +177,14 @@ func (p *Postgres) RejectCheckpointTransferWFFC(ctx context.Context, c biz.Check
 	return zero, biz.ErrCheckpointWFFCUnsupported
 }
 func (p *Postgres) RejectCheckpointCloneWFFC(ctx context.Context, c biz.CheckpointCloneCommand) (biz.CheckpointTransfer, error) {
+	return p.rejectCheckpointClone(ctx, c, true)
+}
+
+func (p *Postgres) RejectCheckpointClonePreflight(ctx context.Context, c biz.CheckpointCloneCommand) (biz.CheckpointTransfer, error) {
+	return p.rejectCheckpointClone(ctx, c, false)
+}
+
+func (p *Postgres) rejectCheckpointClone(ctx context.Context, c biz.CheckpointCloneCommand, wffc bool) (biz.CheckpointTransfer, error) {
 	var zero biz.CheckpointTransfer
 	t := c.Transfer
 	if err := biz.RequireTenant(ctx, t.TenantID); err != nil {
@@ -137,10 +206,13 @@ func (p *Postgres) RejectCheckpointCloneWFFC(ctx context.Context, c biz.Checkpoi
 	if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1::text,84015010))`, key); err != nil {
 		return zero, err
 	}
+	if err = exactCloneIdentityConflict(ctx, tx, c, digest); err != nil {
+		return zero, err
+	}
 	old, stored, err := scanTransfer(tx.QueryRow(ctx, transferSelect+` WHERE tenant_id=$1 AND source_sandbox_id=$2 AND checkpoint_id=$3 AND kind='clone' AND idempotency_key=$4`, t.TenantID, t.SourceSandboxID, t.CheckpointID, t.IdempotencyKey))
 	if err == nil {
 		if stored != digest {
-			return zero, biz.ErrConflict
+			return persistCloneIdentityConflict(ctx, tx, c, digest)
 		}
 		old.Replayed = true
 		if err = tx.Commit(ctx); err != nil {
@@ -159,6 +231,9 @@ func (p *Postgres) RejectCheckpointCloneWFFC(ctx context.Context, c biz.Checkpoi
 		}
 	}
 	if err = cloneRejection(ctx, tx, c, digest); err != nil {
+		if errors.Is(err, biz.ErrConflict) {
+			return persistCloneIdentityConflict(ctx, tx, c, digest)
+		}
 		return zero, err
 	}
 	var occupied bool
@@ -166,42 +241,41 @@ func (p *Postgres) RejectCheckpointCloneWFFC(ctx context.Context, c biz.Checkpoi
 		return zero, err
 	}
 	if occupied {
-		return zero, biz.ErrConflict
+		return persistCloneIdentityConflict(ctx, tx, c, digest)
+	}
+	if !wffc {
+		return persistCloneRejection(ctx, tx, c, digest, biz.ErrCloneRejectedConflict)
 	}
 	sources, err := lockTransferSandboxes(ctx, tx, t.TenantID, t.SourceSandboxID)
+	if errors.Is(err, biz.ErrNotFound) {
+		return persistCloneRejection(ctx, tx, c, digest, biz.ErrCloneRejectedNotFound)
+	}
 	if err != nil {
 		return zero, err
 	}
 	source := sources[t.SourceSandboxID]
 	if source.Desired == biz.DesiredDeleted {
-		return zero, biz.ErrConflict
+		return persistCloneRejection(ctx, tx, c, digest, biz.ErrCloneRejectedConflict)
 	}
 	if source.Version != c.SourceExpectedVersion {
-		return zero, biz.ErrVersion
+		return persistCloneRejection(ctx, tx, c, digest, biz.ErrCloneRejectedVersion)
 	}
 	checkpoint, _, err := scanCheckpoint(tx.QueryRow(ctx, checkpointSelect+` WHERE tenant_id=$1 AND sandbox_id=$2 AND checkpoint_id=$3 FOR UPDATE`, t.TenantID, t.SourceSandboxID, t.CheckpointID))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return zero, biz.ErrNotFound
+		return persistCloneRejection(ctx, tx, c, digest, biz.ErrCloneRejectedNotFound)
 	}
 	if err != nil {
 		return zero, err
 	}
 	if checkpoint.State != "ready" || checkpoint.SnapshotUID == "" || checkpoint.ContentUID == "" || checkpoint.SnapshotHandle == "" || checkpoint.SnapshotName == "" || checkpoint.Source.ClusterID != c.Sandbox.Spec.ClusterID || checkpoint.Source.Namespace != c.Sandbox.Spec.Namespace || checkpoint.Source.NamespaceUID != c.Sandbox.Spec.NamespaceUID {
-		return zero, biz.ErrConflict
+		return persistCloneRejection(ctx, tx, c, digest, biz.ErrCloneRejectedConflict)
 	}
 	var cleaning bool
 	if err = tx.QueryRow(ctx, `SELECT cleanup_state<>'' FROM sandbox.checkpoints WHERE tenant_id=$1 AND sandbox_id=$2 AND checkpoint_id=$3`, t.TenantID, t.SourceSandboxID, t.CheckpointID).Scan(&cleaning); err != nil {
 		return zero, err
 	}
 	if cleaning {
-		return zero, biz.ErrConflict
+		return persistCloneRejection(ctx, tx, c, digest, biz.ErrCloneRejectedConflict)
 	}
-	_, err = tx.Exec(ctx, `INSERT INTO sandbox.checkpoint_transfer_rejections(tenant_id,kind,target_sandbox_id,source_sandbox_id,checkpoint_id,operation_id,create_operation_id,idempotency_key,request_digest,reason) VALUES($1,'clone',$2,$3,$4,$5,$8,$6,$7,'SANDBOX_TRANSFER_WFFC_UNSUPPORTED')`, t.TenantID, t.TargetSandboxID, t.SourceSandboxID, t.CheckpointID, t.OperationID, t.IdempotencyKey, digest, c.Sandbox.OperationID)
-	if err != nil {
-		return zero, checkpointUniqueConflict(err)
-	}
-	if err = tx.Commit(ctx); err != nil {
-		return zero, err
-	}
-	return zero, biz.ErrCheckpointWFFCUnsupported
+	return persistCloneRejection(ctx, tx, c, digest, biz.ErrCheckpointWFFCUnsupported)
 }

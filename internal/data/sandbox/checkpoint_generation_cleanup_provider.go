@@ -101,11 +101,12 @@ func (p *KubernetesProvider) DeleteWorkspaceGenerationPVC(ctx context.Context, s
 	if _, err = p.verifyTenantNamespace(ctx, s, s.Snapshot.NamespaceUID); err != nil {
 		return biz.MutationNotSent, err
 	}
-	err = p.client.Resource(pvcGVR).Namespace(s.Snapshot.Namespace).Delete(ctx, g.Refs.PVCName, metav1.DeleteOptions{Preconditions: &metav1.Preconditions{UID: ptrUID(g.Refs.PVCUID)}})
-	if apierrors.IsNotFound(err) {
+	var trace checkpointWriteTrace
+	err = p.client.Resource(pvcGVR).Namespace(s.Snapshot.Namespace).Delete(trace.context(ctx), g.Refs.PVCName, metav1.DeleteOptions{Preconditions: &metav1.Preconditions{UID: ptrUID(g.Refs.PVCUID)}})
+	if apierrors.IsNotFound(err) && trace.singleComplete() {
 		err = nil
 	}
-	outcome := mutationOutcome(err)
+	outcome := trace.outcome(err)
 	if err != nil {
 		return outcome, err
 	}

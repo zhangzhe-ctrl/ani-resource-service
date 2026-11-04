@@ -58,9 +58,24 @@ func TestWorkspaceGenerationUnknownDeleteWaitsForPVCAndPV(t *testing.T) {
 		t.Fatal(err)
 	}
 	generationCleanupStep(t, f, ctx, c, worker) // freeze CSI provenance
-	generationCleanupStep(t, f, ctx, c, worker) // uncertain UID delete
-	generationCleanupStep(t, f, ctx, c, worker) // still present: never resend
-	if provider.calls != 1 {
+	// Simulate process death after Prepare commits, before the first DELETE.
+	if _, err = f.runtime.Exec(ctx, `UPDATE sandbox.workspace_generations SET cleanup_due_at=clock_timestamp() WHERE tenant_id=$1 AND sandbox_id=$2`, c.TenantID, c.ID); err != nil {
+		t.Fatal(err)
+	}
+	claimed, err := f.repo.ClaimWorkspaceGenerationCleanup(ctx, "crashed", time.Minute)
+	if err != nil || claimed == nil {
+		t.Fatalf("claim before crash: %+v %v", claimed, err)
+	}
+	journal := uuid.NewString()
+	if ok, err := f.repo.PrepareWorkspaceGenerationDelete(ctx, *claimed, journal); err != nil || !ok {
+		t.Fatalf("prepare before crash: %v %v", ok, err)
+	}
+	if _, err = f.runtime.Exec(ctx, `UPDATE sandbox.workspace_generations SET cleanup_lease_until='-infinity',cleanup_due_at=clock_timestamp() WHERE tenant_id=$1 AND sandbox_id=$2`, c.TenantID, c.ID); err != nil {
+		t.Fatal(err)
+	}
+	generationCleanupStep(t, f, ctx, c, worker) // restart retries the prepared delete
+	generationCleanupStep(t, f, ctx, c, worker) // unknown: retry original UID
+	if provider.calls != 2 {
 		t.Fatalf("uncertain delete dispatched %d times", provider.calls)
 	}
 	provider.pvc = false
@@ -74,7 +89,7 @@ func TestWorkspaceGenerationUnknownDeleteWaitsForPVCAndPV(t *testing.T) {
 	if err = f.runtime.QueryRow(ctx, `SELECT state FROM sandbox.workspace_generations WHERE tenant_id=$1 AND sandbox_id=$2 AND pvc_uid=$3`, c.TenantID, c.ID, old.PVCUID).Scan(&state); err != nil || state != "reclaimed" {
 		t.Fatalf("reclaim state=%s err=%v", state, err)
 	}
-	if provider.calls != 1 {
+	if provider.calls != 2 {
 		t.Fatalf("delete dispatched %d times", provider.calls)
 	}
 }

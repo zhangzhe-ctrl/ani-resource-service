@@ -60,7 +60,9 @@ func (p *Postgres) ClaimCheckpointCleanup(ctx context.Context, owner string, lea
 	}
 	var epoch int64
 	var mutationID, outcome string
-	err = tx.QueryRow(ctx, `UPDATE sandbox.checkpoints SET lease_owner=$4,lease_epoch=lease_epoch+1,lease_until=clock_timestamp()+$5::bigint*interval '1 microsecond' WHERE tenant_id=$1 AND sandbox_id=$2 AND checkpoint_id=$3 AND cleanup_state<>'done' AND lease_until<clock_timestamp() AND due_at<=clock_timestamp() RETURNING lease_epoch,cleanup_mutation_id,cleanup_state`, tenant, id, checkpointID, owner, lease.Microseconds()).Scan(&epoch, &mutationID, &outcome)
+	// A prepared journal inherited from another lease may already have been
+	// sent before that worker died. Preserve the uncertainty across takeover.
+	err = tx.QueryRow(ctx, `UPDATE sandbox.checkpoints SET lease_owner=$4,lease_epoch=lease_epoch+1,lease_until=clock_timestamp()+$5::bigint*interval '1 microsecond',cleanup_state=CASE WHEN cleanup_state='prepared' AND cleanup_mutation_id<>'' THEN 'unknown' ELSE cleanup_state END WHERE tenant_id=$1 AND sandbox_id=$2 AND checkpoint_id=$3 AND cleanup_state<>'done' AND lease_until<clock_timestamp() AND due_at<=clock_timestamp() RETURNING lease_epoch,cleanup_mutation_id,cleanup_state`, tenant, id, checkpointID, owner, lease.Microseconds()).Scan(&epoch, &mutationID, &outcome)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -133,17 +135,6 @@ func (p *Postgres) FinishCheckpointCleanup(ctx context.Context, w biz.Checkpoint
 	if id == "" || (outcome != biz.MutationApplied && outcome != biz.MutationNotSent && outcome != biz.MutationRejected && outcome != biz.MutationUnknown) {
 		return biz.ErrInvalid
 	}
-	state := "unknown"
-	clear := false
-	if outcome == biz.MutationApplied {
-		state = "done"
-	}
-	if outcome == biz.MutationNotSent || outcome == biz.MutationRejected {
-		state = ""
-		clear = true
-	}
-	// A definite rejection never dispatched the write, so it may be retried
-	// after permissions or another dependency is repaired. Unknown cannot.
 	tx, err := p.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -158,6 +149,28 @@ func (p *Postgres) FinishCheckpointCleanup(ctx context.Context, w biz.Checkpoint
 	}
 	if desired != biz.DesiredDeleted {
 		return biz.ErrConflict
+	}
+	var previous string
+	err = tx.QueryRow(ctx, `SELECT cleanup_state FROM sandbox.checkpoints WHERE tenant_id=$1 AND sandbox_id=$2 AND checkpoint_id=$3 AND lease_owner=$4 AND cleanup_mutation_id=$5 AND lease_epoch=$6 AND lease_until>clock_timestamp() FOR UPDATE`, w.Checkpoint.TenantID, w.Checkpoint.SandboxID, w.Checkpoint.ID, w.Owner, id, w.Epoch).Scan(&previous)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return biz.ErrLease
+	}
+	if err != nil {
+		return err
+	}
+	if previous != "prepared" && previous != "unknown" {
+		return biz.ErrConflict
+	}
+	// A later negative receipt cannot prove that an earlier uncertain DELETE
+	// was not dispatched. Only the first prepared attempt can be cleared.
+	if previous == "unknown" && (outcome == biz.MutationNotSent || outcome == biz.MutationRejected) {
+		outcome = biz.MutationUnknown
+	}
+	state, clear := "unknown", false
+	if outcome == biz.MutationApplied {
+		state = "done"
+	} else if outcome == biz.MutationNotSent || outcome == biz.MutationRejected {
+		state, clear = "", true
 	}
 	tag, err := tx.Exec(ctx, `UPDATE sandbox.checkpoints SET cleanup_state=$6,cleanup_mutation_id=CASE WHEN $7 THEN '' ELSE cleanup_mutation_id END WHERE tenant_id=$1 AND sandbox_id=$2 AND checkpoint_id=$3 AND lease_owner=$4 AND cleanup_mutation_id=$5 AND lease_epoch=$8 AND lease_until>clock_timestamp()`, w.Checkpoint.TenantID, w.Checkpoint.SandboxID, w.Checkpoint.ID, w.Owner, id, state, clear, w.Epoch)
 	if err != nil {

@@ -113,6 +113,12 @@ func (w *WorkspaceGenerationCleanupWorker) Step(ctx context.Context) (worked boo
 		if !obs.PVCExists && !obs.PVExists {
 			return true, persist(func(pctx context.Context) error { return w.repo.FinishWorkspaceGenerationReclaim(pctx, *work) })
 		}
+		if obs.PVCExists && obs.PVExists && g.MutationID != "" {
+			// Retrying the same journaled UID-preconditioned DELETE is safe if
+			// the process died before dispatch, or an earlier outcome is unknown.
+			// Never clear the barrier based on a later negative reply.
+			_, _ = w.provider.DeleteWorkspaceGenerationPVC(callCtx, work.Sandbox, g, g.MutationID)
+		}
 		return true, nil
 	}
 	return true, ErrConflict

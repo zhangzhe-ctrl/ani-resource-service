@@ -365,6 +365,63 @@ func TestExperimentalPreviewNotSentReleasesCleanupFence(t *testing.T) {
 	}
 }
 
+func TestExperimentalPreviewRejectedReceiptAndUnknownFence(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		unknown bool
+	}{
+		{name: "rejected_during_pause"},
+		{name: "earlier_unknown_stays_fenced", unknown: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f, ctx, base := codeRunFixture(t)
+			c := biz.ExperimentalPreviewOpen{TenantID: base.TenantID, SandboxID: base.SandboxID, PreviewID: uuid.NewString(), OperationID: uuid.NewString(), IdempotencyKey: "rejected", ExpectedVersion: 1, Port: 8082, Protocol: "http", TTL: time.Minute}
+			if _, err := f.repo.AcceptExperimentalPreviewOpen(ctx, c, true); err != nil {
+				t.Fatal(err)
+			}
+			work, err := f.repo.Claim(ctx, "preview-rejected", time.Minute)
+			if err != nil || work == nil {
+				t.Fatalf("claim: %v", err)
+			}
+			m := biz.PreviewExperimentMutation{ID: uuid.NewString(), Kind: "create"}
+			if err = f.repo.PrepareExperimentalPreviewMutation(ctx, *work, c.PreviewID, m, true); err != nil {
+				t.Fatal(err)
+			}
+			pause := biz.Command{TenantID: c.TenantID, ID: c.SandboxID, OperationID: uuid.NewString(), Action: "pause", IdempotencyKey: "pause-rejected", ExpectedVersion: 1, RequestDigest: biz.ActionDigest("", 1, "pause")}
+			if _, err = f.repo.Change(ctx, pause); err != nil {
+				t.Fatal(err)
+			}
+			if tc.unknown {
+				if err = f.repo.RecordExperimentalPreviewReceipt(ctx, *work, c.PreviewID, m, "unknown", ""); err != nil {
+					t.Fatal(err)
+				}
+			}
+			err = f.repo.RecordExperimentalPreviewReceipt(ctx, *work, c.PreviewID, m, "rejected", "")
+			if tc.unknown && !errors.Is(err, biz.ErrConflict) || !tc.unknown && err != nil {
+				t.Fatalf("receipt: %v", err)
+			}
+			state, err := f.repo.GetExperimentalPreview(ctx, c.TenantID, c.SandboxID, c.PreviewID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			needed, err := f.repo.PreviewCleanupRequired(ctx, c.TenantID, c.SandboxID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tc.unknown {
+				if state.State != "unknown" || state.Pending == nil || !needed {
+					t.Fatalf("unknown fence lost: state=%+v needed=%v", state, needed)
+				}
+				return
+			}
+			op, err := f.repo.GetExperimentalPreviewOperation(ctx, c.TenantID, c.SandboxID, c.OperationID)
+			if err != nil || state.State != "closed" || state.Pending != nil || state.Reason != "PROVIDER_REJECTED" || op.State != "failed" || op.Reason != "PROVIDER_REJECTED" || op.CompletedAt == nil || needed {
+				t.Fatalf("state=%+v op=%+v needed=%v err=%v", state, op, needed, err)
+			}
+		})
+	}
+}
+
 func TestExperimentalPreviewAutomaticClosePersistsClosing(t *testing.T) {
 	f, ctx, base := codeRunFixture(t)
 	expired := biz.ExperimentalPreviewOpen{TenantID: base.TenantID, SandboxID: base.SandboxID, PreviewID: uuid.NewString(), OperationID: uuid.NewString(), IdempotencyKey: "expire-ready", ExpectedVersion: 1, Port: 8083, Protocol: "http", TTL: time.Minute}

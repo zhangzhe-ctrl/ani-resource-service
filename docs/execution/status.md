@@ -1646,3 +1646,16 @@ On the real cluster an isolated image-only Resource harness, using actual image 
 2026-11-02 用户明确统一 Namespace 由 Sandbox 的租户开通流程负责：先读取 `tenant-<完整 UUID>`，已存在且身份合法时复用，否则仅在不存在时以持久写前日志创建；其余业务复用共享名称计算，不添加业务前后缀。Namespace 尚未 Active 时先保存创建 UID 回执并等待；并发 AlreadyExists 先记录未发送回执再读取核验，响应丢失继续保留 unknown 栅栏。共享合同见 [租户 Namespace](../contracts/tenant-namespace.md)。
 
 本机回退输入合并源码树 `81cecf745aeba8674becafbc9fb9adc145c38f48`：`GOWORK=off GOMAXPROCS=2 GOMEMLIMIT=1600MiB GOFLAGS=-p=2 make verify` **pass**；独占 PostgreSQL `go test -tags=sandboxintegration -count=1 -timeout=20m -v ./internal/data/sandbox` **pass**（113 个顶层测试）。首次 PG 测试的两条生命周期夹具因未提供主线要求的 Namespace 失败；修正夹具后完整重跑通过，失败与重跑日志均保留。测试容器已清理。指定远端配置不存在，本轮按允许规则回退本机；Gov 单仓正式 Resource SDK 依赖尚未更新，跨仓 workspace 验证不能代替正式依赖。合并候选未部署、未执行现场迁移或真实集群验收。
+
+## 2026-11-04：Sandbox 检查点与预览审查修复
+
+本次针对 PR #56 审查修复克隆确定拒绝的持久回执、检查点保护释放的首次明确失败重试、检查点和工作盘清理在删除日志落库后重启的原 UID 删除恢复，以及实验性预览的明确拒绝收尾。客户端可能自动重试；对相关检查点写请求，无法证明只有一次完整投递时保留 unknown。新增 Sandbox 迁移 017、018；迁移与跨服务升级尚未在集群执行。
+
+执行位置：`/home/chabking/.ssh/config` 不存在、默认 `ssh ubuntu` 的 host key 校验失败，按允许规则回退本机 Linux、Go 1.26.10。固定输入为 PR 原提交 `847922a38d7aef4270cc69b481f8fac2c3317584` 加本次修复；执行时各临时测试库采用独占 PostgreSQL 17.11 镜像 `sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b`，容器与凭据均已清理。
+
+- **pass**：克隆确定拒绝、并发、既有对象及不同幂等键重放的定向 PostgreSQL 回归，日志 `/tmp/clone-preflight-final-pg-20261104.log`；服务测试 `/tmp/clone-preflight-final-service-20261104.log`。首次测试的旧断言及夹具问题修正后重跑通过。
+- **pass**：检查点释放、删除崩溃恢复、原 UID 防护和未知回执屏障的业务、HTTP 及 PostgreSQL 定向回归，命令和日志 `/tmp/sandbox-p1-review-20261104/unit-http.log`、`pg.log`。包括真实 client-go 请求首次生效后重试再被拒绝的模拟。
+- **pass**：预览 Service 明确拒绝与 unknown 栅栏的本机 HTTP 和独占 PostgreSQL 定向测试；各测试使用模拟 Kubernetes API，不能代表真实 CSI 或集群验收。
+- **not_verified**：66 部署、本次迁移及修复后的真实跨服务验收。Gov 固定的 Session Gateway 和 Observability API 提交尚未发布，其干净远程依赖构建仍受阻。
+
+冻结源码清单 SHA-256 `af9fa6ae37c26b74ad751e1718b3a7f3d538901ca8ca159663883cbfcb37e19e`（本段补记前）经 `GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 TMPDIR=/tmp make verify BUF=<pinned buf> SQLC=<pinned sqlc>` **pass**，含源码生成一致性、分层、全量单测、vet、构建和模块校验；源码清单在测试后复核一致。日志 `/tmp/sandbox-review-final-20261104/resource-verify.log`。旧版 Resource 会将 017 新拒绝原因误报为 WFFC；升级须先暂停并排空全部克隆入口及 Gov 后台投递，迁移至 018 后确保所有旧 Resource 进程退出、升级 Gov，再恢复投递。含新拒绝记录时不能直接回滚到不识别这些原因的旧镜像，也不能删除拒绝记录绕过屏障；新旧进程并发及上述部署步骤 **not_verified**。

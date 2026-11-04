@@ -196,8 +196,9 @@ func (p *KubernetesProvider) CreateCheckpointTransferPVC(ctx context.Context, s 
 	if err = unstructured.SetNestedMap(obj.Object, map[string]any{"apiGroup": transferSnapshotAPIGroup, "kind": "VolumeSnapshot", "name": t.SourceSnapshotName}, "spec", "dataSource"); err != nil {
 		return biz.MutationNotSent, "", err
 	}
-	created, err := p.client.Resource(pvcGVR).Namespace(s.Snapshot.Namespace).Create(ctx, obj, metav1.CreateOptions{})
-	outcome := mutationOutcome(err)
+	var trace checkpointWriteTrace
+	created, err := p.client.Resource(pvcGVR).Namespace(s.Snapshot.Namespace).Create(trace.context(ctx), obj, metav1.CreateOptions{})
+	outcome := trace.outcome(err)
 	if err != nil {
 		return outcome, "", err
 	}

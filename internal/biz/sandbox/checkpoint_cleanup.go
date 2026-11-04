@@ -60,10 +60,18 @@ func (w *CheckpointCleanupWorker) Step(ctx context.Context) (worked bool, result
 	}
 	if work.MutationID != "" {
 		done, err := w.provider.ObserveCheckpointCleanup(call, work.Sandbox, work.Checkpoint)
-		if err != nil || !done {
+		if err != nil {
 			return true, nil
 		}
-		return true, persist(work.MutationID, MutationApplied)
+		if done {
+			return true, persist(work.MutationID, MutationApplied)
+		}
+		// DELETE is replayable only against the originally recorded UID. The
+		// provider verifies ownership and applies a UID precondition. Keep the
+		// original journal regardless of this replay's result: a negative reply
+		// cannot rule out an earlier uncertain dispatch.
+		_, _ = w.provider.DeleteCheckpointSnapshot(call, work.Sandbox, work.Checkpoint)
+		return true, nil
 	}
 	id := uuid.NewString()
 	dispatch, err := w.repo.PrepareCheckpointCleanup(call, *work, id)

@@ -84,6 +84,14 @@ func TestWorkspaceGenerationReplacementNeverCountsAsReclaimed(t *testing.T) {
 			if obs, err := p.ObserveWorkspaceGeneration(ctx, s, g); !errors.Is(err, biz.ErrOwnership) {
 				t.Fatalf("replacement treated as absent: observation=%+v err=%v", obs, err)
 			}
+			if outcome, err := p.DeleteWorkspaceGenerationPVC(ctx, s, g, ckMutation); !errors.Is(err, biz.ErrOwnership) || outcome != biz.MutationNotSent {
+				t.Fatalf("replacement delete attempted: outcome=%s err=%v", outcome, err)
+			}
+			for _, action := range c.Actions() {
+				if action.GetVerb() == "delete" && action.GetResource().Resource == "persistentvolumeclaims" {
+					t.Fatal("deleted replacement PVC")
+				}
+			}
 		})
 	}
 }

@@ -290,8 +290,6 @@ func (p *Postgres) FinishCheckpointMutation(ctx context.Context, w biz.Checkpoin
 			reason = "SANDBOX_CHECKPOINT_OUTCOME_UNKNOWN"
 			break
 		}
-		// Release may itself be uncertain on a stale/reordered provider reply;
-		// retain its barrier for observation instead of guessing completion.
 		switch m.Kind {
 		case "protect":
 			phase = "done"
@@ -305,8 +303,11 @@ func (p *Postgres) FinishCheckpointMutation(ctx context.Context, w biz.Checkpoin
 			failureReason = reason
 			clear = true
 		case "release":
-			state = "unknown"
-			reason = "SANDBOX_CHECKPOINT_RELEASE_UNCONFIRMED"
+			// This first attempt was definitively not applied. Keep the source
+			// protected and retry the release with a new journal entry. A prior
+			// unknown outcome remains fenced by the check above.
+			reason = "SANDBOX_CHECKPOINT_RELEASE_RETRYING"
+			clear = true
 		default:
 			return biz.ErrInvalid
 		}

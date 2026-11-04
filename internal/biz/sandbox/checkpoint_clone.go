@@ -5,6 +5,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+)
+
+// These errors certify a rejection committed in the Resource journal. They are
+// distinct from ordinary preflight errors, which may not end a Gov intent.
+var (
+	ErrCloneRejectedNotFound = errors.New("SANDBOX_CLONE_REJECTED_NOT_FOUND")
+	ErrCloneRejectedVersion  = errors.New("SANDBOX_CLONE_REJECTED_VERSION")
+	ErrCloneRejectedConflict = errors.New("SANDBOX_CLONE_REJECTED_CONFLICT")
 )
 
 type CheckpointCloneRepository interface {
@@ -14,6 +23,12 @@ type CheckpointCloneRepository interface {
 
 type CheckpointCloneRejector interface {
 	RejectCheckpointCloneWFFC(context.Context, CheckpointCloneCommand) (CheckpointTransfer, error)
+}
+
+// CheckpointClonePreflightRejector persists a deterministic post-journal
+// admission failure after serializing with a competing acceptance.
+type CheckpointClonePreflightRejector interface {
+	RejectCheckpointClonePreflight(context.Context, CheckpointCloneCommand) (CheckpointTransfer, error)
 }
 
 // CheckpointCloneCommand carries a new independently owned Sandbox and the

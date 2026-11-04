@@ -401,8 +401,9 @@ func (p *KubernetesProvider) checkpointProtectPVC(ctx context.Context, s biz.San
 	if err != nil {
 		return r, err
 	}
-	result, err := api.Patch(ctx, source.PVCName, types.JSONPatchType, payload, metav1.PatchOptions{})
-	r.Outcome = mutationOutcome(err)
+	var trace checkpointWriteTrace
+	result, err := api.Patch(trace.context(ctx), source.PVCName, types.JSONPatchType, payload, metav1.PatchOptions{})
+	r.Outcome = trace.outcome(err)
 	if err != nil {
 		return r, err
 	}
@@ -457,8 +458,9 @@ func (p *KubernetesProvider) checkpointCreateSnapshot(ctx context.Context, s biz
 	}
 	name := "sandbox-checkpoint-" + checkpointID
 	obj := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "snapshot.storage.k8s.io/v1", "kind": "VolumeSnapshot", "metadata": map[string]any{"name": name, "namespace": s.Snapshot.Namespace, "labels": stringMap(labels(s)), "annotations": map[string]any{providerMutationID: mutationID}}, "spec": map[string]any{"volumeSnapshotClassName": class.Name, "source": map[string]any{"persistentVolumeClaimName": source.PVCName}}}}
-	created, err := p.client.Resource(checkpointSnapshotGVR).Namespace(s.Snapshot.Namespace).Create(ctx, obj, metav1.CreateOptions{})
-	r.Outcome = mutationOutcome(err)
+	var trace checkpointWriteTrace
+	created, err := p.client.Resource(checkpointSnapshotGVR).Namespace(s.Snapshot.Namespace).Create(trace.context(ctx), obj, metav1.CreateOptions{})
+	r.Outcome = trace.outcome(err)
 	if err != nil {
 		return r, err
 	}

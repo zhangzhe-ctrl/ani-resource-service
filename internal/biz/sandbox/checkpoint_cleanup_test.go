@@ -44,7 +44,7 @@ func (p *cleanupFakeProvider) ObserveCheckpointCleanup(context.Context, Sandbox,
 	p.reads++
 	return p.done, nil
 }
-func TestCheckpointCleanupWorkerUnknownNeverResends(t *testing.T) {
+func TestCheckpointCleanupWorkerRetriesJournaledUIDDelete(t *testing.T) {
 	repo := &cleanupFakeRepo{work: &CheckpointCleanupWork{}}
 	provider := &cleanupFakeProvider{}
 	worker, err := NewCheckpointCleanupWorker(repo, provider, "worker", time.Minute, time.Second)
@@ -60,14 +60,37 @@ func TestCheckpointCleanupWorkerUnknownNeverResends(t *testing.T) {
 	if _, err = worker.Step(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if provider.writes != 1 || provider.reads != 1 || repo.finished != 1 {
-		t.Fatal("unknown cleanup was resent or marked complete")
+	if provider.writes != 2 || provider.reads != 1 || repo.finished != 1 {
+		t.Fatal("unknown cleanup was not retried or was marked complete")
 	}
 	provider.done = true
 	if _, err = worker.Step(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if provider.writes != 1 || repo.outcome != MutationApplied || repo.finished != 2 {
+	if provider.writes != 2 || repo.outcome != MutationApplied || repo.finished != 2 {
 		t.Fatal("cleanup receipt not confirmed")
+	}
+}
+
+// The original process may die after Prepare commits and before DELETE.
+func TestCheckpointCleanupRestartAfterPrepare(t *testing.T) {
+	repo := &cleanupFakeRepo{work: &CheckpointCleanupWork{MutationID: "journaled-delete"}}
+	provider := &cleanupFakeProvider{}
+	worker, err := NewCheckpointCleanupWorker(repo, provider, "restarted", time.Minute, time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = worker.Step(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if provider.writes != 1 || repo.prepared != 0 || repo.finished != 0 {
+		t.Fatalf("recovery did not reuse journal: %+v %+v", provider, repo)
+	}
+	provider.done = true
+	if _, err = worker.Step(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if repo.outcome != MutationApplied || provider.writes != 1 {
+		t.Fatalf("recovery not confirmed: %+v %+v", provider, repo)
 	}
 }

@@ -3,6 +3,7 @@
 package sandbox_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -73,6 +74,15 @@ func TestCheckpointCleanupLedgerFencesCloneAndParent(t *testing.T) {
 	if err = f.repo.FinishCheckpointCleanup(ctx, *w, mid, biz.MutationUnknown); err != nil {
 		t.Fatal(err)
 	}
+	for _, late := range []string{biz.MutationNotSent, biz.MutationRejected} {
+		if err = f.repo.FinishCheckpointCleanup(ctx, *w, mid, late); err != nil {
+			t.Fatal(err)
+		}
+		var state, journal string
+		if err = f.runtime.QueryRow(ctx, `SELECT cleanup_state,cleanup_mutation_id FROM sandbox.checkpoints WHERE tenant_id=$1 AND checkpoint_id=$2`, c.TenantID, checkpoint.ID).Scan(&state, &journal); err != nil || state != "unknown" || journal != mid {
+			t.Fatalf("late %s cleared unknown: state=%s journal=%s err=%v", late, state, journal, err)
+		}
+	}
 	if err = f.repo.ReleaseCheckpointCleanup(ctx, *w, time.Microsecond); err != nil {
 		t.Fatal(err)
 	}
@@ -96,5 +106,77 @@ func TestCheckpointCleanupLedgerFencesCloneAndParent(t *testing.T) {
 	}
 	if work, err := f.repo.Claim(ctx, "ordinary", time.Minute); err != nil || work == nil {
 		t.Fatalf("parent not released: %+v %v", work, err)
+	}
+}
+
+type restartCheckpointCleanupProvider struct {
+	deleted bool
+	calls   int
+	uid     string
+}
+
+func (p *restartCheckpointCleanupProvider) DeleteCheckpointSnapshot(_ context.Context, _ biz.Sandbox, checkpoint biz.Checkpoint) (string, error) {
+	p.calls++
+	if checkpoint.SnapshotUID != p.uid {
+		return biz.MutationNotSent, biz.ErrOwnership
+	}
+	p.deleted = true
+	return biz.MutationApplied, nil
+}
+func (p *restartCheckpointCleanupProvider) ObserveCheckpointCleanup(_ context.Context, _ biz.Sandbox, checkpoint biz.Checkpoint) (bool, error) {
+	if checkpoint.SnapshotUID != p.uid {
+		return false, biz.ErrOwnership
+	}
+	return p.deleted, nil
+}
+
+func TestCheckpointCleanupRestartAfterPreparedDelete(t *testing.T) {
+	f := sandboxDatabase(t)
+	ctx, c, cp, _ := directCloneFixture(t, f)
+	if _, err := f.runtime.Exec(ctx, `UPDATE sandbox.sandboxes SET desired='deleted' WHERE tenant_id=$1 AND sandbox_id=$2`, c.TenantID, c.ID); err != nil {
+		t.Fatal(err)
+	}
+	w, err := f.repo.ClaimCheckpointCleanup(ctx, "crashed", time.Minute)
+	if err != nil || w == nil {
+		t.Fatalf("claim: %+v %v", w, err)
+	}
+	id := uuid.NewString()
+	if send, err := f.repo.PrepareCheckpointCleanup(ctx, *w, id); err != nil || !send {
+		t.Fatalf("prepare: %v %v", send, err)
+	}
+	// Process died here: no provider call and no completion receipt.
+	if _, err := f.runtime.Exec(ctx, `UPDATE sandbox.checkpoints SET lease_until='-infinity',due_at=clock_timestamp() WHERE tenant_id=$1 AND checkpoint_id=$2`, c.TenantID, cp.ID); err != nil {
+		t.Fatal(err)
+	}
+	recovered, err := f.repo.ClaimCheckpointCleanup(ctx, "recovery-check", time.Minute)
+	if err != nil || recovered == nil || recovered.MutationID != id || recovered.Outcome != "unknown" {
+		t.Fatalf("takeover must fence prepared deletion: %+v %v", recovered, err)
+	}
+	for _, late := range []string{biz.MutationNotSent, biz.MutationRejected} {
+		if err = f.repo.FinishCheckpointCleanup(ctx, *recovered, id, late); err != nil {
+			t.Fatal(err)
+		}
+		var state, journal string
+		if err = f.runtime.QueryRow(ctx, `SELECT cleanup_state,cleanup_mutation_id FROM sandbox.checkpoints WHERE tenant_id=$1 AND checkpoint_id=$2`, c.TenantID, cp.ID).Scan(&state, &journal); err != nil || state != "unknown" || journal != id {
+			t.Fatalf("late %s cleared takeover barrier: state=%s journal=%s err=%v", late, state, journal, err)
+		}
+	}
+	if err = f.repo.ReleaseCheckpointCleanup(ctx, *recovered, time.Nanosecond); err != nil {
+		t.Fatal(err)
+	}
+	provider := &restartCheckpointCleanupProvider{uid: cp.SnapshotUID}
+	worker, err := biz.NewCheckpointCleanupWorker(f.repo, provider, "restarted", time.Minute, time.Nanosecond)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if worked, err := worker.Step(ctx); err != nil || !worked || provider.calls != 1 {
+		t.Fatalf("retry: %v calls=%d err=%v", worked, provider.calls, err)
+	}
+	if worked, err := worker.Step(ctx); err != nil || !worked {
+		t.Fatalf("confirm: %v %v", worked, err)
+	}
+	var state string
+	if err := f.runtime.QueryRow(ctx, `SELECT cleanup_state FROM sandbox.checkpoints WHERE tenant_id=$1 AND checkpoint_id=$2`, c.TenantID, cp.ID).Scan(&state); err != nil || state != "done" {
+		t.Fatalf("cleanup=%s err=%v", state, err)
 	}
 }

@@ -20,7 +20,7 @@ import (
 
 type Postgres struct{ pool *pgxpool.Pool }
 
-var schemaFiles = []string{"001_sandbox.sql", "002_workspace_bindings.sql", "003_recovery_and_create_intent.sql", "004_tenant_listing.sql", "005_code_runs.sql", "006_file_operations.sql", "007_access_tokens.sql", "008_tenant_space.sql", "009_code_run_completion.sql", "010_operation_completion.sql", "011_file_operation_completion.sql", "012_pod_history.sql", "013_preview_experimental.sql", "014_checkpoint.sql", "015_checkpoint_transfer.sql", "016_checkpoint_transfer_rejections.sql"}
+var schemaFiles = []string{"001_sandbox.sql", "002_workspace_bindings.sql", "003_recovery_and_create_intent.sql", "004_tenant_listing.sql", "005_code_runs.sql", "006_file_operations.sql", "007_access_tokens.sql", "008_tenant_space.sql", "009_code_run_completion.sql", "010_operation_completion.sql", "011_file_operation_completion.sql", "012_pod_history.sql", "013_preview_experimental.sql", "014_checkpoint.sql", "015_checkpoint_transfer.sql", "016_checkpoint_transfer_rejections.sql", "017_checkpoint_clone_rejection_reasons.sql", "018_checkpoint_clone_identity_conflicts.sql"}
 
 func validDigest(v string) bool {
 	if len(v) != 64 || strings.ToLower(v) != v {
@@ -132,7 +132,7 @@ func Migrate(ctx context.Context, dsn, role string) error {
 		}
 	}
 	quoted := pgx.Identifier{role}.Sanitize()
-	if _, err = tx.Exec(ctx, "GRANT USAGE ON SCHEMA sandbox TO "+quoted+"; GRANT SELECT ON sandbox.schema_version TO "+quoted+"; GRANT SELECT,INSERT,UPDATE ON sandbox.sandboxes,sandbox.operations,sandbox.work,sandbox.workspace_bindings,sandbox.code_runs,sandbox.file_operations,sandbox.access_tokens,sandbox.tenant_spaces,sandbox.tenant_space_mutations,sandbox.pod_history,sandbox.preview_ports,sandbox.preview_port_operations,sandbox.checkpoints,sandbox.checkpoint_transfers,sandbox.workspace_generations,sandbox.checkpoint_transfer_rejections TO "+quoted); err != nil {
+	if _, err = tx.Exec(ctx, "GRANT USAGE ON SCHEMA sandbox TO "+quoted+"; GRANT SELECT ON sandbox.schema_version TO "+quoted+"; GRANT SELECT,INSERT,UPDATE ON sandbox.sandboxes,sandbox.operations,sandbox.work,sandbox.workspace_bindings,sandbox.code_runs,sandbox.file_operations,sandbox.access_tokens,sandbox.tenant_spaces,sandbox.tenant_space_mutations,sandbox.pod_history,sandbox.preview_ports,sandbox.preview_port_operations,sandbox.checkpoints,sandbox.checkpoint_transfers,sandbox.workspace_generations,sandbox.checkpoint_transfer_rejections,sandbox.checkpoint_clone_identity_conflicts TO "+quoted); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)

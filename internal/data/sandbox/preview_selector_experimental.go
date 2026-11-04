@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"net"
+	"net/http/httptrace"
 	"net/netip"
 	"strconv"
+	"sync/atomic"
 
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/sandbox"
 	corev1 "k8s.io/api/core/v1"
@@ -18,6 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
+
+var errPreviewRejected = errors.New("sandbox preview provider rejected request")
 
 // createSelectorService is an experimental alternative to manual slices.
 // Kubernetes owns its EndpointSlices and tracks Pod readiness and removal.
@@ -42,9 +46,25 @@ func (p experimentalNodePortProvider) createSelectorService(ctx context.Context,
 	if err != nil {
 		return "", errors.Join(errPreviewNotSent, err)
 	}
-	obj, err := p.client.Resource(previewServiceGVR).Namespace(id.namespace).Create(ctx, &unstructured.Unstructured{Object: raw}, metav1.CreateOptions{})
+	// client-go may retry a write after a server Retry-After response. A later
+	// rejection cannot prove that an earlier request was not committed.
+	var attempts, writes atomic.Int32
+	var writeFailed atomic.Bool
+	requestCtx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
+		GotConn: func(httptrace.GotConnInfo) { attempts.Add(1) },
+		WroteRequest: func(info httptrace.WroteRequestInfo) {
+			if info.Err != nil {
+				writeFailed.Store(true)
+			}
+			writes.Add(1)
+		},
+	})
+	obj, err := p.client.Resource(previewServiceGVR).Namespace(id.namespace).Create(requestCtx, &unstructured.Unstructured{Object: raw}, metav1.CreateOptions{})
 	if err != nil {
 		if !apierrors.IsAlreadyExists(err) {
+			if attempts.Load() == 1 && writes.Load() == 1 && !writeFailed.Load() && (apierrors.IsForbidden(err) || apierrors.IsInvalid(err)) {
+				return "", errors.Join(errPreviewRejected, err)
+			}
 			return "", errPreviewOutcomeUnknown
 		}
 		obj, err = p.client.Resource(previewServiceGVR).Namespace(id.namespace).Get(ctx, id.serviceName, metav1.GetOptions{})

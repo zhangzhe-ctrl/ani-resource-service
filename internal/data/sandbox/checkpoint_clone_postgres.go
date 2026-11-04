@@ -24,6 +24,9 @@ func (p *Postgres) LookupCheckpointClone(ctx context.Context, command biz.Checkp
 	if err != nil {
 		return zero, err
 	}
+	if err = exactCloneIdentityConflict(ctx, p.pool, command, digest); err != nil {
+		return zero, err
+	}
 	old, stored, err := scanTransfer(p.pool.QueryRow(ctx, transferSelect+` WHERE tenant_id=$1 AND source_sandbox_id=$2 AND checkpoint_id=$3 AND kind='clone' AND idempotency_key=$4`, c.TenantID, c.SourceSandboxID, c.CheckpointID, c.IdempotencyKey))
 	if errors.Is(err, pgx.ErrNoRows) {
 		if e := cloneRejection(ctx, p.pool, command, digest); e != nil {
@@ -71,10 +74,13 @@ func (p *Postgres) AcceptCheckpointClone(ctx context.Context, command biz.Checkp
 	if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1::text,84015010))`, cloneKey); err != nil {
 		return zero, err
 	}
+	if err = exactCloneIdentityConflict(ctx, tx, command, digest); err != nil {
+		return zero, err
+	}
 	old, stored, err := scanTransfer(tx.QueryRow(ctx, transferSelect+` WHERE tenant_id=$1 AND source_sandbox_id=$2 AND checkpoint_id=$3 AND kind='clone' AND idempotency_key=$4`, c.TenantID, c.SourceSandboxID, c.CheckpointID, c.IdempotencyKey))
 	if err == nil {
 		if stored != digest {
-			return zero, biz.ErrConflict
+			return persistCloneIdentityConflict(ctx, tx, command, digest)
 		}
 		old.Replayed = true
 		return old, tx.Commit(ctx)
@@ -90,21 +96,35 @@ func (p *Postgres) AcceptCheckpointClone(ctx context.Context, command biz.Checkp
 		}
 	}
 	if err = cloneRejection(ctx, tx, command, digest); err != nil {
+		if errors.Is(err, biz.ErrConflict) {
+			return persistCloneIdentityConflict(ctx, tx, command, digest)
+		}
 		return zero, err
 	}
+	// Do not fence an identity already reserved by a different operation.
+	var occupied bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sandbox.sandboxes WHERE tenant_id=$1 AND sandbox_id=$2) OR EXISTS(SELECT 1 FROM sandbox.operations WHERE tenant_id=$1 AND operation_id IN ($3,$4))`, c.TenantID, c.TargetSandboxID, c.OperationID, create.OperationID).Scan(&occupied); err != nil {
+		return zero, err
+	}
+	if occupied {
+		return persistCloneIdentityConflict(ctx, tx, command, digest)
+	}
 	source, err := lockTransferSandboxes(ctx, tx, c.TenantID, c.SourceSandboxID)
+	if errors.Is(err, biz.ErrNotFound) {
+		return persistCloneRejection(ctx, tx, command, digest, biz.ErrCloneRejectedNotFound)
+	}
 	if err != nil {
 		return zero, err
 	}
 	if source[c.SourceSandboxID].Desired == biz.DesiredDeleted {
-		return zero, biz.ErrConflict
+		return persistCloneRejection(ctx, tx, command, digest, biz.ErrCloneRejectedConflict)
 	}
 	if source[c.SourceSandboxID].Version != command.SourceExpectedVersion {
-		return zero, biz.ErrVersion
+		return persistCloneRejection(ctx, tx, command, digest, biz.ErrCloneRejectedVersion)
 	}
 	checkpoint, _, err := scanCheckpoint(tx.QueryRow(ctx, checkpointSelect+` WHERE tenant_id=$1 AND sandbox_id=$2 AND checkpoint_id=$3 FOR UPDATE`, c.TenantID, c.SourceSandboxID, c.CheckpointID))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return zero, biz.ErrNotFound
+		return persistCloneRejection(ctx, tx, command, digest, biz.ErrCloneRejectedNotFound)
 	}
 	if err != nil {
 		return zero, err
@@ -114,17 +134,17 @@ func (p *Postgres) AcceptCheckpointClone(ctx context.Context, command biz.Checkp
 		return zero, err
 	}
 	if cleanupState != "" {
-		return zero, biz.ErrConflict
+		return persistCloneRejection(ctx, tx, command, digest, biz.ErrCloneRejectedConflict)
 	}
 	if checkpoint.State != "ready" || checkpoint.SnapshotUID == "" || checkpoint.ContentUID == "" || checkpoint.SnapshotHandle == "" || checkpoint.SnapshotName == "" || checkpoint.Source.ClusterID != create.Spec.ClusterID || checkpoint.Source.Namespace != create.Spec.Namespace || checkpoint.Source.NamespaceUID != create.Spec.NamespaceUID {
-		return zero, biz.ErrConflict
+		return persistCloneRejection(ctx, tx, command, digest, biz.ErrCloneRejectedConflict)
 	}
 	space, spaceErr := readTenantSpace(ctx, tx, c.TenantID, true)
 	if spaceErr != nil && !errors.Is(spaceErr, biz.ErrNotFound) {
 		return zero, spaceErr
 	}
 	if spaceErr == nil && (space.Phase != "ready" || space.NamespaceUID != create.Spec.NamespaceUID) {
-		return zero, biz.ErrConflict
+		return persistCloneRejection(ctx, tx, command, digest, biz.ErrCloneRejectedConflict)
 	}
 	snapshot, err := json.Marshal(create.Spec)
 	if err != nil {

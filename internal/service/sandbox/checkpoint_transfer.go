@@ -48,9 +48,31 @@ func (s *Service) AcceptSandboxClone(ctx context.Context, r *pb.AcceptSandboxClo
 		Sandbox:               biz.Create{TenantID: r.Context.TenantId, ID: r.Context.ResourceId, OperationID: createOp, RequestDigest: r.Context.RequestDigest, IntentDigest: r.CreateIntentDigest, Spec: specValue(r.Spec)},
 		SourceExpectedVersion: r.ExpectedVersion,
 	}
+	// A deterministic preflight denial is a terminal receipt only after the
+	// repository serializes it against any accepted copy of this command.
+	rejectPreflight := func() (*pb.AcceptSandboxCloneResponse, error) {
+		if ctx.Err() != nil {
+			return nil, rpcError(ctx.Err())
+		}
+		rejector, ok := s.repo.(biz.CheckpointClonePreflightRejector)
+		if !ok {
+			return nil, rpcError(biz.ErrDependencyUnavailable)
+		}
+		winner, rejectErr := rejector.RejectCheckpointClonePreflight(ctx, cmd)
+		if rejectErr != nil {
+			return nil, rpcError(rejectErr)
+		}
+		return &pb.AcceptSandboxCloneResponse{Ack: ackProto(biz.ACK{OperationID: winner.OperationID, ResourceID: winner.TargetSandboxID, Accepted: true, Replayed: true})}, nil
+	}
+	deterministic := func(err error) bool {
+		return errors.Is(err, biz.ErrInvalid) || errors.Is(err, biz.ErrDenied) || errors.Is(err, biz.ErrNotFound) || errors.Is(err, biz.ErrConflict) || errors.Is(err, biz.ErrOwnership)
+	}
 	accepted, err := cloneRepo.LookupCheckpointClone(ctx, cmd)
 	if err == nil {
 		return &pb.AcceptSandboxCloneResponse{Ack: ackProto(biz.ACK{OperationID: accepted.OperationID, ResourceID: accepted.TargetSandboxID, Accepted: true, Replayed: true})}, nil
+	}
+	if errors.Is(err, biz.ErrConflict) {
+		return rejectPreflight()
 	}
 	if !errors.Is(err, biz.ErrNotFound) {
 		return nil, rpcError(err)
@@ -61,10 +83,13 @@ func (s *Service) AcceptSandboxClone(ctx context.Context, r *pb.AcceptSandboxClo
 	}
 	namespaceUID, err := s.config.NamespaceResolver.ResolveSandboxNamespaceUID(ctx, r.Context.TenantId)
 	if err != nil {
+		if deterministic(err) {
+			return rejectPreflight()
+		}
 		return nil, rpcError(err)
 	}
 	if namespaceUID == "" || namespaceUID != r.Spec.NamespaceUid {
-		return nil, rpcError(biz.ErrOwnership)
+		return rejectPreflight()
 	}
 	var imageRef string
 	if r.Spec.ImageId != "" || r.Spec.ImageScope != "" {
@@ -73,18 +98,27 @@ func (s *Service) AcceptSandboxClone(ctx context.Context, r *pb.AcceptSandboxClo
 		imageRef, err = s.resolveImage(ctx, r.Context.TenantId, r.Spec.ImageReference)
 	}
 	if err != nil {
+		if deterministic(err) {
+			return rejectPreflight()
+		}
 		return nil, rpcError(err)
 	}
 	storageClass, err := s.storageClass(ctx, r.Context.TenantId)
 	if err != nil {
+		if deterministic(err) {
+			return rejectPreflight()
+		}
 		return nil, rpcError(err)
 	}
 	if err = s.validateRuntimeClass(ctx, r.Spec.RuntimeClass); err != nil {
+		if deterministic(err) {
+			return rejectPreflight()
+		}
 		return nil, rpcError(err)
 	}
 	namespace, err := s.namespace(r.Context.TenantId)
 	if err != nil || imageRef != r.Spec.ImageReference || r.Spec.ClusterId != s.config.ClusterID || r.Spec.Namespace != namespace || r.Spec.Workspace.MountPath != "/workspace" || !validWorkspaceSize(r.Spec.Workspace.Size) || r.Spec.Workspace.StorageClass != storageClass || r.Spec.Workspace.ReclaimPolicy != "Delete" {
-		return nil, rpcError(biz.ErrInvalid)
+		return rejectPreflight()
 	}
 	if s.config.CheckpointTransferPreflight == nil {
 		return nil, rpcError(biz.ErrDependencyUnavailable)

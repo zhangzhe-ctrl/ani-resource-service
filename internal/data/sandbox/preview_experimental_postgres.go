@@ -429,7 +429,7 @@ func (p *Postgres) PrepareExperimentalPreviewMutation(ctx context.Context, work 
 // journaled mutation. A delete acknowledgement is not proof of deletion.
 // Errors or lost responses keep pending_mutation and remain unknown.
 func (p *Postgres) RecordExperimentalPreviewReceipt(ctx context.Context, work biz.Work, previewID string, m biz.PreviewExperimentMutation, outcome, serviceUID string) error {
-	if !biz.UUID(previewID) || !biz.UUID(m.ID) || (m.Kind != "create" && m.Kind != "delete" && m.Kind != "create_slice" && m.Kind != "delete_slice") || (outcome != "applied" && outcome != "unknown" && outcome != "not_sent") || outcome == "not_sent" && m.Kind != "create" {
+	if !biz.UUID(previewID) || !biz.UUID(m.ID) || (m.Kind != "create" && m.Kind != "delete" && m.Kind != "create_slice" && m.Kind != "delete_slice") || (outcome != "applied" && outcome != "unknown" && outcome != "not_sent" && outcome != "rejected") || (outcome == "not_sent" || outcome == "rejected") && m.Kind != "create" {
 		return biz.ErrInvalid
 	}
 	tx, err := p.pool.Begin(ctx)
@@ -451,14 +451,22 @@ func (p *Postgres) RecordExperimentalPreviewReceipt(ctx context.Context, work bi
 	if r.Pending == nil || *r.Pending != m {
 		return biz.ErrConflict
 	}
-	if outcome == "not_sent" {
+	if outcome == "not_sent" || outcome == "rejected" {
+		// A later callback cannot resolve an earlier uncertain dispatch.
+		if r.State == "unknown" {
+			return biz.ErrConflict
+		}
 		if serviceUID != "" || r.ServiceUID != "" {
 			return biz.ErrInvalid
 		}
-		if _, err = tx.Exec(ctx, `UPDATE sandbox.preview_ports SET desired='closed',state='closed',reason='PROVIDER_NOT_SENT',address='',pending_mutation=NULL,updated_at=clock_timestamp() WHERE tenant_id=$1 AND preview_id=$2`, r.TenantID, r.PreviewID); err != nil {
+		reason := "PROVIDER_NOT_SENT"
+		if outcome == "rejected" {
+			reason = "PROVIDER_REJECTED"
+		}
+		if _, err = tx.Exec(ctx, `UPDATE sandbox.preview_ports SET desired='closed',state='closed',reason=$3,address='',pending_mutation=NULL,updated_at=clock_timestamp() WHERE tenant_id=$1 AND preview_id=$2`, r.TenantID, r.PreviewID, reason); err != nil {
 			return err
 		}
-		if _, err = tx.Exec(ctx, `UPDATE sandbox.preview_port_operations SET state=CASE WHEN action='open' THEN 'failed' ELSE 'succeeded' END,reason=CASE WHEN action='open' THEN 'PROVIDER_NOT_SENT' ELSE '' END,completed_at=clock_timestamp() WHERE tenant_id=$1 AND preview_id=$2 AND state IN ('queued','running','unknown')`, r.TenantID, r.PreviewID); err != nil {
+		if _, err = tx.Exec(ctx, `UPDATE sandbox.preview_port_operations SET state=CASE WHEN action='open' THEN 'failed' ELSE 'succeeded' END,reason=CASE WHEN action='open' THEN $3 ELSE '' END,completed_at=clock_timestamp() WHERE tenant_id=$1 AND preview_id=$2 AND state IN ('queued','running','unknown')`, r.TenantID, r.PreviewID, reason); err != nil {
 			return err
 		}
 		return tx.Commit(ctx)

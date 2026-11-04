@@ -123,6 +123,8 @@ func (w experimentalPreviewWorker) StepExperimentalPreview(ctx context.Context, 
 		outcome = "unknown"
 		if m.Kind == "create" && errors.Is(err, errPreviewNotSent) {
 			outcome = "not_sent"
+		} else if m.Kind == "create" && errors.Is(err, errPreviewRejected) {
+			outcome = "rejected"
 		}
 		uid = ""
 	}
@@ -134,7 +136,7 @@ func (w experimentalPreviewWorker) StepExperimentalPreview(ctx context.Context, 
 	if recordErr != nil {
 		return recordErr
 	}
-	if outcome == "not_sent" {
+	if outcome == "not_sent" || outcome == "rejected" {
 		return nil
 	}
 	return err

@@ -12,8 +12,8 @@ import (
 )
 
 // checkpointDeleteSnapshot verifies the recorded Snapshot/Content identities
-// before a single UID-preconditioned delete. A caller must journal the intent
-// before sending it, and must not call again after an unknown result.
+// before a UID-preconditioned delete. A caller must journal the intent before
+// sending it; retries must retain that same journal and original identities.
 func (p *KubernetesProvider) checkpointDeleteSnapshot(ctx context.Context, s biz.Sandbox, c biz.Checkpoint) (checkpointProviderReceipt, error) {
 	out := checkpointProviderReceipt{Outcome: biz.MutationNotSent}
 	if c.TenantID != s.TenantID || c.SandboxID != s.ID || c.SnapshotName != "sandbox-checkpoint-"+c.ID || c.SnapshotUID == "" || c.ContentUID == "" || c.ContentName == "" || c.SnapshotHandle == "" {
@@ -27,8 +27,9 @@ func (p *KubernetesProvider) checkpointDeleteSnapshot(ctx context.Context, s biz
 		return out, biz.ErrOwnership
 	}
 	uid := types.UID(c.SnapshotUID)
-	err = p.client.Resource(checkpointSnapshotGVR).Namespace(s.Snapshot.Namespace).Delete(ctx, c.SnapshotName, metav1.DeleteOptions{Preconditions: &metav1.Preconditions{UID: &uid}})
-	out.Outcome = mutationOutcome(err)
+	var trace checkpointWriteTrace
+	err = p.client.Resource(checkpointSnapshotGVR).Namespace(s.Snapshot.Namespace).Delete(trace.context(ctx), c.SnapshotName, metav1.DeleteOptions{Preconditions: &metav1.Preconditions{UID: &uid}})
+	out.Outcome = trace.outcome(err)
 	if err != nil {
 		return out, err
 	}

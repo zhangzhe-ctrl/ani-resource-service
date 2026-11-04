@@ -3,6 +3,9 @@ package sandbox
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/google/uuid"
@@ -14,9 +17,68 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 	fake "k8s.io/client-go/dynamic/fake"
+	"k8s.io/client-go/rest"
 	clienttesting "k8s.io/client-go/testing"
 )
+
+func TestExperimentalSelectorClassifiesOnlySoleRejectedDispatch(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		code       int
+		reason     string
+		firstRetry bool
+		rejected   bool
+	}{
+		{"forbidden", http.StatusForbidden, "Forbidden", false, true},
+		{"invalid", http.StatusUnprocessableEntity, "Invalid", false, true},
+		{"internal", http.StatusInternalServerError, "InternalError", false, false},
+		{"uncertain_then_forbidden", http.StatusForbidden, "Forbidden", true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls++
+				if r.Method != http.MethodPost {
+					t.Errorf("unexpected method %s", r.Method)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				if tc.firstRetry && calls == 1 {
+					w.Header().Set("Retry-After", "1")
+					w.WriteHeader(http.StatusInternalServerError)
+					fmt.Fprint(w, `{"kind":"Status","apiVersion":"v1","status":"Failure","reason":"InternalError","code":500}`)
+					return
+				}
+				w.WriteHeader(tc.code)
+				fmt.Fprintf(w, `{"kind":"Status","apiVersion":"v1","status":"Failure","reason":%q,"code":%d}`, tc.reason, tc.code)
+			}))
+			defer server.Close()
+			cli, err := dynamic.NewForConfig(&rest.Config{Host: server.URL})
+			if err != nil {
+				t.Fatal(err)
+			}
+			id, _, _ := previewFixture()
+			id.serviceUID = ""
+			s := biz.Sandbox{TenantID: id.tenant, ID: id.sandbox, Snapshot: biz.Snapshot{Namespace: id.namespace}, ProviderRefs: biz.ProviderRefs{PodName: id.podName, PodUID: id.podUID}}
+			p := experimentalNodePortProvider{client: cli, enabled: true, verify: func(context.Context, biz.Sandbox, previewObjectIdentity) error { return nil }, verifyScope: func(context.Context, biz.Sandbox, previewObjectIdentity) error { return nil }}
+			_, err = p.createSelectorService(context.Background(), s, id, biz.PreviewExperimentMutation{ID: uuid.NewString(), Kind: "create"})
+			if errors.Is(err, errPreviewRejected) != tc.rejected || errors.Is(err, errPreviewOutcomeUnknown) == tc.rejected {
+				t.Fatalf("rejected=%t, calls=%d, error=%v", tc.rejected, calls, err)
+			}
+			if tc.firstRetry && calls != 2 {
+				t.Fatalf("expected retry, got %d dispatches", calls)
+			}
+			if tc.name == "forbidden" {
+				repo := &previewWorkerTestRepository{record: &biz.ExperimentalPreviewRecord{TenantID: id.tenant, SandboxID: id.sandbox, PreviewID: uuid.NewString(), PodUID: id.podUID, Port: uint16(id.port), Desired: "open"}}
+				worker := experimentalPreviewWorker{repo: repo, provider: p, enabled: true}
+				if err = worker.StepExperimentalPreview(context.Background(), biz.Work{Sandbox: s}); err != nil || repo.outcome != "rejected" || repo.received != 1 {
+					t.Fatalf("worker receipt=%q count=%d err=%v", repo.outcome, repo.received, err)
+				}
+			}
+		})
+	}
+}
 
 func TestExperimentalSelectorRequiresOptInAndExactSelector(t *testing.T) {
 	id, _, _ := previewFixture()

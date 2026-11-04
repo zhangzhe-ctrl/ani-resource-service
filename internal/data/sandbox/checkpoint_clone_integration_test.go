@@ -65,7 +65,7 @@ func TestCheckpointCloneDirectAtomicCreateAndReplay(t *testing.T) {
 	}
 	replay.Transfer.TargetSandboxID = uuid.NewString()
 	replay.Sandbox.ID = replay.Transfer.TargetSandboxID
-	if _, err = f.repo.AcceptCheckpointClone(ctx, replay); !errors.Is(err, biz.ErrConflict) {
+	if _, err = f.repo.AcceptCheckpointClone(ctx, replay); !errors.Is(err, biz.ErrCloneRejectedConflict) {
 		t.Fatalf("changed target was replayed: %v", err)
 	}
 	_, err = f.runtime.Exec(ctx, `UPDATE sandbox.checkpoint_transfers SET source_sandbox_id=$3 WHERE tenant_id=$1 AND transfer_id=$2`, source.TenantID, transfer.ID, target.ID)
@@ -126,7 +126,7 @@ func TestCheckpointCloneAndSourceDeleteSerialize(t *testing.T) {
 				t.Fatalf("rejected delete operation persisted: %v", err)
 			}
 		} else {
-			if !errors.Is(cloneErr, biz.ErrConflict) || desired != biz.DesiredDeleted || references != 0 {
+			if !errors.Is(cloneErr, biz.ErrCloneRejectedConflict) || desired != biz.DesiredDeleted || references != 0 {
 				t.Fatalf("accepted delete not fenced: clone=%v desired=%s references=%d", cloneErr, desired, references)
 			}
 			if _, err := f.repo.Get(ctx, source.TenantID, cmd.Sandbox.ID); !errors.Is(err, biz.ErrNotFound) {

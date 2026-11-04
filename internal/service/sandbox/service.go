@@ -166,6 +166,10 @@ func rpcError(err error) error {
 	switch {
 	case errors.Is(err, biz.ErrDenied):
 		return status.Error(codes.PermissionDenied, err.Error())
+	case errors.Is(err, biz.ErrCloneRejectedNotFound):
+		return status.Error(codes.NotFound, err.Error())
+	case errors.Is(err, biz.ErrCloneRejectedVersion), errors.Is(err, biz.ErrCloneRejectedConflict):
+		return status.Error(codes.FailedPrecondition, err.Error())
 	case errors.Is(err, biz.ErrNotFound), errors.Is(err, compute.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	case errors.Is(err, biz.ErrConflict):
