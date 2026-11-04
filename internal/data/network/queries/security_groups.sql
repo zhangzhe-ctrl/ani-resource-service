@@ -78,7 +78,7 @@ SELECT * FROM network_attachments WHERE tenant_id=sqlc.arg(tenant_id) AND cluste
 
 -- name: MapSecurityGroupProviderNames :many
 SELECT security_group_id FROM network_security_groups WHERE tenant_id=sqlc.arg(tenant_id)
- AND payload->>'ClusterID'=sqlc.arg(cluster_id) AND payload->>'Namespace'=sqlc.arg(namespace)
+ AND payload->>'ClusterID'=sqlc.arg(cluster_id)::text AND payload->>'Namespace'=sqlc.arg(namespace)::text
  AND payload->>'ProviderName'=ANY(sqlc.arg(provider_names)::text[]) ORDER BY security_group_id;
 
 -- name: RetireSecurityGroupTask :exec

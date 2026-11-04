@@ -196,7 +196,7 @@ func (p *KCProvider) lookupManagedVMNetwork(ctx context.Context, tenant, vpc, su
 	if err := p.verifyTenantNamespace(ctx, b); err != nil {
 		return ManagedVMNAD{}, err
 	}
-	if s.VpcID != vpc || b.ClusterID != cluster || b.Namespace != namespace || b.ProviderUid == "" || b.ResourceKind != "subnet" {
+	if s.NetworkSubnet.VpcID != vpc || b.ClusterID != cluster || b.Namespace != namespace || b.ProviderName == "" || b.ResourceKind != "subnet" {
 		return ManagedVMNAD{}, biz.Fail(biz.PlacementMismatch, "VM network placement differs")
 	}
 	record, err := p.repository.readQueries(ctx).GetVMNamespace(ctx, sqlcgen.GetVMNamespaceParams{TenantID: tenant, ClusterID: cluster})
