@@ -61,12 +61,22 @@ func TestNET05AMigrationUpgradesAllThreeHistoricalChecksums(t *testing.T) {
 	})
 	for _, table := range tables {
 		var body string
-		if e := f.Owner.QueryRow(ctx, "SELECT coalesce(jsonb_agg(to_jsonb(t)-'eip_id'-'snat_id'-'lb_id'-'requested_generation'-'processed_generation'-'retry_not_before'-'evidence_hash'-'evidence_applied_at'-'base_connectivity_required'-'create_dispatched'-'retired'-'provider_ready'-'provider_observed_at'-'provider_observed_uid'-'provider_generation'-'provider_observed_generation'-'available_ip_count'-'used_ip_count'-'available_ip_range'-'used_ip_range'),'[]')::text FROM (SELECT * FROM "+table+" ORDER BY tenant_id) t").Scan(&body); e != nil {
+		if e := f.Owner.QueryRow(ctx, "SELECT coalesce(jsonb_agg(to_jsonb(t)-'eip_id'-'snat_id'-'lb_id'-'vnic_id'-'consumer_type'-'exclude_ips'-'enable_dhcp'-'dns_servers'-'requested_generation'-'processed_generation'-'retry_not_before'-'evidence_hash'-'evidence_applied_at'-'base_connectivity_required'-'create_dispatched'-'retired'-'provider_ready'-'provider_observed_at'-'provider_observed_uid'-'provider_generation'-'provider_observed_generation'-'available_ip_count'-'used_ip_count'-'available_ip_range'-'used_ip_range'),'[]')::text FROM (SELECT * FROM "+table+" ORDER BY tenant_id) t").Scan(&body); e != nil {
 			t.Fatal(e)
 		}
 		if body != facts[table] {
 			t.Fatalf("upgrade changed existing facts/lease: %s", table)
 		}
+	}
+	// Schema 31 adds request settings; historical rows have no evidence of
+	// user-selected options. Schema 28 must not guess the consumer from an
+	// empty historical attachment plan.
+	var subnetDefaults, attachmentUnknown bool
+	if e := f.Owner.QueryRow(ctx, `SELECT bool_and(exclude_ips='{}'::text[] AND NOT enable_dhcp AND dns_servers='{}'::text[]) FROM network_subnets WHERE tenant_id=$1`, tenant).Scan(&subnetDefaults); e != nil || !subnetDefaults {
+		t.Fatalf("unsafe legacy subnet options: %v", e)
+	}
+	if e := f.Owner.QueryRow(ctx, `SELECT bool_and(consumer_type='') FROM network_attachments WHERE tenant_id=$1`, tenant).Scan(&attachmentUnknown); e != nil || !attachmentUnknown {
+		t.Fatalf("legacy attachment acquired a guessed consumer: %v", e)
 	}
 	var nonnullIPCounts int
 	if e := f.Owner.QueryRow(ctx, "SELECT count(*) FROM network_subnets WHERE available_ip_count IS NOT NULL OR used_ip_count IS NOT NULL").Scan(&nonnullIPCounts); e != nil || nonnullIPCounts != 0 {
@@ -78,8 +88,8 @@ func TestNET05AMigrationUpgradesAllThreeHistoricalChecksums(t *testing.T) {
 	}
 	for _, table := range []string{"network_operations", "network_reconciliations", "network_provider_bindings"} {
 		var lbReferences int
-		if e := f.Owner.QueryRow(ctx, "SELECT count(*) FROM "+table+" WHERE lb_id IS NOT NULL").Scan(&lbReferences); e != nil || lbReferences != 0 {
-			t.Fatalf("upgrade invented LB references in %s: %d %v", table, lbReferences, e)
+		if e := f.Owner.QueryRow(ctx, "SELECT count(*) FROM "+table+" WHERE lb_id IS NOT NULL OR vnic_id IS NOT NULL").Scan(&lbReferences); e != nil || lbReferences != 0 {
+			t.Fatalf("upgrade invented LB or VNIC references in %s: %d %v", table, lbReferences, e)
 		}
 	}
 	for _, table := range []string{"network_reconciliations", "network_attachments"} {

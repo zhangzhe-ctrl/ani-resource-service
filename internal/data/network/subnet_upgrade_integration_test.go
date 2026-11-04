@@ -81,7 +81,7 @@ func TestSubnetMigrationUpgradesNET01WithoutChangingDurableFacts(t *testing.T) {
 	})
 	for _, table := range tables {
 		var row string
-		if err := fixture.Owner.QueryRow(ctx, "SELECT (to_jsonb(t)-'eip_id'-'snat_id'-'lb_id'-'subnet_id'-'resource_kind'-'reconciliation_id'-'requested_generation'-'processed_generation'-'retry_not_before'-'evidence_hash'-'evidence_applied_at'-'base_connectivity_required'-'create_dispatched'-'retired'-'provider_ready'-'provider_observed_at'-'provider_observed_uid'-'provider_generation'-'provider_observed_generation')::text FROM "+table+" t WHERE tenant_id=$1", tenant).Scan(&row); err != nil {
+		if err := fixture.Owner.QueryRow(ctx, "SELECT (to_jsonb(t)-'eip_id'-'snat_id'-'lb_id'-'vnic_id'-'subnet_id'-'resource_kind'-'reconciliation_id'-'requested_generation'-'processed_generation'-'retry_not_before'-'evidence_hash'-'evidence_applied_at'-'base_connectivity_required'-'create_dispatched'-'retired'-'provider_ready'-'provider_observed_at'-'provider_observed_uid'-'provider_generation'-'provider_observed_generation')::text FROM "+table+" t WHERE tenant_id=$1", tenant).Scan(&row); err != nil {
 			t.Fatal(err)
 		}
 		if row != before[table] {
@@ -89,11 +89,12 @@ func TestSubnetMigrationUpgradesNET01WithoutChangingDurableFacts(t *testing.T) {
 		}
 		if table != "network_vpcs" {
 			var lbReferences int
-			if err := fixture.Owner.QueryRow(ctx, "SELECT count(*) FROM "+table+" WHERE tenant_id=$1 AND lb_id IS NOT NULL", tenant).Scan(&lbReferences); err != nil || lbReferences != 0 {
-				t.Fatalf("upgrade invented LB references in %s: %d %v", table, lbReferences, err)
+			if err := fixture.Owner.QueryRow(ctx, "SELECT count(*) FROM "+table+" WHERE tenant_id=$1 AND (lb_id IS NOT NULL OR vnic_id IS NOT NULL)", tenant).Scan(&lbReferences); err != nil || lbReferences != 0 {
+				t.Fatalf("upgrade invented LB or VNIC references in %s: %d %v", table, lbReferences, err)
 			}
 		}
 	}
+	configureExistingTenantNamespaces(t, fixture.Repository, tenant)
 	n := newNetwork(t, fixture.Repository, time.Minute)
 	replay, err := n.CreateVPC(ctx, biz.CreateVPC{TenantID: tenant, Name: intent.Name, CIDR: intent.CIDR, Description: intent.Description, IdempotencyKey: intent.IdempotencyKey})
 	if err != nil || replay.ID != accepted.ID || replay.LastOperationID != opID {

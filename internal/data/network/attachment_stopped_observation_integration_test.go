@@ -21,6 +21,7 @@ import (
 func TestManagedAttachmentPGFullStopIgnoresSiblingServiceRenewals(t *testing.T) {
 	f := newAttachmentFixture(t)
 	f.r.WorkloadMode = "controller_managed"
+	f.r.ConsumerType = biz.ConsumerContainerInstance
 	a := f.prepare(t)
 	c := managedConsumerFor(a, "pod-1", 1)
 	f.api.Mu.Lock()
@@ -112,7 +113,26 @@ func TestManagedAttachmentPGFullStopIgnoresSiblingServiceRenewals(t *testing.T) 
 	done := make(chan error, 1)
 	go func() { done <- observer.Start(live) }()
 	defer func() { cancel(); <-done }()
-	awaitNET05A(t, 3*time.Second, func() bool { return observer.Snapshot()["source_synced"] == 1 })
+	awaitNET05A(t, 3*time.Second, func() bool {
+		metrics := observer.Snapshot()
+		_, published := metrics["audit_evidence_age_seconds"]
+		return metrics["source_synced"] == 1 && published
+	})
+	// A first LIST can finish before Watch initial synchronization and is then
+	// invalidated by the Watch continuity boundary. Request independent evidence
+	// after synchronization; the sibling Service renewal is still injected into
+	// every full audit and must not invalidate attachment relationship facts.
+	previousRenewals := renewals.Load()
+	auditCtx, auditCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	work := biz.AttachmentWork{Attachment: a, Plan: *a.Plan, ConsumerSnapshot: &c, ConsumerPodUIDs: []string{"pod-1"}, RequireFreshRelations: true, Relations: []byte("[]")}
+	_, err = provider.ObserveAttachment(auditCtx, work)
+	auditCancel()
+	if err != nil {
+		t.Fatal("post-sync complete attachment audit", err)
+	}
+	if renewals.Load() <= previousRenewals {
+		t.Fatal("post-sync attachment audit did not deliver a sibling Service renewal")
+	}
 	policy := biz.DefaultWorkerPolicy()
 	policy.RequestTimeout = 2 * time.Second
 	policy.Lease = 8 * time.Second
@@ -122,7 +142,17 @@ func TestManagedAttachmentPGFullStopIgnoresSiblingServiceRenewals(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	a = f.step(t, a.ID)
+	awaitNET05A(t, 3*time.Second, func() bool {
+		worked, stepErr := f.worker.Step(context.Background())
+		if stepErr != nil {
+			t.Fatal(stepErr)
+		}
+		return worked
+	})
+	a, err = f.a.Get(context.Background(), f.r.TenantID, a.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if renewals.Load() == 0 {
 		t.Fatal("test did not deliver the sibling Service Watch update")
 	}
