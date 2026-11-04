@@ -3,6 +3,7 @@ package data_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -136,6 +137,27 @@ func awaitAutoVMNetwork(t *testing.T, f attachmentFixture) data.ManagedVMNAD {
 	}
 	t.Fatal("existing Subnet never received its automatic VM network")
 	return data.ManagedVMNAD{}
+}
+
+func TestVMNetworkPreparationRetryIsFencedByLeaseAndDeletion(t *testing.T) {
+	f, _, _ := newAutoVMNetwork(t)
+	awaitAutoVMNetwork(t, f)
+	ctx := context.Background()
+	if err := f.p.NotifyResource(ctx, f.r.TenantID, f.r.SubnetID); err != nil { t.Fatal(err) }
+	w, found, err := f.p.Claim(ctx, uuid.NewString(), time.Minute)
+	if err != nil || !found || w.Resource.ID != f.r.SubnetID { t.Fatal("claim Subnet", w, found, err) }
+	finish := func(work biz.Work) {
+		t.Helper()
+		if err := f.p.Finish(ctx, work, biz.Progress{State: work.Resource.State, Reason: work.Resource.Reason, Identity: work.KnownIdentity, Observed: true}); err != nil { t.Fatal(err) }
+	}
+	finish(w)
+	if err := f.p.RetryVMNetworkPreparation(ctx, w, 0); err != nil { t.Fatal("retry unfinished own declaration", err) }
+	next, found, err := f.p.Claim(ctx, uuid.NewString(), time.Minute)
+	if err != nil || !found || next.Resource.ID != w.Resource.ID || next.ClaimedGeneration <= w.ClaimedGeneration { t.Fatal("retry notification lost", next, found, err) }
+	if err := f.p.RetryVMNetworkPreparation(ctx, w, 0); !errors.Is(err, biz.ErrLeaseLost) { t.Fatal("old preparation changed a newer lease", err) }
+	finish(next)
+	if _, err := f.n.DeleteSubnet(ctx, f.r.TenantID, f.r.SubnetID); err != nil { t.Fatal(err) }
+	if err := f.p.RetryVMNetworkPreparation(ctx, next, 0); !errors.Is(err, biz.ErrLeaseLost) { t.Fatal("preparation revived a deleting product", err) }
 }
 
 func TestVMAutoNetworkPGBackfillsExistingSubnetAndPinsAcrossRestart(t *testing.T) {
