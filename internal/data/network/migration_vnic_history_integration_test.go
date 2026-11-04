@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io/fs"
+	"fmt"
 	"reflect"
 	"sort"
 	"testing"
@@ -43,7 +44,7 @@ func vnicMigrationLedger(t *testing.T, owner *pgxpool.Pool) []vnicMigrationRecei
 	return out
 }
 
-func seedVNicMigrationHistory(t *testing.T, owner *pgxpool.Pool, legacy bool) {
+func seedVNicMigrationHistory(t *testing.T, owner *pgxpool.Pool, legacy bool, canonicalVersion ...int) {
 	t.Helper()
 	ctx := context.Background()
 	tx, err := owner.Begin(ctx)
@@ -60,6 +61,9 @@ func seedVNicMigrationHistory(t *testing.T, owner *pgxpool.Pool, legacy bool) {
 	}
 	sort.Strings(files)
 	names := files[:28]
+	if len(canonicalVersion) != 0 {
+		names = files[:canonicalVersion[0]]
+	}
 	if legacy {
 		names = append(append([]string{}, files[:27]...), files[28:31]...)
 	}
@@ -76,7 +80,7 @@ func seedVNicMigrationHistory(t *testing.T, owner *pgxpool.Pool, legacy bool) {
 			t.Fatal(err)
 		}
 	}
-	if legacy {
+	if legacy || len(names) == 31 {
 		// Existing product intent and the consumer backfill must survive together.
 		_, err := tx.Exec(ctx, `
 INSERT INTO network_vpcs(tenant_id,vpc_id,name,description,cidr,state,created_at,updated_at,last_operation_id)
@@ -122,6 +126,66 @@ func TestVNicMigrationMain28Upgrade(t *testing.T) {
 	}
 	if err := f.Repository.CheckReady(context.Background()); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestNetworkSimplificationMigrationPreservesFactsAndFencesOldWorkers(t *testing.T) {
+	for _, version := range []int{28, 31} {
+		t.Run(fmt.Sprintf("%d_to_32", version), func(t *testing.T) {
+			ctx := context.Background()
+			var before []vnicMigrationReceipt
+			facts := map[string]string{}
+			tables := []string{"network_vpcs", "network_operations", "network_provider_bindings", "network_idempotency", "network_resource_history"}
+			if version == 31 {
+				tables = append(tables, "network_vnics", "network_subnets")
+			}
+			snapshot := func(owner *pgxpool.Pool, table string) string {
+				t.Helper()
+				var value string
+				if err := owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(to_jsonb(r)-ARRAY['provider_ready','provider_observed_at','provider_observed_uid','provider_generation','provider_observed_generation'] ORDER BY to_jsonb(r)::text),'[]')::text FROM `+table+` r`).Scan(&value); err != nil {
+					t.Fatal(err)
+				}
+				return value
+			}
+			f := testenv.NewDatabase(t, func(owner *pgxpool.Pool, _ string) {
+				seedVNicMigrationHistory(t, owner, false, version)
+				if version == 28 {
+					tx, err := owner.Begin(ctx)
+					if err != nil { t.Fatal(err) }
+					defer tx.Rollback(ctx)
+					seedNET05AUpgrade(t, tx, "11111111-1111-4111-8111-111111111111", "55555555-5555-4555-8555-555555555555")
+					if err := tx.Commit(ctx); err != nil { t.Fatal(err) }
+				}
+				_, err := owner.Exec(ctx, `
+INSERT INTO network_idempotency(tenant_id,operation_kind,idempotency_key,fingerprint,fingerprint_version,vpc_id,operation_id,response,created_at)
+ SELECT tenant_id,kind,'retained-replay',repeat('a',64),1,vpc_id,operation_id,'{"saved":"unchanged"}',created_at FROM network_operations WHERE kind='create_vpc';
+INSERT INTO network_resource_history(tenant_id,history_id,vpc_id,operation_id,event,resource_state,operation_state,reason,created_at)
+ SELECT tenant_id,'66666666-6666-4666-8666-666666666666',vpc_id,operation_id,'retained','available',state,reason,created_at FROM network_operations WHERE kind='create_vpc';
+INSERT INTO network_reconciliations(tenant_id,subnet_id,next_run_at,lease_owner,lease_until,lease_epoch)
+ SELECT tenant_id,subnet_id,'infinity','55555555-5555-4555-8555-555555555555',now()+interval '1 hour',17 FROM network_subnets ON CONFLICT(tenant_id,subnet_id) DO NOTHING;
+UPDATE network_attachments SET consumer_type='container_instance',state='attached',reason='retained-status',version=9,
+ pod_name='retained-pod',pod_uid='retained-pod-uid',confirm_uid='retained-pod-uid',observed_at='2026-11-03 12:00:00+00',
+ lease_owner='55555555-5555-4555-8555-555555555555',lease_until=now()+interval '1 hour',epoch=23,
+ provider_relations='[{"Kind":"VNic","Name":"retained-nic","UID":"retained-nic-uid","OwnerUID":"retained-pod-uid","Current":true,"MACAddress":"02:75:00:00:00:21"},{"Kind":"VNicIP","Name":"retained-ip","UID":"retained-ip-uid","OwnerUID":"retained-nic-uid","Current":true,"AddressEligible":true,"Address":"10.42.1.21"},{"Kind":"VNicIP","Name":"old-ip","UID":"old-ip-uid","OwnerUID":"old-nic-uid","Current":false,"AddressEligible":true,"Address":"10.42.1.22"}]';
+INSERT INTO network_attachments SELECT (jsonb_populate_record(NULL::network_attachments,to_jsonb(a)||jsonb_build_object(
+ 'attachment_id','att_99999999999999999999999999999999','instance_id','retained-released','request_key','released',
+ 'state','released','finalization_id','99999999-9999-4999-8999-999999999999','released_at',now()))).* FROM network_attachments a;`)
+				if err != nil { t.Fatal("seed upgrade facts", err) }
+				before = vnicMigrationLedger(t, owner)
+				for _, table := range tables { facts[table] = snapshot(owner, table) }
+			})
+			after := vnicMigrationLedger(t, f.Owner)
+			if len(after) != 32 || !reflect.DeepEqual(before, after[:version]) { t.Fatal("existing migration receipts changed", before, after) }
+			for _, table := range tables {
+				if snapshot(f.Owner, table) != facts[table] { t.Fatalf("migration changed intent, identity or history: %s", table) }
+			}
+			var retained, leasesFenced, releasedRetired bool
+			if err := f.Owner.QueryRow(ctx, `SELECT bool_and(state='attached' AND reason='retained-status' AND version=9 AND current_vnic_name='retained-nic' AND current_vnic_uid='retained-nic-uid' AND current_mac_address='02:75:00:00:00:21' AND current_ips=ARRAY['10.42.1.21'] AND observed_at='2026-11-03 12:00:00+00'::timestamptz AND lease_owner IS NULL AND lease_until IS NULL AND epoch=24) FROM network_attachments WHERE state<>'released'`).Scan(&retained); err != nil || !retained { t.Fatal("current output or lease fencing changed", retained, err) }
+			if err := f.Owner.QueryRow(ctx, `SELECT bool_and(lease_owner IS NULL AND lease_until IS NULL AND lease_epoch=18) FROM network_reconciliations WHERE subnet_id IS NOT NULL`).Scan(&leasesFenced); err != nil || !leasesFenced { t.Fatal("pre-upgrade resource lease survived", leasesFenced, err) }
+			if err := f.Owner.QueryRow(ctx, `SELECT next_check_at='infinity'::timestamptz AND lease_owner IS NULL AND epoch=24 FROM network_attachments WHERE state='released'`).Scan(&releasedRetired); err != nil || !releasedRetired { t.Fatal("released task not retired", releasedRetired, err) }
+			if err := data.Migrate(ctx, f.Owner, f.RuntimeRole); err != nil { t.Fatal(err) }
+			if replay := vnicMigrationLedger(t, f.Owner); !reflect.DeepEqual(after, replay) { t.Fatal("replay changed migration receipts") }
+		})
 	}
 }
 
