@@ -61,11 +61,11 @@ def adapted(name):
     check_permissions()""")
     if name=='build-faults':
         replace("('\\t\\tworked, stepErr := s.worker.Step(ctx)', '\\t\\tnet05Hook(ctx, \"pause-worker\", \"*\", nil)\\n\\t\\tworked, stepErr := s.worker.Step(ctx)')", "('\\t\\tworked, stepErr := stepper.Step(ctx)', '\\t\\tnet05Hook(ctx, \"pause-worker\", \"*\", nil)\\n\\t\\tworked, stepErr := stepper.Step(ctx)')")
-        # Separate observer pause covers both audit and durable hint bridge.
+        # v3 has no audit/flush loop. Stop informers and queue dispatch before
+        # they run; direct worker GETs remain independent of observation.
         insert='''edit('network','internal/data/network/kc_observation.go',[
- ('go func() { defer group.Done(); informer.Run(ctx.Done()) }()', 'go func() { defer group.Done(); net05Hook(ctx,"pause-observer","*",nil); informer.Run(ctx.Done()) }()'),
- ('\\t\\t\\to.flush(ctx)','\\t\\t\\tnet05Hook(ctx,"pause-observer","*",nil)\\n\\t\\t\\to.flush(ctx)'),
- ('\\t\\tif v, err := o.refresh(ctx, time.Time{}, true); err == nil {','\\t\\tnet05Hook(ctx,"pause-observer","*",nil)\\n\\t\\tif v, err := o.refresh(ctx, time.Time{}, true); err == nil {')],helper=True)
+ ('\\t\\t\\tdefer group.Done()\\n\\t\\t\\tinformer.Run(ctx.Done())', '\\t\\t\\tdefer group.Done()\\n\\t\\t\\tnet05Hook(ctx, "pause-observer", "*", nil)\\n\\t\\t\\tinformer.Run(ctx.Done())'),
+ ('func (o *KCObservation) processNextNotification(ctx context.Context) bool {', 'func (o *KCObservation) processNextNotification(ctx context.Context) bool {\\n net05Hook(ctx, "pause-observer", "*", nil)')],helper=True)
 '''
         replace("edit('ani', 'repo/pkg/adapters/runtime/network_submission_owner.go'",insert+"edit('ani', 'repo/pkg/adapters/runtime/network_submission_owner.go'")
     if name=='faults':

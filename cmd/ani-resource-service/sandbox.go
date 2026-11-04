@@ -60,6 +60,21 @@ func (c *sandboxComponents) Close() {
 // dependencies leave its methods explicitly unavailable without disabling
 // unrelated Resource services or discarding already persisted work.
 func openSandbox(ctx context.Context, network *conf.Network, compute *computeComponents, images *imageComponents, logger *slog.Logger) (*sandboxComponents, error) {
+	paused, err := sandboxClonePaused(os.Getenv("ANI_SANDBOX_CLONE_WRITES_PAUSED"))
+	if err != nil {
+		return nil, err
+	}
+	components, err := openSandboxWithoutCloneGate(ctx, network, compute, images, logger)
+	if err != nil || components == nil {
+		return components, err
+	}
+	if paused {
+		components.service = &sandboxCloneGate{SandboxServiceServer: components.service}
+	}
+	return components, nil
+}
+
+func openSandboxWithoutCloneGate(ctx context.Context, network *conf.Network, compute *computeComponents, images *imageComponents, logger *slog.Logger) (*sandboxComponents, error) {
 	attempt := func(ctx context.Context) (*sandboxComponents, error) {
 		attemptCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()

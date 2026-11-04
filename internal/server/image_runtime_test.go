@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"log/slog"
-	"net"
 	"net/url"
 	"strings"
 	"testing"
@@ -132,17 +131,19 @@ func TestImageRuntimeMTLSListener(t *testing.T) {
 			t.Fatalf("trusted runtime identity rejected: %s", san)
 		}
 	}
-	listen, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := listen.Addr().String()
-	listen.Close()
 	var logs bytes.Buffer
-	s, err := NewImageRuntimeGRPCServer(&conf.Server_GRPC{Network: "tcp", Addr: addr, Timeout: durationpb.New(time.Second)}, serverTLS, imageservice.NewRuntimeService(runtimeTransportProbe{}), requestLogging(slog.New(slog.NewJSONHandler(&logs, nil))))
+	s, err := NewImageRuntimeGRPCServer(&conf.Server_GRPC{Network: "tcp", Addr: "127.0.0.1:0", Timeout: durationpb.New(time.Second)}, serverTLS, imageservice.NewRuntimeService(runtimeTransportProbe{}), requestLogging(slog.New(slog.NewJSONHandler(&logs, nil))))
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Endpoint binds the actual server listener before the first client call.
+	// The kernel can queue connections until Start begins serving; there is no
+	// close-and-rebind window or dependence on goroutine scheduling.
+	endpoint, err := s.Endpoint()
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := endpoint.Host
 	done := make(chan error, 1)
 	go func() { done <- s.Start(context.Background()) }()
 	defer func() {

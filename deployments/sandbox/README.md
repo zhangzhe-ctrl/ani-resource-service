@@ -147,3 +147,13 @@ Pod selector 依赖租户 Namespace 的 Kubernetes 权限边界：普通租户�
 ## Sandbox 终端受信入口
 
 Sandbox 不依赖创建 Instance。Gov 的终端绑定解析使用现有 Resource 业务 gRPC 及正常租户身份；SG 的绑定验证使用现有 Instance/VM 终端 mTLS 监听器。如果部署没有启用 Instance 或 VM，设置通用进程监听地址 `ANI_TERMINAL_ADDRESS` 为 SG 提供同等受限监听；其复用现有 Resource TLS 证书文件，不需要独立服务或 Sandbox 配置文件。未配置该监听时无法验证终端连接。终端容器须有 `/bin/sh` 且带 Resource 管理的 Pod UID downward API 字段。终端已建立连接的终止由网关负责，Resource 的校验只约束新连接。
+
+## 克隆临时维护闭闸
+
+`ANI_SANDBOX_CLONE_WRITES_PAUSED=true` 在 Resource 启动时于 Sandbox 共享装配入口开启临时克隆闭闸，所有调用方的 `AcceptSandboxClone` 在进入业务处理和数据库写入之前返回 gRPC `Unavailable`，原因是 `SANDBOX_CLONE_TEMPORARILY_UNAVAILABLE`。其他 Sandbox RPC 不受这一开关影响。此入口同时覆盖常规初始化和依赖恢复后的 `sandboxRetry`，也适用于共享监听和 Governance 专用装配。该变量只接受空值、`false`、`true`；空值和 `false` 是不闭闸，其他值使服务启动失败，不会把非法配置解释为开闸。修改配置需要重启进程。维护切换时必须显式配置 `true` 并核对每个新 Pod 的实际配置，不能依赖缺省值。
+
+闭闸也拒绝已经受理命令的重复投递，不返回接受回执；调用方必须保留原来的命令身份及未知结果，不能把 `Unavailable` 视为未曾受理。已经保存在 Resource 中的 transfer 工作继续由 worker 根据原日志恢复；此闭闸不会停止或撤销这些工作，也不会保证已发出的 Provider 请求未发生。普通创建沿用原有受限出口检查和已受理重放规则，不因该克隆开关改变。
+
+需要 017/018 迁移时，先隔离所有克隆入口和后台投递，并有序停止、排空所有使用同一 Sandbox 数据库的旧 Resource writer，包括独立部署及其后台 worker；确认旧 Pod/进程及数据库写连接均退出，并按原 Provider journal 保留在途或未知结果。之后执行数据库备份、校验和迁移，再以明确设置 `true` 的新 Resource 启动，核验所有新副本镜像、配置、注册路径和闭闸结果。不得让旧新 writer 混跑，也不得仅以摘除 Service Endpoint 代替旧 worker 排空。排查时按实际数据库身份、进程配置及权限识别 writer，避免停掉无 Sandbox 写权限的其他业务或 e2e 测试进程。共用 Resource 入口在停止旧进程的维护窗口内会短暂不可用。
+
+保持闭闸直到全部可能投递克隆的调用方都已验证理解新 Resource 的确定拒绝回执，或者以可靠措施限制不兼容调用方；必须包含 Gov 的前台及后台投递，不能假定只有 Gov 持有服务证书。还须复查未确认的受限出口创建和克隆意图，不能将暂时不可查询当作已完成。解除前核对目标版本与所有客户端、排空旧副本和未决请求，再以受控发布把该开关显式设为 `false` 并验证回执及原命令重试。含新拒绝回执的数据不能直接回退到无法识别其语义的旧 Resource；保留 journal 并优先恢复兼容的新版本，不能删回执绕过屏障。以上是发布前提，不代表现场已完成迁移或验证。

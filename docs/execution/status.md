@@ -2,11 +2,26 @@
 
 ## 2026-11-04：Sandbox 详情及独立终端提交候选
 
+对齐主仓 main `d7c344a02a7e3e1f7c4221286ec82bc33428bac4`（包含 Network 0032）及 Sandbox PR `16cb9d23a1503f58e9c9ab19c6e5bc2345d387de` 后，测试输入 Git tree 为 `5f2d2a75979848a55c2bd524ace47d7f9006bc25`。远程 `ssh -F /home/chabking/.ssh/config -o BatchMode=yes ubuntu true` 因指定配置文件不存在失败，按用户允许的回退在本机 Ubuntu、Go 1.26.10 执行：`GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 TMPDIR=/tmp make verify` **pass**（固定 Buf 1.60.0、SQLC 1.31.1）；第一次合并树门禁因 Network 旧故障注入点与 v3 不兼容 **fail**，修正测试工具后重跑通过。测试后只增加本段执行记录。
+
+从上述 tree 导出独立快照，添加临时 16→18 迁移回归测试（SHA-256 `172121dc4a2f29b34a0b88e6223256fed8f2ee6b8255aca3e91c7638a61872d0`，不随服务发布），通过随机 loopback 端口与固定镜像 `postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280` 运行 `/tmp/resource-final-tree-pg-verify-20261104.sh` **pass**：Network 28/30→32 升级及 v3 四项观察故障 race、Sandbox 16→18 历史回执/幂等、检查点恢复、入口迁移恢复及克隆维护闭闸 race；临时数据库已清理。维护闭闸默认关闭、开启时只拒绝新克隆受理，不停止已持久化 worker；需要 017/018 时仍须先停止并排空所有旧数据库 writer。受控 PostgreSQL/Provider 验证和旧终端验收均不等于此合并树已在 66 部署或完成真实集群验收。
+
 本分支以 Resource main `5dc539d` 为基础，整理此前独立 Sandbox 详情、文件分页、操作历史、代码执行时间、日志与事件、预览端口、检查点及终端变更；不回退主线 Network 修改。监控交由 Observability 服务；安全事件无可信数据源，Host 白名单尚无实际执行数据面，相关源码明确不可用或拒绝不受支持的声明。预览默认禁用，检查点仅支持文件系统快照；接口权限、存储能力和部署约束见 Sandbox 部署说明及调用合同。
 
 66 已以现场兼容源码部署并验收独立 Sandbox 终端和二进制普通上传；WebSocket 两轮交互、跨租户和版本拒绝及票据重放拒绝均通过，上传读回哈希一致。终端权限验收后恢复 OFF；测试 Pod/PVC/PV 已回收，租户空间仍有保留。实际镜像构建使用旧现场基线加选择性移植，**不是本分支源码快照**；此前详情的其他真实验收与未解决限制见工作区证据，不能把现场结果当作本分支完整回归。Gov 与 Session Gateway 需各自固定可发布 API 依赖、完成权限启用和集成验证。
 
 `ssh -F /home/chabking/.ssh/config ubuntu` 失败（指定配置文件不存在），按允许规则回退本机 Ubuntu、Go 1.26.10。以 main `5dc539d` 和终端 SDK 提交 `a26e1a0` 为基础，测试输入 Git tree `336df0de269509a9b695950187530292463988d0`；`GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 TMPDIR=/tmp make verify`（Buf 1.60.0，SQLC 1.31.1）**pass**，随后仅更新本段执行记录。首次门禁因根 Buf 工作区误扫描终端子模块 **fail**，第二次因本地 replace 违反依赖边界 **fail**；修正工作区排除规则并固定已推送 SDK 伪版本后完整重跑通过。门禁包含生成一致性、架构边界、全量 Go 测试、vet、编译与模块校验，不包含真实 PostgreSQL 集成测试或将此源码部署到 66。
+<a id="network-management-simplification-20261104"></a>
+
+## 2026-11-04：完全采信 KCN 的网络状态消费简化
+
+补充隔离回归：基于候选输入 tree `7c8a4a75555c85492691d963f598669ea4aaedd5` 加本次测试与故障工具改动，`ssh -F /home/chabking/.ssh/config ubuntu` 因配置缺失失败、`ssh fedora` 无法解析；按本轮 Sandbox 合并验证许可在本机 Ubuntu/Go 1.26.10 回退。`GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 scripts/net05a-build-faults.py --network-only` **pass**（仅证明显式故障 overlay 可编译）；隔离 PostgreSQL `postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280` 下 `go test -race -count=3 -timeout=15m -v ./internal/data/network -run '^Test(ObserverStoppedAllowsManagedWorkAndRestartReconcilesMissedChange|ActualAdapterUsesOriginalIdentityAndOwnDeletionOnly|ProviderReadFailurePreservesProjectionAndNativeReadyIgnoresGeneration|LeaseExpiryRejectsOldEpochWritesAndRecoversPendingIdentity)$'` **pass**。第一次同命令因既有受控 Provider 缺少租户 Namespace，在故障注入前 **fail**；补全夹具后重跑；随后新增重启前状态断言发现旧通知未排空导致假阳性，增加数据库停放校验后再次重跑。测试覆盖观察停止期间已存状态不变、新管理意图可完成、重启唤醒并追上错过的状态、原 UID/owner 删除保护、读取错误保留和过期租约写拒绝；受控 HTTP 不是真实 KCN。旧 V-09 的按年龄判 stale 和拒绝准入与 v3 相反，直接调用 `scripts/net05a-faults.py queries` 现明确失败；不得把故障 overlay 编译或这些隔离测试称作旧 V-09 的等价真实集群验收。`make verify` 在此快照 **not_verified**；真实节点 Watch 丢事件、客户端重连、RBAC 与数据面仍须现场验证。
+
+**已完成固定工具生成、Resource 镜像构建及 ani-kcn-full 集群发布；数据库已到 32，临时 VM 创建、关机、启动和删除的真实操作均 succeeded。** 工作分支仍为 `work/network-status-authority`，基线为 `5dc539d92e3150a3593bde3668082753aa4fdebe`，继续更新原 [PR #57](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/57)。所有生成、编译、测试、打包和推送在 `ubuntu@100.64.128.15` 执行，集群操作在 `kubercloud@100.64.128.12` 执行，本地仅编辑、Git 和轻量编排。
+
+只发布 Resource，最终镜像为源码54aebd9，digest `sha256:c6f095b28f87897ccdb43e5347d9855315ab69bcecaea2eebe86d2214f95b3e5`，generation/observed173、Ready1、restart0。现场切换前已为 canonical31，因此实际只执行 0032；保留停止旧写入者后的备份，修正八张 Network 新表的迁移所有权，保留身份、幂等和历史操作，并应用匹配 RBAC。新镜像需配套 VM 配置，原含 `Service.ImageUpload` 的 Secret 保留未改；此分支不包含该额外配置对应的能力，见执行记录。
+
+**VM 和 VNIC 主流程已验收。** 用户随后授权升级 Governance，已发布最新 main `3a30c697`，digest `sha256:a035f93883068ee85998410863ae2d9f56e3d3f5782db608510d1769eebffed7`。通过官方 CLI 预览并增量同步 API，按仓库 SQL 登记9个新接口权限，仅为验收租户既有管理员追加所需5项权限，不改其他角色或套餐。正常登录后的 VNIC 创建、地址/MAC展示和删除均通过，临时资源已清理。28→32、31→32 及四项此前失败的定向 PG 用例分别通过。最终 Resource Pod 的340.238秒窗口为154次 Network provider 传输请求、0.4526 QPS、LIST0；34个租户删除任务、4个平台删除任务、32条释放连接均未改变，62个稳定任务停放、有限时刻待调度任务0。按用户要求未跑全量门禁，`make verify` 为 NOT_RUN；未重复验证最终镜像的完整 VM 生命周期，复用之前相同原生 VM 执行代码的实测，版本边界见[交付记录](records/2026-11-04-network-management-simplification.md#takeover-delivery-20261104)。PR交评审，不自动合并。以下各节保留其历史时点事实。
 
 ## 2026-11-04：观测故障隔离与终态恢复
 
