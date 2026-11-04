@@ -46,6 +46,8 @@ func TestSubnetProcessesRecoverProviderSuccessAndUnknownDeletion(t *testing.T) {
 			t.Fatalf("explicit migration replay failed: %v %s", err, output)
 		}
 		protocol := controlled.New()
+		tenant := uuid.NewString()
+		protocol.Change("namespaces", processTenantNamespace(tenant), false)
 		renewFacts := seedProcessVPCPlatformFacts(t, protocol)
 		config := processVPCPresetConfig(t, root, "10.42.0.0/16")
 		api := protocol.Backend
@@ -85,7 +87,9 @@ func TestSubnetProcessesRecoverProviderSuccessAndUnknownDeletion(t *testing.T) {
 			}
 			protocol.ServeHTTP(w, r)
 		}))
-		defer host.Close()
+		// The child process owns long-lived watches on this server. Its cleanup
+		// must run before closing the server, including on an early test failure.
+		t.Cleanup(host.Close)
 		defer close(release)
 		defer close(deleteRelease)
 		kubeconfig := testenv.Kubeconfig(t, host.URL)
@@ -93,7 +97,6 @@ func TestSubnetProcessesRecoverProviderSuccessAndUnknownDeletion(t *testing.T) {
 			return startNetworkProcess(t, root, binary, fixture.RuntimeDSN, kubeconfig, signingKey, "subnet", "config="+config)
 		}
 		first := start()
-		tenant := uuid.NewString()
 		client, closeClient := first.client(t, tenant)
 		parent, err := client.CreateVPC(context.Background(), &networkv1.CreateVPCRequest{TenantId: tenant, Name: "parent", Cidr: "10.42.0.0/16", IdempotencyKey: "parent"})
 		if err != nil {

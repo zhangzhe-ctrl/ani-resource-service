@@ -226,6 +226,7 @@ func TestManualVNicPGCurrentProjectionUsesRetainedIdentity(t *testing.T) {
 	ctx := context.Background()
 	v := manualVNic(t, f, "current")
 	f.r.WorkloadMode = "controller_managed"
+	f.r.ConsumerType = biz.ConsumerContainerInstance
 	if _, e := f.n.ReserveVNic(ctx, biz.VNicReservation{TenantID: v.TenantID, VNicID: v.ID, ConsumerKind: "container", ConsumerID: f.r.InstanceID, Slot: "primary", OperationID: uuid.NewString(), SubnetID: v.SubnetID, Revision: 1}); e != nil {
 		t.Fatal(e)
 	}

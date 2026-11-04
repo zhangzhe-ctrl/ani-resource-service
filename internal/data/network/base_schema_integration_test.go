@@ -140,7 +140,7 @@ func TestBaseSchemaLegacyPublicUpgradePreservesDurableFactsAndReplay(t *testing.
 	snapshot := func(owner *pgxpool.Pool, table string) string {
 		t.Helper()
 		var s string
-		err := owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(to_jsonb(r)-'base_connectivity_required'-'scope'-'managed_by'-'system_owner_vpc'-'purpose'-'create_dispatched'-'retired'-'lb_id'-'provider_generation'-'provider_ready'-'provider_observed_at'-'provider_observed_uid'-'provider_observed_generation' ORDER BY to_jsonb(r)::text),'[]')::text FROM `+table+` r WHERE tenant_id=$1`, legacy.Tenant).Scan(&s)
+		err := owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(to_jsonb(r)-'base_connectivity_required'-'scope'-'managed_by'-'system_owner_vpc'-'purpose'-'create_dispatched'-'retired'-'lb_id'-'vnic_id'-'provider_generation'-'provider_ready'-'provider_observed_at'-'provider_observed_uid'-'provider_observed_generation' ORDER BY to_jsonb(r)::text),'[]')::text FROM `+table+` r WHERE tenant_id=$1`, legacy.Tenant).Scan(&s)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -152,6 +152,7 @@ func TestBaseSchemaLegacyPublicUpgradePreservesDurableFactsAndReplay(t *testing.
 			before[table] = snapshot(owner, table)
 		}
 	})
+	configureExistingTenantNamespaces(t, f.Repository, legacy.Tenant)
 	for _, table := range tables {
 		if after := snapshot(f.Owner, table); after != before[table] {
 			t.Fatalf("migration changed legacy %s identity/history/snapshot/lease", table)
@@ -161,8 +162,8 @@ func TestBaseSchemaLegacyPublicUpgradePreservesDurableFactsAndReplay(t *testing.
 	// the old column projection above remains byte-for-byte identical.
 	for _, table := range []string{"network_provider_bindings", "network_operations", "network_idempotency", "network_reconciliations"} {
 		var count int
-		if err := f.Owner.QueryRow(ctx, "SELECT count(*) FROM "+table+" WHERE tenant_id=$1 AND lb_id IS NOT NULL", legacy.Tenant).Scan(&count); err != nil || count != 0 {
-			t.Fatal("legacy row acquired an LB target", table, count, err)
+		if err := f.Owner.QueryRow(ctx, "SELECT count(*) FROM "+table+" WHERE tenant_id=$1 AND (lb_id IS NOT NULL OR vnic_id IS NOT NULL)", legacy.Tenant).Scan(&count); err != nil || count != 0 {
+			t.Fatal("legacy row acquired an LB or VNIC target", table, count, err)
 		}
 	}
 	// New migration facts are checked independently from the byte-preserved

@@ -22,6 +22,7 @@ func TestManualVNicPGSharedAuditAfterNotebookRecreation(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.r.WorkloadMode = "controller_managed"
+	f.r.ConsumerType = biz.ConsumerContainerInstance
 	a := f.prepare(t) // Stopped/recreated attachment has no current Pod name yet.
 	c := managedConsumerFor(a, "new-pod", 9)
 	oldSet := c.Controllers[0]

@@ -383,6 +383,9 @@ func TestAttachmentPodReadsUseTrustedTenantNamespace(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			f := newAttachmentFixture(t)
 			f.r.WorkloadMode = mode
+			if mode == "controller_managed" {
+				f.r.ConsumerType = biz.ConsumerContainerInstance
+			}
 			a := f.prepare(t)
 			var scoped atomic.Int64
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

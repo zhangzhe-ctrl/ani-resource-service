@@ -10,9 +10,11 @@ import (
 
 func TestPlatformEIPInventoryAndOwnerRelease(t *testing.T) {
 	f := newEgressFixture(t)
+	other := uuid.NewString()
+	// Both tenants have independently provisioned namespaces before admission.
+	configureExistingTenantNamespaces(t, f.p, f.tenant, other)
 	a := f.eip(t, "platform-alpha")
 	admin := f.ctx
-	other := uuid.NewString()
 	f.ctx = biz.WithEgressCaller(context.Background(), biz.EgressCaller{TenantID: other, Attribution: biz.Attribution{Actor: "tenant-b", DirectCaller: "fixture"}})
 	b := f.eip(t, "platform-beta")
 	f.ctx = admin

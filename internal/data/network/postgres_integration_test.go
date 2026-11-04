@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/tenantnamespace"
 	"github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv"
 	"strings"
 )
@@ -31,6 +32,48 @@ func configureRepositoryVPCPresets(t *testing.T, repository *data.Postgres) {
 	t.Helper()
 	if err := repository.ConfigureVPCCIDRPresets([]string{"10.0.0.0/16", "10.42.0.0/16"}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// configureExistingTenantNamespaces supplies only externally provisioned test
+// namespaces. Unknown tenants stay rejected, and identities stay stable for the
+// lifetime of the fixture so persistence and UID fences remain exercised.
+func configureExistingTenantNamespaces(t *testing.T, repository *data.Postgres, tenants ...string) {
+	t.Helper()
+	identities := make(map[string]tenantnamespace.Identity, len(tenants))
+	for _, tenant := range tenants {
+		name, err := tenantnamespace.Name(tenant)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, exists := identities[tenant]; exists {
+			t.Fatal("duplicate fixture tenant")
+		}
+		identities[tenant] = tenantnamespace.Identity{TenantID: tenant, ClusterID: "test-cluster", Name: name, UID: uuid.NewString()}
+	}
+	repository.ConfigureTenantNamespaceResolver(func(_ context.Context, tenant string) (tenantnamespace.Identity, error) {
+		identity, ok := identities[tenant]
+		if !ok {
+			return tenantnamespace.Identity{}, errors.New("unknown fixture tenant")
+		}
+		return identity, nil
+	})
+}
+
+func TestFixtureTenantNamespacesEnforceExplicitIdentity(t *testing.T) {
+	repository, _ := database(t)
+	tenant := uuid.NewString()
+	configureExistingTenantNamespaces(t, repository, tenant)
+	first, err := repository.ResolveTenantNamespace(context.Background(), tenant)
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, err := repository.ResolveTenantNamespace(context.Background(), tenant)
+	if err != nil || again != first || first.Name != "tenant-"+tenant || first.UID == "" {
+		t.Fatalf("fixture lost stable namespace identity: first=%+v again=%+v err=%v", first, again, err)
+	}
+	if _, err = repository.ResolveTenantNamespace(context.Background(), uuid.NewString()); err == nil {
+		t.Fatal("fixture accepted a tenant without a prepared namespace")
 	}
 }
 

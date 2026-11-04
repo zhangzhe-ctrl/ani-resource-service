@@ -17,6 +17,55 @@ import (
 
 type deferredLBBinding struct{ id, namespace, name, uid string }
 
+// retryDeferredLBPending models a client retrying the same idempotent request
+// when the shared observation is temporarily unavailable. Other failures are
+// returned immediately; the caller bounds retries with its context.
+func retryDeferredLBPending(ctx context.Context, request biz.UpdateLoadBalancer, update func(context.Context, biz.UpdateLoadBalancer) (biz.LoadBalancerResult, error)) (biz.LoadBalancerResult, error) {
+	for {
+		result, err := update(ctx, request)
+		if !errors.Is(err, biz.ErrObservationPending) {
+			return result, err
+		}
+		timer := time.NewTimer(10 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return biz.LoadBalancerResult{}, ctx.Err()
+		case <-timer.C:
+		}
+	}
+}
+
+func TestLBDeferredRetryOnlyPendingWithSameRequest(t *testing.T) {
+	request := biz.UpdateLoadBalancer{ID: "lb-example", ExpectedVersion: 7, IdempotencyKey: "same-key"}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	attempts := 0
+	want := biz.LoadBalancerResult{Operation: biz.Operation{ID: "same-operation"}}
+	got, err := retryDeferredLBPending(ctx, request, func(_ context.Context, gotRequest biz.UpdateLoadBalancer) (biz.LoadBalancerResult, error) {
+		attempts++
+		if !reflect.DeepEqual(gotRequest, request) {
+			t.Fatalf("retry changed request: %+v", gotRequest)
+		}
+		if attempts == 1 {
+			return biz.LoadBalancerResult{}, &biz.ProviderError{Kind: biz.ProviderTemporary, Cause: biz.ErrObservationPending}
+		}
+		return want, nil
+	})
+	if err != nil || attempts != 2 || got.Operation.ID != want.Operation.ID {
+		t.Fatalf("pending retry = %+v, %v, %d attempts", got, err, attempts)
+	}
+	other := &biz.ProviderError{Kind: biz.ProviderTemporary, Cause: errors.New("provider unavailable")}
+	attempts = 0
+	_, err = retryDeferredLBPending(ctx, request, func(_ context.Context, _ biz.UpdateLoadBalancer) (biz.LoadBalancerResult, error) {
+		attempts++
+		return biz.LoadBalancerResult{}, other
+	})
+	if !errors.Is(err, other) || attempts != 1 {
+		t.Fatalf("other failures must return immediately: %v, %d attempts", err, attempts)
+	}
+}
+
 func deferredBinding(t *testing.T, f *lbAdmissionFixture, id string) deferredLBBinding {
 	t.Helper()
 	var binding deferredLBBinding
@@ -297,7 +346,40 @@ func TestLBDeferredActualAdapterLifecycleRestartAndReactivation(t *testing.T) {
 	}
 	first = deferredListenerInput(lb.Listeners[0], f.request.Backends)
 	second = deferredListenerInput(lb.Listeners[1], nil)
-	resumed := update("reactivate-after-cleanup", []biz.LoadBalancerListenerInput{first, second})
+	retryRequest := biz.UpdateLoadBalancer{ID: lb.ID, ExpectedVersion: lb.Version, IdempotencyKey: "reactivate-after-cleanup", LoadBalancerMutableInput: biz.LoadBalancerMutableInput{Listeners: []biz.LoadBalancerListenerInput{first, second}, UpdateMask: []string{"listeners"}}}
+	var beforeOperations int
+	if err := f.f.owner.QueryRow(f.f.ctx, `SELECT count(*) FROM network_operations WHERE tenant_id=$1 AND lb_id=$2`, f.f.tenant, lb.ID).Scan(&beforeOperations); err != nil {
+		t.Fatal(err)
+	}
+	pendingAttempts := 0
+	updateChecked := func(ctx context.Context, request biz.UpdateLoadBalancer) (biz.LoadBalancerResult, error) {
+		result, err := f.lbs.Update(ctx, request)
+		if errors.Is(err, biz.ErrObservationPending) {
+			pendingAttempts++
+			var version int64
+			var operations, keys int
+			query := `SELECT (SELECT version FROM network_load_balancers WHERE tenant_id=$1 AND lb_id=$2), (SELECT count(*) FROM network_operations WHERE tenant_id=$1 AND lb_id=$2), (SELECT count(*) FROM network_idempotency WHERE tenant_id=$1 AND operation_kind='update_load_balancer' AND idempotency_key=$3)`
+			if queryErr := f.f.owner.QueryRow(f.f.ctx, query, f.f.tenant, lb.ID, retryRequest.IdempotencyKey).Scan(&version, &operations, &keys); queryErr != nil || version != retryRequest.ExpectedVersion || operations != beforeOperations || keys != 0 {
+				t.Fatalf("pending changed version, operations or key: %d %d %d %v", version, operations, keys, queryErr)
+			}
+		}
+		return result, err
+	}
+	retryCtx, cancel := context.WithTimeout(f.f.ctx, 3*time.Second)
+	resumed, err := retryDeferredLBPending(retryCtx, retryRequest, updateChecked)
+	cancel()
+	if err != nil {
+		t.Fatal("reactivate-after-cleanup", err)
+	}
+	replayed, err := f.lbs.Update(f.f.ctx, retryRequest)
+	if err != nil || resumed.Operation.ID != replayed.Operation.ID || resumed.LoadBalancer.ID != replayed.LoadBalancer.ID || resumed.LoadBalancer.Version != replayed.LoadBalancer.Version {
+		t.Fatal("reactivation same-key replay changed operation or resource", resumed, replayed, err)
+	}
+	var afterOperations, keys int
+	if err := f.f.owner.QueryRow(f.f.ctx, `SELECT (SELECT count(*) FROM network_operations WHERE tenant_id=$1 AND lb_id=$2), (SELECT count(*) FROM network_idempotency WHERE tenant_id=$1 AND operation_kind='update_load_balancer' AND idempotency_key=$3)`, f.f.tenant, lb.ID, retryRequest.IdempotencyKey).Scan(&afterOperations, &keys); err != nil || afterOperations != beforeOperations+1 || keys != 1 {
+		t.Fatal("reactivation retries or replay created duplicate operations/keys", beforeOperations, afterOperations, keys, err)
+	}
+	t.Logf("reactivation returned observation pending %d times before acceptance", pendingAttempts)
 	newBinding := deferredBinding(t, f, lb.ID)
 	if newBinding.id == running.id || newBinding.name == running.name || newBinding.uid != "" {
 		t.Fatal("reactivation reused the retired Provider incarnation", newBinding, running)
