@@ -195,8 +195,12 @@ func platformReplay(ctx context.Context, q *sqlcgen.Queries, cluster string, i b
 		// The archive command has its own completed receipt, while the resource
 		// continues to expose its original running/current operation.
 		original, err := q.GetPlatformOperation(ctx, sqlcgen.GetPlatformOperationParams{ClusterID: cluster, OperationID: v.LastOperationID})
-		if err != nil { return v, false, databaseFailure(err) }
-		if original.ResourceID != v.ID { return v, false, databaseFailure(fmt.Errorf("invalid verification resource operation")) }
+		if err != nil {
+			return v, false, databaseFailure(err)
+		}
+		if original.ResourceID != v.ID {
+			return v, false, databaseFailure(fmt.Errorf("invalid verification resource operation"))
+		}
 	} else if v.LastOperationID != prior.OperationID {
 		return v, false, databaseFailure(fmt.Errorf("invalid platform acceptance operation"))
 	}

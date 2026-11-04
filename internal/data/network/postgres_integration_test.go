@@ -13,8 +13,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
-	"github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/tenantnamespace"
+	"github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv"
 	"strings"
 )
 

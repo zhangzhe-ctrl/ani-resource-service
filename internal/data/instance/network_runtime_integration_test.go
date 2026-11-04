@@ -121,9 +121,13 @@ func TestInstanceNetworkSubmissionAdmissionAndIntentAreAtomic(t *testing.T) {
 		t.Fatal(err)
 	}
 	work, err := f.repo.Claim(ctx, "admission-owner", time.Minute)
-	if err != nil || work == nil || work.Operation == nil { t.Fatal("claim create", err) }
+	if err != nil || work == nil || work.Operation == nil {
+		t.Fatal("claim create", err)
+	}
 	work.Operation.State = "succeeded"
-	if err := f.repo.Finish(ctx, *work, biz.Progress{Instance: work.Instance, Operation: work.Operation}); err != nil { t.Fatal("finish create", err) }
+	if err := f.repo.Finish(ctx, *work, biz.Progress{Instance: work.Instance, Operation: work.Operation}); err != nil {
+		t.Fatal("finish create", err)
+	}
 	command(t, f, c, i, "stop")
 	i, err = f.repo.Get(ctx, c.TenantID, c.ID)
 	if err != nil {

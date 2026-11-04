@@ -107,7 +107,9 @@ INSERT INTO network_vnics(tenant_id,vnic_id,vpc_id,subnet_id,name,state,version,
  VALUES('11111111-1111-4111-8111-111111111111','vnic_11111111111111111111111111111111','vpc_11111111111111111111111111111111','subnet_11111111111111111111111111111111','retained','available',7,now(),now(),'33333333-3333-4333-8333-333333333333','10.42.1.21','02:75:00:00:00:21');
 INSERT INTO network_operations(tenant_id,operation_id,vnic_id,kind,state,created_at,updated_at,completed_at)
  VALUES('11111111-1111-4111-8111-111111111111','33333333-3333-4333-8333-333333333333','vnic_11111111111111111111111111111111','create_vnic','succeeded',now(),now(),now());
-`); err != nil { t.Fatal("seed retained manual VNIC", err) }
+`); err != nil {
+			t.Fatal("seed retained manual VNIC", err)
+		}
 	}
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err)
@@ -147,7 +149,9 @@ func TestNetworkSimplificationMigrationPreservesFactsAndFencesOldWorkers(t *test
 				t.Helper()
 				var value string
 				dropped := "'provider_ready','provider_observed_at','provider_observed_uid','provider_generation','provider_observed_generation'"
-				if version == 28 { dropped += ",'vnic_id'" }
+				if version == 28 {
+					dropped += ",'vnic_id'"
+				}
 				if err := owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(to_jsonb(r)-ARRAY[`+dropped+`] ORDER BY to_jsonb(r)::text),'[]')::text FROM `+table+` r`).Scan(&value); err != nil {
 					t.Fatal(err)
 				}

@@ -128,8 +128,12 @@ func (p *Postgres) RetryVMNetworkPreparation(ctx context.Context, w biz.Work, de
  WHERE q.tenant_id=$1 AND q.subnet_id=$2 AND b.tenant_id=q.tenant_id AND b.subnet_id=q.subnet_id
  AND b.binding_id=$3 AND s.version=$4 AND q.lease_epoch=$5 AND q.lease_owner IS NULL
  AND NOT q.retired AND s.state NOT IN ('deleting','deleted')`, w.Resource.TenantID, w.Resource.ID, w.BindingID, w.Resource.Version, w.Epoch, delay.Microseconds())
-	if err != nil { return databaseFailure(err) }
-	if result.RowsAffected() != 1 { return biz.ErrLeaseLost }
+	if err != nil {
+		return databaseFailure(err)
+	}
+	if result.RowsAffected() != 1 {
+		return biz.ErrLeaseLost
+	}
 	return nil
 }
 
