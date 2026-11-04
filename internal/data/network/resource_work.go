@@ -139,7 +139,7 @@ func advanceResource(ctx context.Context, q *sqlcgen.Queries, r biz.ResourceWork
 		if p.VNic != nil {
 			f = *p.VNic
 		}
-		v, err := q.AdvanceVNic(ctx, sqlcgen.AdvanceVNicParams{TenantID: r.TenantID, VnicID: r.ID, Version: r.Version, State: string(p.State), Reason: string(p.Reason), Observed: p.Observed, ObservedAt: observedAt, MacAddress: f.MACAddress, PrimaryIp: f.PrimaryIP, Ips: f.IPs})
+		v, err := q.AdvanceVNic(ctx, sqlcgen.AdvanceVNicParams{TenantID: r.TenantID, VnicID: r.ID, Version: r.Version, State: string(p.State), Reason: string(p.Reason), Observed: p.Observed, ObservedAt: observedAt, MacAddress: f.MACAddress, PrimaryIp: f.PrimaryIP, Ips: append([]string{}, f.IPs...)})
 		return vnicWork(v), err
 	}
 

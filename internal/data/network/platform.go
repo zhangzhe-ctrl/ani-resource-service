@@ -188,8 +188,17 @@ func platformReplay(ctx context.Context, q *sqlcgen.Queries, cluster string, i b
 	if err = json.Unmarshal(prior.Response, &v); err != nil {
 		return v, false, databaseFailure(err)
 	}
-	if v.ID != prior.ResourceID || v.ClusterID != cluster || v.LastOperationID != prior.OperationID {
+	if v.ID != prior.ResourceID || v.ClusterID != cluster {
 		return v, false, databaseFailure(fmt.Errorf("invalid platform acceptance snapshot"))
+	}
+	if i.Kind == "verify_public_pool" || i.Kind == "verify_intranet_pool" {
+		// The archive command has its own completed receipt, while the resource
+		// continues to expose its original running/current operation.
+		original, err := q.GetPlatformOperation(ctx, sqlcgen.GetPlatformOperationParams{ClusterID: cluster, OperationID: v.LastOperationID})
+		if err != nil { return v, false, databaseFailure(err) }
+		if original.ResourceID != v.ID { return v, false, databaseFailure(fmt.Errorf("invalid verification resource operation")) }
+	} else if v.LastOperationID != prior.OperationID {
+		return v, false, databaseFailure(fmt.Errorf("invalid platform acceptance operation"))
 	}
 	return v, true, nil
 }
@@ -391,10 +400,14 @@ func (p *Postgres) acceptPoolChange(ctx context.Context, tx pgx.Tx, q *sqlcgen.Q
 		if err != nil {
 			return v, err
 		}
-		if err = q.InsertPlatformIdempotency(ctx, sqlcgen.InsertPlatformIdempotencyParams{ClusterID: v.ClusterID, OperationKind: i.Kind, IdempotencyKey: i.IdempotencyKey, Fingerprint: i.VersionedFingerprint(), FingerprintVersion: i.FingerprintVersion(), ResourceID: v.ID, OperationID: v.LastOperationID, Response: body, CreatedAt: now}); err != nil {
+		archiveID := uuid.NewString()
+		if err = q.InsertPlatformOperation(ctx, sqlcgen.InsertPlatformOperationParams{ResourceID: v.ID, OperationID: archiveID, Kind: i.Kind, State: string(biz.Succeeded), CreatedAt: now, CompletedAt: &now}); err != nil {
 			return v, databaseFailure(err)
 		}
-		if err = q.InsertPlatformHistory(ctx, sqlcgen.InsertPlatformHistoryParams{HistoryID: uuid.NewString(), ResourceID: v.ID, Event: "verification_recorded", ResourceState: string(v.State), ActorRef: a.Actor, CallerRef: a.DirectCaller, CreatedAt: now}); err != nil {
+		if err = q.InsertPlatformIdempotency(ctx, sqlcgen.InsertPlatformIdempotencyParams{ClusterID: v.ClusterID, OperationKind: i.Kind, IdempotencyKey: i.IdempotencyKey, Fingerprint: i.VersionedFingerprint(), FingerprintVersion: i.FingerprintVersion(), ResourceID: v.ID, OperationID: archiveID, Response: body, CreatedAt: now}); err != nil {
+			return v, databaseFailure(err)
+		}
+		if err = q.InsertPlatformHistory(ctx, sqlcgen.InsertPlatformHistoryParams{HistoryID: uuid.NewString(), ResourceID: v.ID, OperationID: &archiveID, Event: "verification_recorded", ResourceState: string(v.State), ActorRef: a.Actor, CallerRef: a.DirectCaller, CreatedAt: now}); err != nil {
 			return v, databaseFailure(err)
 		}
 		return v, databaseFailure(tx.Commit(ctx))
