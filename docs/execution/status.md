@@ -2,9 +2,17 @@
 
 ## 2026-11-04：Sandbox 详情及独立终端提交候选
 
+**66 Resource 现场切换（2026-11-04）：** 已部署源码提交 `097cf50f42823cb546e4b853a402caad02110ef4` 对应的镜像 `sandbox-097cf50-20261104122702`，registry digest `sha256:0a1703f8b815e87a4601668e3b48875434652c009c91790e1160b8272870d251`；Resource Ready 1/1。旧 writer 已停止，运行角色临时禁止登录，备份并迁移 Sandbox schema 16→18 后恢复登录；Network schema 保持 32。迁移前最终备份与隔离恢复摘要一致：16 条版本记录、24 个 Sandbox、79 个 operation、1 个 checkpoint、2 个 transfer。备份、恢复摘要、迁移 Job 和现场探针原始证据保留在执行机 `/tmp/resource-66-sandbox-upgrade-20261104`，该临时路径不是长期归档或自动回滚方案。
+
+**现场验证范围：** 新 Resource 显式设置 `ANI_SANDBOX_CLONE_WRITES_PAUSED=true`，mTLS 克隆探针返回 `Unavailable / SANDBOX_CLONE_TEMPORARILY_UNAVAILABLE`；原 Sandbox 的 `GetSandbox` 返回 running，Network `ListVPCs` 查询成功，原 Sandbox Pod UID 与重启次数保持。切换前的克隆探针因流权限返回 `PermissionDenied`，切换后的首次克隆探针因缺少租户作用域返回 `PermissionDenied`；两次均未验证闭闸，只有补齐正确身份和租户后的探针计为闭闸通过。旧镜像或隔离环境测试不计作此次新镜像的完整现场验收。
+
+**未完成：** Gov 本次未更新，克隆闭闸仍开启；此次未跑 Sandbox 创建、暂停、恢复、删除的完整生命周期，也未在新部署组合中完成终端和详情接口联调。关闭闭闸前须确认 Gov 前后台及其他可能的持证调用方兼容新拒绝回执，并按维护说明复核未决意图和旧 writer 排空。含新拒绝回执的数据不可未经兼容性核对直接回退到旧 Resource；应保留 journal 和备份并优先恢复兼容版本。
+
+以下为此前固定源码的测试与验收记录，均保留原时点和证据范围。
+
 对齐主仓 main `d7c344a02a7e3e1f7c4221286ec82bc33428bac4`（包含 Network 0032）及 Sandbox PR `16cb9d23a1503f58e9c9ab19c6e5bc2345d387de` 后，测试输入 Git tree 为 `5f2d2a75979848a55c2bd524ace47d7f9006bc25`。远程 `ssh -F /home/chabking/.ssh/config -o BatchMode=yes ubuntu true` 因指定配置文件不存在失败，按用户允许的回退在本机 Ubuntu、Go 1.26.10 执行：`GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 TMPDIR=/tmp make verify` **pass**（固定 Buf 1.60.0、SQLC 1.31.1）；第一次合并树门禁因 Network 旧故障注入点与 v3 不兼容 **fail**，修正测试工具后重跑通过。测试后只增加本段执行记录。
 
-从上述 tree 导出独立快照，添加临时 16→18 迁移回归测试（SHA-256 `172121dc4a2f29b34a0b88e6223256fed8f2ee6b8255aca3e91c7638a61872d0`，不随服务发布），通过随机 loopback 端口与固定镜像 `postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280` 运行 `/tmp/resource-final-tree-pg-verify-20261104.sh` **pass**：Network 28/30→32 升级及 v3 四项观察故障 race、Sandbox 16→18 历史回执/幂等、检查点恢复、入口迁移恢复及克隆维护闭闸 race；临时数据库已清理。维护闭闸默认关闭、开启时只拒绝新克隆受理，不停止已持久化 worker；需要 017/018 时仍须先停止并排空所有旧数据库 writer。受控 PostgreSQL/Provider 验证和旧终端验收均不等于此合并树已在 66 部署或完成真实集群验收。
+从上述 tree 导出独立快照，添加临时 16→18 迁移回归测试（SHA-256 `172121dc4a2f29b34a0b88e6223256fed8f2ee6b8255aca3e91c7638a61872d0`，不随服务发布），通过随机 loopback 端口与固定镜像 `postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280` 运行 `/tmp/resource-final-tree-pg-verify-20261104.sh` **pass**：Network 28/30→32 升级及 v3 四项观察故障 race、Sandbox 16→18 历史回执/幂等、检查点恢复、入口迁移恢复及克隆维护闭闸 race；临时数据库已清理。维护闭闸默认关闭、开启时拒绝所有克隆受理 RPC（包括重放），不停止已持久化 worker；需要 017/018 时仍须先停止并排空所有旧数据库 writer。这些受控 PostgreSQL/Provider 验证和旧终端验收本身不等于新合并树的真实集群验收；随后现场切换与验证范围见上文。
 
 本分支以 Resource main `5dc539d` 为基础，整理此前独立 Sandbox 详情、文件分页、操作历史、代码执行时间、日志与事件、预览端口、检查点及终端变更；不回退主线 Network 修改。监控交由 Observability 服务；安全事件无可信数据源，Host 白名单尚无实际执行数据面，相关源码明确不可用或拒绝不受支持的声明。预览默认禁用，检查点仅支持文件系统快照；接口权限、存储能力和部署约束见 Sandbox 部署说明及调用合同。
 
