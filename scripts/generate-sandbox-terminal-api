@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+cd "$(dirname "$0")/.."
+BUF=${BUF:?set verified buf v1.60.0}
+[[ $("$BUF" --version) == 1.60.0 ]]
+export GOWORK=off
+work=$(mktemp -d "${TMPDIR:?task-owned TMPDIR}/sandbox-terminal-api.XXXXXX")
+trap 'rm -rf -- "$work"' EXIT
+mkdir -p "$work/api/sandbox/terminal/v1"
+cp api/sandbox/terminal/v1/terminal.proto "$work/api/sandbox/terminal/v1/"
+cat > "$work/buf.yaml" <<'EOF'
+version: v2
+modules:
+  - path: api
+EOF
+cat > "$work/buf.gen.yaml" <<'EOF'
+version: v2
+inputs:
+  - directory: .
+    paths: [api/sandbox/terminal/v1/terminal.proto]
+plugins:
+  - local: [go, run, google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11]
+    out: .
+    opt: [paths=import, module=github.com/zhangzhe-ctrl/ani-resource-service]
+  - local: [go, run, google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1]
+    out: .
+    opt: [paths=import, module=github.com/zhangzhe-ctrl/ani-resource-service]
+EOF
+(cd "$work" && "$BUF" build && "$BUF" generate)
+cp "$work/api/sandbox/terminal/v1/terminal.pb.go" "$work/api/sandbox/terminal/v1/terminal_grpc.pb.go" api/sandbox/terminal/v1/

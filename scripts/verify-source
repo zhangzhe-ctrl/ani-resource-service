@@ -66,6 +66,7 @@ write_manifest "$temporary_root/before"
 (cd "$repository_root" && "$buf_path" generate --template buf.gen.yaml)
 (cd "$repository_root" && BUF="$buf_path" TMPDIR="$temporary_root" scripts/generate-instance-api)
 (cd "$repository_root" && BUF="$buf_path" TMPDIR="$temporary_root" scripts/generate-vm-console-api)
+(cd "$repository_root" && BUF="$buf_path" TMPDIR="$temporary_root" scripts/generate-sandbox-terminal-api)
 (cd "$repository_root" && BUF="$buf_path" TMPDIR="$temporary_root" bash scripts/generate-vm-api)
 (cd "$repository_root" && "$sqlc_path" generate)
 (cd "$repository_root" && go generate ./...)
