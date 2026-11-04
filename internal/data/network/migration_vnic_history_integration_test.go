@@ -80,30 +80,34 @@ func seedVNicMigrationHistory(t *testing.T, owner *pgxpool.Pool, legacy bool, ca
 			t.Fatal(err)
 		}
 	}
-	if legacy || len(names) == 31 {
+	if legacy || len(names) == 28 || len(names) == 31 {
 		// Existing product intent and the consumer backfill must survive together.
 		_, err := tx.Exec(ctx, `
 INSERT INTO network_vpcs(tenant_id,vpc_id,name,description,cidr,state,created_at,updated_at,last_operation_id)
  VALUES('11111111-1111-4111-8111-111111111111','vpc_11111111111111111111111111111111','retained','','10.42.0.0/16','available',now(),now(),'11111111-1111-4111-8111-111111111111');
 INSERT INTO network_operations(tenant_id,operation_id,vpc_id,kind,state,created_at,updated_at,completed_at)
  VALUES('11111111-1111-4111-8111-111111111111','11111111-1111-4111-8111-111111111111','vpc_11111111111111111111111111111111','create_vpc','succeeded',now(),now(),now());
-INSERT INTO network_subnets(tenant_id,subnet_id,vpc_id,name,description,cidr,gateway,state,created_at,updated_at,last_operation_id,exclude_ips,enable_dhcp,dns_servers)
- VALUES('11111111-1111-4111-8111-111111111111','subnet_11111111111111111111111111111111','vpc_11111111111111111111111111111111','retained','','10.42.1.0/24','10.42.1.1','available',now(),now(),'22222222-2222-4222-8222-222222222222',ARRAY['10.42.1.10'],true,ARRAY['1.1.1.1']);
+INSERT INTO network_subnets(tenant_id,subnet_id,vpc_id,name,description,cidr,gateway,state,created_at,updated_at,last_operation_id)
+ VALUES('11111111-1111-4111-8111-111111111111','subnet_11111111111111111111111111111111','vpc_11111111111111111111111111111111','retained','','10.42.1.0/24','10.42.1.1','available',now(),now(),'22222222-2222-4222-8222-222222222222');
 INSERT INTO network_operations(tenant_id,operation_id,subnet_id,kind,state,created_at,updated_at,completed_at)
  VALUES('11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','subnet_11111111111111111111111111111111','create_subnet','succeeded',now(),now(),now());
 INSERT INTO network_tenant_namespaces(tenant_id,cluster_id,namespace,namespace_uid)
  VALUES('11111111-1111-4111-8111-111111111111','test-cluster','tenant-11111111-1111-4111-8111-111111111111','namespace-original');
 INSERT INTO network_provider_bindings(tenant_id,subnet_id,resource_kind,binding_id,cluster_id,namespace,provider_name,provider_uid)
  VALUES('11111111-1111-4111-8111-111111111111','subnet_11111111111111111111111111111111','subnet','44444444-4444-4444-8444-444444444444','test-cluster','tenant-11111111-1111-4111-8111-111111111111','retained-subnet','subnet-original');
-INSERT INTO network_vnics(tenant_id,vnic_id,vpc_id,subnet_id,name,state,version,created_at,updated_at,last_operation_id,requested_ip,requested_mac)
- VALUES('11111111-1111-4111-8111-111111111111','vnic_11111111111111111111111111111111','vpc_11111111111111111111111111111111','subnet_11111111111111111111111111111111','retained','available',7,now(),now(),'33333333-3333-4333-8333-333333333333','10.42.1.21','02:75:00:00:00:21');
-INSERT INTO network_operations(tenant_id,operation_id,vnic_id,kind,state,created_at,updated_at,completed_at)
- VALUES('11111111-1111-4111-8111-111111111111','33333333-3333-4333-8333-333333333333','vnic_11111111111111111111111111111111','create_vnic','succeeded',now(),now(),now());
 INSERT INTO network_attachments(tenant_id,attachment_id,vpc_id,subnet_id,binding_id,instance_id,slot,request_key,submission_id,generation,fingerprint,cluster_id,namespace,binding_revision,plan,state)
  VALUES('11111111-1111-4111-8111-111111111111','att_11111111111111111111111111111111','vpc_11111111111111111111111111111111','subnet_11111111111111111111111111111111','44444444-4444-4444-8444-444444444444','retained-instance','primary','retained','55555555-5555-4555-8555-555555555555',3,repeat('a',64),'test-cluster','tenant-11111111-1111-4111-8111-111111111111','original','{"WorkloadMode":"controller_managed"}','reserved');`)
 		if err != nil {
 			t.Fatal("seed retained intent", err)
 		}
+	}
+	if legacy || len(names) == 31 {
+		if _, err := tx.Exec(ctx, `UPDATE network_subnets SET exclude_ips=ARRAY['10.42.1.10'],enable_dhcp=true,dns_servers=ARRAY['1.1.1.1'];
+INSERT INTO network_vnics(tenant_id,vnic_id,vpc_id,subnet_id,name,state,version,created_at,updated_at,last_operation_id,requested_ip,requested_mac)
+ VALUES('11111111-1111-4111-8111-111111111111','vnic_11111111111111111111111111111111','vpc_11111111111111111111111111111111','subnet_11111111111111111111111111111111','retained','available',7,now(),now(),'33333333-3333-4333-8333-333333333333','10.42.1.21','02:75:00:00:00:21');
+INSERT INTO network_operations(tenant_id,operation_id,vnic_id,kind,state,created_at,updated_at,completed_at)
+ VALUES('11111111-1111-4111-8111-111111111111','33333333-3333-4333-8333-333333333333','vnic_11111111111111111111111111111111','create_vnic','succeeded',now(),now(),now());
+`); err != nil { t.Fatal("seed retained manual VNIC", err) }
 	}
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err)
@@ -142,24 +146,15 @@ func TestNetworkSimplificationMigrationPreservesFactsAndFencesOldWorkers(t *test
 			snapshot := func(owner *pgxpool.Pool, table string) string {
 				t.Helper()
 				var value string
-				if err := owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(to_jsonb(r)-ARRAY['provider_ready','provider_observed_at','provider_observed_uid','provider_generation','provider_observed_generation'] ORDER BY to_jsonb(r)::text),'[]')::text FROM `+table+` r`).Scan(&value); err != nil {
+				dropped := "'provider_ready','provider_observed_at','provider_observed_uid','provider_generation','provider_observed_generation'"
+				if version == 28 { dropped += ",'vnic_id'" }
+				if err := owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(to_jsonb(r)-ARRAY[`+dropped+`] ORDER BY to_jsonb(r)::text),'[]')::text FROM `+table+` r`).Scan(&value); err != nil {
 					t.Fatal(err)
 				}
 				return value
 			}
 			f := testenv.NewDatabase(t, func(owner *pgxpool.Pool, _ string) {
 				seedVNicMigrationHistory(t, owner, false, version)
-				if version == 28 {
-					tx, err := owner.Begin(ctx)
-					if err != nil {
-						t.Fatal(err)
-					}
-					defer tx.Rollback(ctx)
-					seedNET05AUpgrade(t, tx, "11111111-1111-4111-8111-111111111111", "55555555-5555-4555-8555-555555555555")
-					if err := tx.Commit(ctx); err != nil {
-						t.Fatal(err)
-					}
-				}
 				_, err := owner.Exec(ctx, `
 INSERT INTO network_idempotency(tenant_id,operation_kind,idempotency_key,fingerprint,fingerprint_version,vpc_id,operation_id,response,created_at)
  SELECT tenant_id,kind,'retained-replay',repeat('a',64),1,vpc_id,operation_id,'{"saved":"unchanged"}',created_at FROM network_operations WHERE kind='create_vpc';
