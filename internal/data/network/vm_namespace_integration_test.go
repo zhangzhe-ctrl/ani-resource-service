@@ -111,7 +111,7 @@ func newAutoVMNetwork(t *testing.T) (attachmentFixture, *vmNetworkAPI, string) {
 	if err = provider.ConfigureVMAutoNetwork(data.VMAutoNetworkConfig{}); err != nil {
 		t.Fatal(err)
 	}
-	if err = f.p.SetVMNetworkResolver(provider, time.Minute); err != nil {
+	if err = f.p.SetVMNetworkResolver(provider); err != nil {
 		t.Fatal(err)
 	}
 	return f, api, host.URL
@@ -187,7 +187,7 @@ func TestVMAutoNetworkPGBackfillsExistingSubnetAndPinsAcrossRestart(t *testing.T
 	e := biz.VMNetworkExpectation{NADName: policy.NADName, NADUID: policy.NADUID, NADConfigDigest: policy.NADConfigDigest}
 	f.r.WorkloadMode = "vm_managed"
 	f.r.VMExpectation = &e
-	if _, err = f.p.ResolveVMNetworkSelection(ctx, f.r, time.Minute); err != nil {
+	if _, err = f.p.ResolveVMNetworkSelection(ctx, f.r); err != nil {
 		t.Fatal(err)
 	}
 	api.mu.Lock()
@@ -229,7 +229,7 @@ func TestVMAutoNetworkPGBackfillsExistingSubnetAndPinsAcrossRestart(t *testing.T
 	saKey := "/api/v1/namespaces/" + f.r.Namespace + "/serviceaccounts/ani-vm-workload"
 	api.objects[saKey]["metadata"].(map[string]any)["uid"] = "replacement-sa-uid"
 	api.mu.Unlock()
-	if _, err = f.p.ResolveVMNetworkSelection(ctx, f.r, time.Minute); err == nil {
+	if _, err = f.p.ResolveVMNetworkSelection(ctx, f.r); err == nil {
 		t.Fatal("same-name ServiceAccount replacement accepted")
 	}
 }
@@ -333,23 +333,23 @@ func TestVMAutoNetworkPGStopAndClosureSurviveAuxiliaryPreparationFailure(t *test
 					t.Fatal(err)
 				}
 			}
-			if _, err := f.p.ResolveVMNetworkSelection(ctx, f.r, time.Minute); err == nil {
+			if _, err := f.p.ResolveVMNetworkSelection(ctx, f.r); err == nil {
 				t.Fatal("new/running VM admitted after auxiliary failure", fault)
 			}
 			c := vmConsumerFor(a)
 			c.DesiredRunState = "stopped"
-			c.RetiredPods, c.CurrentPods = c.CurrentPods, nil
+			c.CurrentPods = nil
 			setManagedConsumer(f, c)
 			workerPolicy := biz.DefaultWorkerPolicy()
 			workerPolicy.ObserveEvery = 5 * time.Millisecond
 			workerPolicy.RetryMin = time.Millisecond
 			var err error
-			f.worker, err = biz.NewAttachmentWorker(f.p, f.provider, f.consumer, uuid.NewString(), workerPolicy)
+			f.worker, err = biz.NewAttachmentWorker(f.p, f.consumer, f.provider, uuid.NewString(), workerPolicy)
 			if err != nil {
 				t.Fatal(err)
 			}
 			a = f.step(t, a.ID)
-			if a.State != biz.Reserved || a.Reason != "" || a.PodUID != "" || attachmentProtocolBlocked(t, f, a.ID) {
+			if a.State != biz.Reserved || a.Reason != "" || a.PodUID != "" {
 				t.Fatal("stopped VM could not converge after auxiliary failure", fault, a)
 			}
 			closed := time.Now()
@@ -362,7 +362,7 @@ func TestVMAutoNetworkPGStopAndClosureSurviveAuxiliaryPreparationFailure(t *test
 			for i := 0; i < 4 && a.State != biz.Released; i++ {
 				a = f.step(t, a.ID)
 			}
-			if a.State != biz.Released || a.Reason != "" || attachmentProtocolBlocked(t, f, a.ID) {
+			if a.State != biz.Released || a.Reason != "" {
 				t.Fatal("closed VM remained fenced on auxiliary failure", fault, a)
 			}
 			api.mu.Lock()

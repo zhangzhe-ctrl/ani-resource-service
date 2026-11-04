@@ -10,14 +10,11 @@ import (
 type EgressWorkSpec struct {
 	EIPID, PoolID    string
 	DesiredEnabled   bool
-	TargetGeneration int64
 	Platform         *PlatformResource
 }
 type EgressAppliedFacts struct {
-	ProviderImages   []string
 	Address          string
 	AppliedEnabled   *bool
-	TargetGeneration int64
 }
 type EgressResourceProvider interface {
 	EnsureEgress(context.Context, ProviderTarget) (ProviderObservation, error)

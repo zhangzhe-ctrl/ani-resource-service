@@ -18,9 +18,7 @@ type VirtualSwitch struct {
 
 type VirtualSwitchNode struct {
 	NodeName, NodeUID, State, Reason string
-	// LastObservedAt is the oldest provider evidence supporting the last
-	// successful inspection. Failed reads never renew this durable timestamp.
-	LastObservedAt time.Time `json:"LastObservedAt,omitzero"`
+
 	Priority       int32
 	Allocated      bool
 	// Patch intent and acknowledgement survive ambiguous Kubernetes responses.
@@ -135,18 +133,18 @@ func (e *Egress) DeleteVirtualSwitch(ctx context.Context, id string) (VirtualSwi
 type VirtualSwitchWork struct {
 	Switch VirtualSwitch
 	Owner  string
-	Epoch  int64
+	Epoch, ClaimedGeneration int64
 	Now    time.Time
 }
 
 type VirtualSwitchWorkRepository interface {
 	ClaimVirtualSwitch(context.Context, string, time.Duration) (VirtualSwitchWork, bool, error)
 	SaveVirtualSwitchNode(context.Context, VirtualSwitchWork, int, VirtualSwitchNode) error
-	FinishVirtualSwitch(context.Context, VirtualSwitchWork, string, Reason, time.Duration) error
+	FinishVirtualSwitch(context.Context, VirtualSwitchWork, VirtualSwitchProgress, time.Duration) error
 }
 
-// Read/patch are external boundaries. Implementations must check the complete
-// frozen membership and use Node UID/RV plus binding owner CAS for each patch.
+// Read/patch operate on the frozen Res membership and use the original Node
+// identity plus metadata owner CAS for each patch.
 type VirtualSwitchGroupProvider interface {
 	InspectVirtualSwitchNode(context.Context, VirtualSwitch, VirtualSwitchNode) (VirtualSwitchNode, error)
 	PatchVirtualSwitchNode(context.Context, VirtualSwitch, VirtualSwitchNode, bool) (VirtualSwitchNode, error)

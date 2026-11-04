@@ -36,7 +36,7 @@ func configureRepositoryVPCPresets(t *testing.T, repository *data.Postgres) {
 
 func TestVPCAcceptanceIsTenantScopedAndReplaysExactly(t *testing.T) {
 	repository, owner := database(t)
-	network, err := biz.NewNetwork(repository, []byte("0123456789abcdef0123456789abcdef"), time.Minute, time.Now)
+	network, err := biz.NewNetwork(repository, []byte("0123456789abcdef0123456789abcdef"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestVPCAcceptanceIsTenantScopedAndReplaysExactly(t *testing.T) {
 
 func TestVPCPagesRemainScopedAndCursorCannotChangeFilters(t *testing.T) {
 	repository, _ := database(t)
-	network, err := biz.NewNetwork(repository, []byte("0123456789abcdef0123456789abcdef"), time.Minute, time.Now)
+	network, err := biz.NewNetwork(repository, []byte("0123456789abcdef0123456789abcdef"))
 	if err != nil {
 		t.Fatal(err)
 	}

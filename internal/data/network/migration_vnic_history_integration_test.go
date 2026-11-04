@@ -113,7 +113,7 @@ func TestVNicMigrationMain28Upgrade(t *testing.T) {
 		before = vnicMigrationLedger(t, owner)
 	})
 	after := vnicMigrationLedger(t, f.Owner)
-	if len(after) != 31 || !reflect.DeepEqual(before, after[:28]) {
+	if len(after) != 32 || !reflect.DeepEqual(before, after[:28]) {
 		t.Fatal("main28 receipts changed", before, after)
 	}
 	var columns int
@@ -129,10 +129,15 @@ func TestVNicMigrationReleased30Upgrade(t *testing.T) {
 	var before []vnicMigrationReceipt
 	f := testenv.NewDatabase(t, func(owner *pgxpool.Pool, _ string) {
 		seedVNicMigrationHistory(t, owner, true)
+		if _, err := owner.Exec(context.Background(), `UPDATE network_attachments SET state='attached',reason='retained-status',version=9,
+ pod_name='retained-pod',pod_uid='retained-pod-uid',confirm_uid='retained-pod-uid',observed_at='2026-11-03 12:00:00+00',
+ provider_relations='[{"Kind":"VNic","Name":"retained-nic","UID":"retained-nic-uid","OwnerUID":"retained-pod-uid","Current":true,"MACAddress":"02:75:00:00:00:21"},{"Kind":"VNicIP","Name":"retained-ip","UID":"retained-ip-uid","OwnerUID":"retained-nic-uid","Current":true,"AddressEligible":true,"Address":"10.42.1.21"},{"Kind":"VNicIP","Name":"old-ip","UID":"old-ip-uid","OwnerUID":"old-nic-uid","Current":false,"AddressEligible":true,"Address":"10.42.1.22"}]'::jsonb`); err != nil {
+			t.Fatal("seed saved address output", err)
+		}
 		before = vnicMigrationLedger(t, owner)
 	})
 	after := vnicMigrationLedger(t, f.Owner)
-	if len(after) != 31 || !reflect.DeepEqual(before[:27], after[:27]) {
+	if len(after) != 32 || !reflect.DeepEqual(before[:27], after[:27]) {
 		t.Fatal("shared receipts changed", before, after)
 	}
 	for i := 27; i < len(before); i++ {
@@ -147,7 +152,7 @@ func TestVNicMigrationReleased30Upgrade(t *testing.T) {
 		t.Fatal("main28 not applied", consumerColumn, activeIndex, err)
 	}
 	var retained bool
-	if err := f.Owner.QueryRow(context.Background(), `SELECT a.consumer_type='container_instance' AND a.generation=3 AND a.state='reserved' AND v.version=7 AND v.requested_ip='10.42.1.21' AND v.requested_mac='02:75:00:00:00:21' AND s.exclude_ips=ARRAY['10.42.1.10'] AND s.enable_dhcp AND s.dns_servers=ARRAY['1.1.1.1'] FROM network_attachments a JOIN network_subnets s USING(tenant_id,subnet_id) JOIN network_vnics v USING(tenant_id,subnet_id)`).Scan(&retained); err != nil || !retained {
+	if err := f.Owner.QueryRow(context.Background(), `SELECT a.consumer_type='container_instance' AND a.generation=3 AND a.state='attached' AND a.reason='retained-status' AND a.version=9 AND a.current_vnic_name='retained-nic' AND a.current_vnic_uid='retained-nic-uid' AND a.current_mac_address='02:75:00:00:00:21' AND a.current_ips=ARRAY['10.42.1.21'] AND a.observed_at='2026-11-03 12:00:00+00'::timestamptz AND v.version=7 AND v.requested_ip='10.42.1.21' AND v.requested_mac='02:75:00:00:00:21' AND s.exclude_ips=ARRAY['10.42.1.10'] AND s.enable_dhcp AND s.dns_servers=ARRAY['1.1.1.1'] FROM network_attachments a JOIN network_subnets s USING(tenant_id,subnet_id) JOIN network_vnics v USING(tenant_id,subnet_id)`).Scan(&retained); err != nil || !retained {
 		t.Fatal("retained intent/backfill changed", retained, err)
 	}
 	if err := data.Migrate(context.Background(), f.Owner, f.RuntimeRole); err != nil {

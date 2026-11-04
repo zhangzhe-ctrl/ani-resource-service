@@ -1,5 +1,13 @@
 # Network 执行状态
 
+<a id="network-management-simplification-20261104"></a>
+
+## 2026-11-04：完全采信 KCN 的网络状态消费简化
+
+**业务源码、SQL/迁移源及对应测试已修改；正式生成、编译、测试和数据库升级：not_verified；尚无提交、推送或部署。** 基于最新 main `5dc539d92e3150a3593bde3668082753aa4fdebe`，工作分支 `work/network-status-authority`。已按用户批准的方法/字段级方案移除网络证据覆盖、时效门槛、关系闭包、周期审计和底层清场证明，改为精确对象通知与直接状态读取；Attachment 管理生命周期、当前地址、SG applied 和计算侧通知分别接通。保留 Res 的租户账本、用户配置、引用、幂等、并发及原声明身份。0032 源码收敛旧列/表并搬运当前地址，未执行迁移；没有修改 KCN 或提出 KCN 改造前置。
+
+当前环境无法解析 SSH host `fedora`，没有历史 SSH 配置或 agent；重任务按既定范围等待 Fedora 访问恢复。本地只做编辑和轻量检查。生成物仍为基线，当前工作树尚不能当作可编译发布的完成态。固定输入、具体落点、实际检查与剩余步骤见[本轮实施记录](records/2026-11-04-network-management-simplification.md)，正式合同见[规格 v3](../specs/cr-observation.md)。以下记录保留各自历史时点的执行事实。
+
 ## 2026-11-04：观测故障隔离与终态恢复
 
 基于 main `d23828c` 修复 VM/VNIC 当前网络准入、终态共享审计、SNAT 事实保留与可选 LB 隔离；现场验收补修默认自动网卡删除收尾及共享观察等待误装故障退避。最终 Resource `99a03a1` 已部署 10–12，generation/observed 92、Ready1/restart0；真实 VM 平台启停/删除、VNIC 实际分配/删除与原 UID 清理通过，原用户 VM 保持。303.35s 静稳 GET/LIST 10.216 QPS，14 类基础 LIST 各9次、基础审计失败0，29组 VPC/base 全 available/ready；精确 EIP/SNAT Watch 均原UID/Bound且无事件。聚合时间仍滞后及一次可选 LB 审计失败未称修复，前者跟踪 Issue #55；guest 内部启动/关机 NOT_VERIFIED。Fedora 定向回归及最终 `make verify` PASS，未提高 QPS/TTL。来源、失败窗口与并行 Gov 原镜像重启的范围说明见[实施记录](records/network-observation-isolation-20261104.md)。

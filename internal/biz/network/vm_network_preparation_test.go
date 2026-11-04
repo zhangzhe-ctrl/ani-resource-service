@@ -15,7 +15,7 @@ type vmPreparationProvider struct {
 }
 
 func (p *vmPreparationProvider) Observe(context.Context, ProviderTarget) (ProviderObservation, error) {
-	return ProviderObservation{Exists: true, Ready: true, Identity: "subnet-uid"}, nil
+	return ProviderObservation{Exists: true, Ready: reportedReady(true), Identity: "subnet-uid"}, nil
 }
 
 func (p *vmPreparationProvider) PrepareVMNetwork(context.Context, ProviderTarget) error {

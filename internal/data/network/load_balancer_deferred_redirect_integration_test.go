@@ -3,7 +3,6 @@ package data_test
 import (
 	"reflect"
 	"testing"
-
 	"github.com/google/uuid"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 )

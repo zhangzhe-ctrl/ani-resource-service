@@ -238,7 +238,7 @@ func runInstanceNetworkVertical(t *testing.T, confirmFaults bool) {
 	policy := networkbiz.DefaultWorkerPolicy()
 	policy.ObserveEvery = time.Millisecond
 	policy.RetryMin = time.Millisecond
-	networkUC, err := networkbiz.NewNetwork(nrepo, make([]byte, 32), time.Minute, time.Now)
+	networkUC, err := networkbiz.NewNetwork(nrepo, make([]byte, 32))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -290,8 +290,9 @@ func runInstanceNetworkVertical(t *testing.T, confirmFaults bool) {
 	if _, err = f.repo.AcceptCreate(ctx, c); err != nil {
 		t.Fatal(err)
 	}
-	attachments := networkbiz.NewAttachments(nrepo, time.Minute)
-	adapter, err := data.NewInstanceNetwork(networkUC, attachments, c.Spec.ClusterID, "tenant-", time.Minute)
+	attachments := networkbiz.NewAttachments(nrepo)
+	f.repo.UseNetworkNotifier(attachments.Notify)
+	adapter, err := data.NewInstanceNetwork(networkUC, attachments, c.Spec.ClusterID, "tenant-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +313,7 @@ func runInstanceNetworkVertical(t *testing.T, confirmFaults bool) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	nworker, err := networkbiz.NewAttachmentWorker(nrepo, nprovider, consumer, uuid.NewString(), policy)
+	nworker, err := networkbiz.NewAttachmentWorker(nrepo, consumer, nprovider, uuid.NewString(), policy)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,7 +393,7 @@ func runInstanceNetworkVertical(t *testing.T, confirmFaults bool) {
 	if err = worker.UseNetwork(adapter); err != nil {
 		t.Fatal(err)
 	}
-	nworker, err = networkbiz.NewAttachmentWorker(nrepo, nprovider, consumer, uuid.NewString(), policy)
+	nworker, err = networkbiz.NewAttachmentWorker(nrepo, consumer, nprovider, uuid.NewString(), policy)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -403,7 +404,7 @@ func runInstanceNetworkVertical(t *testing.T, confirmFaults bool) {
 	}
 	command(t, f, c, i, "delete")
 	i = drive(biz.Deleted)
-	if !i.ComputeCleaned || !i.WorkspaceCleaned || !i.QuotaReturned || !i.Network.Cleaned || !i.Network.ReleaseAcknowledged || i.Network.State != "closed" {
+	if !i.ComputeCleaned || !i.WorkspaceCleaned || !i.QuotaReturned || !i.Network.Cleaned || i.Network.State != "closed" {
 		t.Fatal("final release omitted real cleanup or called GPU quota", i.Network)
 	}
 	if _, err := boundary.client.Resource(verticalPVCGVR).Namespace(c.Spec.Namespace).Get(ctx, c.Spec.PVCName, metav1.GetOptions{}); !apierrors.IsNotFound(err) {

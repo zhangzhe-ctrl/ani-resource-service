@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -15,7 +16,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func TestConfirmedProviderRejectionFailsCreationButKeepsDeletionRecoverable(t *testing.T) {
+func TestConfirmedProviderRejectionKeepsOperationHistoryAndDeletionRecoverable(t *testing.T) {
 	repository, _ := database(t)
 	n := newNetwork(t, repository, time.Minute)
 	api := &controlledKC{}
@@ -32,34 +33,32 @@ func TestConfirmedProviderRejectionFailsCreationButKeepsDeletionRecoverable(t *t
 	}))
 	defer host.Close()
 	provider, err := data.NewKCProvider(repository, &rest.Config{Host: host.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	if err != nil { t.Fatal(err) }
 	worker, err := biz.NewWorker(repository, provider, uuid.NewString(), fastPolicy())
-	if err != nil {
-		t.Fatal(err)
-	}
+	if err != nil { t.Fatal(err) }
 	v := create(t, n, "rejected")
 	runStep(t, worker)
 	ctx := context.Background()
 	failed, err := n.GetVPC(ctx, v.TenantID, v.ID)
 	if err != nil || failed.State != biz.Failed || failed.Reason != biz.ProviderRejected {
-		t.Fatalf("definite rejection: %+v %v", failed, err)
+		t.Fatalf("definite creation rejection: %+v %v", failed, err)
 	}
 	op, err := n.GetOperation(ctx, v.TenantID, v.LastOperationID)
-	if err != nil || op.State != biz.OpFailed {
+	if err != nil || op.State != biz.OpFailed || op.Reason != biz.ProviderRejected {
 		t.Fatalf("failed operation: %+v %v", op, err)
 	}
-	time.Sleep(15 * time.Millisecond)
+	if err = repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil { t.Fatal(err) }
 	runStep(t, worker)
-	stillFailed, err := n.GetVPC(ctx, v.TenantID, v.ID)
-	if err != nil || stillFailed.Reason != biz.ProviderRejected {
-		t.Fatalf("continuous observation erased creation failure reason: %+v %v", stillFailed, err)
+	current, err := n.GetVPC(ctx, v.TenantID, v.ID)
+	if err != nil || current.State != biz.Failed || current.Reason != biz.ProviderMissing || rejected.Load() != 1 {
+		t.Fatalf("current absence recreated an object or retained an old operation reason: %+v %v", current, err)
+	}
+	historic, err := n.GetOperation(ctx, v.TenantID, v.LastOperationID)
+	if err != nil || !reflect.DeepEqual(op, historic) {
+		t.Fatalf("current observation changed completed operation: %+v %v", historic, err)
 	}
 	deleting, err := n.DeleteVPC(ctx, v.TenantID, v.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	if err != nil { t.Fatal(err) }
 	runStep(t, worker)
 	final, err := n.GetVPC(ctx, v.TenantID, v.ID)
 	if err != nil || final.State != biz.Deleted || final.LastOperationID != deleting.LastOperationID || rejected.Load() != 1 {
@@ -67,33 +66,32 @@ func TestConfirmedProviderRejectionFailsCreationButKeepsDeletionRecoverable(t *t
 	}
 }
 
-func TestActualAdapterBlocksWrongOwnerChangedUIDAndUnexpectedChildren(t *testing.T) {
+func TestActualAdapterUsesOriginalIdentityAndOwnDeletionOnly(t *testing.T) {
 	for _, fault := range []string{"foreign-owner", "changed-uid", "status-children", "unreported-children"} {
 		t.Run(fault, func(t *testing.T) {
 			repository, _ := database(t)
 			n := newNetwork(t, repository, time.Minute)
 			api := &controlledKC{}
-			var childReference atomic.Value
-			childReference.Store("")
+			var childLists atomic.Int32
 			host := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if ref := childReference.Load().(string); ref != "" && strings.HasSuffix(r.URL.Path, "/subnets") {
+				if r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/subnets") {
+					childLists.Add(1)
 					w.Header().Set("Content-Type", "application/json")
-					_, _ = w.Write([]byte(`{"apiVersion":"networking.kubercloud.com/v1","kind":"SubnetList","items":[{"metadata":{"name":"unexpected"},"spec":{"gateway":"` + ref + `"}}]}`))
+					_, _ = w.Write([]byte(`{"apiVersion":"networking.kubercloud.com/v1","kind":"SubnetList","items":[{"metadata":{"name":"unexpected"},"spec":{"gateway":"foreign/parent"}}]}`))
 					return
 				}
 				api.ServeHTTP(w, r)
 			}))
 			defer host.Close()
 			provider, err := data.NewKCProvider(repository, &rest.Config{Host: host.URL})
-			if err != nil {
-				t.Fatal(err)
-			}
+			if err != nil { t.Fatal(err) }
 			worker, err := biz.NewWorker(repository, provider, uuid.NewString(), fastPolicy())
-			if err != nil {
-				t.Fatal(err)
-			}
+			if err != nil { t.Fatal(err) }
 			v := create(t, n, fault)
 			runStep(t, worker)
+			ctx := context.Background()
+			before, err := n.GetVPC(ctx, v.TenantID, v.ID)
+			if err != nil || before.State != biz.Available { t.Fatal(before, err) }
 			api.mu.Lock()
 			metadata := api.object["metadata"].(map[string]any)
 			switch fault {
@@ -103,93 +101,90 @@ func TestActualAdapterBlocksWrongOwnerChangedUIDAndUnexpectedChildren(t *testing
 				metadata["uid"] = "replacement-uid"
 			case "status-children":
 				api.object["status"].(map[string]any)["subnets"] = map[string]any{"foreign/child": "10.42.1.0/24"}
-			case "unreported-children":
-				childReference.Store(metadata["namespace"].(string) + "/" + metadata["name"].(string))
 			}
 			api.mu.Unlock()
-			ctx := context.Background()
 			if fault == "foreign-owner" || fault == "changed-uid" {
-				time.Sleep(10 * time.Millisecond)
+				if err = repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil { t.Fatal(err) }
 				runStep(t, worker)
-				conflicted, err := n.GetVPC(ctx, v.TenantID, v.ID)
-				if err != nil || conflicted.State != biz.Degraded {
-					t.Fatalf("known ownership conflict kept available: %+v %v", conflicted, err)
+				current, err := n.GetVPC(ctx, v.TenantID, v.ID)
+				if err != nil || current.State != before.State || current.Reason != before.Reason || !current.ObservedAt.Equal(*before.ObservedAt) {
+					t.Fatalf("identity conflict replaced the original resource projection: %+v %v", current, err)
 				}
 			}
 			deleting, err := n.DeleteVPC(ctx, v.TenantID, v.ID)
-			if err != nil {
-				t.Fatal(err)
-			}
-			runStep(t, worker)
-			op, err := n.GetOperation(ctx, v.TenantID, deleting.LastOperationID)
-			reason := biz.ProviderOwnership
-			if strings.Contains(fault, "children") {
-				reason = biz.ResourceInUse
-			}
-			if err != nil || op.State != biz.Blocked || op.Reason != reason {
-				t.Fatalf("unsafe deletion not blocked: %+v %v", op, err)
+			if err != nil { t.Fatal(err) }
+			want := biz.Succeeded
+			if fault == "foreign-owner" { want = biz.Blocked }
+			var op biz.Operation
+			awaitNET05A(t, time.Second, func() bool {
+				runStep(t, worker)
+				op, err = n.GetOperation(ctx, v.TenantID, deleting.LastOperationID)
+				if err != nil { t.Fatal(err) }
+				return op.State == want
+			})
+			if fault == "foreign-owner" && op.Reason != biz.ProviderOwnership {
+				t.Fatalf("own identity conflict lost its operation reason: %+v", op)
 			}
 			api.mu.Lock()
 			defer api.mu.Unlock()
-			if api.deletes != 0 || api.object == nil {
-				t.Fatal("unsafe object was deleted")
+			if fault == "foreign-owner" || fault == "changed-uid" {
+				if api.deletes != 0 || api.object == nil { t.Fatal("foreign or replacement object was deleted") }
+			} else if api.deletes != 1 || api.object != nil {
+				t.Fatal("child status blocked deletion of the original object")
 			}
+			if childLists.Load() != 0 { t.Fatal("deletion scanned child resources") }
 		})
 	}
 }
 
-func TestProviderOutageAndStaleGenerationCannotBecomeAvailable(t *testing.T) {
-	repository, _ := database(t)
-	n := newNetwork(t, repository, 30*time.Millisecond)
+func TestProviderReadFailurePreservesProjectionAndNativeReadyIgnoresGeneration(t *testing.T) {
+	repository, owner := database(t)
+	n := newNetwork(t, repository, time.Minute)
 	api := &controlledKC{}
 	var outage atomic.Bool
 	host := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if outage.Load() {
-			http.Error(w, "offline", 503)
-			return
-		}
+		if outage.Load() { http.Error(w, "offline", 503); return }
 		api.ServeHTTP(w, r)
 	}))
 	defer host.Close()
 	provider, err := data.NewKCProvider(repository, &rest.Config{Host: host.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	if err != nil { t.Fatal(err) }
 	worker, err := biz.NewWorker(repository, provider, uuid.NewString(), fastPolicy())
-	if err != nil {
-		t.Fatal(err)
-	}
+	if err != nil { t.Fatal(err) }
 	v := create(t, n, "outage")
 	runStep(t, worker)
-	outage.Store(true)
-	time.Sleep(45 * time.Millisecond)
-	runStep(t, worker)
 	ctx := context.Background()
+	before, err := n.GetVPC(ctx, v.TenantID, v.ID)
+	if err != nil || before.State != biz.Available { t.Fatal(before, err) }
+	history, err := n.GetOperation(ctx, v.TenantID, v.LastOperationID)
+	if err != nil || history.State != biz.Succeeded { t.Fatal(history, err) }
+	outage.Store(true)
+	if err = repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil { t.Fatal(err) }
+	runStep(t, worker)
 	got, err := n.GetVPC(ctx, v.TenantID, v.ID)
-	if err != nil || got.State != biz.Degraded || got.Reason != biz.ProviderUnavailable {
-		t.Fatalf("outage masked: %+v %v", got, err)
+	if err != nil || got.State != before.State || got.Reason != before.Reason || !got.ObservedAt.Equal(*before.ObservedAt) || !got.ObservationStale {
+		t.Fatalf("read failure changed the successful resource projection: %+v %v", got, err)
 	}
-	op, err := n.GetOperation(ctx, v.TenantID, v.LastOperationID)
-	if err != nil || op.State != biz.Succeeded {
-		t.Fatalf("outage rewrote history: %+v %v", op, err)
+	var observationError string
+	if err = owner.QueryRow(ctx, `SELECT observation_error FROM network_reconciliations WHERE tenant_id=$1 AND vpc_id=$2`, v.TenantID, v.ID).Scan(&observationError); err != nil || observationError != string(biz.ProviderUnavailable) {
+		t.Fatal("read failure lost its separate diagnostic", observationError, err)
 	}
 	outage.Store(false)
 	api.mu.Lock()
 	api.object["status"].(map[string]any)["observedGeneration"] = float64(0)
 	api.mu.Unlock()
-	time.Sleep(10 * time.Millisecond)
-	runStep(t, worker)
-	got, err = n.GetVPC(ctx, v.TenantID, v.ID)
-	if err != nil || got.State != biz.Degraded {
-		t.Fatalf("stale generation became ready: %+v %v", got, err)
+	if err = repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil { t.Fatal(err) }
+	awaitNET05A(t, time.Second, func() bool {
+		runStep(t, worker)
+		got, err = n.GetVPC(ctx, v.TenantID, v.ID)
+		if err != nil { t.Fatal(err) }
+		return !got.ObservationStale
+	})
+	if got.State != biz.Available || got.Reason != "" {
+		t.Fatalf("supplemental generation overrode native Ready: %+v", got)
 	}
-	api.mu.Lock()
-	api.object["status"].(map[string]any)["observedGeneration"] = float64(1)
-	api.mu.Unlock()
-	time.Sleep(10 * time.Millisecond)
-	runStep(t, worker)
-	got, err = n.GetVPC(ctx, v.TenantID, v.ID)
-	if err != nil || got.State != biz.Available {
-		t.Fatalf("observation did not recover: %+v %v", got, err)
+	op, err := n.GetOperation(ctx, v.TenantID, v.LastOperationID)
+	if err != nil || !reflect.DeepEqual(history, op) {
+		t.Fatalf("observation rewrote completed operation: %+v %v", op, err)
 	}
 }

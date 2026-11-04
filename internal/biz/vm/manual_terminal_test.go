@@ -22,9 +22,11 @@ type terminalPowerNetwork struct {
 	err       error
 }
 
-func (n terminalPowerNetwork) Observe(context.Context, VM, Observation) ([]Address, error) {
+func (n terminalPowerNetwork) CurrentAddresses(context.Context, VM) ([]Address, error) {
 	return n.addresses, n.err
 }
+
+func (n terminalPowerNetwork) Confirm(context.Context, VM, Observation) error { return nil }
 
 func TestStopConvergesWithRetainedManualTerminalVMI(t *testing.T) {
 	v := mediaFixtureVM()
@@ -37,7 +39,7 @@ func TestStopConvergesWithRetainedManualTerminalVMI(t *testing.T) {
 	}
 }
 
-func TestTerminalStopStillRequiresLauncherRequestsAndAddressWithdrawal(t *testing.T) {
+func TestTerminalStopRequiresOnlyOwnNativeClosure(t *testing.T) {
 	for _, mode := range []string{"live-launcher", "native-request", "current-address", "network-unknown"} {
 		t.Run(mode, func(t *testing.T) {
 			v := mediaFixtureVM()
