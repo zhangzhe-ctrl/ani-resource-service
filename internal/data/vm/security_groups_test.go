@@ -25,6 +25,10 @@ func TestSecurityGroupsVMTemplateVMILauncherAndEmptyDetach(t *testing.T) {
 	if _, err := client.Resource(podResource).Namespace(v.Spec.Namespace).Create(ctx, pod, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
+	v.Network.Consumer = &biz.NetworkConsumerState{State: "open",
+		CurrentVMI: &biz.ObjectRef{Namespace: v.Spec.Namespace, Name: vmi.GetName(), UID: string(vmi.GetUID())},
+		CurrentLauncher: &biz.ObjectRef{Namespace: v.Spec.Namespace, Name: pod.GetName(), UID: string(pod.GetUID())}}
+	client.ClearActions()
 	for _, names := range [][]string{{"sg-first", "sg-second"}, nil} {
 		if err := n.SetSecurityGroups(ctx, v, names); err != nil {
 			t.Fatal(err)
@@ -51,6 +55,9 @@ func TestSecurityGroupsVMTemplateVMILauncherAndEmptyDetach(t *testing.T) {
 				t.Fatal("runtime lost selection", obj.GetAnnotations())
 			}
 		}
+	}
+	for _, action := range client.Actions() {
+		if action.GetVerb() == "list" { t.Fatal("security group submission scanned workload descendants", action) }
 	}
 	// A replaced root never authorizes updating the old VMI or launcher.
 	root, _ := client.Resource(vmResource).Namespace(v.Spec.Namespace).Get(ctx, v.Native.Name, metav1.GetOptions{})

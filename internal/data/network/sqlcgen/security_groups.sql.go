@@ -546,14 +546,14 @@ func (q *Queries) LockSecurityGroupTask(ctx context.Context, arg LockSecurityGro
 
 const mapSecurityGroupProviderNames = `-- name: MapSecurityGroupProviderNames :many
 SELECT security_group_id FROM network_security_groups WHERE tenant_id=$1
- AND payload->>'ClusterID'=$2 AND payload->>'Namespace'=$3
+ AND payload->>'ClusterID'=$2::text AND payload->>'Namespace'=$3::text
  AND payload->>'ProviderName'=ANY($4::text[]) ORDER BY security_group_id
 `
 
 type MapSecurityGroupProviderNamesParams struct {
 	TenantID      string
-	ClusterID     []byte
-	Namespace     []byte
+	ClusterID     string
+	Namespace     string
 	ProviderNames []string
 }
 

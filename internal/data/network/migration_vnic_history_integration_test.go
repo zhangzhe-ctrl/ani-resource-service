@@ -4,8 +4,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"io/fs"
 	"fmt"
+	"io/fs"
 	"reflect"
 	"sort"
 	"testing"
@@ -151,10 +151,14 @@ func TestNetworkSimplificationMigrationPreservesFactsAndFencesOldWorkers(t *test
 				seedVNicMigrationHistory(t, owner, false, version)
 				if version == 28 {
 					tx, err := owner.Begin(ctx)
-					if err != nil { t.Fatal(err) }
+					if err != nil {
+						t.Fatal(err)
+					}
 					defer tx.Rollback(ctx)
 					seedNET05AUpgrade(t, tx, "11111111-1111-4111-8111-111111111111", "55555555-5555-4555-8555-555555555555")
-					if err := tx.Commit(ctx); err != nil { t.Fatal(err) }
+					if err := tx.Commit(ctx); err != nil {
+						t.Fatal(err)
+					}
 				}
 				_, err := owner.Exec(ctx, `
 INSERT INTO network_idempotency(tenant_id,operation_kind,idempotency_key,fingerprint,fingerprint_version,vpc_id,operation_id,response,created_at)
@@ -170,21 +174,39 @@ UPDATE network_attachments SET consumer_type='container_instance',state='attache
 INSERT INTO network_attachments SELECT (jsonb_populate_record(NULL::network_attachments,to_jsonb(a)||jsonb_build_object(
  'attachment_id','att_99999999999999999999999999999999','instance_id','retained-released','request_key','released',
  'state','released','finalization_id','99999999-9999-4999-8999-999999999999','released_at',now()))).* FROM network_attachments a;`)
-				if err != nil { t.Fatal("seed upgrade facts", err) }
+				if err != nil {
+					t.Fatal("seed upgrade facts", err)
+				}
 				before = vnicMigrationLedger(t, owner)
-				for _, table := range tables { facts[table] = snapshot(owner, table) }
+				for _, table := range tables {
+					facts[table] = snapshot(owner, table)
+				}
 			})
 			after := vnicMigrationLedger(t, f.Owner)
-			if len(after) != 32 || !reflect.DeepEqual(before, after[:version]) { t.Fatal("existing migration receipts changed", before, after) }
+			if len(after) != 32 || !reflect.DeepEqual(before, after[:version]) {
+				t.Fatal("existing migration receipts changed", before, after)
+			}
 			for _, table := range tables {
-				if snapshot(f.Owner, table) != facts[table] { t.Fatalf("migration changed intent, identity or history: %s", table) }
+				if snapshot(f.Owner, table) != facts[table] {
+					t.Fatalf("migration changed intent, identity or history: %s", table)
+				}
 			}
 			var retained, leasesFenced, releasedRetired bool
-			if err := f.Owner.QueryRow(ctx, `SELECT bool_and(state='attached' AND reason='retained-status' AND version=9 AND current_vnic_name='retained-nic' AND current_vnic_uid='retained-nic-uid' AND current_mac_address='02:75:00:00:00:21' AND current_ips=ARRAY['10.42.1.21'] AND observed_at='2026-11-03 12:00:00+00'::timestamptz AND lease_owner IS NULL AND lease_until IS NULL AND epoch=24) FROM network_attachments WHERE state<>'released'`).Scan(&retained); err != nil || !retained { t.Fatal("current output or lease fencing changed", retained, err) }
-			if err := f.Owner.QueryRow(ctx, `SELECT bool_and(lease_owner IS NULL AND lease_until IS NULL AND lease_epoch=18) FROM network_reconciliations WHERE subnet_id IS NOT NULL`).Scan(&leasesFenced); err != nil || !leasesFenced { t.Fatal("pre-upgrade resource lease survived", leasesFenced, err) }
-			if err := f.Owner.QueryRow(ctx, `SELECT next_check_at='infinity'::timestamptz AND lease_owner IS NULL AND epoch=24 FROM network_attachments WHERE state='released'`).Scan(&releasedRetired); err != nil || !releasedRetired { t.Fatal("released task not retired", releasedRetired, err) }
-			if err := data.Migrate(ctx, f.Owner, f.RuntimeRole); err != nil { t.Fatal(err) }
-			if replay := vnicMigrationLedger(t, f.Owner); !reflect.DeepEqual(after, replay) { t.Fatal("replay changed migration receipts") }
+			if err := f.Owner.QueryRow(ctx, `SELECT bool_and(state='attached' AND reason='retained-status' AND version=9 AND current_vnic_name='retained-nic' AND current_vnic_uid='retained-nic-uid' AND current_mac_address='02:75:00:00:00:21' AND current_ips=ARRAY['10.42.1.21'] AND observed_at='2026-11-03 12:00:00+00'::timestamptz AND lease_owner IS NULL AND lease_until IS NULL AND epoch=24) FROM network_attachments WHERE state<>'released'`).Scan(&retained); err != nil || !retained {
+				t.Fatal("current output or lease fencing changed", retained, err)
+			}
+			if err := f.Owner.QueryRow(ctx, `SELECT bool_and(lease_owner IS NULL AND lease_until IS NULL AND lease_epoch=18) FROM network_reconciliations WHERE subnet_id IS NOT NULL`).Scan(&leasesFenced); err != nil || !leasesFenced {
+				t.Fatal("pre-upgrade resource lease survived", leasesFenced, err)
+			}
+			if err := f.Owner.QueryRow(ctx, `SELECT next_check_at='infinity'::timestamptz AND lease_owner IS NULL AND epoch=24 FROM network_attachments WHERE state='released'`).Scan(&releasedRetired); err != nil || !releasedRetired {
+				t.Fatal("released task not retired", releasedRetired, err)
+			}
+			if err := data.Migrate(ctx, f.Owner, f.RuntimeRole); err != nil {
+				t.Fatal(err)
+			}
+			if replay := vnicMigrationLedger(t, f.Owner); !reflect.DeepEqual(after, replay) {
+				t.Fatal("replay changed migration receipts")
+			}
 		})
 	}
 }

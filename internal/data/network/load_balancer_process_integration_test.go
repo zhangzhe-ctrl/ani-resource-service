@@ -267,14 +267,14 @@ func TestLBServiceProcessesRecoverUnknownMutationsWithTwoWorkers(t *testing.T) {
 			if tc.method == "DELETE" || tc.terminate {
 				want = biz.Deleted
 			}
-			lb := waitLBProcesses(t, f, id, func(l biz.LoadBalancer) bool {
+			waitLBProcesses(t, f, id, func(l biz.LoadBalancer) bool {
 				return l.State == want && (tc.method != "PATCH" || l.AppliedVersion == 2)
 			}, second, third)
 			if tc.method != "DELETE" && !tc.terminate {
 				if _, err = client.DeleteLoadBalancer(context.Background(), &networkv1.DeleteLoadBalancerRequest{LoadBalancerId: id}); err != nil {
 					t.Fatal(err)
 				}
-				lb = waitLBProcesses(t, f, id, func(l biz.LoadBalancer) bool { return l.State == biz.Deleted }, second, third)
+				waitLBProcesses(t, f, id, func(l biz.LoadBalancer) bool { return l.State == biz.Deleted }, second, third)
 			}
 			var occupied int
 			if err = f.f.owner.QueryRow(f.f.ctx, `SELECT count(*) FROM network_lb_subnet_refs WHERE tenant_id=$1 AND lb_id=$2 AND released_at IS NULL`, f.f.tenant, id).Scan(&occupied); err != nil || occupied != 0 {

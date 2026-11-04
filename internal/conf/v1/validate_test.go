@@ -10,18 +10,12 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
-func TestLoadBalancerRuntimeImageIdentityFormats(t *testing.T) {
-	for _, id := range []string{"sha256:" + strings.Repeat("a", 64), "registry/image@sha256:" + strings.Repeat("b", 64)} {
+func TestDeprecatedLoadBalancerImageSettingsDoNotGateStartup(t *testing.T) {
+	for _, id := range []string{"", "sha256:" + strings.Repeat("a", 64), "registry/image@sha256:" + strings.Repeat("b", 64), "registry/image:latest", "sha256:abc", "obsolete"} {
 		cfg := validConfig()
 		cfg.Network.LoadBalancer = &LoadBalancer{InstallationFingerprint: strings.Repeat("c", 64), ControllerImageId: id, EnvoyImageId: id, ShutdownImageId: id, KcImageId: id}
 		if err := cfg.Validate(); err != nil {
-			t.Fatal("fixed runtime image ID rejected", id, err)
-		}
-		for _, invalid := range []string{"registry/image:latest", "sha256:abc", "registry/image@sha256:" + strings.Repeat("b", 63), "prefix sha256:" + strings.Repeat("b", 64)} {
-			cfg.Network.LoadBalancer.KcImageId = invalid
-			if err := cfg.Validate(); err == nil {
-				t.Fatal("unfixed or malformed image ID accepted", invalid)
-			}
+			t.Fatal("deprecated runtime image setting blocked startup", id, err)
 		}
 	}
 }

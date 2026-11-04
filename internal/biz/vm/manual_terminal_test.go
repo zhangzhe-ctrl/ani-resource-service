@@ -35,7 +35,7 @@ func TestStopConvergesWithRetainedManualTerminalVMI(t *testing.T) {
 	w := &Worker{repo: &mediaCheckpointRepo{}, native: n, network: terminalPowerNetwork{}}
 	o := Operation{Action: "stop", State: "unknown", Pending: &Mutation{Action: "stop", Submitted: true, Target: v.Native}}
 	if err := w.power(context.Background(), &o, &v); err != nil || o.State != "succeeded" || o.Pending != nil || n.stops != 0 {
-		t.Fatalf("Stop must finish after confirmed exit, launcher absence and withdrawn addresses: op=%+v stops=%d err=%v", o, n.stops, err)
+		t.Fatalf("Stop must finish after confirmed native exit and launcher absence: op=%+v stops=%d err=%v", o, n.stops, err)
 	}
 }
 
@@ -58,8 +58,13 @@ func TestTerminalStopRequiresOnlyOwnNativeClosure(t *testing.T) {
 			n := &terminalPowerNative{x: x}
 			w := &Worker{repo: &mediaCheckpointRepo{}, native: n, network: network}
 			o := Operation{Action: "stop", State: "unknown", Pending: &Mutation{Action: "stop", Submitted: true, Target: v.Native}}
-			if err := w.power(context.Background(), &o, &v); err == nil || o.State == "succeeded" || n.stops != 0 {
-				t.Fatal("terminal identity bypassed required withdrawal proof", mode, o, err)
+			err := w.power(context.Background(), &o, &v)
+			if mode == "current-address" || mode == "network-unknown" {
+				if err != nil || o.State != "succeeded" || n.stops != 0 {
+					t.Fatal("network observation blocked native Stop completion", mode, o, err)
+				}
+			} else if err == nil || o.State == "succeeded" || n.stops != 0 {
+				t.Fatal("Stop completed before its native workload closed", mode, o, err)
 			}
 		})
 	}
