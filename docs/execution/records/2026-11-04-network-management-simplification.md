@@ -60,3 +60,20 @@
 2. 在 Fedora 运行仓库固定版本的 `make generate`，取回并检查生成差异；解决正式生成/编译发现的问题。
 3. 运行 `make verify`，以及本次状态消费、管理事务、通知恢复与迁移所需的 Network/Instance/VM PostgreSQL 回归；如发现失败，保存原始输出并修复后复验。
 4. 将实际通过、失败和未验证分别补入本记录；通过提交门禁后再形成正式提交。部署及真实环境验收另记实际执行事实。
+
+
+<a id="recovery-pr-20261104"></a>
+
+## 2026-11-04：中断任务恢复与草稿交付
+
+用户在知晓上文未生成、未验证状态后，另行要求“把改动都提 PR”。原对话出错后，本次按该授权恢复已有源码，不把恢复交付记为生成或验收通过。上文“尚未提交”等内容保留原执行时点事实，当前状态以本节及执行状态页为准。
+
+- 草稿 PR：[Resource #57](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/57)；分支 `work/network-status-authority`，目标 `main`。
+- 原始基线：`5dc539d92e3150a3593bde3668082753aa4fdebe`。
+- 原始源码提交：`39a63cd6aa3abccc98a2669be633f3a313cca3d3`，298 个变更路径（14 新增、245 修改、39 删除），完整保存原工作区与补丁中的源码。
+- 原补丁 SHA-256：`56789d87fa0a6087e7e7539c65d29b664412efe542934f7df3b155604fae98a9`；逐文件 blob 与原 manifest 一致。
+- 远端源码 tree：`720d1b3fba1f6ffd2dc786c67203f18e494e89f0`，与原补丁在固定基线上应用所得 tree 完全一致；`git diff --cached --check` 通过。
+- 终端 SSH 无法解析 GitHub/Fedora，本次通过已连接的 GitHub 接口保存提交与分支并创建草稿。没有覆盖原工作区、修改 AGENTS、合并或部署。
+- 本次恢复仅做完整性与差异格式检查，没有运行生成、gofmt、编译、测试、PostgreSQL 迁移或集群验证。`make verify` 门禁仍未满足，PR 保持 Draft。
+
+后续从同一分支在 Fedora 使用固定工具链刷新 sqlc/protobuf/typed config 并完成 gofmt，解决生成与编译发现的问题，再执行仓库门禁、相关 PostgreSQL 回归及 0031→0032 升级验证。0032 仍须协调停止旧写入者后升级，不能在迁移后直接回切旧二进制。
