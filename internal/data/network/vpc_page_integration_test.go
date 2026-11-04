@@ -22,6 +22,7 @@ func TestVPCPageRandomAccessAndScope(t *testing.T) {
 	s := service.NewNetworkService(n)
 	ctx := context.Background()
 	tenant, other := uuid.NewString(), uuid.NewString()
+	configureExistingTenantNamespaces(t, repo, tenant, other)
 	ids := []string{}
 	for i := 0; i < 7; i++ {
 		v, err := n.CreateVPC(ctx, biz.CreateVPC{TenantID: tenant, Name: "page-match", CIDR: "10.42.0.0/16", IdempotencyKey: fmt.Sprint("page-", i)})
@@ -96,6 +97,7 @@ func TestVPCPageCountAndListShareSnapshot(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	tenant := uuid.NewString()
+	configureExistingTenantNamespaces(t, repo, tenant)
 	v, err := n.CreateVPC(ctx, biz.CreateVPC{TenantID: tenant, Name: "snapshot", CIDR: "10.42.0.0/16", IdempotencyKey: "snapshot"})
 	if err != nil {
 		t.Fatal(err)

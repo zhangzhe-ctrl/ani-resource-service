@@ -45,6 +45,7 @@ func TestVPCListTotalAcrossPagesAndFilters(t *testing.T) {
 	s := service.NewNetworkService(n)
 	ctx := context.Background()
 	tenant, other := uuid.NewString(), uuid.NewString()
+	configureExistingTenantNamespaces(t, repo, tenant, other)
 	var deleted string
 	for i, name := range []string{"alpha", "beta", "gamma", "removed"} {
 		v, err := n.CreateVPC(ctx, biz.CreateVPC{TenantID: tenant, Name: name, CIDR: "10.42.0.0/16", IdempotencyKey: name})
@@ -114,6 +115,7 @@ func TestSubnetListTotalAcrossPagesAndParents(t *testing.T) {
 	w := subnetWorker(t, repo)
 	ctx := context.Background()
 	tenant := uuid.NewString()
+	configureExistingTenantNamespaces(t, repo, tenant)
 	parent := availableVPC(t, n, w, tenant, "parent")
 	otherParent := availableVPC(t, n, w, tenant, "other-parent")
 	for i, cidr := range []string{"10.42.1.0/24", "10.42.2.0/24", "10.42.3.0/24"} {
