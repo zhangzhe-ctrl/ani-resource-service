@@ -41,6 +41,7 @@ func vmConsumerFor(a biz.Attachment) biz.ConsumerSubmission {
 func TestVMAttachmentPGReplayStopAndRelease(t *testing.T) {
 	f := newAttachmentFixture(t)
 	f.r.WorkloadMode = "vm_managed"
+	f.r.ConsumerType = biz.ConsumerVirtualMachine
 	f.r.VMExpectation = &biz.VMNetworkExpectation{NADName: "main", NADUID: "nad-uid", NADConfigDigest: strings.Repeat("a", 64)}
 	nad := &vmNADBoundary{}
 	if err := f.p.SetVMNetworkResolver(nad, time.Minute); err != nil {

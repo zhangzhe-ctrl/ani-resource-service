@@ -75,6 +75,7 @@ func TestManagedAttachmentPGNotebookServedOwnerAliases(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			f := newAttachmentFixture(t)
 			f.r.WorkloadMode = "controller_managed"
+			f.r.ConsumerType = biz.ConsumerContainerInstance
 			a := f.prepare(t)
 			c := managedConsumerFor(a, "pod-1", 1)
 			f.api.Mu.Lock()
@@ -100,6 +101,7 @@ func TestManagedAttachmentPGNotebookServedOwnerAliases(t *testing.T) {
 func TestManagedAttachmentPGProtocolRecoveryRequiresFrozenSnapshotAndConfirm(t *testing.T) {
 	f := newAttachmentFixture(t)
 	f.r.WorkloadMode = "controller_managed"
+	f.r.ConsumerType = biz.ConsumerContainerInstance
 	a := f.prepare(t)
 	c := managedConsumerFor(a, "pod-1", 1)
 	f.api.Mu.Lock()
@@ -169,6 +171,7 @@ func TestManagedAttachmentPGProtocolRecoveryRequiresFrozenSnapshotAndConfirm(t *
 func TestManagedAttachmentPGProtocolRecoveryFencesConcurrentConfirmAndClosing(t *testing.T) {
 	f := newAttachmentFixture(t)
 	f.r.WorkloadMode = "controller_managed"
+	f.r.ConsumerType = biz.ConsumerContainerInstance
 	a := f.prepare(t)
 	c := managedConsumerFor(a, "pod-1", 1)
 	f.api.Mu.Lock()
@@ -240,6 +243,7 @@ func TestManagedAttachmentPGProtocolRecoveryFencesConcurrentConfirmAndClosing(t 
 func TestManagedAttachmentPGStopStartRevisionAndFinalClosure(t *testing.T) {
 	f := newAttachmentFixture(t)
 	f.r.WorkloadMode = "controller_managed"
+	f.r.ConsumerType = biz.ConsumerContainerInstance
 	a := f.prepare(t)
 	c := managedConsumerFor(a, "pod-1", 1)
 	f.api.Mu.Lock()
@@ -335,6 +339,7 @@ func TestManagedAttachmentPGStopStartRevisionAndFinalClosure(t *testing.T) {
 func TestManagedAttachmentPGWaitsForUnknownCandidateAndRejectsForgedOwner(t *testing.T) {
 	f := newAttachmentFixture(t)
 	f.r.WorkloadMode = "controller_managed"
+	f.r.ConsumerType = biz.ConsumerContainerInstance
 	a := f.prepare(t)
 	c := managedConsumerFor(a, "", 1)
 	f.api.Mu.Lock()
@@ -367,6 +372,7 @@ func TestManagedAttachmentPGWaitsForUnknownCandidateAndRejectsForgedOwner(t *tes
 func TestManagedAttachmentPGHistoricalAddressAndNicCleanupFence(t *testing.T) {
 	f := newAttachmentFixture(t)
 	f.r.WorkloadMode = "controller_managed"
+	f.r.ConsumerType = biz.ConsumerContainerInstance
 	a := f.prepare(t)
 	c := managedConsumerFor(a, "pod-1", 1)
 	putNetwork := func(podUID, nicUID, ipName, address string) {

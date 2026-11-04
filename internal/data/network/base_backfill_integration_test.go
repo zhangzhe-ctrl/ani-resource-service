@@ -47,12 +47,12 @@ func TestBaseBackfillCLIProcessRestartKeepsReviewedPlanAndSingleAdmission(t *tes
 		for _, entry := range os.Environ() {
 			key, _, _ := strings.Cut(entry, "=")
 			switch key {
-			case "NETWORK_TEST_ADMIN_DSN", "ANI_NETWORK_MIGRATION_DSN", "ANI_NETWORK_DATABASE_DSN", "ANI_NETWORK_CLUSTER_ID", "ANI_NETWORK_NAMESPACE_PREFIX", "ANI_NETWORK_KUBECONFIG":
+			case "NETWORK_TEST_ADMIN_DSN", "ANI_NETWORK_MIGRATION_DSN", "ANI_NETWORK_DATABASE_DSN", "ANI_NETWORK_CLUSTER_ID", "ANI_NETWORK_NAMESPACE_PREFIX", "NETWORK_NAMESPACE_PREFIX", "ANI_NETWORK_KUBECONFIG":
 				continue
 			}
 			command.Env = append(command.Env, entry)
 		}
-		command.Env = append(command.Env, "ANI_NETWORK_DATABASE_DSN="+db.RuntimeDSN, "ANI_NETWORK_CLUSTER_ID=test-cluster", "ANI_NETWORK_NAMESPACE_PREFIX=tenant-", "ANI_NETWORK_KUBECONFIG=/does-not-exist/backfill-never-opens-provider")
+		command.Env = append(command.Env, "ANI_NETWORK_DATABASE_DSN="+db.RuntimeDSN, "ANI_NETWORK_CLUSTER_ID=test-cluster", "ANI_NETWORK_KUBECONFIG=/does-not-exist/backfill-never-opens-provider")
 		var stdout, stderr bytes.Buffer
 		command.Stdout, command.Stderr = &stdout, &stderr
 		if err := command.Run(); err != nil {
@@ -103,6 +103,7 @@ func newBackfillFixture(t *testing.T) (*egressFixture, *testenv.Database) {
 		t.Fatal(err)
 	}
 	f := &egressFixture{p: db.Repository, owner: db.Owner, e: e, n: newNetwork(t, db.Repository, time.Minute), tenant: uuid.NewString(), provider: &egressProvider{images: []string{"sha256:" + strings.Repeat("a", 64)}}}
+	configureExistingTenantNamespaces(t, f.p, f.tenant)
 	f.w = egressWorker(t, f.p, f.provider)
 	f.ctx = biz.WithEgressCaller(context.Background(), biz.EgressCaller{TenantID: f.tenant, PlatformAdministrator: true})
 	f.pool = readyIntranetPool(t, f, f.platform(t, intranetIntent("backfill-pool", "10.234.254.0/24", "10.234.254.1")))
@@ -153,8 +154,10 @@ func historicalCreateSnapshot(t *testing.T, f *egressFixture) string {
 func TestBaseBackfillReviewedSnapshotPoolPinningRatePauseAndConnectionRecovery(t *testing.T) {
 	f, db := newBackfillFixture(t)
 	second := readyIntranetPool(t, f, f.platform(t, intranetIntent("backfill-second", "10.235.254.0/24", "10.235.254.1")))
+	secondTenant := uuid.NewString()
+	configureExistingTenantNamespaces(t, f.p, f.tenant, secondTenant)
 	availableVPC(t, f.n, f.w, f.tenant, "legacy-one")
-	availableVPC(t, f.n, f.w, uuid.NewString(), "legacy-two")
+	availableVPC(t, f.n, f.w, secondTenant, "legacy-two")
 	history := historicalCreateSnapshot(t, f)
 	plan := planBackfill(t, f)
 	if len(plan.Candidates) != 2 {

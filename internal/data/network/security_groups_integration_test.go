@@ -45,6 +45,7 @@ func newSecurityGroupContractFixture(t *testing.T) *securityGroupContractFixture
 	p, owner := database(t)
 	p.UseSecurityGroupObserver(securityGroupProviderBoundary{})
 	tenant := uuid.NewString()
+	configureExistingTenantNamespaces(t, p, tenant)
 	ctx := biz.WithEgressCaller(context.Background(), biz.EgressCaller{TenantID: tenant, Attribution: biz.Attribution{Actor: "security-group-test", DirectCaller: "controlled-boundary"}})
 	return &securityGroupContractFixture{p: p, owner: owner, groups: biz.NewSecurityGroups(p), worker: biz.NewSecurityGroupWorker(p, securityGroupProviderBoundary{}, uuid.NewString(), biz.DefaultWorkerPolicy()), ctx: ctx, tenant: tenant}
 }

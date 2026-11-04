@@ -311,6 +311,7 @@ func TestVMAutoNetworkPGStopAndClosureSurviveAuxiliaryPreparationFailure(t *test
 			f, api, _ := newAutoVMNetwork(t)
 			policy := awaitAutoVMNetwork(t, f)
 			f.r.WorkloadMode = "vm_managed"
+			f.r.ConsumerType = biz.ConsumerVirtualMachine
 			f.r.VMExpectation = &biz.VMNetworkExpectation{NADName: policy.NADName, NADUID: policy.NADUID, NADConfigDigest: policy.NADConfigDigest}
 			a := f.prepare(t)
 			ctx := context.Background()
