@@ -48,13 +48,20 @@ func baseState(t *testing.T, f *egressFixture, id string, state biz.ResourceStat
 	})
 	return v
 }
+
 // Lifecycle fixtures wait for both independently managed product records.
 // Runtime VPC status remains independent; tests below check that explicitly.
 func baseFixtureProductsSettled(v biz.VPC, state biz.ResourceState) bool {
-	if v.State != state { return false }
+	if v.State != state {
+		return false
+	}
 	if v.BaseConnectivity != nil {
-		if state == biz.Available { return v.BaseConnectivity.State == "ready" }
-		if state == biz.Deleted { return v.BaseConnectivity.State == "deleted" }
+		if state == biz.Available {
+			return v.BaseConnectivity.State == "ready"
+		}
+		if state == biz.Deleted {
+			return v.BaseConnectivity.State == "deleted"
+		}
 	}
 	return true
 }
@@ -120,7 +127,9 @@ func TestBaseConnectivityActualAdapterLifecycleObservationAndPureReads(t *testin
 		return err == nil && current.State == biz.Available && current.BaseConnectivity != nil && current.BaseConnectivity.State == "degraded"
 	})
 	op, err := f.n.GetOperation(f.ctx, f.tenant, accepted.LastOperationID)
-	if err != nil || op.State != biz.Succeeded { t.Fatal("child projection rewrote VPC history", op, err) }
+	if err != nil || op.State != biz.Succeeded {
+		t.Fatal("child projection rewrote VPC history", op, err)
+	}
 	api.Change("snats", original, false)
 	baseState(t, f, v.ID, biz.Available)
 	// Switching/closing platform allocation cannot move an accepted base address.
@@ -231,12 +240,17 @@ func TestPendingManagedSnatDoesNotBlockNativeVPCReady(t *testing.T) {
 	var armed atomic.Bool
 	var posts atomic.Int32
 	f, api, _, _ := newBaseKCFixture(t, func(w http.ResponseWriter, r *http.Request, api *controlled.Server) bool {
-		if !armed.Load() || r.Method != http.MethodPost || !strings.HasSuffix(r.URL.Path, "/snats") { return false }
+		if !armed.Load() || r.Method != http.MethodPost || !strings.HasSuffix(r.URL.Path, "/snats") {
+			return false
+		}
 		posts.Add(1)
 		recorder := httptest.NewRecorder()
 		api.Backend.ServeHTTP(recorder, r)
 		var object map[string]any
-		if err := json.Unmarshal(recorder.Body.Bytes(), &object); err != nil { t.Error(err); return false }
+		if err := json.Unmarshal(recorder.Body.Bytes(), &object); err != nil {
+			t.Error(err)
+			return false
+		}
 		object["status"].(map[string]any)["phase"] = "Pending"
 		api.Change("snats", object, false)
 		w.Header().Set("Content-Type", "application/json")
@@ -250,17 +264,25 @@ func TestPendingManagedSnatDoesNotBlockNativeVPCReady(t *testing.T) {
 	f.drive(t, func() bool {
 		current, err := f.n.GetVPC(f.ctx, f.tenant, accepted.ID)
 		var observed bool
-		if err == nil { err = f.owner.QueryRow(f.ctx, `SELECT observed_at IS NOT NULL FROM network_snat_bindings WHERE tenant_id=$1 AND snat_id=$2`, f.tenant, snatID).Scan(&observed) }
+		if err == nil {
+			err = f.owner.QueryRow(f.ctx, `SELECT observed_at IS NOT NULL FROM network_snat_bindings WHERE tenant_id=$1 AND snat_id=$2`, f.tenant, snatID).Scan(&observed)
+		}
 		return err == nil && observed && current.State == biz.Available && current.BaseConnectivity != nil && current.BaseConnectivity.State == "pending"
 	})
 	operation, err := f.n.GetOperation(f.ctx, f.tenant, accepted.LastOperationID)
-	if err != nil || operation.State != biz.Succeeded || operation.CompletedAt == nil { t.Fatal("child pending blocked native VPC operation", operation, err) }
+	if err != nil || operation.State != biz.Succeeded || operation.CompletedAt == nil {
+		t.Fatal("child pending blocked native VPC operation", operation, err)
+	}
 	var namespace, name string
-	if err = f.owner.QueryRow(f.ctx, `SELECT namespace,provider_name FROM network_provider_bindings WHERE tenant_id=$1 AND snat_id=$2`, f.tenant, snatID).Scan(&namespace, &name); err != nil { t.Fatal(err) }
+	if err = f.owner.QueryRow(f.ctx, `SELECT namespace,provider_name FROM network_provider_bindings WHERE tenant_id=$1 AND snat_id=$2`, f.tenant, snatID).Scan(&namespace, &name); err != nil {
+		t.Fatal(err)
+	}
 	object := api.Object("snats", namespace, name)
 	object["status"].(map[string]any)["phase"] = "Bound"
 	api.Change("snats", object, false)
 	baseState(t, f, accepted.ID, biz.Available)
 	after, err := f.n.GetOperation(f.ctx, f.tenant, accepted.LastOperationID)
-	if err != nil || !after.UpdatedAt.Equal(operation.UpdatedAt) || posts.Load() != 1 { t.Fatal("child recovery changed history or redeclared object", after, posts.Load(), err) }
+	if err != nil || !after.UpdatedAt.Equal(operation.UpdatedAt) || posts.Load() != 1 {
+		t.Fatal("child recovery changed history or redeclared object", after, posts.Load(), err)
+	}
 }

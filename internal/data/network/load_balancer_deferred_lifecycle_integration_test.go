@@ -3,15 +3,15 @@ package data_test
 import (
 	"context"
 	"errors"
-	"reflect"
-	"strings"
-	"testing"
-	"time"
 	"github.com/google/uuid"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	data "github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/clientcmd"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
 )
 
 type deferredLBBinding struct{ id, namespace, name, uid string }

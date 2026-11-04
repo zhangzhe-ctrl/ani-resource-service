@@ -18,18 +18,18 @@ type LoadBalancerMemberIdentity struct {
 	PodUID string
 }
 type LoadBalancerWork struct {
-	LoadBalancer                            LoadBalancer
-	Members                                 []LoadBalancerMemberIdentity
-	Components                              []LoadBalancerComponent
+	LoadBalancer LoadBalancer
+	Members      []LoadBalancerMemberIdentity
+	Components   []LoadBalancerComponent
 }
 type LoadBalancerComponentObservation struct {
-	Conflict                         bool
-	ID, Identity                     string
+	Conflict                  bool
+	ID, Identity              string
 	Exists, Matches, Deleting bool
-	Ready *bool
-	StatusReason Reason
-	ClearPending, Deleted            bool
-	AppliedVersion                   int64
+	Ready                     *bool
+	StatusReason              Reason
+	ClearPending, Deleted     bool
+	AppliedVersion            int64
 }
 type LoadBalancerMemberObservation struct {
 	ID       string
@@ -38,10 +38,10 @@ type LoadBalancerMemberObservation struct {
 }
 
 type LoadBalancerObservation struct {
-	Components []LoadBalancerComponentObservation
-	Members []LoadBalancerMemberObservation
+	Components         []LoadBalancerComponentObservation
+	Members            []LoadBalancerMemberObservation
 	ConfigurationState string
-	AppliedVersion int64
+	AppliedVersion     int64
 }
 type LoadBalancerProvider interface {
 	ObserveLoadBalancer(context.Context, Work) (LoadBalancerObservation, error)
@@ -54,13 +54,21 @@ type LoadBalancerWorkRepository interface {
 func (w *Worker) stepLoadBalancer(ctx context.Context, work Work) error {
 	provider, ok := w.provider.(LoadBalancerProvider)
 	repository, repoOK := w.repository.(LoadBalancerWorkRepository)
-	if !ok || !repoOK || work.Resource.LoadBalancer == nil { return errors.New("LB lifecycle dependencies unavailable") }
+	if !ok || !repoOK || work.Resource.LoadBalancer == nil {
+		return errors.New("LB lifecycle dependencies unavailable")
+	}
 	p := Progress{State: work.Resource.State, Reason: work.Resource.Reason, Identity: work.KnownIdentity, NextDelay: w.policy.ObserveEvery}
-	if work.ActiveOperation { p.OperationState = Retrying }
+	if work.ActiveOperation {
+		p.OperationState = Retrying
+	}
 	finish := func() error {
-		if p.Backoff { p.NextDelay = w.retryDelay(work.Attempt) }
+		if p.Backoff {
+			p.NextDelay = w.retryDelay(work.Attempt)
+		}
 		err := w.finish(ctx, work, p)
-		if w.observer != nil { w.observer(ctx, work, p, err) }
+		if w.observer != nil {
+			w.observer(ctx, work, p, err)
+		}
 		return lbLeaseResult(err)
 	}
 	if work.CancelUnsent {
@@ -72,8 +80,12 @@ func (w *Worker) stepLoadBalancer(ctx context.Context, work Work) error {
 	cancel()
 	if err != nil {
 		p.ProviderError, p.OperationReason, p.Backoff = err, observationReason(err), true
-		if providerKind(err) != ProviderConflict { p.ObservationError = observationReason(err) }
-		if work.ActiveOperation { p.OperationState = Blocked }
+		if providerKind(err) != ProviderConflict {
+			p.ObservationError = observationReason(err)
+		}
+		if work.ActiveOperation {
+			p.OperationState = Blocked
+		}
 		return finish()
 	}
 	p.Observed = true
@@ -85,19 +97,34 @@ func (w *Worker) stepLoadBalancer(ctx context.Context, work Work) error {
 	removing := deleting || draining
 	eligible := lbRuntimeMembersEligible(runtime, o)
 	order := []string{"retired_route", "retired_policy", "backend", "envoy_proxy", "gateway", "policy", "route"}
-	if !eligible { order = []string{"retired_route", "retired_policy", "route", "backend", "envoy_proxy", "gateway", "policy"} }
-	if removing { order = []string{"route", "policy", "gateway", "backend", "envoy_proxy"} }
+	if !eligible {
+		order = []string{"retired_route", "retired_policy", "route", "backend", "envoy_proxy", "gateway", "policy"}
+	}
+	if removing {
+		order = []string{"route", "policy", "gateway", "backend", "envoy_proxy"}
+	}
 	allReady, acted, reportedFalse, managementBlocked := true, false, false, false
 	pendingReason := Reason("")
 	for _, kind := range order {
 		for _, c := range work.Resource.LoadBalancer.Components {
 			retiredListener := c.ListenerID != "" && !lbDesiredListenerComponent(work, c)
 			selected := c.Kind
-			if LoadBalancerIsRoute(c.Kind) { selected = "route" } else if c.Kind == "client_policy" || c.Kind == "patch_policy" { selected = "policy" }
-			if retiredListener && !removing { selected = "retired_" + selected }
-			if selected != kind { continue }
+			if LoadBalancerIsRoute(c.Kind) {
+				selected = "route"
+			} else if c.Kind == "client_policy" || c.Kind == "patch_policy" {
+				selected = "policy"
+			}
+			if retiredListener && !removing {
+				selected = "retired_" + selected
+			}
+			if selected != kind {
+				continue
+			}
 			v, found := lbComponentObservation(o, c.ID)
-			if !found { allReady = false; continue }
+			if !found {
+				allReady = false
+				continue
+			}
 			retired := c.Deleted || retiredListener || (c.Kind == "backend" && !lbDesiredMember(work, c.MemberID))
 			remove := removing || retired
 			// A different UID ends the original lifecycle. Never delete its replacement.
@@ -109,32 +136,60 @@ func (w *Worker) stepLoadBalancer(ctx context.Context, work Work) error {
 				p.OperationReason = ProviderOwnership
 				break
 			}
-			if retired && c.Kind == "backend" && !removing && !lbRouteCurrent(work, o) { allReady = false; continue }
+			if retired && c.Kind == "backend" && !removing && !lbRouteCurrent(work, o) {
+				allReady = false
+				continue
+			}
 			action := ""
 			switch {
 			case remove:
-				if !v.Exists { v.Deleted, v.ClearPending = true, true; lbReplaceObservation(&o, v); continue }
+				if !v.Exists {
+					v.Deleted, v.ClearPending = true, true
+					lbReplaceObservation(&o, v)
+					continue
+				}
 				allReady = false
-				if !v.Deleting { action = "delete" } else { pendingReason = CleanupPending }
+				if !v.Deleting {
+					action = "delete"
+				} else {
+					pendingReason = CleanupPending
+				}
 			case !v.Exists:
 				allReady = false
-				if c.Identity != "" || c.Deleted || !work.ActiveOperation { pendingReason, reportedFalse = ProviderMissing, true; break }
-				if c.Kind == "backend" && !lbMemberEligibleForWorker(o, c.MemberID) { continue }
+				if c.Identity != "" || c.Deleted || !work.ActiveOperation {
+					pendingReason, reportedFalse = ProviderMissing, true
+					break
+				}
+				if c.Kind == "backend" && !lbMemberEligibleForWorker(o, c.MemberID) {
+					continue
+				}
 				action = "create"
 			case !v.Matches:
 				allReady = false
-				if c.Kind == "backend" { p.OperationReason, managementBlocked = ProviderOwnership, true; break }
+				if c.Kind == "backend" {
+					p.OperationReason, managementBlocked = ProviderOwnership, true
+					break
+				}
 				action = "update"
 			default:
 				v.ClearPending = c.PendingAction != "delete"
-				if v.Ready != nil && *v.Ready { v.AppliedVersion = lb.ProviderTargetVersion } else {
+				if v.Ready != nil && *v.Ready {
+					v.AppliedVersion = lb.ProviderTargetVersion
+				} else {
 					allReady = false
-					if v.Ready != nil { reportedFalse = true; pendingReason = v.StatusReason }
+					if v.Ready != nil {
+						reportedFalse = true
+						pendingReason = v.StatusReason
+					}
 				}
 				lbReplaceObservation(&o, v)
 			}
-			if managementBlocked { break }
-			if action == "" { continue }
+			if managementBlocked {
+				break
+			}
+			if action == "" {
+				continue
+			}
 			if action == "update" && c.Identity == "" {
 				// Save the recovered CREATE identity before the next lease can
 				// begin an update against that registered object.
@@ -143,8 +198,12 @@ func (w *Worker) stepLoadBalancer(ctx context.Context, work Work) error {
 				acted, p.NextDelay = true, w.policy.RetryMin
 				break
 			}
-			if err = repository.BeginLoadBalancerMutation(ctx, work, c, action, v.Identity); err != nil { return lbLeaseResult(err) }
-			if v.Identity != "" { c.Identity = v.Identity }
+			if err = repository.BeginLoadBalancerMutation(ctx, work, c, action, v.Identity); err != nil {
+				return lbLeaseResult(err)
+			}
+			if v.Identity != "" {
+				c.Identity = v.Identity
+			}
 			call, cancel = context.WithTimeout(ctx, w.policy.RequestTimeout)
 			result, mutateErr := provider.MutateLoadBalancer(call, work, c, action, o)
 			cancel()
@@ -153,39 +212,68 @@ func (w *Worker) stepLoadBalancer(ctx context.Context, work Work) error {
 				v.ClearPending = providerKind(mutateErr) != ProviderUncertain
 				lbReplaceObservation(&o, v)
 				if work.ActiveOperation && providerKind(mutateErr) == ProviderReject {
-					if deleting { p.OperationState = Blocked } else { p.OperationState = OpFailed }
+					if deleting {
+						p.OperationState = Blocked
+					} else {
+						p.OperationState = OpFailed
+					}
 				}
-			} else { result.ClearPending = action != "delete"; lbReplaceObservation(&o, result) }
+			} else {
+				result.ClearPending = action != "delete"
+				lbReplaceObservation(&o, result)
+			}
 			allReady, acted = false, true
 			p.NextDelay = w.policy.RetryMin
 			break
 		}
-		if acted || managementBlocked || (removing && !allReady) { break }
+		if acted || managementBlocked || (removing && !allReady) {
+			break
+		}
 	}
 	if managementBlocked {
-		if work.ActiveOperation { p.OperationState = Blocked }
+		if work.ActiveOperation {
+			p.OperationState = Blocked
+		}
 		p.Backoff = true
 	} else if deleting {
-		if allReady { p.State, p.OperationState, p.Reason = Deleted, Succeeded, "" }
+		if allReady {
+			p.State, p.OperationState, p.Reason = Deleted, Succeeded, ""
+		}
 	} else if draining {
-		if allReady { p.State, p.OperationState, p.Reason = Provisioning, Succeeded, ""; o.ConfigurationState, o.AppliedVersion = "waiting_for_backends", lb.ProviderTargetVersion }
+		if allReady {
+			p.State, p.OperationState, p.Reason = Provisioning, Succeeded, ""
+			o.ConfigurationState, o.AppliedVersion = "waiting_for_backends", lb.ProviderTargetVersion
+		}
 	} else if allReady && eligible && lbRuntimeComponentsCovered(work, runtime) {
 		p.State, p.Reason = Available, ""
-		if work.ActiveOperation { p.OperationState = Succeeded }
+		if work.ActiveOperation {
+			p.OperationState = Succeeded
+		}
 		o.ConfigurationState, o.AppliedVersion = "configured", lb.ProviderTargetVersion
 	} else {
-		if !eligible { reportedFalse, pendingReason = true, BackendIdentityMismatch }
+		if !eligible {
+			reportedFalse, pendingReason = true, BackendIdentityMismatch
+		}
 		if reportedFalse {
 			p.Reason = pendingReason
-			if p.Reason == "" { p.Reason = ProviderNotReady }
-			if work.Resource.State == Available || work.Resource.State == Degraded { p.State, o.ConfigurationState = Degraded, "degraded" }
+			if p.Reason == "" {
+				p.Reason = ProviderNotReady
+			}
+			if work.Resource.State == Available || work.Resource.State == Degraded {
+				p.State, o.ConfigurationState = Degraded, "degraded"
+			}
 		} else if work.ActiveOperation {
 			p.Reason = ProviderStatusUnreported
 			o.ConfigurationState = "applying"
 		}
 	}
 	for _, v := range o.Components {
-		if v.ID == work.BindingID { if v.Identity != "" && !v.Conflict { p.Identity = v.Identity }; p.ClearPending = v.ClearPending }
+		if v.ID == work.BindingID {
+			if v.Identity != "" && !v.Conflict {
+				p.Identity = v.Identity
+			}
+			p.ClearPending = v.ClearPending
+		}
 	}
 	p.LoadBalancer = &o
 	return finish()
@@ -310,6 +398,10 @@ func lbRuntimeComponentsCovered(work Work, listeners []LoadBalancerListener) boo
 }
 
 func lbMemberEligibleForWorker(o LoadBalancerObservation, id string) bool {
-	for _, m := range o.Members { if m.ID == id { return m.Eligible } }
+	for _, m := range o.Members {
+		if m.ID == id {
+			return m.Eligible
+		}
+	}
 	return false
 }

@@ -250,11 +250,11 @@ type PlatformCapabilitiesRepository interface {
 	GetPlatformCapabilities(context.Context) (PlatformNetworkCapabilities, error)
 }
 type Egress struct {
-	repository     EgressRepository
-	defaults       IntranetPoolDefaultsInfrastructure
-	authorization  EgressAuthorization
-	cursor         *Network
-	now            func() time.Time
+	repository    EgressRepository
+	defaults      IntranetPoolDefaultsInfrastructure
+	authorization EgressAuthorization
+	cursor        *Network
+	now           func() time.Time
 }
 
 func NewEgress(r EgressRepository, defaults IntranetPoolDefaultsInfrastructure, a EgressAuthorization, key []byte, now func() time.Time) (*Egress, error) {
@@ -264,8 +264,8 @@ func NewEgress(r EgressRepository, defaults IntranetPoolDefaultsInfrastructure, 
 	return &Egress{repository: r, defaults: defaults, authorization: a, cursor: &Network{cursorKey: slices.Clone(key)}, now: now}, nil
 }
 func (e *Egress) metadata(v EgressMetadata) EgressMetadata { return v }
-func (e *Egress) eip(v EIP) EIP { v.EgressMetadata = e.metadata(v.EgressMetadata); return v }
-func (e *Egress) snat(v VPCSnatBinding) VPCSnatBinding { return v }
+func (e *Egress) eip(v EIP) EIP                            { v.EgressMetadata = e.metadata(v.EgressMetadata); return v }
+func (e *Egress) snat(v VPCSnatBinding) VPCSnatBinding     { return v }
 func (e *Egress) platform(v PlatformResource) PlatformResource {
 	v.EgressMetadata = e.metadata(v.EgressMetadata)
 	return v

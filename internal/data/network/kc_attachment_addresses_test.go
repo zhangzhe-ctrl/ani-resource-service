@@ -62,13 +62,21 @@ func TestAttachmentAddressReadFailurePreservesOnlyUnchangedSource(t *testing.T) 
 			}
 			client := fake.NewSimpleDynamicClient(runtime.NewScheme(), pod)
 			resource := "vnics"
-			if name == "pod-error" { resource = "pods" }
+			if name == "pod-error" {
+				resource = "pods"
+			}
 			client.PrependReactor("get", resource, func(ktesting.Action) (bool, runtime.Object, error) { return true, nil, errors.New("read unavailable") })
 			got, err := (&KCProvider{client: client}).ObserveAttachmentAddresses(context.Background(), a, c)
-			if err == nil { t.Fatal("read failure hidden") }
+			if err == nil {
+				t.Fatal("read failure hidden")
+			}
 			if name == "changed-vnic-error" {
-				if got.CurrentVNicName != "new-nic" || len(got.CurrentIPs) != 0 || got.CurrentMACAddress != "" { t.Fatal("old source output copied to replacement", got) }
-			} else if !reflect.DeepEqual(got.CurrentIPs, a.CurrentIPs) || got.CurrentMACAddress != a.CurrentMACAddress { t.Fatal("unchanged source output erased", got) }
+				if got.CurrentVNicName != "new-nic" || len(got.CurrentIPs) != 0 || got.CurrentMACAddress != "" {
+					t.Fatal("old source output copied to replacement", got)
+				}
+			} else if !reflect.DeepEqual(got.CurrentIPs, a.CurrentIPs) || got.CurrentMACAddress != a.CurrentMACAddress {
+				t.Fatal("unchanged source output erased", got)
+			}
 		})
 	}
 }
@@ -78,12 +86,21 @@ func TestAttachmentCurrentSourceDisappearanceClearsOnlyAddressProjection(t *test
 		t.Run(name, func(t *testing.T) {
 			a, c, pod := currentAddressFixture()
 			var objects []runtime.Object
-			if name == "replaced" { pod.SetUID("replacement"); objects = append(objects, pod) }
-			if name == "inactive" { c.DesiredRunState = "stopped" }
+			if name == "replaced" {
+				pod.SetUID("replacement")
+				objects = append(objects, pod)
+			}
+			if name == "inactive" {
+				c.DesiredRunState = "stopped"
+			}
 			client := fake.NewSimpleDynamicClient(runtime.NewScheme(), objects...)
 			got, err := (&KCProvider{client: client}).ObserveAttachmentAddresses(context.Background(), a, c)
-			if err != nil || len(got.CurrentIPs) != 0 || got.CurrentVNicName != "" || a.State != biz.Attached { t.Fatal(got, err) }
-			if name == "inactive" && len(client.Actions()) != 0 { t.Fatal("inactive consumer inspected provider state") }
+			if err != nil || len(got.CurrentIPs) != 0 || got.CurrentVNicName != "" || a.State != biz.Attached {
+				t.Fatal(got, err)
+			}
+			if name == "inactive" && len(client.Actions()) != 0 {
+				t.Fatal("inactive consumer inspected provider state")
+			}
 		})
 	}
 }

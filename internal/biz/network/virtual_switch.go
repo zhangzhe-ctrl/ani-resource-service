@@ -19,8 +19,8 @@ type VirtualSwitch struct {
 type VirtualSwitchNode struct {
 	NodeName, NodeUID, State, Reason string
 
-	Priority       int32
-	Allocated      bool
+	Priority  int32
+	Allocated bool
 	// Patch intent and acknowledgement survive ambiguous Kubernetes responses.
 	ResourceVersion, OriginalValue, OriginalOwner string
 	OriginalPresent, Prepared, Applied, Unknown   bool
@@ -131,10 +131,10 @@ func (e *Egress) DeleteVirtualSwitch(ctx context.Context, id string) (VirtualSwi
 // VirtualSwitchWork owns a separate lease: concurrent VLANs never patch the
 // shared group under unrelated per-VLAN leases.
 type VirtualSwitchWork struct {
-	Switch VirtualSwitch
-	Owner  string
+	Switch                   VirtualSwitch
+	Owner                    string
 	Epoch, ClaimedGeneration int64
-	Now    time.Time
+	Now                      time.Time
 }
 
 type VirtualSwitchWorkRepository interface {

@@ -3,11 +3,11 @@ package data_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/google/uuid"
+	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"reflect"
 	"strings"
 	"testing"
-	"github.com/google/uuid"
-	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 )
 
 func deferredEmptyLBRequest(f *lbAdmissionFixture) biz.CreateLoadBalancer {

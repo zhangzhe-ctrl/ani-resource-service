@@ -51,7 +51,7 @@ func observationRegisteredVM(t *testing.T) (*Postgres, *testenv.Database, biz.VM
 	}
 	v.Native.UID = uuid.NewString()
 	v.Observed, v.ObservedAt = "Running", time.Now().Add(-time.Second).UTC()
-	v.Network = biz.NetworkPlan{AttachmentID: uuid.NewString(), SnapshotRevision: 1, Consumer: &biz.NetworkConsumerState{State:"open",DesiredRunState:"running"}}
+	v.Network = biz.NetworkPlan{AttachmentID: uuid.NewString(), SnapshotRevision: 1, Consumer: &biz.NetworkConsumerState{State: "open", DesiredRunState: "running"}}
 	v.Addresses = []biz.Address{{Address: "10.1.2.3"}}
 	o.State = "succeeded"
 	if err = p.Save(ctx, o, v); err != nil {
@@ -133,7 +133,7 @@ func TestVMObservationPreservesConcurrentNetworkAndNewerOperationFacts(t *testin
 	}
 	n := snapshot.Network
 	n.SnapshotRevision++
-	n.Consumer = &biz.NetworkConsumerState{State:"open",DesiredRunState:"running"}
+	n.Consumer = &biz.NetworkConsumerState{State: "open", DesiredRunState: "running"}
 	if err = p.UpdateNetwork(ctx, snapshot, n); err != nil {
 		t.Fatal(err)
 	}

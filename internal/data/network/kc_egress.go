@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"reflect"
 	"github.com/jackc/pgx/v5"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
@@ -14,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
+	"reflect"
 )
 
 var kcEIPs = schema.GroupVersionResource{Group: kcVPCs.Group, Version: "v1", Resource: "eips"}
@@ -102,8 +102,8 @@ func (p *KCProvider) egressBinding(ctx context.Context, t biz.ProviderTarget) (s
 
 type egressResolved struct {
 	binding sqlcgen.NetworkProviderBinding
-	target biz.ProviderTarget
-	spec map[string]any
+	target  biz.ProviderTarget
+	spec    map[string]any
 }
 
 // resolveEgress renders only the declaration owned by Res. Status reads never
@@ -324,8 +324,6 @@ func managedFieldsMatch(actual, desired any) bool {
 	}
 	return reflect.DeepEqual(actual, desired)
 }
-
-
 
 func snatPhase(o *unstructured.Unstructured, desired bool) (*bool, *bool, biz.Reason) {
 	var applied *bool

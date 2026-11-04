@@ -357,7 +357,9 @@ func TestBaseBackfillLegacyActivationRequiresOwnDeclarations(t *testing.T) {
 		t.Fatal("ensure completion changed historic create")
 	}
 	// Old observation timestamps do not veto an accepted management declaration.
-	if _, err = f.owner.Exec(f.ctx, "UPDATE network_vpc_base_connectivity SET observed_at=clock_timestamp()-interval '2 minutes' WHERE tenant_id=$1 AND vpc_id=$2", f.tenant, v.ID); err != nil { t.Fatal(err) }
+	if _, err = f.owner.Exec(f.ctx, "UPDATE network_vpc_base_connectivity SET observed_at=clock_timestamp()-interval '2 minutes' WHERE tenant_id=$1 AND vpc_id=$2", f.tenant, v.ID); err != nil {
+		t.Fatal(err)
+	}
 	rollout, err := f.p.ActivateLegacyBaseAggregation(f.ctx)
 	if err != nil || !rollout.LegacyAggregationEnabled {
 		t.Fatal(rollout, err)

@@ -3,11 +3,11 @@ package data_test
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"strings"
 	"testing"
 	"time"
-	"github.com/google/uuid"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 )
 
 type egressBaseFixture struct{ EIPID, SnatID string }
@@ -156,14 +156,20 @@ func TestPublicBindingAndEnableIgnoreBaseReadAge(t *testing.T) {
 	v := availableVPC(t, f.n, f.w, f.tenant, "base-independent")
 	e := f.eip(t, "base-independent-eip")
 	b, err := f.e.BindVPCSnat(f.ctx, biz.EgressIntent{VPCID: v.ID, EIPID: e.ID, IdempotencyKey: "before-base"})
-	if err != nil { t.Fatal("missing base gated public binding", err) }
+	if err != nil {
+		t.Fatal("missing base gated public binding", err)
+	}
 	on := true
 	b = f.binding(t, b.ID, biz.Available, &on)
 	seedEgressBaseConnectivity(t, f, v)
-	if _, err = f.owner.Exec(f.ctx, `UPDATE network_vpc_base_connectivity SET observed_at=clock_timestamp()-interval '2 minutes' WHERE tenant_id=$1 AND vpc_id=$2`, f.tenant, v.ID); err != nil { t.Fatal(err) }
+	if _, err = f.owner.Exec(f.ctx, `UPDATE network_vpc_base_connectivity SET observed_at=clock_timestamp()-interval '2 minutes' WHERE tenant_id=$1 AND vpc_id=$2`, f.tenant, v.ID); err != nil {
+		t.Fatal(err)
+	}
 	for _, enabled := range []bool{false, true} {
 		b, err = f.e.SetVPCSnatEnabled(f.ctx, biz.EgressIntent{ID: b.ID, ExpectedVersion: b.Version, Enabled: enabled, IdempotencyKey: fmt.Sprintf("with-old-base-%t", enabled)})
-		if err != nil { t.Fatal("base read age gated public update", err) }
+		if err != nil {
+			t.Fatal("base read age gated public update", err)
+		}
 		b = f.binding(t, b.ID, biz.Available, &enabled)
 	}
 }

@@ -1,13 +1,13 @@
 package data_test
 
 import (
+	"github.com/google/uuid"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
 	"strings"
 	"sync"
 	"testing"
 	"time"
-	"github.com/google/uuid"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
 )
 
 func TestLBPinsExistingAddressesAcrossBothDefaultPoolSwitchesAndClosure(t *testing.T) {

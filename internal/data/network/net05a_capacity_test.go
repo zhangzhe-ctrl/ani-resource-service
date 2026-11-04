@@ -30,7 +30,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type capacityConsumer struct{ pods map[string]biz.WorkloadReference }
+type capacityConsumer struct {
+	pods map[string]biz.WorkloadReference
+}
 
 func (c capacityConsumer) GetSubmission(_ context.Context, a biz.Attachment) (biz.ConsumerSubmission, error) {
 	return biz.ConsumerSubmission{ProtocolVersion: 1, TenantID: a.TenantID, InstanceID: a.InstanceID, SubmissionID: a.SubmissionID, AttachmentID: a.ID, ClusterID: a.ClusterID, Namespace: a.Namespace, Generation: a.Generation, State: "open", PodUIDs: []string{c.pods[a.ID].UID}, CurrentPods: []biz.PodReference{{Reference: c.pods[a.ID]}}}, nil
@@ -155,7 +157,7 @@ func TestNET05ACapacity(t *testing.T) {
 		}
 		name := fmt.Sprintf("pod-%d", i)
 		podUID, nicUID := uuid.NewString(), uuid.NewString()
-		consumer.pods[a.ID] = biz.WorkloadReference{APIVersion:"v1", Kind:"Pod", Namespace:a.Namespace, Name:name, UID:podUID}
+		consumer.pods[a.ID] = biz.WorkloadReference{APIVersion: "v1", Kind: "Pod", Namespace: a.Namespace, Name: name, UID: podUID}
 		pod := attachmentPod(a, name, podUID)
 		pod["metadata"].(map[string]any)["annotations"].(map[string]any)["net05a.test/padding"] = padding
 		api.Change("pods", pod, false)

@@ -2,10 +2,10 @@ package data_test
 
 import (
 	"context"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"strings"
 	"testing"
 	"time"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 )
 
 func (testEgressInfrastructure) ValidateIntranetPool(context.Context, biz.PublicPoolConfig) error {

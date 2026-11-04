@@ -3,20 +3,20 @@ package data
 import (
 	"context"
 	"encoding/json"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 	"io"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
 )
 
 // Only the Kubernetes HTTP boundary is replaced. It applies actual JSON Patch

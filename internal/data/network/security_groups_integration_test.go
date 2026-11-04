@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	data "github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
-	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 // Only the external KCN API is replaced. The use case, SQL transactions,
@@ -260,16 +260,28 @@ func TestSecurityGroupReadFailurePreservesProjectionAndCompletedOperation(t *tes
 	snapshot := func() string {
 		t.Helper()
 		var value string
-		if err := f.owner.QueryRow(f.ctx, `SELECT jsonb_build_array(g.payload,o.payload)::text FROM network_security_groups g JOIN network_security_group_operations o ON o.tenant_id=g.tenant_id AND o.operation_id=$3 WHERE g.tenant_id=$1 AND g.security_group_id=$2`, f.tenant,group.ID,group.LastOperationID).Scan(&value); err != nil { t.Fatal(err) }
+		if err := f.owner.QueryRow(f.ctx, `SELECT jsonb_build_array(g.payload,o.payload)::text FROM network_security_groups g JOIN network_security_group_operations o ON o.tenant_id=g.tenant_id AND o.operation_id=$3 WHERE g.tenant_id=$1 AND g.security_group_id=$2`, f.tenant, group.ID, group.LastOperationID).Scan(&value); err != nil {
+			t.Fatal(err)
+		}
 		return value
 	}
 	before := snapshot()
-	if err := f.p.NotifyObservedObject(f.ctx,schema.GroupVersionResource{Group:"networking.kubercloud.com",Version:"v1",Resource:"securitygroups"},group.Namespace,group.ProviderName); err != nil { t.Fatal(err) }
-	work, found, err := f.p.ClaimSecurityGroup(f.ctx,uuid.NewString(),time.Second)
-	if err != nil || !found || work.Operation.CompletedAt == nil { t.Fatal(work,found,err) }
-	failure := &biz.ProviderError{Kind:biz.ProviderTemporary}
-	if err = f.p.FinishSecurityGroup(f.ctx,work,biz.SecurityGroupResult{State:"failed",Reason:"must-not-replace-status",ObservationError:biz.ProviderUnavailable,OperationReason:biz.ProviderUnavailable,Backoff:true,NextDelay:time.Second},failure); err != nil { t.Fatal(err) }
-	if snapshot() != before { t.Fatal("read failure overwrote resource projection or immutable operation") }
+	if err := f.p.NotifyObservedObject(f.ctx, schema.GroupVersionResource{Group: "networking.kubercloud.com", Version: "v1", Resource: "securitygroups"}, group.Namespace, group.ProviderName); err != nil {
+		t.Fatal(err)
+	}
+	work, found, err := f.p.ClaimSecurityGroup(f.ctx, uuid.NewString(), time.Second)
+	if err != nil || !found || work.Operation.CompletedAt == nil {
+		t.Fatal(work, found, err)
+	}
+	failure := &biz.ProviderError{Kind: biz.ProviderTemporary}
+	if err = f.p.FinishSecurityGroup(f.ctx, work, biz.SecurityGroupResult{State: "failed", Reason: "must-not-replace-status", ObservationError: biz.ProviderUnavailable, OperationReason: biz.ProviderUnavailable, Backoff: true, NextDelay: time.Second}, failure); err != nil {
+		t.Fatal(err)
+	}
+	if snapshot() != before {
+		t.Fatal("read failure overwrote resource projection or immutable operation")
+	}
 	var diagnostic string
-	if err = f.owner.QueryRow(f.ctx,`SELECT observation_error FROM network_security_group_reconciliations WHERE tenant_id=$1 AND target_type='security_group' AND target_id=$2`,f.tenant,group.ID).Scan(&diagnostic); err != nil || diagnostic!=string(biz.ProviderUnavailable) { t.Fatal(diagnostic,err) }
+	if err = f.owner.QueryRow(f.ctx, `SELECT observation_error FROM network_security_group_reconciliations WHERE tenant_id=$1 AND target_type='security_group' AND target_id=$2`, f.tenant, group.ID).Scan(&diagnostic); err != nil || diagnostic != string(biz.ProviderUnavailable) {
+		t.Fatal(diagnostic, err)
+	}
 }

@@ -3,15 +3,15 @@ package data_test
 import (
 	"context"
 	"errors"
+	"github.com/google/uuid"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
+	"k8s.io/client-go/tools/clientcmd"
 	"net/http"
 	"strings"
 	"sync"
 	"testing"
 	"time"
-	"github.com/google/uuid"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
-	"k8s.io/client-go/tools/clientcmd"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
 )
 
 // A lost CREATE response still requires a direct read before deletion.
@@ -23,19 +23,28 @@ func TestLBDeferredLostCreateDeletionCompletesFromDirectAbsence(t *testing.T) {
 	f.f.stopObservation()
 	first, firstOwner, stopFirst := lbRecoveryWorker(t, f, f.f.p)
 	created, err := f.lbs.Create(f.f.ctx, deferredEmptyLBRequest(f))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	lb := created.LoadBalancer
 	initial := deferredBinding(t, f, lb.ID)
 	fault.armed.Store(true)
 	_, err = f.lbs.Update(f.f.ctx, biz.UpdateLoadBalancer{ID: lb.ID, ExpectedVersion: lb.Version, IdempotencyKey: "unknown-first-gateway", LoadBalancerMutableInput: biz.LoadBalancerMutableInput{Listeners: []biz.LoadBalancerListenerInput{deferredListenerInput(lb.Listeners[0], f.request.Backends)}, UpdateMask: []string{"listeners"}}})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	stepCtx, cancelStep := context.WithCancel(f.f.ctx)
 	done := make(chan error, 1)
 	go func() {
 		for {
-			if _, err := first.Step(stepCtx); err != nil { done <- err; return }
+			if _, err := first.Step(stepCtx); err != nil {
+				done <- err
+				return
+			}
 			select {
-			case <-stepCtx.Done(): done <- stepCtx.Err(); return
+			case <-stepCtx.Done():
+				done <- stepCtx.Err()
+				return
 			case <-time.After(2 * time.Millisecond):
 			}
 		}
@@ -43,20 +52,29 @@ func TestLBDeferredLostCreateDeletionCompletesFromDirectAbsence(t *testing.T) {
 	t.Cleanup(cancelStep)
 	select {
 	case <-fault.reached:
-	case err := <-done: t.Fatal("worker stopped before CREATE response loss", err)
-	case <-time.After(8 * time.Second): t.Fatal("Gateway CREATE did not occur")
+	case err := <-done:
+		t.Fatal("worker stopped before CREATE response loss", err)
+	case <-time.After(8 * time.Second):
+		t.Fatal("Gateway CREATE did not occur")
 	}
-	if fault.status.Load() < 200 || fault.status.Load() >= 300 { t.Fatal(fault.status.Load()) }
+	if fault.status.Load() < 200 || fault.status.Load() >= 300 {
+		t.Fatal(fault.status.Load())
+	}
 	var pending, uid string
 	var dispatched bool
-	if err = f.f.owner.QueryRow(f.f.ctx, `SELECT pending_action,provider_uid,create_dispatched FROM network_provider_bindings WHERE tenant_id=$1 AND lb_id=$2`, f.f.tenant, lb.ID).Scan(&pending, &uid, &dispatched); err != nil || pending != "create" || uid != "" || !dispatched { t.Fatal(pending, uid, dispatched, err) }
+	if err = f.f.owner.QueryRow(f.f.ctx, `SELECT pending_action,provider_uid,create_dispatched FROM network_provider_bindings WHERE tenant_id=$1 AND lb_id=$2`, f.f.tenant, lb.ID).Scan(&pending, &uid, &dispatched); err != nil || pending != "create" || uid != "" || !dispatched {
+		t.Fatal(pending, uid, dispatched, err)
+	}
 	written := f.api.Object("gateways", initial.namespace, initial.name)
-	if written == nil { t.Fatal("successful POST left no Gateway") }
+	if written == nil {
+		t.Fatal("successful POST left no Gateway")
+	}
 	stopFirst()
 	cancelStep()
 	select {
 	case <-done:
-	case <-time.After(3 * time.Second): t.Fatal("old worker did not stop")
+	case <-time.After(3 * time.Second):
+		t.Fatal("old worker did not stop")
 	}
 	fault.unblock()
 	// The controller has removed this declaration before recovery. The next
@@ -64,27 +82,45 @@ func TestLBDeferredLostCreateDeletionCompletesFromDirectAbsence(t *testing.T) {
 	f.api.Change("gateways", written, true)
 	repository := lbRecoveryRepository(t, f)
 	second, secondOwner, _ := lbRecoveryWorker(t, f, repository)
-	if secondOwner == firstOwner { t.Fatal("reused old owner") }
+	if secondOwner == firstOwner {
+		t.Fatal("reused old owner")
+	}
 	f.f.p, f.f.w = repository, second
 	f.lbs, err = biz.NewLoadBalancers(repository, biz.ContextEgressAuthorization{}, []byte(strings.Repeat("c", 32)))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	deleted, err := f.lbs.Delete(f.f.ctx, "", lb.ID)
-	if err != nil || deleted.LoadBalancer.State != biz.Deleting { t.Fatal("dispatched CREATE used DB-only cancellation", deleted, err) }
+	if err != nil || deleted.LoadBalancer.State != biz.Deleting {
+		t.Fatal("dispatched CREATE used DB-only cancellation", deleted, err)
+	}
 	awaitNET05A(t, 8*time.Second, func() bool {
-		if _, err := second.Step(f.f.ctx); err != nil { t.Fatal(err) }
+		if _, err := second.Step(f.f.ctx); err != nil {
+			t.Fatal(err)
+		}
 		lb, err = f.lbs.Get(f.f.ctx, "", lb.ID)
 		return err == nil && lb.State == biz.Deleted
 	})
 	op, err := f.lbs.GetOperation(f.f.ctx, "", deleted.Operation.ID)
-	if err != nil || op.State != biz.Succeeded { t.Fatal(op, err) }
+	if err != nil || op.State != biz.Succeeded {
+		t.Fatal(op, err)
+	}
 	var remaining int
-	if err = f.f.owner.QueryRow(f.f.ctx, `SELECT (SELECT count(*) FROM network_provider_bindings WHERE tenant_id=$1 AND lb_id=$2 AND pending_action<>'')+(SELECT count(*) FROM network_lb_components WHERE tenant_id=$1 AND lb_id=$2 AND (pending_action<>'' OR deleted_at IS NULL))`, f.f.tenant, lb.ID).Scan(&remaining); err != nil || remaining != 0 { t.Fatal("own pending cleanup remained", remaining, err) }
+	if err = f.f.owner.QueryRow(f.f.ctx, `SELECT (SELECT count(*) FROM network_provider_bindings WHERE tenant_id=$1 AND lb_id=$2 AND pending_action<>'')+(SELECT count(*) FROM network_lb_components WHERE tenant_id=$1 AND lb_id=$2 AND (pending_action<>'' OR deleted_at IS NULL))`, f.f.tenant, lb.ID).Scan(&remaining); err != nil || remaining != 0 {
+		t.Fatal("own pending cleanup remained", remaining, err)
+	}
 	lbRecoveryOccupancy(t, f, lb.ID, 0, 0)
 	controller.mu.Lock()
 	defer controller.mu.Unlock()
 	creates := 0
-	for _, request := range controller.requests { if strings.HasPrefix(request, "POST/gateways/") { creates++ } }
-	if creates != 1 { t.Fatal("deletion recreated Gateway", creates) }
+	for _, request := range controller.requests {
+		if strings.HasPrefix(request, "POST/gateways/") {
+			creates++
+		}
+	}
+	if creates != 1 {
+		t.Fatal("deletion recreated Gateway", creates)
+	}
 }
 
 // These component boundaries retain real PG admission, production lease/pending

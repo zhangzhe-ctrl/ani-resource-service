@@ -6,14 +6,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strings"
-	"testing"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/migrations"
 	"github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv"
+	"strings"
+	"testing"
 )
 
 func TestLBSchemaFrom0006PreservesAllOldColumnsAndDormantReservations(t *testing.T) {

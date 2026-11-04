@@ -48,8 +48,12 @@ func TestConfirmedDeleteRetiresTimerAndIgnoresLaterEvents(t *testing.T) {
 	}
 	// Later events cannot revive a completed lifetime or mutate a replacement.
 	provider.objects[v.ID] = original
-	if err := p.NotifyResource(ctx, v.TenantID, v.ID); err != nil { t.Fatal(err) }
-	if found, err := w.Step(ctx); err != nil || found { t.Fatal("retired task was revived", found, err) }
+	if err := p.NotifyResource(ctx, v.TenantID, v.ID); err != nil {
+		t.Fatal(err)
+	}
+	if found, err := w.Step(ctx); err != nil || found {
+		t.Fatal("retired task was revived", found, err)
+	}
 	if err := db.QueryRow(ctx, "SELECT lease_epoch,next_run_at='infinity'::timestamptz FROM network_reconciliations WHERE tenant_id=$1 AND vpc_id=$2", v.TenantID, v.ID).Scan(&after, &parked); err != nil || after != before || !parked || !provider.objects[v.ID].Exists {
 		t.Fatal("terminal notification changed original task or external object", after, parked, err)
 	}

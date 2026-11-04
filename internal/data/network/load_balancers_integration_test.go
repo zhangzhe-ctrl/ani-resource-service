@@ -3,18 +3,18 @@ package data_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/google/uuid"
+	networkv1 "github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network"
+	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
+	"k8s.io/client-go/tools/clientcmd"
 	"net/http"
 	"strings"
 	"sync"
 	"testing"
 	"time"
-	"github.com/google/uuid"
-	networkv1 "github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
-	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
-	"k8s.io/client-go/tools/clientcmd"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network"
 )
 
 type lbAdmissionFixture struct {
@@ -72,7 +72,9 @@ func newLBAdmissionFixture(t *testing.T, interceptors ...func(http.ResponseWrite
 	api.Change("vnics", map[string]any{"apiVersion": "networking.kubercloud.com/v1", "kind": "VNic", "metadata": map[string]any{"namespace": a.Namespace, "name": "lb-backend-nic", "uid": nicUID, "ownerReferences": owner("Pod", "v1", "lb-backend", podUID)}, "spec": map[string]any{"type": "VETH", "subnet": a.Plan.PrimaryNetworkRef}}, false)
 	api.Change("vnicips", map[string]any{"apiVersion": "networking.kubercloud.com/v1", "kind": "VNicIP", "metadata": map[string]any{"namespace": a.Namespace, "name": "lb-backend-ip", "uid": ipUID, "ownerReferences": owner("VNic", "networking.kubercloud.com/v1", "lb-backend-nic", nicUID)}, "spec": map[string]any{"subnet": a.Plan.PrimaryNetworkRef, "vNic": "lb-backend-nic", "ipAddress": "10.42.2.2"}, "status": map[string]any{"vNic": "lb-backend-nic"}}, false)
 	a, err = attachments.Confirm(f.ctx, biz.ConfirmAttachment{TenantID: a.TenantID, AttachmentID: a.ID, ExpectedVersion: a.Version, ClusterID: a.ClusterID, Namespace: a.Namespace, PodName: "lb-backend", PodUID: podUID})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	consumer := &attachmentConsumer{value: consumerFor(a, "open", "")}
 	consumer.value.PodUIDs = []string{podUID}
 	policy := biz.DefaultWorkerPolicy()
@@ -225,6 +227,10 @@ func slicesCloneLBInputs(v []biz.LoadBalancerBackendInput) []biz.LoadBalancerBac
 
 func setLBCurrentBackendAddresses(t *testing.T, f *lbAdmissionFixture, lbID, attachmentID string, addresses []string) {
 	t.Helper()
-	if _, err := f.f.owner.Exec(f.f.ctx, `UPDATE network_attachments SET current_ips=$3 WHERE tenant_id=$1 AND attachment_id=$2`, f.f.tenant, attachmentID, addresses); err != nil { t.Fatal(err) }
-	if err := f.f.p.NotifyResource(f.f.ctx, f.f.tenant, lbID); err != nil { t.Fatal(err) }
+	if _, err := f.f.owner.Exec(f.f.ctx, `UPDATE network_attachments SET current_ips=$3 WHERE tenant_id=$1 AND attachment_id=$2`, f.f.tenant, attachmentID, addresses); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.f.p.NotifyResource(f.f.ctx, f.f.tenant, lbID); err != nil {
+		t.Fatal(err)
+	}
 }

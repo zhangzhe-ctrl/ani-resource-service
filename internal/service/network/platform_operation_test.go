@@ -26,7 +26,9 @@ func (r *platformOperationRepositoryStub) GetPlatformOperation(_ context.Context
 	return r.operation, nil
 }
 
-type unusedOperationInfrastructure struct{ biz.IntranetPoolDefaultsInfrastructure }
+type unusedOperationInfrastructure struct {
+	biz.IntranetPoolDefaultsInfrastructure
+}
 
 func TestGetPlatformOperationPreservesPlatformKinds(t *testing.T) {
 	for _, tc := range []struct {

@@ -2,17 +2,17 @@ package data_test
 
 import (
 	"context"
-	"net"
-	"testing"
 	"github.com/google/uuid"
 	networkv1 "github.com/zhangzhe-ctrl/ani-resource-service/api/network/v1"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/service/network"
+	"net"
+	"testing"
 )
 
 func TestEgressGRPCContractAuthorizationAndNullableAppliedState(t *testing.T) {

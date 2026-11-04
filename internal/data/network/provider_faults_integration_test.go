@@ -33,9 +33,13 @@ func TestConfirmedProviderRejectionKeepsOperationHistoryAndDeletionRecoverable(t
 	}))
 	defer host.Close()
 	provider, err := data.NewKCProvider(repository, &rest.Config{Host: host.URL})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	worker, err := biz.NewWorker(repository, provider, uuid.NewString(), fastPolicy())
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	v := create(t, n, "rejected")
 	runStep(t, worker)
 	ctx := context.Background()
@@ -47,7 +51,9 @@ func TestConfirmedProviderRejectionKeepsOperationHistoryAndDeletionRecoverable(t
 	if err != nil || op.State != biz.OpFailed || op.Reason != biz.ProviderRejected {
 		t.Fatalf("failed operation: %+v %v", op, err)
 	}
-	if err = repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil { t.Fatal(err) }
+	if err = repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil {
+		t.Fatal(err)
+	}
 	runStep(t, worker)
 	current, err := n.GetVPC(ctx, v.TenantID, v.ID)
 	if err != nil || current.State != biz.Failed || current.Reason != biz.ProviderMissing || rejected.Load() != 1 {
@@ -58,7 +64,9 @@ func TestConfirmedProviderRejectionKeepsOperationHistoryAndDeletionRecoverable(t
 		t.Fatalf("current observation changed completed operation: %+v %v", historic, err)
 	}
 	deleting, err := n.DeleteVPC(ctx, v.TenantID, v.ID)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	runStep(t, worker)
 	final, err := n.GetVPC(ctx, v.TenantID, v.ID)
 	if err != nil || final.State != biz.Deleted || final.LastOperationID != deleting.LastOperationID || rejected.Load() != 1 {
@@ -84,14 +92,20 @@ func TestActualAdapterUsesOriginalIdentityAndOwnDeletionOnly(t *testing.T) {
 			}))
 			defer host.Close()
 			provider, err := data.NewKCProvider(repository, &rest.Config{Host: host.URL})
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			worker, err := biz.NewWorker(repository, provider, uuid.NewString(), fastPolicy())
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			v := create(t, n, fault)
 			runStep(t, worker)
 			ctx := context.Background()
 			before, err := n.GetVPC(ctx, v.TenantID, v.ID)
-			if err != nil || before.State != biz.Available { t.Fatal(before, err) }
+			if err != nil || before.State != biz.Available {
+				t.Fatal(before, err)
+			}
 			api.mu.Lock()
 			metadata := api.object["metadata"].(map[string]any)
 			switch fault {
@@ -104,7 +118,9 @@ func TestActualAdapterUsesOriginalIdentityAndOwnDeletionOnly(t *testing.T) {
 			}
 			api.mu.Unlock()
 			if fault == "foreign-owner" || fault == "changed-uid" {
-				if err = repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil { t.Fatal(err) }
+				if err = repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil {
+					t.Fatal(err)
+				}
 				runStep(t, worker)
 				current, err := n.GetVPC(ctx, v.TenantID, v.ID)
 				if err != nil || current.State != before.State || current.Reason != before.Reason || !current.ObservedAt.Equal(*before.ObservedAt) {
@@ -112,14 +128,20 @@ func TestActualAdapterUsesOriginalIdentityAndOwnDeletionOnly(t *testing.T) {
 				}
 			}
 			deleting, err := n.DeleteVPC(ctx, v.TenantID, v.ID)
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			want := biz.Succeeded
-			if fault == "foreign-owner" { want = biz.Blocked }
+			if fault == "foreign-owner" {
+				want = biz.Blocked
+			}
 			var op biz.Operation
 			awaitNET05A(t, time.Second, func() bool {
 				runStep(t, worker)
 				op, err = n.GetOperation(ctx, v.TenantID, deleting.LastOperationID)
-				if err != nil { t.Fatal(err) }
+				if err != nil {
+					t.Fatal(err)
+				}
 				return op.State == want
 			})
 			if fault == "foreign-owner" && op.Reason != biz.ProviderOwnership {
@@ -128,11 +150,15 @@ func TestActualAdapterUsesOriginalIdentityAndOwnDeletionOnly(t *testing.T) {
 			api.mu.Lock()
 			defer api.mu.Unlock()
 			if fault == "foreign-owner" || fault == "changed-uid" {
-				if api.deletes != 0 || api.object == nil { t.Fatal("foreign or replacement object was deleted") }
+				if api.deletes != 0 || api.object == nil {
+					t.Fatal("foreign or replacement object was deleted")
+				}
 			} else if api.deletes != 1 || api.object != nil {
 				t.Fatal("child status blocked deletion of the original object")
 			}
-			if childLists.Load() != 0 { t.Fatal("deletion scanned child resources") }
+			if childLists.Load() != 0 {
+				t.Fatal("deletion scanned child resources")
+			}
 		})
 	}
 }
@@ -143,23 +169,36 @@ func TestProviderReadFailurePreservesProjectionAndNativeReadyIgnoresGeneration(t
 	api := &controlledKC{}
 	var outage atomic.Bool
 	host := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if outage.Load() { http.Error(w, "offline", 503); return }
+		if outage.Load() {
+			http.Error(w, "offline", 503)
+			return
+		}
 		api.ServeHTTP(w, r)
 	}))
 	defer host.Close()
 	provider, err := data.NewKCProvider(repository, &rest.Config{Host: host.URL})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	worker, err := biz.NewWorker(repository, provider, uuid.NewString(), fastPolicy())
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	v := create(t, n, "outage")
 	runStep(t, worker)
 	ctx := context.Background()
 	before, err := n.GetVPC(ctx, v.TenantID, v.ID)
-	if err != nil || before.State != biz.Available { t.Fatal(before, err) }
+	if err != nil || before.State != biz.Available {
+		t.Fatal(before, err)
+	}
 	history, err := n.GetOperation(ctx, v.TenantID, v.LastOperationID)
-	if err != nil || history.State != biz.Succeeded { t.Fatal(history, err) }
+	if err != nil || history.State != biz.Succeeded {
+		t.Fatal(history, err)
+	}
 	outage.Store(true)
-	if err = repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil { t.Fatal(err) }
+	if err = repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil {
+		t.Fatal(err)
+	}
 	runStep(t, worker)
 	got, err := n.GetVPC(ctx, v.TenantID, v.ID)
 	if err != nil || got.State != before.State || got.Reason != before.Reason || !got.ObservedAt.Equal(*before.ObservedAt) || !got.ObservationStale {
@@ -173,11 +212,15 @@ func TestProviderReadFailurePreservesProjectionAndNativeReadyIgnoresGeneration(t
 	api.mu.Lock()
 	api.object["status"].(map[string]any)["observedGeneration"] = float64(0)
 	api.mu.Unlock()
-	if err = repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil { t.Fatal(err) }
+	if err = repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil {
+		t.Fatal(err)
+	}
 	awaitNET05A(t, time.Second, func() bool {
 		runStep(t, worker)
 		got, err = n.GetVPC(ctx, v.TenantID, v.ID)
-		if err != nil { t.Fatal(err) }
+		if err != nil {
+			t.Fatal(err)
+		}
 		return !got.ObservationStale
 	})
 	if got.State != biz.Available || got.Reason != "" {

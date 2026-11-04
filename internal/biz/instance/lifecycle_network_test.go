@@ -31,29 +31,37 @@ func TestLifecycleRestartConfirmsFreshNetworkVersion(t *testing.T) {
 }
 
 func TestLifecycleNetworkReadErrorDoesNotInvalidateManagementAck(t *testing.T) {
-    repo, network, worker := lifecycleNetworkFixture(t)
-    repo.instance.Network.NetworkState = "attached"
-    repo.instance.Network.ConfirmedSnapshotRevision = repo.instance.Network.SnapshotRevision
-    network.observeError = ErrNetworkUnavailable
-    stepCleanupWorker(t, worker)
-    operation := repo.instance.ActiveOperation
-    if network.confirms != 0 || operation.State != "completed" || repo.instance.Observed != Running { t.Fatal("read failure invalidated accepted management state",network,operation) }
+	repo, network, worker := lifecycleNetworkFixture(t)
+	repo.instance.Network.NetworkState = "attached"
+	repo.instance.Network.ConfirmedSnapshotRevision = repo.instance.Network.SnapshotRevision
+	network.observeError = ErrNetworkUnavailable
+	stepCleanupWorker(t, worker)
+	operation := repo.instance.ActiveOperation
+	if network.confirms != 0 || operation.State != "completed" || repo.instance.Observed != Running {
+		t.Fatal("read failure invalidated accepted management state", network, operation)
+	}
 }
 
 func TestLifecycleNetworkConfirmationRetriesWithoutReasonGate(t *testing.T) {
-    repo, network, worker := lifecycleNetworkFixture(t)
-    network.reason = "ATTACHMENT_PROTOCOL_VIOLATION"
-    network.confirmError = ErrNetworkUnavailable
-    stepCleanupWorker(t, worker)
-    if network.confirms != 1 || network.confirmed != 0 || repo.instance.Network.ConfirmedSnapshotRevision != 2 || repo.instance.ActiveOperation.State == "completed" {t.Fatal(network,repo.instance.ActiveOperation)}
-    network.confirmError = nil
-    stepCleanupWorker(t, worker)
-    if network.confirmed != 1 || repo.instance.Network.ConfirmedSnapshotRevision != 5 || repo.instance.Network.NetworkState != "attached" || repo.instance.ActiveOperation.State == "completed" {t.Fatal(network,repo.instance.Network)}
-    // The ACK must first be saved, but an old diagnostic cannot require a new
-    // provider observation before the current management revision is used.
-    network.observeError = ErrNetworkUnavailable
-    stepCleanupWorker(t, worker)
-    if repo.instance.ActiveOperation.State != "completed" || repo.instance.Observed != Running || network.confirms != 2 {t.Fatal("ACK required an extra network read",network,repo.instance.ActiveOperation)}
+	repo, network, worker := lifecycleNetworkFixture(t)
+	network.reason = "ATTACHMENT_PROTOCOL_VIOLATION"
+	network.confirmError = ErrNetworkUnavailable
+	stepCleanupWorker(t, worker)
+	if network.confirms != 1 || network.confirmed != 0 || repo.instance.Network.ConfirmedSnapshotRevision != 2 || repo.instance.ActiveOperation.State == "completed" {
+		t.Fatal(network, repo.instance.ActiveOperation)
+	}
+	network.confirmError = nil
+	stepCleanupWorker(t, worker)
+	if network.confirmed != 1 || repo.instance.Network.ConfirmedSnapshotRevision != 5 || repo.instance.Network.NetworkState != "attached" || repo.instance.ActiveOperation.State == "completed" {
+		t.Fatal(network, repo.instance.Network)
+	}
+	// The ACK must first be saved, but an old diagnostic cannot require a new
+	// provider observation before the current management revision is used.
+	network.observeError = ErrNetworkUnavailable
+	stepCleanupWorker(t, worker)
+	if repo.instance.ActiveOperation.State != "completed" || repo.instance.Observed != Running || network.confirms != 2 {
+		t.Fatal("ACK required an extra network read", network, repo.instance.ActiveOperation)
+	}
 }
 
 func TestLifecycleNetworkCompletionRequiresCurrentPodAndSnapshot(t *testing.T) {

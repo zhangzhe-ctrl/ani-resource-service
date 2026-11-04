@@ -18,8 +18,8 @@ import (
 )
 
 type Postgres struct {
-	pool        *pgxpool.Pool
-	guestCipher *guestCredentialCipher
+	pool          *pgxpool.Pool
+	guestCipher   *guestCredentialCipher
 	notifyNetwork func(context.Context, string, string) error
 }
 

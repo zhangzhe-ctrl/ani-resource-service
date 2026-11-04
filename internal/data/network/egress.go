@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"slices"
-	"strings"
-	"time"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
+	"slices"
+	"strings"
+	"time"
 )
 
 func newEgressID(prefix string) string {
@@ -225,7 +225,7 @@ func (p *Postgres) ListEIPs(ctx context.Context, tenant string, f biz.VPCFilter)
 	values := make([]biz.EIP, 0, len(rows))
 	for _, r := range rows {
 		v := eipResource(r.NetworkEip)
-	v.ObservationStale = v.ObservedAt == nil || r.ObservationError != ""
+		v.ObservationStale = v.ObservedAt == nil || r.ObservationError != ""
 		v.BindingID = r.BindingID
 		v.BindingState = r.BindingState
 		v.BindingTarget = eipBindingTarget(r.BindingTargetKind, r.BindingTargetID, r.BindingState, r.BindingVpcID)

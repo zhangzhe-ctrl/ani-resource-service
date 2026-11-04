@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"strings"
 	"sync"
 	"testing"
 	"time"
-	"github.com/google/uuid"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 )
 
 // Only the Kubernetes/NIC boundary is replaced. Authorization, acceptance,
@@ -279,7 +279,7 @@ JOIN network_virtual_switch_operations o ON o.operation_id=s.last_operation_id W
 	}
 	assertBlocked := func(checkpoint string) {
 		t.Helper()
-		if err := f.p.FinishVirtualSwitch(f.ctx, old, biz.VirtualSwitchProgress{BindingState:"configured", Observed:true}, policy.ObserveEvery); !errors.Is(err, biz.ErrLeaseLost) {
+		if err := f.p.FinishVirtualSwitch(f.ctx, old, biz.VirtualSwitchProgress{BindingState: "configured", Observed: true}, policy.ObserveEvery); !errors.Is(err, biz.ErrLeaseLost) {
 			t.Fatalf("%s: stale Finish accepted: %v", checkpoint, err)
 		}
 		if err := f.p.SaveVirtualSwitchNode(f.ctx, old, 0, old.Switch.Nodes[0]); !errors.Is(err, biz.ErrLeaseLost) {
@@ -318,7 +318,7 @@ JOIN network_virtual_switch_operations o ON o.operation_id=s.last_operation_id W
 	if final.version != accepted.version || final.bindingID != accepted.bindingID || final.state != "deleted" || final.bindingState != "cleaned" || final.operation != accepted.operation || final.opState != "succeeded" || final.completed == nil || final.completed.Before(*claimed.leaseUntil) || final.epoch <= old.Epoch || final.owner != "" || final.leaseUntil != nil {
 		t.Fatalf("same object did not finish after natural expiry: %+v", final)
 	}
-	if err := f.p.FinishVirtualSwitch(f.ctx, old, biz.VirtualSwitchProgress{BindingState:"configured", Observed:true}, policy.ObserveEvery); !errors.Is(err, biz.ErrLeaseLost) {
+	if err := f.p.FinishVirtualSwitch(f.ctx, old, biz.VirtualSwitchProgress{BindingState: "configured", Observed: true}, policy.ObserveEvery); !errors.Is(err, biz.ErrLeaseLost) {
 		t.Fatal("late old Finish revived the deleted switch", err)
 	}
 	if err := f.p.SaveVirtualSwitchNode(f.ctx, old, 0, old.Switch.Nodes[0]); !errors.Is(err, biz.ErrLeaseLost) {

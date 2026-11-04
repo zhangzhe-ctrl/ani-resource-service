@@ -22,7 +22,7 @@ type AttachmentWork struct {
 
 type AttachmentAddressObservation struct {
 	CurrentVNicName, CurrentVNicUID, CurrentMACAddress string
-	CurrentIPs                                       []string
+	CurrentIPs                                         []string
 }
 
 // AttachmentAddressReader reads display data for the current registered
@@ -51,16 +51,16 @@ type AttachmentWorkRepository interface {
 type ManualVNicReference struct{ VNicID, ProviderName, ProviderUID, BindingID string }
 
 type ConsumerSubmission struct {
-	ManualVNics                                                         []ManualVNicReference `json:",omitempty"`
-	SnapshotRevision                                                    int64
-	DesiredRunState                                                     string
-	CurrentPods                                                         []PodReference
-	ProtocolVersion                                                     int32
+	ManualVNics                                                            []ManualVNicReference `json:",omitempty"`
+	SnapshotRevision                                                       int64
+	DesiredRunState                                                        string
+	CurrentPods                                                            []PodReference
+	ProtocolVersion                                                        int32
 	TenantID, InstanceID, SubmissionID, AttachmentID, ClusterID, Namespace string
-	Generation                                                          int64
-	State, FinalizationID                                               string
-	PodUIDs                                                             []string
-	ClosedAt                                                            *time.Time
+	Generation                                                             int64
+	State, FinalizationID                                                  string
+	PodUIDs                                                                []string
+	ClosedAt                                                               *time.Time
 }
 
 type InstanceConsumer interface {

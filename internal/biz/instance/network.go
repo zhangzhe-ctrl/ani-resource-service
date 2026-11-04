@@ -35,6 +35,7 @@ func (n *NetworkRuntime) UnmarshalJSON(raw []byte) error {
 	type current NetworkRuntime
 	return json.Unmarshal(raw, (*current)(n))
 }
+
 type NetworkBinding struct {
 	AttachmentID, BindingRevision, PrimaryNetworkRef string
 	Version                                          int64

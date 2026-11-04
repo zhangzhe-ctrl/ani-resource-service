@@ -11,8 +11,8 @@ import (
 
 type NetworkConsumerState struct {
 	State, DesiredRunState, FinalizationID string
-	ClosedAt                              *time.Time
-	CurrentVMI, CurrentLauncher           *ObjectRef
+	ClosedAt                               *time.Time
+	CurrentVMI, CurrentLauncher            *ObjectRef
 }
 
 // UnmarshalJSON accepts the previous current-Pod spelling during the in-place

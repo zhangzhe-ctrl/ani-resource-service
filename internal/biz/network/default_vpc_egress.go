@@ -91,26 +91,26 @@ func (u *DefaultVPCEgressUseCase) GetCurrent(ctx context.Context) (DefaultVPCEgr
 }
 
 type DefaultEgressWork struct {
-	Egress                                              DefaultVPCEgress
-	Owner, EIPBindingID, SnatBindingID string
+	Egress                                 DefaultVPCEgress
+	Owner, EIPBindingID, SnatBindingID     string
 	Epoch, PoolRevision, ClaimedGeneration int64
-	Now                                                 time.Time
+	Now                                    time.Time
 }
 type DefaultEgressObservation struct {
-	EIPExists, SnatExists bool
-	Ready *bool
-	StatusReason Reason
+	EIPExists, SnatExists    bool
+	Ready                    *bool
+	StatusReason             Reason
 	EIPUID, SnatUID, Address string
-	AppliedEnabled *bool
+	AppliedEnabled           *bool
 }
 type DefaultEgressProgress struct {
-	State                                  ResourceState
-	Phase                                  string
-	Reason, ObservationError, OperationReason Reason
-	OperationState                         OperationState
-	Observation                            DefaultEgressObservation
+	State                                           ResourceState
+	Phase                                           string
+	Reason, ObservationError, OperationReason       Reason
+	OperationState                                  OperationState
+	Observation                                     DefaultEgressObservation
 	Observed, ClearPending, PendingUnknown, Backoff bool
-	Delay                                  time.Duration
+	Delay                                           time.Duration
 }
 type DefaultEgressWorkRepository interface {
 	ClaimDefaultVPCEgress(context.Context, string, time.Duration) (DefaultEgressWork, bool, error)

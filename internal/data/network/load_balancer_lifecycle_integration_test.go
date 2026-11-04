@@ -3,6 +3,9 @@ package data_test
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -10,9 +13,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-	"github.com/google/uuid"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
-	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
 )
 
 // This HTTP fixture implements the Kubernetes/controller side only. Every LB

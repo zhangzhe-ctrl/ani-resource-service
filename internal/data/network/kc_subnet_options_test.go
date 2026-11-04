@@ -82,12 +82,14 @@ func TestKCSubnetOptionsDefaultAndFences(t *testing.T) {
 				o.SetGeneration(2)
 			}
 			observed, err := inspectResource(o, b, target)
-            if name == "replaced-uid" || name == "foreign-tenant" {
-                var failure *biz.ProviderError
-                if !errors.As(err, &failure) || failure.Kind != biz.ProviderConflict { t.Fatal("management identity was adopted", observed, err) }
-            } else if err != nil || observed.Ready == nil || !*observed.Ready {
-                t.Fatal("controller Ready was rechecked against default spec/generation", observed, err)
-            }
-        })
-    }
+			if name == "replaced-uid" || name == "foreign-tenant" {
+				var failure *biz.ProviderError
+				if !errors.As(err, &failure) || failure.Kind != biz.ProviderConflict {
+					t.Fatal("management identity was adopted", observed, err)
+				}
+			} else if err != nil || observed.Ready == nil || !*observed.Ready {
+				t.Fatal("controller Ready was rechecked against default spec/generation", observed, err)
+			}
+		})
+	}
 }

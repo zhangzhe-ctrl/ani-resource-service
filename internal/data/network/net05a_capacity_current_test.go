@@ -14,7 +14,7 @@ type capacityMetrics interface{ Snapshot() map[string]float64 }
 
 func configureCapacity(t *testing.T, p *data.KCProvider, execution *server.WorkerServer) (capacityMetrics, func(context.Context)) {
 	t.Helper()
-	o, e := p.EnableObservation(5*time.Second)
+	o, e := p.EnableObservation(5 * time.Second)
 	if e != nil {
 		t.Fatal(e)
 	}

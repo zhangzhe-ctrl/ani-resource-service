@@ -2,6 +2,9 @@ package data_test
 
 import (
 	"context"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
+	"github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,9 +14,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
-	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
-	"github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv"
 )
 
 func TestEgressServiceProcessesRecoverLostCreateAndDelete(t *testing.T) {

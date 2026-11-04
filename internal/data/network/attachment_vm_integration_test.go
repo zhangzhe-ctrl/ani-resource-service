@@ -24,12 +24,19 @@ func (n *vmNADBoundary) ResolveVMNetwork(_ context.Context, s biz.VMNetworkSelec
 	return biz.VMPrimaryPlan{FormatVersion: 1, Namespace: s.Namespace, NADName: e.NADName, NADUID: e.NADUID, NADConfigDigest: e.NADConfigDigest, KCNSubnetRef: s.KCNSubnetRef}, nil
 }
 
-type vmNetworkBoundary struct { value biz.AttachmentAddressObservation; calls int }
-func (p *vmNetworkBoundary) ObserveAttachmentAddresses(context.Context, biz.Attachment, biz.ConsumerSubmission) (biz.AttachmentAddressObservation, error) { p.calls++; return p.value, nil }
+type vmNetworkBoundary struct {
+	value biz.AttachmentAddressObservation
+	calls int
+}
+
+func (p *vmNetworkBoundary) ObserveAttachmentAddresses(context.Context, biz.Attachment, biz.ConsumerSubmission) (biz.AttachmentAddressObservation, error) {
+	p.calls++
+	return p.value, nil
+}
 
 func vmConsumerFor(a biz.Attachment) biz.ConsumerSubmission {
-    vmi := biz.WorkloadReference{APIVersion:"kubevirt.io/v1", Kind:"VirtualMachineInstance", Namespace:a.Namespace, Name:"vm", UID:"vmi-uid"}
-    return biz.ConsumerSubmission{ProtocolVersion:3, SnapshotRevision:1, DesiredRunState:"running", TenantID:a.TenantID, InstanceID:a.InstanceID, SubmissionID:a.SubmissionID, Generation:a.Generation, AttachmentID:a.ID, ClusterID:a.ClusterID, Namespace:a.Namespace, State:"open", CurrentPods:[]biz.PodReference{{Reference:biz.WorkloadReference{APIVersion:"v1", Kind:"Pod", Namespace:a.Namespace, Name:"launcher", UID:"launcher-uid"}, Owner:vmi}}}
+	vmi := biz.WorkloadReference{APIVersion: "kubevirt.io/v1", Kind: "VirtualMachineInstance", Namespace: a.Namespace, Name: "vm", UID: "vmi-uid"}
+	return biz.ConsumerSubmission{ProtocolVersion: 3, SnapshotRevision: 1, DesiredRunState: "running", TenantID: a.TenantID, InstanceID: a.InstanceID, SubmissionID: a.SubmissionID, Generation: a.Generation, AttachmentID: a.ID, ClusterID: a.ClusterID, Namespace: a.Namespace, State: "open", CurrentPods: []biz.PodReference{{Reference: biz.WorkloadReference{APIVersion: "v1", Kind: "Pod", Namespace: a.Namespace, Name: "launcher", UID: "launcher-uid"}, Owner: vmi}}}
 }
 
 func TestVMAttachmentPGReplayStopAndRelease(t *testing.T) {

@@ -2,18 +2,18 @@ package data_test
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"sync"
-	"testing"
-	"time"
 	"github.com/google/uuid"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
 	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
 	"github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv"
 	"k8s.io/client-go/rest"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
+	"testing"
+	"time"
 )
 
 func seedEgressInfrastructure(api *controlled.Server) {
@@ -119,7 +119,9 @@ func TestEgressKCAdapterSharedObservationLifecycleAndDrift(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.binding(t, bound.ID, biz.Deleted, nil)
-	if _, err = f.e.DeleteEIP(f.ctx, "", eip.ID); err != nil { t.Fatal(err) }
+	if _, err = f.e.DeleteEIP(f.ctx, "", eip.ID); err != nil {
+		t.Fatal(err)
+	}
 	f.drive(t, func() bool { v, err := f.e.GetEIP(f.ctx, "", eip.ID); return err == nil && v.State == biz.Deleted })
 	_ = eipName
 

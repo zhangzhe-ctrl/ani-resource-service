@@ -4,17 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/tenantnamespace"
 	"reflect"
 	"strings"
 	"sync"
 	"testing"
 	"time"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/tenantnamespace"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
 )
 
 // Test dependency only. All acceptance, leases, constraints and histories below
@@ -86,8 +86,8 @@ func (p *egressProvider) UpdateEgress(ctx context.Context, t biz.ProviderTarget)
 
 type testEgressInfrastructure struct{}
 
-func (testEgressInfrastructure) GetIntranetPoolDefaults(context.Context) (biz.PublicPoolConfig,error) {
-	return biz.PublicPoolConfig{DefaultVPCName:"kcn-cluster",DefaultVPCUID:"fixture-default"},nil
+func (testEgressInfrastructure) GetIntranetPoolDefaults(context.Context) (biz.PublicPoolConfig, error) {
+	return biz.PublicPoolConfig{DefaultVPCName: "kcn-cluster", DefaultVPCUID: "fixture-default"}, nil
 }
 
 type egressFixture struct {
@@ -485,11 +485,17 @@ func TestEgressUnderlayPlatformOccupancyAndRetirement(t *testing.T) {
 		t.Fatal("retired VLAN reused identity")
 	}
 	// Administrator materials remain an archive even when their source is old.
-	before,err:=f.e.GetPlatform(f.ctx,"public_pool",f.pool.ID)
-	if err!=nil||before.Verification==nil{t.Fatal(before,err)}
-	if _,err=f.e.SetPool(f.ctx,biz.PlatformIntent{Kind:"verify_public_pool",ID:before.ID,ExpectedVersion:before.Version,IdempotencyKey:"archive-again",Verification:before.Verification});err!=nil{t.Fatal(err)}
-	after,err:=f.e.GetPlatform(f.ctx,"public_pool",f.pool.ID)
-	if err!=nil||!reflect.DeepEqual(after.Verification,before.Verification){t.Fatal(after,err)}
+	before, err := f.e.GetPlatform(f.ctx, "public_pool", f.pool.ID)
+	if err != nil || before.Verification == nil {
+		t.Fatal(before, err)
+	}
+	if _, err = f.e.SetPool(f.ctx, biz.PlatformIntent{Kind: "verify_public_pool", ID: before.ID, ExpectedVersion: before.Version, IdempotencyKey: "archive-again", Verification: before.Verification}); err != nil {
+		t.Fatal(err)
+	}
+	after, err := f.e.GetPlatform(f.ctx, "public_pool", f.pool.ID)
+	if err != nil || !reflect.DeepEqual(after.Verification, before.Verification) {
+		t.Fatal(after, err)
+	}
 
 }
 
@@ -528,4 +534,4 @@ func TestEgressUnknownUpdateKeepsOccupancyAndRecoversExactDesiredState(t *testin
 	}
 }
 
-func egressReportedReady(value bool)*bool { return &value }
+func egressReportedReady(value bool) *bool { return &value }

@@ -113,23 +113,45 @@ func TestCurrentReadUpdatesResourceWithoutRewritingCompletedOperation(t *testing
 	identity := tenantnamespace.Identity{TenantID: tenant, ClusterID: "test-cluster", Name: "tenant-" + tenant, UID: uuid.NewString()}
 	p.ConfigureTenantNamespaceResolver(func(context.Context, string) (tenantnamespace.Identity, error) { return identity, nil })
 	v, err := n.CreateVPC(ctx, biz.CreateVPC{TenantID: tenant, Name: "current-read", CIDR: "10.42.0.0/16", IdempotencyKey: "current-read"})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	first, _, err := p.Claim(ctx, uuid.NewString(), time.Second)
-	if err != nil { t.Fatal(err) }
-	if err = p.Finish(ctx, first, biz.Progress{State: biz.Available, OperationState: biz.Succeeded, Identity: "uid", Observed: true, NextDelay: time.Hour}); err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = p.Finish(ctx, first, biz.Progress{State: biz.Available, OperationState: biz.Succeeded, Identity: "uid", Observed: true, NextDelay: time.Hour}); err != nil {
+		t.Fatal(err)
+	}
 	before, err := n.GetOperation(ctx, tenant, v.LastOperationID)
-	if err != nil { t.Fatal(err) }
-	if err = p.NotifyResource(ctx, tenant, v.ID); err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = p.NotifyResource(ctx, tenant, v.ID); err != nil {
+		t.Fatal(err)
+	}
 	second, found, err := p.Claim(ctx, uuid.NewString(), time.Second)
-	if err != nil || !found || second.ActiveOperation { t.Fatal("notification reopened operation", found, second, err) }
-	if err = p.Finish(ctx, first, biz.Progress{State: biz.Degraded, Observed: true}); !errors.Is(err, biz.ErrLeaseLost) { t.Fatal("old lease changed projection", err) }
-	if err = p.Finish(ctx, second, biz.Progress{State: biz.Degraded, Reason: "native-false", Identity: "uid", Observed: true, NextDelay: time.Hour}); err != nil { t.Fatal(err) }
+	if err != nil || !found || second.ActiveOperation {
+		t.Fatal("notification reopened operation", found, second, err)
+	}
+	if err = p.Finish(ctx, first, biz.Progress{State: biz.Degraded, Observed: true}); !errors.Is(err, biz.ErrLeaseLost) {
+		t.Fatal("old lease changed projection", err)
+	}
+	if err = p.Finish(ctx, second, biz.Progress{State: biz.Degraded, Reason: "native-false", Identity: "uid", Observed: true, NextDelay: time.Hour}); err != nil {
+		t.Fatal(err)
+	}
 	current, err := n.GetVPC(ctx, tenant, v.ID)
-	if err != nil || current.State != biz.Degraded || current.ObservedAt == nil || current.ObservedAt.Before(second.Now) { t.Fatal(current, err) }
+	if err != nil || current.State != biz.Degraded || current.ObservedAt == nil || current.ObservedAt.Before(second.Now) {
+		t.Fatal(current, err)
+	}
 	after, err := n.GetOperation(ctx, tenant, v.LastOperationID)
-	if err != nil || after.State != before.State || after.Reason != before.Reason || !after.UpdatedAt.Equal(before.UpdatedAt) || !after.CompletedAt.Equal(*before.CompletedAt) { t.Fatal("completed operation changed", before, after, err) }
+	if err != nil || after.State != before.State || after.Reason != before.Reason || !after.UpdatedAt.Equal(before.UpdatedAt) || !after.CompletedAt.Equal(*before.CompletedAt) {
+		t.Fatal("completed operation changed", before, after, err)
+	}
 	var processed int64
-	if err = db.QueryRow(ctx, `SELECT processed_generation FROM network_reconciliations WHERE tenant_id=$1 AND vpc_id=$2`, tenant, v.ID).Scan(&processed); err != nil || processed != second.ClaimedGeneration { t.Fatal(processed, err) }
+	if err = db.QueryRow(ctx, `SELECT processed_generation FROM network_reconciliations WHERE tenant_id=$1 AND vpc_id=$2`, tenant, v.ID).Scan(&processed); err != nil || processed != second.ClaimedGeneration {
+		t.Fatal(processed, err)
+	}
 }
 func TestNET05AAttachmentNotificationDuringClaimPreservesLeaseAndWake(t *testing.T) {
 	f := newAttachmentFixture(t)

@@ -1,9 +1,9 @@
 package data_test
 
 import (
+	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"testing"
 	"time"
-	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 )
 
 func TestIntranetAutomaticAllocationAtomicReplayAndSourceSwitch(t *testing.T) {
@@ -54,7 +54,11 @@ func TestIntranetAutomaticAllocationAtomicReplayAndSourceSwitch(t *testing.T) {
 func TestIntranetAutomaticAllocationDoesNotGateOnReadAge(t *testing.T) {
 	f := newEgressFixture(t)
 	pool := f.platform(t, intranetIntent("auto-old-read", "10.232.254.0/24", "10.232.254.1"))
-	if _, err := f.owner.Exec(f.ctx, `UPDATE network_platform_resources SET observed_at=$2 WHERE resource_id=$1`, pool.ID, time.Now().Add(-time.Hour)); err != nil { t.Fatal(err) }
+	if _, err := f.owner.Exec(f.ctx, `UPDATE network_platform_resources SET observed_at=$2 WHERE resource_id=$1`, pool.ID, time.Now().Add(-time.Hour)); err != nil {
+		t.Fatal(err)
+	}
 	got, err := f.e.SetPool(f.ctx, biz.PlatformIntent{Kind: "set_intranet_pool_auto_allocation", ID: pool.ID, Enabled: true, ExpectedVersion: pool.Version, IdempotencyKey: "auto-enable"})
-	if err != nil || !got.AllocationEnabled || !got.IsDefault || !got.NewVPCsEnabled { t.Fatal(got, err) }
+	if err != nil || !got.AllocationEnabled || !got.IsDefault || !got.NewVPCsEnabled {
+		t.Fatal(got, err)
+	}
 }

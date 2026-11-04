@@ -27,17 +27,17 @@ type Placement struct {
 }
 
 type Postgres struct {
-	vnicConsumerResolver  biz.VNicConsumerResolver
-	networkProvider       *KCProvider
-	namespaceResolver     func(context.Context, string) (tenantnamespace.Identity, error)
-	vmNetworks            biz.VMNetworkResolver
-	vpcCIDRPresets        *biz.VPCCIDRPresets
-	workTurn              atomic.Uint64
+	vnicConsumerResolver        biz.VNicConsumerResolver
+	networkProvider             *KCProvider
+	namespaceResolver           func(context.Context, string) (tenantnamespace.Identity, error)
+	vmNetworks                  biz.VMNetworkResolver
+	vpcCIDRPresets              *biz.VPCCIDRPresets
+	workTurn                    atomic.Uint64
 	virtualSwitchInfrastructure biz.VirtualSwitchInfrastructure
-	lbCapabilityReader LoadBalancerCapabilityReader
-	pool                  *pgxpool.Pool
-	queries               *sqlcgen.Queries
-	placement             Placement
+	lbCapabilityReader          LoadBalancerCapabilityReader
+	pool                        *pgxpool.Pool
+	queries                     *sqlcgen.Queries
+	placement                   Placement
 }
 
 // Provider reads invoked by admission must use its transaction connection.

@@ -2,12 +2,12 @@ package data_test
 
 import (
 	"errors"
-	"testing"
-	"time"
 	"github.com/google/uuid"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
-	"k8s.io/client-go/tools/clientcmd"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
+	"k8s.io/client-go/tools/clientcmd"
+	"testing"
+	"time"
 )
 
 func TestLBBackendUsesCurrentConsumerRegardlessOfReadAge(t *testing.T) {
@@ -80,8 +80,12 @@ func TestLBBackendUsesCurrentConsumerRegardlessOfReadAge(t *testing.T) {
 		})
 	}
 	// Only a current consumer change retracts the accepted address.
-	if _,err=f.f.owner.Exec(f.f.ctx,`UPDATE network_attachments SET pod_uid='another-consumer',current_ips='{}' WHERE tenant_id=$1 AND attachment_id=$2`,f.f.tenant,attachment);err!=nil{t.Fatal(err)}
-	result,err:=provider.ObserveLoadBalancer(f.f.ctx,work)
-	if err!=nil||len(result.Members)!=1||result.Members[0].Eligible{t.Fatal(result.Members,err)}
+	if _, err = f.f.owner.Exec(f.f.ctx, `UPDATE network_attachments SET pod_uid='another-consumer',current_ips='{}' WHERE tenant_id=$1 AND attachment_id=$2`, f.f.tenant, attachment); err != nil {
+		t.Fatal(err)
+	}
+	result, err := provider.ObserveLoadBalancer(f.f.ctx, work)
+	if err != nil || len(result.Members) != 1 || result.Members[0].Eligible {
+		t.Fatal(result.Members, err)
+	}
 
 }

@@ -280,7 +280,9 @@ func TestPureQueriesKeepProjectionAndSuccessfulOperationHistory(t *testing.T) {
 	api.mu.Lock()
 	api.object["status"] = map[string]any{}
 	api.mu.Unlock()
-	if err := repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil { t.Fatal(err) }
+	if err := repository.NotifyResource(ctx, v.TenantID, v.ID); err != nil {
+		t.Fatal(err)
+	}
 	runStep(t, worker)
 	got, err := n.GetVPC(ctx, v.TenantID, v.ID)
 	if err != nil || got.State != biz.Available || got.Reason != biz.ProviderStatusUnreported {

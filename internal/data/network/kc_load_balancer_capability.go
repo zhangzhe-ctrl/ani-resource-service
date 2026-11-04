@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
-	"sort"
-	"strings"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,7 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
+	"regexp"
 	"sigs.k8s.io/yaml"
+	"sort"
+	"strings"
 )
 
 // Optional input for the explicit installation diagnostic only. Runtime
@@ -31,9 +31,13 @@ var lbReviews = schema.GroupVersionResource{Group: "authorization.k8s.io", Versi
 var lbInstallationResources = []schema.GroupVersionResource{lbGateways, lbRoutes, lbBackends, lbPolicies, lbDeployments, lbReplicaSets, lbEndpointSlices, lbGatewayClasses, lbEnvoyProxies}
 
 func validateLoadBalancerInstallation(expected LoadBalancerInstallation) error {
-	if !regexp.MustCompile(`^[a-f0-9]{64}$`).MatchString(expected.Fingerprint) { return fmt.Errorf("LB installation fingerprint must be sha256") }
+	if !regexp.MustCompile(`^[a-f0-9]{64}$`).MatchString(expected.Fingerprint) {
+		return fmt.Errorf("LB installation fingerprint must be sha256")
+	}
 	for _, id := range []string{expected.ControllerImageID, expected.EnvoyImageID, expected.ShutdownImageID, expected.KCImageID} {
-		if !regexp.MustCompile(`^(?:[^\s@]+@)?sha256:[a-f0-9]{64}$`).MatchString(id) { return fmt.Errorf("LB expected image IDs must have fixed sha256 digests") }
+		if !regexp.MustCompile(`^(?:[^\s@]+@)?sha256:[a-f0-9]{64}$`).MatchString(id) {
+			return fmt.Errorf("LB expected image IDs must have fixed sha256 digests")
+		}
 	}
 	return nil
 }
@@ -272,7 +276,9 @@ func VerifyLoadBalancerInstallation(ctx context.Context, client dynamic.Interfac
 
 // The explicit diagnostic owns this temporary collection. It is never stored
 // in the runtime observer or used as a resource admission requirement.
-type lbInstallationView struct { indices map[schema.GroupVersionResource]cache.Indexer }
+type lbInstallationView struct {
+	indices map[schema.GroupVersionResource]cache.Indexer
+}
 
 func lbInstallationAccepted(conditions []any, generation int64) bool {
 	ready, _ := lbConditions(conditions, generation, "Accepted")
@@ -281,8 +287,12 @@ func lbInstallationAccepted(conditions []any, generation int64) bool {
 
 func (p *KCProvider) ReadLoadBalancerCapability(ctx context.Context) (*bool, biz.Reason, error) {
 	class, err := p.client.Resource(lbGatewayClasses).Get(ctx, biz.LoadBalancerGatewayClass, metav1.GetOptions{})
-	if apierrors.IsNotFound(err) { return nil, biz.ProviderMissing, nil }
-	if err != nil { return nil, "", readFailure(err) }
+	if apierrors.IsNotFound(err) {
+		return nil, biz.ProviderMissing, nil
+	}
+	if err != nil {
+		return nil, "", readFailure(err)
+	}
 	ready, reason := primaryCondition(class, "Accepted")
 	return ready, reason, nil
 }

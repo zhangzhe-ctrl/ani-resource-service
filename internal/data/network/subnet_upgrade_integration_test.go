@@ -33,12 +33,12 @@ func TestSubnetMigrationUpgradesNET01WithoutChangingDurableFacts(t *testing.T) {
 	// Compare the durable NET-01 contract on both schemas. Task notification
 	// columns may be added or retired, and old execution leases are invalidated.
 	columns := map[string]string{
-		"network_vpcs": "tenant_id,vpc_id,name,description,cidr,state,reason,version,created_at,updated_at,observed_at,last_operation_id",
-		"network_operations": "tenant_id,operation_id,vpc_id,kind,state,reason,attempt,execution_epoch,created_at,updated_at,completed_at,next_attempt_at",
-		"network_reconciliations": "tenant_id,vpc_id",
-		"network_idempotency": "tenant_id,operation_kind,idempotency_key,fingerprint,fingerprint_version,vpc_id,operation_id,response,created_at",
+		"network_vpcs":              "tenant_id,vpc_id,name,description,cidr,state,reason,version,created_at,updated_at,observed_at,last_operation_id",
+		"network_operations":        "tenant_id,operation_id,vpc_id,kind,state,reason,attempt,execution_epoch,created_at,updated_at,completed_at,next_attempt_at",
+		"network_reconciliations":   "tenant_id,vpc_id",
+		"network_idempotency":       "tenant_id,operation_kind,idempotency_key,fingerprint,fingerprint_version,vpc_id,operation_id,response,created_at",
 		"network_provider_bindings": "tenant_id,vpc_id,binding_id,cluster_id,namespace,provider_name,provider_uid,pending_action,pending_since",
-		"network_resource_history": "tenant_id,history_id,vpc_id,operation_id,event,resource_state,operation_state,reason,actor_ref,caller_ref,correlation_id,identity_verified,created_at",
+		"network_resource_history":  "tenant_id,history_id,vpc_id,operation_id,event,resource_state,operation_state,reason,actor_ref,caller_ref,correlation_id,identity_verified,created_at",
 	}
 	stableRow := func(table string) string {
 		return "SELECT to_jsonb(t)::text FROM (SELECT " + columns[table] + " FROM " + table + " WHERE tenant_id=$1) t"

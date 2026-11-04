@@ -176,7 +176,9 @@ func TestBaseSchemaLegacyPublicUpgradePreservesDurableFactsAndReplay(t *testing.
 		t.Fatal("migration retired existing durable work", activeReconciliation, err)
 	}
 	var obsolete int
-	if err := f.Owner.QueryRow(ctx, `SELECT count(*) FROM information_schema.columns WHERE table_name='network_provider_bindings' AND column_name IN ('provider_ready','provider_observed_at','provider_observed_uid','provider_generation','provider_observed_generation')`).Scan(&obsolete); err != nil || obsolete != 0 { t.Fatal("obsolete provider proof columns remain", obsolete, err) }
+	if err := f.Owner.QueryRow(ctx, `SELECT count(*) FROM information_schema.columns WHERE table_name='network_provider_bindings' AND column_name IN ('provider_ready','provider_observed_at','provider_observed_uid','provider_generation','provider_observed_generation')`).Scan(&obsolete); err != nil || obsolete != 0 {
+		t.Fatal("obsolete provider proof columns remain", obsolete, err)
+	}
 	got, err := f.Repository.GetEIP(ctx, legacy.Tenant, legacy.EIP)
 	if err != nil || got.Scope != "public" || got.ManagedBy != "tenant" || got.BindingID != legacy.Snat || got.BindingTarget == nil || got.BindingTarget.Kind != "vpc_snat" || got.BindingState != "bound" {
 		t.Fatal("legacy claim not converted", got, err)

@@ -127,7 +127,9 @@ func TestBaseBackfillRechecksAllocationSettingAfterPlatformLockWait(t *testing.T
 		err := f.owner.QueryRow(f.ctx, `SELECT EXISTS(SELECT 1 FROM pg_locks WHERE locktype='advisory' AND NOT granted AND database=(SELECT oid FROM pg_database WHERE datname=current_database()) AND $1=ANY(pg_blocking_pids(pid)))`, blockerPID).Scan(&waiting)
 		return err == nil && waiting
 	})
-	if _, err = blocker.Exec(f.ctx, `UPDATE network_public_pools SET allocation_enabled=false WHERE resource_id=$1`, f.pool.ID); err != nil { t.Fatal(err) }
+	if _, err = blocker.Exec(f.ctx, `UPDATE network_public_pools SET allocation_enabled=false WHERE resource_id=$1`, f.pool.ID); err != nil {
+		t.Fatal(err)
+	}
 	if err = blocker.Commit(f.ctx); err != nil {
 		t.Fatal(err)
 	}

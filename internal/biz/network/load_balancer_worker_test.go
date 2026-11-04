@@ -28,7 +28,7 @@ type deferredLBWorkerProvider struct {
 	observation  LoadBalancerObservation
 	mutations    []string
 	observations int
-	readErr error
+	readErr      error
 }
 
 func (p *deferredLBWorkerProvider) ObserveLoadBalancer(context.Context, Work) (LoadBalancerObservation, error) {
@@ -53,27 +53,39 @@ func deferredLBWorkerFixture() (Work, *deferredLBWorkerRepository, *deferredLBWo
 }
 
 func TestLBWorkerClearingLastBackendDeletesOwnDeclarationsInOrder(t *testing.T) {
-	work,repository,provider,worker:=deferredLBWorkerFixture()
-	work.Resource.LoadBalancer.Components=append(work.Resource.LoadBalancer.Components,LoadBalancerComponent{ID:"proxy",Kind:"envoy_proxy",Identity:"uid-proxy"})
-	provider.observation.Components=append(provider.observation.Components,LoadBalancerComponentObservation{ID:"proxy",Identity:"uid-proxy",Exists:true})
-	for step,index:=range []int{1,0,2,3} {
-		if err:=worker.stepLoadBalancer(context.Background(),work);err!=nil {t.Fatal(err)}
-		want:=[]string{"route:delete","gateway:delete","backend:delete","envoy_proxy:delete"}[step]
-		if provider.mutations[len(provider.mutations)-1]!=want {t.Fatal(provider.mutations)}
-		provider.observation.Components[index].Exists=false
+	work, repository, provider, worker := deferredLBWorkerFixture()
+	work.Resource.LoadBalancer.Components = append(work.Resource.LoadBalancer.Components, LoadBalancerComponent{ID: "proxy", Kind: "envoy_proxy", Identity: "uid-proxy"})
+	provider.observation.Components = append(provider.observation.Components, LoadBalancerComponentObservation{ID: "proxy", Identity: "uid-proxy", Exists: true})
+	for step, index := range []int{1, 0, 2, 3} {
+		if err := worker.stepLoadBalancer(context.Background(), work); err != nil {
+			t.Fatal(err)
+		}
+		want := []string{"route:delete", "gateway:delete", "backend:delete", "envoy_proxy:delete"}[step]
+		if provider.mutations[len(provider.mutations)-1] != want {
+			t.Fatal(provider.mutations)
+		}
+		provider.observation.Components[index].Exists = false
 	}
-	if err:=worker.stepLoadBalancer(context.Background(),work);err!=nil {t.Fatal(err)}
-	if repository.progress.OperationState!=Succeeded || repository.progress.LoadBalancer.ConfigurationState!="waiting_for_backends" {t.Fatal(repository.progress)}
+	if err := worker.stepLoadBalancer(context.Background(), work); err != nil {
+		t.Fatal(err)
+	}
+	if repository.progress.OperationState != Succeeded || repository.progress.LoadBalancer.ConfigurationState != "waiting_for_backends" {
+		t.Fatal(repository.progress)
+	}
 }
 
 func TestLBWorkerAuthoritativeAbsenceFinishesPendingCreateDeletion(t *testing.T) {
-	work,repository,provider,worker:=deferredLBWorkerFixture()
-	work.Resource.State=Deleting
-	work.Resource.LoadBalancer.Components=[]LoadBalancerComponent{{ID:"gateway",Kind:"gateway",PendingAction:"create",CreateDispatched:true}}
-	work.KnownIdentity=""
-	provider.observation.Components=[]LoadBalancerComponentObservation{{ID:"gateway"}}
-	if err:=worker.stepLoadBalancer(context.Background(),work);err!=nil {t.Fatal(err)}
-	if repository.progress.State!=Deleted || repository.progress.OperationState!=Succeeded || len(provider.mutations)!=0 {t.Fatal(repository.progress,provider.mutations)}
+	work, repository, provider, worker := deferredLBWorkerFixture()
+	work.Resource.State = Deleting
+	work.Resource.LoadBalancer.Components = []LoadBalancerComponent{{ID: "gateway", Kind: "gateway", PendingAction: "create", CreateDispatched: true}}
+	work.KnownIdentity = ""
+	provider.observation.Components = []LoadBalancerComponentObservation{{ID: "gateway"}}
+	if err := worker.stepLoadBalancer(context.Background(), work); err != nil {
+		t.Fatal(err)
+	}
+	if repository.progress.State != Deleted || repository.progress.OperationState != Succeeded || len(provider.mutations) != 0 {
+		t.Fatal(repository.progress, provider.mutations)
+	}
 }
 
 func TestLBWorkerPureDBVersionDoesNotAdvanceAppliedTarget(t *testing.T) {
@@ -106,14 +118,20 @@ func TestLBWorkerPureDBVersionDoesNotAdvanceAppliedTarget(t *testing.T) {
 }
 
 func TestLBWorkerRepositoryUnsentCancellationAvoidsProvider(t *testing.T) {
-	work:=Work{CancelUnsent:true,Resource:ResourceWork{Kind:"load_balancer",State:Deleting,LoadBalancer:&LoadBalancerWork{}}}
-	repository:=&deferredLBWorkerRepository{finishError:ErrLeaseLost}
-	provider:=&deferredLBWorkerProvider{}
-	worker:=&Worker{repository:repository,provider:provider,policy:DefaultWorkerPolicy()}
-	if err:=worker.stepLoadBalancer(context.Background(),work);err!=nil {t.Fatal(err)}
-	if provider.observations!=0 || repository.progress.State!=Deleted {t.Fatal(repository.progress)}
-	repository.finishError=errors.New("database unavailable")
-	if err:=worker.stepLoadBalancer(context.Background(),work);!errors.Is(err,repository.finishError) {t.Fatal(err)}
+	work := Work{CancelUnsent: true, Resource: ResourceWork{Kind: "load_balancer", State: Deleting, LoadBalancer: &LoadBalancerWork{}}}
+	repository := &deferredLBWorkerRepository{finishError: ErrLeaseLost}
+	provider := &deferredLBWorkerProvider{}
+	worker := &Worker{repository: repository, provider: provider, policy: DefaultWorkerPolicy()}
+	if err := worker.stepLoadBalancer(context.Background(), work); err != nil {
+		t.Fatal(err)
+	}
+	if provider.observations != 0 || repository.progress.State != Deleted {
+		t.Fatal(repository.progress)
+	}
+	repository.finishError = errors.New("database unavailable")
+	if err := worker.stepLoadBalancer(context.Background(), work); !errors.Is(err, repository.finishError) {
+		t.Fatal(err)
+	}
 }
 
 func TestLBWorkerRuntimeRequiresEveryProjectedComponent(t *testing.T) {
@@ -129,13 +147,17 @@ func TestLBWorkerRuntimeRequiresEveryProjectedComponent(t *testing.T) {
 	}
 }
 
-func lbReportedReady(value bool)*bool{return &value}
+func lbReportedReady(value bool) *bool { return &value }
 
 func TestLBReadErrorPreservesLastProjection(t *testing.T) {
-	work,repository,provider,worker:=deferredLBWorkerFixture()
-	work.Resource.Reason=Reason("LAST_REPORTED_REASON")
-	provider.readErr=&ProviderError{Kind:ProviderTemporary}
-	if err:=worker.stepLoadBalancer(context.Background(),work);err!=nil {t.Fatal(err)}
-	p:=repository.progress
-	if p.State!=Available || p.Reason!=work.Resource.Reason || p.Observed || p.LoadBalancer!=nil || p.ObservationError!=ProviderUnavailable {t.Fatal(p)}
+	work, repository, provider, worker := deferredLBWorkerFixture()
+	work.Resource.Reason = Reason("LAST_REPORTED_REASON")
+	provider.readErr = &ProviderError{Kind: ProviderTemporary}
+	if err := worker.stepLoadBalancer(context.Background(), work); err != nil {
+		t.Fatal(err)
+	}
+	p := repository.progress
+	if p.State != Available || p.Reason != work.Resource.Reason || p.Observed || p.LoadBalancer != nil || p.ObservationError != ProviderUnavailable {
+		t.Fatal(p)
+	}
 }

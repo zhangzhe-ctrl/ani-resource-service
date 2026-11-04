@@ -2,9 +2,9 @@ package data_test
 
 import (
 	"github.com/google/uuid"
+	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"reflect"
 	"testing"
-	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 )
 
 // Reuses the actual admission, PostgreSQL, worker and KC adapter. Only the

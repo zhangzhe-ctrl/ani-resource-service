@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"time"
 	"github.com/jackc/pgx/v5"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
+	"time"
 )
 
 func (p *Postgres) ClaimVirtualSwitch(ctx context.Context, owner string, duration time.Duration) (biz.VirtualSwitchWork, bool, error) {
@@ -123,7 +123,9 @@ func (p *Postgres) FinishVirtualSwitch(ctx context.Context, w biz.VirtualSwitchW
 		return err
 	}
 	now, err := q.DatabaseTime(ctx)
-	if err != nil { return databaseFailure(err) }
+	if err != nil {
+		return databaseFailure(err)
+	}
 	terminal := progress.BindingState == "cleaned"
 	park := !progress.Backoff && progress.ObservationError == "" && progress.OperationReason == "" && (progress.BindingState == "configured" || r.BindingID == nil)
 

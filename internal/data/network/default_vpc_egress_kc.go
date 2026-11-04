@@ -38,10 +38,18 @@ func defaultEgressBinding(x biz.DefaultEgressWork, kind string) sqlcgen.NetworkP
 func (p *DefaultEgressKCProvider) readOwned(ctx context.Context, x biz.DefaultEgressWork, kind string, deleting bool) (*unstructured.Unstructured, error) {
 	b := defaultEgressBinding(x, kind)
 	object, err := resourceEndpoint(p.provider.client, b).Get(ctx, b.ProviderName, metav1.GetOptions{})
-	if apierrors.IsNotFound(err) { return nil, nil }
-	if err != nil { return nil, readFailure(err) }
-	if deleting && b.ProviderUid != "" && string(object.GetUID()) != b.ProviderUid { return nil, nil }
-	if err = inspectEgressIdentity(object, b, x.Egress.ID, b.ProviderUid); err != nil { return nil, err }
+	if apierrors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, readFailure(err)
+	}
+	if deleting && b.ProviderUid != "" && string(object.GetUID()) != b.ProviderUid {
+		return nil, nil
+	}
+	if err = inspectEgressIdentity(object, b, x.Egress.ID, b.ProviderUid); err != nil {
+		return nil, err
+	}
 	return object, nil
 }
 func defaultEgressEIPSpec(pool string) map[string]any {
@@ -52,11 +60,17 @@ func defaultEgressSnatSpec(e biz.DefaultVPCEgress) map[string]any {
 }
 func (p *DefaultEgressKCProvider) observe(ctx context.Context, x biz.DefaultEgressWork, deleting bool) (biz.DefaultEgressObservation, *unstructured.Unstructured, *unstructured.Unstructured, error) {
 	o := biz.DefaultEgressObservation{EIPUID: x.Egress.EIPProviderUID, SnatUID: x.Egress.SnatProviderUID}
-	if x.Egress.Identity != p.identity { return o, nil, nil, &biz.ProviderError{Kind: biz.ProviderConflict} }
+	if x.Egress.Identity != p.identity {
+		return o, nil, nil, &biz.ProviderError{Kind: biz.ProviderConflict}
+	}
 	eip, err := p.readOwned(ctx, x, "eip", deleting)
-	if err != nil { return o, nil, nil, err }
+	if err != nil {
+		return o, nil, nil, err
+	}
 	snat, err := p.readOwned(ctx, x, "snat", deleting)
-	if err != nil { return o, nil, nil, err }
+	if err != nil {
+		return o, nil, nil, err
+	}
 	o.EIPExists, o.SnatExists = eip != nil, snat != nil
 	if eip != nil {
 		o.EIPUID, o.Address = string(eip.GetUID()), crString(eip, "spec", "ipAddress")
@@ -64,7 +78,9 @@ func (p *DefaultEgressKCProvider) observe(ctx context.Context, x biz.DefaultEgre
 	if snat != nil {
 		o.SnatUID = string(snat.GetUID())
 		o.Ready, o.AppliedEnabled, o.StatusReason = snatPhase(snat, x.Egress.DesiredEnabled)
-		if address := crString(snat, "status", "eipAddress"); address != "" { o.Address = address }
+		if address := crString(snat, "status", "eipAddress"); address != "" {
+			o.Address = address
+		}
 	}
 	return o, eip, snat, nil
 }
@@ -83,39 +99,69 @@ func (p *DefaultEgressKCProvider) assertMutationLease(ctx context.Context, x biz
 	return nil
 }
 func (p *DefaultEgressKCProvider) MutateDefaultVPCEgress(ctx context.Context, x biz.DefaultEgressWork, action string) error {
-	if x.Egress.Identity != p.identity { return &biz.ProviderError{Kind: biz.ProviderConflict} }
+	if x.Egress.Identity != p.identity {
+		return &biz.ProviderError{Kind: biz.ProviderConflict}
+	}
 	kind := "eip"
-	if action == "create_snat" || action == "delete_snat" { kind = "snat" }
+	if action == "create_snat" || action == "delete_snat" {
+		kind = "snat"
+	}
 	deleting := action == "delete_eip" || action == "delete_snat"
-	if !deleting && action != "create_eip" && action != "create_snat" { return &biz.ProviderError{Kind: biz.ProviderReject} }
+	if !deleting && action != "create_eip" && action != "create_snat" {
+		return &biz.ProviderError{Kind: biz.ProviderReject}
+	}
 	b := defaultEgressBinding(x, kind)
 	endpoint := resourceEndpoint(p.provider.client, b)
 	object, err := p.readOwned(ctx, x, kind, deleting)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	if deleting {
-		if object == nil { return nil }
+		if object == nil {
+			return nil
+		}
 		uid, rv := object.GetUID(), object.GetResourceVersion()
-		if err = p.assertMutationLease(ctx, x); err != nil { return err }
+		if err = p.assertMutationLease(ctx, x); err != nil {
+			return err
+		}
 		err = endpoint.Delete(ctx, b.ProviderName, metav1.DeleteOptions{Preconditions: &metav1.Preconditions{UID: &uid, ResourceVersion: &rv}})
-		if apierrors.IsNotFound(err) { return nil }
-		if err != nil { return mutationFailure(err) }
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return mutationFailure(err)
+		}
 		return nil
 	}
-	if object != nil { return nil }
-	if b.ProviderUid != "" { return &biz.ProviderError{Kind: biz.ProviderConflict} }
+	if object != nil {
+		return nil
+	}
+	if b.ProviderUid != "" {
+		return &biz.ProviderError{Kind: biz.ProviderConflict}
+	}
 	var spec map[string]any
 	if kind == "eip" {
 		pool, err := p.provider.platformBinding(ctx, "public_pool", x.Egress.PoolID)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		spec = defaultEgressEIPSpec(pool.ProviderName)
-	} else { spec = defaultEgressSnatSpec(x.Egress) }
-	if err = p.assertMutationLease(ctx, x); err != nil { return err }
+	} else {
+		spec = defaultEgressSnatSpec(x.Egress)
+	}
+	if err = p.assertMutationLease(ctx, x); err != nil {
+		return err
+	}
 	created, err := endpoint.Create(ctx, egressObject(egressResolved{binding: b, target: biz.ProviderTarget{Kind: kind, ResourceID: x.Egress.ID}, spec: spec}), metav1.CreateOptions{FieldManager: "ani-network-service", FieldValidation: "Strict"})
 	if apierrors.IsAlreadyExists(err) {
 		_, err = p.readOwned(ctx, x, kind, false)
 		return err
 	}
-	if err != nil { return mutationFailure(err) }
-	if err = inspectEgressIdentity(created, b, x.Egress.ID, ""); err != nil { return &biz.ProviderError{Kind: biz.ProviderUncertain, Cause: err} }
+	if err != nil {
+		return mutationFailure(err)
+	}
+	if err = inspectEgressIdentity(created, b, x.Egress.ID, ""); err != nil {
+		return &biz.ProviderError{Kind: biz.ProviderUncertain, Cause: err}
+	}
 	return nil
 }

@@ -8,13 +8,13 @@ import (
 )
 
 type consumerRepositoryFake struct {
-	rows      []AttachmentConsumerRow
-	total     int64
-	err       error
-	tenant    string
-	filter    AttachmentConsumerFilter
-	calls     int
-	prepared  PrepareAttachment
+	rows     []AttachmentConsumerRow
+	total    int64
+	err      error
+	tenant   string
+	filter   AttachmentConsumerFilter
+	calls    int
+	prepared PrepareAttachment
 }
 
 func (f *consumerRepositoryFake) PrepareAttachment(_ context.Context, v PrepareAttachment) (Attachment, error) {

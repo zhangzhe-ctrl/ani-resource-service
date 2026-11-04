@@ -47,8 +47,10 @@ func TestLBObservationFailurePreservesLastConfirmedState(t *testing.T) {
 }
 
 func TestLBObservationErrorIsProjectedWithoutAnAgeThreshold(t *testing.T) {
-	old := time.Now().Add(-365*24*time.Hour)
+	old := time.Now().Add(-365 * 24 * time.Hour)
 	l := &LoadBalancers{}
-	v := l.observation(LoadBalancer{EgressMetadata:EgressMetadata{State:Available, ObservedAt:&old, ObservationStale:true}})
-	if v.State!=Available || !v.ObservationStale || v.ObservedAt==nil || !v.ObservedAt.Equal(old) { t.Fatal(v) }
+	v := l.observation(LoadBalancer{EgressMetadata: EgressMetadata{State: Available, ObservedAt: &old, ObservationStale: true}})
+	if v.State != Available || !v.ObservationStale || v.ObservedAt == nil || !v.ObservedAt.Equal(old) {
+		t.Fatal(v)
+	}
 }

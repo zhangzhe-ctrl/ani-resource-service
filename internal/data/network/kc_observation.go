@@ -61,7 +61,7 @@ func (p *KCProvider) EnableObservation(requestTimeout time.Duration) (*KCObserva
 	observer := &KCObservation{
 		provider: p, client: p.watchClient, requestTimeout: requestTimeout,
 		queue: workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[observedObjectKey]()),
-		done: make(chan struct{}),
+		done:  make(chan struct{}),
 	}
 	for _, gvr := range observationResources() {
 		resource := observer.client.Resource(gvr)
@@ -74,7 +74,7 @@ func (p *KCProvider) EnableObservation(requestTimeout time.Duration) (*KCObserva
 			},
 		}, &unstructured.Unstructured{}, 0, cache.Indexers{})
 		_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc: func(object any) { observer.changed(gvr, nil, object) },
+			AddFunc:    func(object any) { observer.changed(gvr, nil, object) },
 			UpdateFunc: func(old, current any) { observer.changed(gvr, old, current) },
 			DeleteFunc: func(object any) { observer.changed(gvr, object, nil) },
 		})

@@ -2,10 +2,10 @@ package data
 
 import (
 	"context"
-	"slices"
-	"time"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
+	"slices"
+	"time"
 )
 
 // A parent observation can wake a saved waiting product. Only authoritative

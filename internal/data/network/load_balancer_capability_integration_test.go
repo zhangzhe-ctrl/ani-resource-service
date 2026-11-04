@@ -4,15 +4,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"net/http"
-	"strings"
-	"testing"
 	"github.com/google/uuid"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
 	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
+	"net/http"
+	"strings"
+	"testing"
 )
 
 func seedLBInstallation(api *controlled.Server) data.LoadBalancerInstallation {
@@ -46,20 +46,32 @@ func seedLBInstallation(api *controlled.Server) data.LoadBalancerInstallation {
 	return expected
 }
 func TestLBCapabilityIsAnExplicitQueryAndDoesNotGateAdmission(t *testing.T) {
-	controller:=&lbControllerFixture{}
-	f:=newLBAdmissionFixture(t,controller.http)
+	controller := &lbControllerFixture{}
+	f := newLBAdmissionFixture(t, controller.http)
 	seedLBInstallation(f.api)
-	config,err:=clientcmd.BuildConfigFromFlags("",f.kubeconfig);if err!=nil{t.Fatal(err)}
-	provider,err:=data.NewKCProvider(f.f.p,config);if err!=nil{t.Fatal(err)}
+	config, err := clientcmd.BuildConfigFromFlags("", f.kubeconfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	provider, err := data.NewKCProvider(f.f.p, config)
+	if err != nil {
+		t.Fatal(err)
+	}
 	f.f.p.UseLoadBalancerCapabilityReader(provider)
-	capability,err:=f.f.e.GetPlatformCapabilities(f.f.ctx)
-	if err!=nil||!capability.LoadBalancer.Ready||capability.LoadBalancer.ObservationStale{t.Fatal(capability,err)}
-	class:=f.api.Object("gatewayclasses","","lb-common")
-	class["status"]=map[string]any{"conditions":[]any{map[string]any{"type":"Accepted","status":"False","reason":"NotAccepted"}}}
-	f.api.Change("gatewayclasses",class,false)
-	capability,err=f.f.e.GetPlatformCapabilities(f.f.ctx)
-	if err!=nil||capability.LoadBalancer.Ready||capability.LoadBalancer.Reason!="NotAccepted"{t.Fatal(capability,err)}
-	if _,err=f.lbs.Create(f.f.ctx,f.request);err!=nil{t.Fatal("installation diagnostic gated a product declaration",err)}
+	capability, err := f.f.e.GetPlatformCapabilities(f.f.ctx)
+	if err != nil || !capability.LoadBalancer.Ready || capability.LoadBalancer.ObservationStale {
+		t.Fatal(capability, err)
+	}
+	class := f.api.Object("gatewayclasses", "", "lb-common")
+	class["status"] = map[string]any{"conditions": []any{map[string]any{"type": "Accepted", "status": "False", "reason": "NotAccepted"}}}
+	f.api.Change("gatewayclasses", class, false)
+	capability, err = f.f.e.GetPlatformCapabilities(f.f.ctx)
+	if err != nil || capability.LoadBalancer.Ready || capability.LoadBalancer.Reason != "NotAccepted" {
+		t.Fatal(capability, err)
+	}
+	if _, err = f.lbs.Create(f.f.ctx, f.request); err != nil {
+		t.Fatal("installation diagnostic gated a product declaration", err)
+	}
 }
 
 // Fresh containerd imports expose config image IDs without a repository prefix.
@@ -159,7 +171,9 @@ func TestLBCapabilityImportedRuntimeImagesAndInstallDefaults(t *testing.T) {
 			}
 			f.f.p.UseLoadBalancerCapabilityReader(provider)
 			capability, err := f.f.e.GetPlatformCapabilities(f.f.ctx)
-			if err != nil || !capability.LoadBalancer.Ready { t.Fatal(capability, err) }
+			if err != nil || !capability.LoadBalancer.Ready {
+				t.Fatal(capability, err)
+			}
 
 			client, err := dynamic.NewForConfig(config)
 			if err != nil {

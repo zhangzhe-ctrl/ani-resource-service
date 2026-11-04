@@ -2,16 +2,16 @@ package data
 
 import (
 	"context"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"encoding/json"
 	"errors"
-	"slices"
-	"strconv"
-	"strings"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	"slices"
+	"strconv"
+	"strings"
 )
 
 const virtualSwitchGroupPrefix = "vcluster.networking.kubercloud.com/"
@@ -46,7 +46,9 @@ func (p *KCProvider) VirtualSwitchInventory(ctx context.Context, cluster string,
 		return virtualSwitchInventory(sw, device, nil)
 	}
 	nodes, err := p.listAll(ctx, kcNodes)
-	if err != nil { return biz.VirtualSwitchInventory{}, err }
+	if err != nil {
+		return biz.VirtualSwitchInventory{}, err
+	}
 	return virtualSwitchInventory(sw, device, nodes)
 }
 
@@ -54,13 +56,19 @@ func (p *KCProvider) VirtualSwitchInventory(ctx context.Context, cluster string,
 // physical device validation and takeover; Resource only validates this binding.
 func virtualSwitchInventory(sw biz.VirtualSwitch, device string, nodes []unstructured.Unstructured) (biz.VirtualSwitchInventory, error) {
 	result := biz.VirtualSwitchInventory{}
-	if device == "" { return result, switchConflict() }
+	if device == "" {
+		return result, switchConflict()
+	}
 	if sw.BindingID != "" {
 		result.Members = slices.Clone(sw.Nodes)
 	} else {
 		for _, node := range nodes {
-			if node.GetLabels()[allocatedNodeLabel] != "true" { continue }
-			if node.GetUID() == "" { continue }
+			if node.GetLabels()[allocatedNodeLabel] != "true" {
+				continue
+			}
+			if node.GetUID() == "" {
+				continue
+			}
 			if _, exists := node.GetLabels()[virtualSwitchGroupPrefix+sw.GroupName]; exists {
 				return result, switchConflict()
 			}
@@ -70,7 +78,9 @@ func virtualSwitchInventory(sw biz.VirtualSwitch, device string, nodes []unstruc
 			result.Members = append(result.Members, biz.VirtualSwitchNode{NodeName: node.GetName(), NodeUID: string(node.GetUID()), Priority: 100, Allocated: true, ResourceVersion: node.GetResourceVersion()})
 		}
 	}
-	if len(result.Members) == 0 { return result, switchUnavailable() }
+	if len(result.Members) == 0 {
+		return result, switchUnavailable()
+	}
 	slices.SortFunc(result.Members, func(a, b biz.VirtualSwitchNode) int { return strings.Compare(a.NodeUID, b.NodeUID) })
 	stable := make([]biz.PreparedDeviceNode, 0, len(result.Members))
 	for _, member := range result.Members {
@@ -79,23 +89,37 @@ func virtualSwitchInventory(sw biz.VirtualSwitch, device string, nodes []unstruc
 	result.Inventory.Items = stable
 	result.Inventory.Fingerprint = contentHash(stable)
 	// Membership identity excludes request resourceVersions and device selection.
-	members := make([]struct { Name, UID string; Priority int32; Allocated bool }, 0, len(result.Members))
+	members := make([]struct {
+		Name, UID string
+		Priority  int32
+		Allocated bool
+	}, 0, len(result.Members))
 	for _, member := range result.Members {
-		members = append(members, struct { Name, UID string; Priority int32; Allocated bool }{member.NodeName, member.NodeUID, member.Priority, member.Allocated})
+		members = append(members, struct {
+			Name, UID string
+			Priority  int32
+			Allocated bool
+		}{member.NodeName, member.NodeUID, member.Priority, member.Allocated})
 	}
 	result.Fingerprint = contentHash(members)
-	if sw.BindingID != "" { result.Fingerprint = sw.MembershipFingerprint }
+	if sw.BindingID != "" {
+		result.Fingerprint = sw.MembershipFingerprint
+	}
 	return result, nil
 }
 
 func (p *KCProvider) InspectVirtualSwitchNode(ctx context.Context, sw biz.VirtualSwitch, member biz.VirtualSwitchNode) (biz.VirtualSwitchNode, error) {
-	if sw.ClusterID != p.repository.placement.ClusterID || sw.BindingID == "" { return member, switchConflict() }
+	if sw.ClusterID != p.repository.placement.ClusterID || sw.BindingID == "" {
+		return member, switchConflict()
+	}
 	node, err := p.client.Resource(kcNodes).Get(ctx, member.NodeName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) && sw.State == biz.Deleting {
 		member.State, member.Applied, member.Unknown, member.DeleteFenced = "cleaned", false, false, true
 		return member, nil
 	}
-	if err != nil { return member, readFailure(err) }
+	if err != nil {
+		return member, readFailure(err)
+	}
 	if sw.State == biz.Deleting && string(node.GetUID()) != member.NodeUID {
 		member.State, member.Applied, member.Unknown, member.DeleteFenced = "cleaned", false, false, true
 		return member, nil
@@ -135,7 +159,9 @@ func inspectSwitchNodeObject(sw biz.VirtualSwitch, member biz.VirtualSwitchNode,
 		}
 		if !member.Applied && member.DeleteFenced {
 			member.State = "cleaned"
-			if fencePresent { member.State = "unfencing" }
+			if fencePresent {
+				member.State = "unfencing"
+			}
 		} else if !member.Applied && !member.Prepared {
 			member.State = "cleaned"
 		}
@@ -200,7 +226,9 @@ func (p *KCProvider) PatchVirtualSwitchNode(ctx context.Context, sw biz.VirtualS
 		member.State, member.Applied, member.Unknown, member.DeleteFenced = "cleaned", false, false, true
 		return member, nil
 	}
-	if err != nil { return member, readFailure(err) }
+	if err != nil {
+		return member, readFailure(err)
+	}
 	if deleting && string(n.GetUID()) != member.NodeUID {
 		member.State, member.Applied, member.Unknown, member.DeleteFenced = "cleaned", false, false, true
 		return member, nil

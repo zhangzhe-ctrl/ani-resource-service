@@ -4,23 +4,27 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
-	"time"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
+	"strings"
+	"time"
 )
 
 type DefaultVPCEgressPostgres struct {
-	base      *Postgres
-	identity  biz.DefaultVPCIdentity
+	base     *Postgres
+	identity biz.DefaultVPCIdentity
 }
 
 func NewDefaultVPCEgressRepository(p *Postgres, i biz.DefaultVPCIdentity) (*DefaultVPCEgressPostgres, error) {
-	if err := i.Validate(); err != nil { return nil, err }
-	if p == nil || i.ClusterID != p.placement.ClusterID { return nil, biz.Fail(biz.InvalidArgument, "fixed default VPC and matching placement are required") }
+	if err := i.Validate(); err != nil {
+		return nil, err
+	}
+	if p == nil || i.ClusterID != p.placement.ClusterID {
+		return nil, biz.Fail(biz.InvalidArgument, "fixed default VPC and matching placement are required")
+	}
 	return &DefaultVPCEgressPostgres{base: p, identity: i}, nil
 }
 func defaultEgressSnapshot(r sqlcgen.NetworkDefaultVpcEgress, operationState string) biz.DefaultVPCEgress {
@@ -85,8 +89,12 @@ func (p *DefaultVPCEgressPostgres) CreateDefaultVPCEgress(ctx context.Context, i
 	if err != nil {
 		return biz.DefaultVPCEgress{}, databaseFailure(err)
 	}
-	if pool.Scope != "public" { return biz.DefaultVPCEgress{}, biz.Fail(biz.ResourceNotFound, "public address pool not found") }
-	if err = p.base.poolAllocationAllowed(ctx, q, pool, false); err != nil { return biz.DefaultVPCEgress{}, err }
+	if pool.Scope != "public" {
+		return biz.DefaultVPCEgress{}, biz.Fail(biz.ResourceNotFound, "public address pool not found")
+	}
+	if err = p.base.poolAllocationAllowed(ctx, q, pool, false); err != nil {
+		return biz.DefaultVPCEgress{}, err
+	}
 	id, op := newEgressID("dve"), uuid.NewString()
 	suffix := strings.TrimPrefix(id, "dve_")
 	err = q.InsertDefaultEgress(ctx, sqlcgen.InsertDefaultEgressParams{ResourceID: id, EipID: newEgressID("eip"), ClusterID: p.identity.ClusterID, ClusterUid: p.identity.ClusterUID, DefaultVpcNamespace: p.identity.Namespace, DefaultVpcName: p.identity.Name, DefaultVpcUid: p.identity.UID, Name: i.Name, PoolID: i.PoolID, PoolRevision: pool.ConfigRevision, CreatedAt: now, LastOperationID: op, EipProviderName: "ani-default-eip-" + suffix, EipBindingID: uuid.NewString(), SnatProviderName: "ani-default-snat-" + suffix, SnatBindingID: uuid.NewString()})
@@ -222,30 +230,48 @@ func (p *DefaultVPCEgressPostgres) BeginDefaultVPCEgressMutation(ctx context.Con
 }
 func (p *DefaultVPCEgressPostgres) FinishDefaultVPCEgress(ctx context.Context, x biz.DefaultEgressWork, v biz.DefaultEgressProgress) error {
 	tx, err := p.base.pool.Begin(ctx)
-	if err != nil { return databaseFailure(err) }
+	if err != nil {
+		return databaseFailure(err)
+	}
 	defer tx.Rollback(ctx)
 	q := p.base.queries.WithTx(tx)
 	now, err := q.DatabaseTime(ctx)
-	if err != nil { return databaseFailure(err) }
+	if err != nil {
+		return databaseFailure(err)
+	}
 	o := v.Observation
 	if !v.Observed {
 		o.EIPUID, o.SnatUID, o.Address, o.AppliedEnabled = x.Egress.EIPProviderUID, x.Egress.SnatProviderUID, x.Egress.Address, x.Egress.AppliedEnabled
 	}
 	var applied pgtype.Bool
-	if o.AppliedEnabled != nil { applied = pgtype.Bool{Bool: *o.AppliedEnabled, Valid: true} }
+	if o.AppliedEnabled != nil {
+		applied = pgtype.Bool{Bool: *o.AppliedEnabled, Valid: true}
+	}
 	terminal := v.State == biz.Deleted
 	active := x.Egress.OperationState != "succeeded" && x.Egress.OperationState != "failed"
 	completed := !active || v.OperationState == biz.Succeeded || v.OperationState == biz.OpFailed
 	park := completed && (x.Egress.PendingAction == "" || v.ClearPending) && !v.PendingUnknown && v.ObservationError == ""
 	n, err := q.FinishDefaultEgress(ctx, sqlcgen.FinishDefaultEgressParams{State: string(v.State), Phase: v.Phase, Reason: string(v.Reason), EipUid: o.EIPUID, SnatUid: o.SnatUID, Address: o.Address, AppliedEnabled: applied, Observed: v.Observed, Now: now, ObservationError: string(v.ObservationError), ClaimedGeneration: x.ClaimedGeneration, Backoff: v.Backoff, Park: park, Terminal: terminal, ClearPending: v.ClearPending, PendingUnknown: v.PendingUnknown, DelayMs: v.Delay.Milliseconds(), ClusterID: p.identity.ClusterID, ResourceID: x.Egress.ID, Version: x.Egress.Version, OperationID: x.Egress.LastOperationID, Owner: x.Owner, Epoch: x.Epoch})
-	if err != nil { return databaseFailure(err) }
-	if n != 1 { return biz.ErrLeaseLost }
+	if err != nil {
+		return databaseFailure(err)
+	}
+	if n != 1 {
+		return biz.ErrLeaseLost
+	}
 	if active && v.OperationState != "" {
-		if err = q.FinishDefaultEgressOperation(ctx, sqlcgen.FinishDefaultEgressOperationParams{State: string(v.OperationState), Reason: string(v.OperationReason), ResourceID: x.Egress.ID, OperationID: x.Egress.LastOperationID}); err != nil { return databaseFailure(err) }
+		if err = q.FinishDefaultEgressOperation(ctx, sqlcgen.FinishDefaultEgressOperationParams{State: string(v.OperationState), Reason: string(v.OperationReason), ResourceID: x.Egress.ID, OperationID: x.Egress.LastOperationID}); err != nil {
+			return databaseFailure(err)
+		}
 	}
 	if active || v.State != x.Egress.State || v.Reason != x.Egress.Reason {
-		body, _ := json.Marshal(struct { State biz.ResourceState; Phase string; Reason biz.Reason }{v.State, v.Phase, v.Reason})
-		if err = q.InsertDefaultEgressHistory(ctx, sqlcgen.InsertDefaultEgressHistoryParams{HistoryID: uuid.NewString(), ResourceID: x.Egress.ID, OperationID: x.Egress.LastOperationID, Event: "worker_progress", Detail: body}); err != nil { return databaseFailure(err) }
+		body, _ := json.Marshal(struct {
+			State  biz.ResourceState
+			Phase  string
+			Reason biz.Reason
+		}{v.State, v.Phase, v.Reason})
+		if err = q.InsertDefaultEgressHistory(ctx, sqlcgen.InsertDefaultEgressHistoryParams{HistoryID: uuid.NewString(), ResourceID: x.Egress.ID, OperationID: x.Egress.LastOperationID, Event: "worker_progress", Detail: body}); err != nil {
+			return databaseFailure(err)
+		}
 	}
 	return databaseFailure(tx.Commit(ctx))
 }

@@ -68,16 +68,18 @@ func TestSubnetKCDeletionCompletesWhenOriginalObjectDisappears(t *testing.T) {
 	if _, err := n.DeleteSubnet(ctx, tenant, current.ID); err != nil {
 		t.Fatal(err)
 	}
-    // KCN owns its descendants. Res completes this deletion on the original
-    // Subnet's absence, even while a provider-owned child remains.
-    api.Mu.Lock()
-    delete(api.Objects,key)
-    api.Objects["vnicips/"+namespace+"/residual"] = map[string]any{"apiVersion":"networking.kubercloud.com/v1","kind":"VNicIP","metadata":map[string]any{"name":"residual","namespace":namespace},"spec":map[string]any{"subnet":providerName}}
-    api.Mu.Unlock()
-    driveSubnet(t,n,w,current,biz.Deleted)
-    api.Mu.Lock()
-    defer api.Mu.Unlock()
-    if api.Objects["vnicips/"+namespace+"/residual"] == nil || api.Deletes["vnicips"] != 0 || api.Deletes["subnets"] != 0 || api.Invalid != "" {t.Fatal("Res operated on provider cleanup",api.Deletes,api.Invalid)}
+	// KCN owns its descendants. Res completes this deletion on the original
+	// Subnet's absence, even while a provider-owned child remains.
+	api.Mu.Lock()
+	delete(api.Objects, key)
+	api.Objects["vnicips/"+namespace+"/residual"] = map[string]any{"apiVersion": "networking.kubercloud.com/v1", "kind": "VNicIP", "metadata": map[string]any{"name": "residual", "namespace": namespace}, "spec": map[string]any{"subnet": providerName}}
+	api.Mu.Unlock()
+	driveSubnet(t, n, w, current, biz.Deleted)
+	api.Mu.Lock()
+	defer api.Mu.Unlock()
+	if api.Objects["vnicips/"+namespace+"/residual"] == nil || api.Deletes["vnicips"] != 0 || api.Deletes["subnets"] != 0 || api.Invalid != "" {
+		t.Fatal("Res operated on provider cleanup", api.Deletes, api.Invalid)
+	}
 
 }
 
@@ -234,7 +236,7 @@ func TestSubnetKCIPRangesDetailsAndFences(t *testing.T) {
 		t.Fatal("range fence claim", work, found, e)
 	}
 	empty := ""
-    progress := biz.Progress{State:work.Resource.State, Observed:true, Identity:work.KnownIdentity, NextDelay:time.Hour, SubnetIPRanges:biz.SubnetIPRanges{Available:&empty,Used:&empty}}
+	progress := biz.Progress{State: work.Resource.State, Observed: true, Identity: work.KnownIdentity, NextDelay: time.Hour, SubnetIPRanges: biz.SubnetIPRanges{Available: &empty, Used: &empty}}
 	oldWork := work
 	oldWork.Epoch--
 	if e := p.Finish(ctx, oldWork, progress); !errors.Is(e, biz.ErrLeaseLost) {

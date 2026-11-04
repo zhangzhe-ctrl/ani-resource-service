@@ -166,7 +166,9 @@ func (o *Observability) ObserveWork(ctx context.Context, logger *slog.Logger, wo
 	}
 	if err == nil && (progress.Observed || progress.ObservationError != "") {
 		reachable := int64(1)
-		if progress.ObservationError != "" { reachable = 0 }
+		if progress.ObservationError != "" {
+			reachable = 0
+		}
 		o.providerReachable.Record(ctx, reachable, metric.WithAttributes(attribute.String("kind", work.Resource.Kind)))
 	}
 	o.workerAttempts.Add(ctx, 1, metric.WithAttributes(attribute.String("result", result), attribute.String("kind", work.Resource.Kind)))
@@ -182,11 +184,15 @@ func (o *Observability) ObserveAttachmentWork(ctx context.Context, work biz.Atta
 	} else if err != nil {
 		result = "database_error"
 	}
-	if err == nil && p.ObservationError != "" { result = "read_error" }
+	if err == nil && p.ObservationError != "" {
+		result = "read_error"
+	}
 	o.workerAttempts.Add(ctx, 1, metric.WithAttributes(attribute.String("kind", "attachment"), attribute.String("result", result)))
 	if err == nil && (p.Observed || p.ObservationError != "") {
 		reachable := int64(1)
-		if p.ObservationError != "" { reachable = 0 }
+		if p.ObservationError != "" {
+			reachable = 0
+		}
 		o.providerReachable.Record(ctx, reachable, metric.WithAttributes(attribute.String("kind", "attachment")))
 	}
 }
@@ -211,11 +217,15 @@ func (o *Observability) ObserveVirtualSwitchWork(ctx context.Context, logger *sl
 	} else if err != nil {
 		result = "database_error"
 	}
-	if err == nil && progress.ObservationError != "" { result = "read_error" }
+	if err == nil && progress.ObservationError != "" {
+		result = "read_error"
+	}
 	o.workerAttempts.Add(ctx, 1, metric.WithAttributes(attribute.String("kind", "virtual_switch"), attribute.String("result", result)))
 	if err == nil && (progress.Observed || progress.ObservationError != "") {
 		reachable := int64(1)
-		if progress.ObservationError != "" { reachable = 0 }
+		if progress.ObservationError != "" {
+			reachable = 0
+		}
 		o.providerReachable.Record(ctx, reachable, metric.WithAttributes(attribute.String("kind", "virtual_switch")))
 	}
 	if err != nil || progress.ProviderError != nil || work.Switch.BindingState != progress.BindingState || work.Switch.Reason != progress.Reason {

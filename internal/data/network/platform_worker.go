@@ -3,11 +3,11 @@ package data
 import (
 	"context"
 	"errors"
-	"time"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
+	"time"
 )
 
 func (p *Postgres) claimPlatform(ctx context.Context, tx pgx.Tx, q *sqlcgen.Queries, owner string, duration time.Duration) (biz.Work, bool, error) {
@@ -96,9 +96,13 @@ func (p *Postgres) finishPlatform(ctx context.Context, w biz.Work, progress biz.
 		return err
 	}
 	now, err := q.DatabaseTime(ctx)
-	if err != nil { return databaseFailure(err) }
+	if err != nil {
+		return databaseFailure(err)
+	}
 	var observedAt *time.Time
-	if progress.Observed { observedAt = &now }
+	if progress.Observed {
+		observedAt = &now
+	}
 	if w.Resource.Kind == "public_pool" && progress.State == biz.Deleted {
 		progress, err = p.finishManagedPoolCleanup(ctx, q, w, progress)
 		if err != nil {

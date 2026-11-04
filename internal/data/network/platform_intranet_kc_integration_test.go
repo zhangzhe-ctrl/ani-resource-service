@@ -3,6 +3,9 @@ package data_test
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/google/uuid"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
 	"io"
 	"net/http"
 	"net/netip"
@@ -10,9 +13,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"github.com/google/uuid"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
-	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
 )
 
 // This adds only the new Intranet contract to the existing controlled server.
@@ -87,7 +87,9 @@ func TestIntranetKCPlatformUsesItsOwnNativeStatus(t *testing.T) {
 	name := strings.Replace(pool.ID, "_", "-", 1)
 	object := api.Object("subnets", "kcn-system", name)
 	spec := object["spec"].(map[string]any)
-	if spec["type"] != "Intranet" || spec["gateway"] != "kcn-system/kcn-cluster" || spec["underlayConfig"] != nil { t.Fatal(spec) }
+	if spec["type"] != "Intranet" || spec["gateway"] != "kcn-system/kcn-cluster" || spec["underlayConfig"] != nil {
+		t.Fatal(spec)
+	}
 	// The parent can report different runtime facts without replacing this
 	// Subnet controller's own Ready status.
 	gateway := api.Object("vpcs", "kcn-system", "kcn-cluster")
@@ -95,26 +97,44 @@ func TestIntranetKCPlatformUsesItsOwnNativeStatus(t *testing.T) {
 	gateway["status"].(map[string]any)["conditions"] = []any{map[string]any{"type": "Ready", "status": "False"}}
 	api.Change("vpcs", gateway, false)
 	current, err := f.e.GetPlatform(f.ctx, "intranet_pool", pool.ID)
-	if err != nil || current.State != biz.Available { t.Fatal(current, err) }
+	if err != nil || current.State != biz.Available {
+		t.Fatal(current, err)
+	}
 	object["status"] = map[string]any{"conditions": []any{map[string]any{"type": "Ready", "status": "False", "reason": "ControllerPending"}}}
 	api.Change("subnets", object, false)
-	f.drive(t, func() bool { v, err := f.e.GetPlatform(f.ctx, "intranet_pool", pool.ID); return err == nil && v.State == biz.Degraded })
+	f.drive(t, func() bool {
+		v, err := f.e.GetPlatform(f.ctx, "intranet_pool", pool.ID)
+		return err == nil && v.State == biz.Degraded
+	})
 	caps, err := f.e.GetPlatformCapabilities(f.ctx)
-	if err != nil || caps.BaseConnectivity.Ready || !caps.PublicAddress.Ready { t.Fatal(caps, err) }
+	if err != nil || caps.BaseConnectivity.Ready || !caps.PublicAddress.Ready {
+		t.Fatal(caps, err)
+	}
 	object["status"] = map[string]any{"conditions": []any{map[string]any{"type": "Ready", "status": "True"}}}
 	api.Change("subnets", object, false)
-	f.drive(t, func() bool { v, err := f.e.GetPlatform(f.ctx, "intranet_pool", pool.ID); return err == nil && v.State == biz.Available })
-	if after := api.Object("subnets", "kcn-system", name); after["metadata"].(map[string]any)["uid"] != object["metadata"].(map[string]any)["uid"] { t.Fatal("status recovery recreated pool") }
-	if api.Backend.Invalid != "" { t.Fatal(api.Backend.Invalid) }
+	f.drive(t, func() bool {
+		v, err := f.e.GetPlatform(f.ctx, "intranet_pool", pool.ID)
+		return err == nil && v.State == biz.Available
+	})
+	if after := api.Object("subnets", "kcn-system", name); after["metadata"].(map[string]any)["uid"] != object["metadata"].(map[string]any)["uid"] {
+		t.Fatal("status recovery recreated pool")
+	}
+	if api.Backend.Invalid != "" {
+		t.Fatal(api.Backend.Invalid)
+	}
 }
 
 func TestIntranetPoolDefaultsUsesNativeDefaultFlag(t *testing.T) {
 	f, api, _, _ := newEgressKCFixture(t, intranetProviderInterceptor)
 	uid := seedIntranetInfrastructure(api)
 	got, err := f.e.GetIntranetPoolDefaults(f.ctx)
-	if err != nil || got.DefaultVPCName != "kcn-cluster" || got.DefaultVPCUID != uid || len(got.IntranetNetworks) != 0 { t.Fatal(got, err) }
+	if err != nil || got.DefaultVPCName != "kcn-cluster" || got.DefaultVPCUID != uid || len(got.IntranetNetworks) != 0 {
+		t.Fatal(got, err)
+	}
 	object := api.Object("vpcs", "kcn-system", "kcn-cluster")
 	object["status"].(map[string]any)["default"] = false
 	api.Change("vpcs", object, false)
-	if _, err = f.e.GetIntranetPoolDefaults(f.ctx); err == nil { t.Fatal("missing native default returned a reference") }
+	if _, err = f.e.GetIntranetPoolDefaults(f.ctx); err == nil {
+		t.Fatal("missing native default returned a reference")
+	}
 }

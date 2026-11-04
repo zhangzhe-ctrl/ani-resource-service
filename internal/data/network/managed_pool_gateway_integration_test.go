@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"testing"
-	"time"
 	"github.com/google/uuid"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	"testing"
+	"time"
 )
 
 func managedPoolIntent(key string) biz.PlatformIntent {

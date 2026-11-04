@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strconv"
 	"github.com/jackc/pgx/v5"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
@@ -13,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"strconv"
 )
 
 var lbGateways = schema.GroupVersionResource{Group: "gateway.networking.k8s.io", Version: "v1", Resource: "gateways"}
@@ -209,7 +209,9 @@ func lbConditions(raw []any, generation int64, kinds ...string) (*bool, biz.Reas
 		var found bool
 		for _, item := range raw {
 			c, ok := item.(map[string]any)
-			if !ok || c["type"] != kind { continue }
+			if !ok || c["type"] != kind {
+				continue
+			}
 			found = true
 			reason, _ := c["reason"].(string)
 			// Gateway API publishes the generation acknowledged for this declaration.
@@ -219,28 +221,44 @@ func lbConditions(raw []any, generation int64, kinds ...string) (*bool, biz.Reas
 				break
 			}
 			switch c["status"] {
-			case "False": value := false; return &value, biz.Reason(reason)
+			case "False":
+				value := false
+				return &value, biz.Reason(reason)
 			case "True":
-			default: missing = true
+			default:
+				missing = true
 			}
 			break
 		}
-		if !found { missing = true }
+		if !found {
+			missing = true
+		}
 	}
-	if missing { return nil, "" }
+	if missing {
+		return nil, ""
+	}
 	value := true
 	return &value, ""
 }
 func lbObjectReady(obj, desired *unstructured.Unstructured, c biz.LoadBalancerComponent, gateway, namespace string) (*bool, biz.Reason) {
-	if obj.GetDeletionTimestamp() != nil { return nil, "" }
-	if c.Kind == "envoy_proxy" { value := true; return &value, "" }
+	if obj.GetDeletionTimestamp() != nil {
+		return nil, ""
+	}
+	if c.Kind == "envoy_proxy" {
+		value := true
+		return &value, ""
+	}
 	conditions, _, _ := unstructured.NestedSlice(obj.Object, "status", "conditions")
 	switch c.Kind {
-	case "backend": return lbConditions(conditions, obj.GetGeneration(), "Accepted")
-	case "patch_policy": return lbConditions(conditions, obj.GetGeneration(), "Accepted", "Programmed")
+	case "backend":
+		return lbConditions(conditions, obj.GetGeneration(), "Accepted")
+	case "patch_policy":
+		return lbConditions(conditions, obj.GetGeneration(), "Accepted", "Programmed")
 	case "gateway":
 		ready, reason := lbConditions(conditions, obj.GetGeneration(), "Accepted", "Programmed")
-		if ready != nil && !*ready { return ready, reason }
+		if ready != nil && !*ready {
+			return ready, reason
+		}
 		missing := ready == nil
 		listeners, _, _ := unstructured.NestedSlice(obj.Object, "status", "listeners")
 		wanted, _, _ := unstructured.NestedSlice(desired.Object, "spec", "listeners")
@@ -249,40 +267,68 @@ func lbObjectReady(obj, desired *unstructured.Unstructured, c biz.LoadBalancerCo
 			found := false
 			for _, item := range listeners {
 				listener, _ := item.(map[string]any)
-				if listener["name"] != want["name"] { continue }
+				if listener["name"] != want["name"] {
+					continue
+				}
 				found = true
 				lc, _, _ := unstructured.NestedSlice(listener, "conditions")
 				state, why := lbConditions(lc, obj.GetGeneration(), "Accepted", "Programmed", "ResolvedRefs")
-				if state != nil && !*state { return state, why }
+				if state != nil && !*state {
+					return state, why
+				}
 				missing = missing || state == nil
 				break
 			}
 			missing = missing || !found
 		}
-		if missing { return nil, "" }
-		value := true; return &value, ""
+		if missing {
+			return nil, ""
+		}
+		value := true
+		return &value, ""
 	}
 	field, refField := "parents", "parentRef"
-	if c.Kind == "policy" || c.Kind == "client_policy" { field, refField = "ancestors", "ancestorRef" }
+	if c.Kind == "policy" || c.Kind == "client_policy" {
+		field, refField = "ancestors", "ancestorRef"
+	}
 	entries, _, _ := unstructured.NestedSlice(obj.Object, "status", field)
 	for _, raw := range entries {
 		e, ok := raw.(map[string]any)
-		if !ok || e["controllerName"] != lbController { continue }
+		if !ok || e["controllerName"] != lbController {
+			continue
+		}
 		ref, _, _ := unstructured.NestedMap(e, refField)
-		ns, _ := ref["namespace"].(string); if ns == "" { ns = namespace }
-		kind, _ := ref["kind"].(string); if kind == "" { kind = "Gateway" }
-		group, _ := ref["group"].(string); if group == "" { group = lbGateways.Group }
-		if ref["name"] != gateway || ns != namespace || kind != "Gateway" || group != lbGateways.Group { continue }
-		if biz.LoadBalancerIsRoute(c.Kind) && c.ListenerName != "" && ref["sectionName"] != c.ListenerName { continue }
+		ns, _ := ref["namespace"].(string)
+		if ns == "" {
+			ns = namespace
+		}
+		kind, _ := ref["kind"].(string)
+		if kind == "" {
+			kind = "Gateway"
+		}
+		group, _ := ref["group"].(string)
+		if group == "" {
+			group = lbGateways.Group
+		}
+		if ref["name"] != gateway || ns != namespace || kind != "Gateway" || group != lbGateways.Group {
+			continue
+		}
+		if biz.LoadBalancerIsRoute(c.Kind) && c.ListenerName != "" && ref["sectionName"] != c.ListenerName {
+			continue
+		}
 		conditions, _, _ := unstructured.NestedSlice(e, "conditions")
-		if c.Kind == "policy" || c.Kind == "client_policy" { return lbConditions(conditions, obj.GetGeneration(), "Accepted") }
+		if c.Kind == "policy" || c.Kind == "client_policy" {
+			return lbConditions(conditions, obj.GetGeneration(), "Accepted")
+		}
 		return lbConditions(conditions, obj.GetGeneration(), "Accepted", "ResolvedRefs")
 	}
 	return nil, ""
 }
 func lbInspect(obj, desired *unstructured.Unstructured, c biz.LoadBalancerComponent, r lbResolved) (biz.LoadBalancerComponentObservation, error) {
 	v := biz.LoadBalancerComponentObservation{ID: c.ID}
-	if obj == nil { return v, nil }
+	if obj == nil {
+		return v, nil
+	}
 	v.Exists, v.Identity, v.Deleting = true, string(obj.GetUID()), obj.GetDeletionTimestamp() != nil
 	labels := obj.GetLabels()
 	if desired == nil || obj.GetName() != c.Name || obj.GetNamespace() != r.binding.Namespace || obj.GetUID() == "" || obj.GetAPIVersion() != desired.GetAPIVersion() || obj.GetKind() != desired.GetKind() || labels[ownerLabel] != "ani-network-service" || labels[tenantLabel] != r.work.Resource.TenantID || labels[resourceLabel] != r.work.Resource.ID || labels[bindingLabel] != c.ID || (c.Identity != "" && c.Identity != v.Identity) {
@@ -297,23 +343,39 @@ func lbInspect(obj, desired *unstructured.Unstructured, c biz.LoadBalancerCompon
 func (p *KCProvider) ObserveLoadBalancer(ctx context.Context, w biz.Work) (biz.LoadBalancerObservation, error) {
 	o := biz.LoadBalancerObservation{}
 	r, err := p.resolveLB(ctx, w)
-	if err != nil { return o, err }
+	if err != nil {
+		return o, err
+	}
 	for _, m := range w.Resource.LoadBalancer.Members {
 		desired := false
-		for _, b := range w.Resource.LoadBalancer.LoadBalancer.Backends { desired = desired || b.ID == m.ID }
-		if !desired { continue }
+		for _, b := range w.Resource.LoadBalancer.LoadBalancer.Backends {
+			desired = desired || b.ID == m.ID
+		}
+		if !desired {
+			continue
+		}
 		eligible, err := p.lbMemberIdentity(ctx, r, m)
-		if err != nil { return biz.LoadBalancerObservation{}, err }
+		if err != nil {
+			return biz.LoadBalancerObservation{}, err
+		}
 		reason := biz.Reason("")
-		if !eligible { reason = biz.BackendIdentityMismatch }
+		if !eligible {
+			reason = biz.BackendIdentityMismatch
+		}
 		o.Members = append(o.Members, biz.LoadBalancerMemberObservation{ID: m.ID, Eligible: eligible, Reason: reason})
 	}
 	for _, c := range w.Resource.LoadBalancer.Components {
 		obj, err := p.client.Resource(lbGVR(c.Kind)).Namespace(r.binding.Namespace).Get(ctx, c.Name, metav1.GetOptions{})
-		if apierrors.IsNotFound(err) { obj, err = nil, nil }
-		if err != nil { return biz.LoadBalancerObservation{}, readFailure(err) }
+		if apierrors.IsNotFound(err) {
+			obj, err = nil, nil
+		}
+		if err != nil {
+			return biz.LoadBalancerObservation{}, readFailure(err)
+		}
 		v, err := lbInspect(obj, lbDesiredObject(r, c, o), c, r)
-		if err != nil { v.Conflict = true }
+		if err != nil {
+			v.Conflict = true
+		}
 		o.Components = append(o.Components, v)
 	}
 	return o, nil
@@ -321,10 +383,20 @@ func (p *KCProvider) ObserveLoadBalancer(ctx context.Context, w biz.Work) (biz.L
 
 func (p *KCProvider) lbMemberIdentity(ctx context.Context, r lbResolved, m biz.LoadBalancerMemberIdentity) (bool, error) {
 	a, err := p.repository.readQueries(ctx).GetAttachment(ctx, sqlcgen.GetAttachmentParams{TenantID: r.work.Resource.TenantID, AttachmentID: m.AttachmentID})
-	if errors.Is(err, pgx.ErrNoRows) { return false, nil }
-	if err != nil { return false, readFailure(err) }
-	if a.State != "attached" || a.PodUid != m.PodUID || a.SubnetID != m.SubnetID || a.VpcID != r.work.Resource.VPCID || a.Namespace != r.binding.Namespace || a.ClusterID != r.binding.ClusterID { return false, nil }
-	for _, address := range a.CurrentIps { if address == m.Address { return true, nil } }
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, readFailure(err)
+	}
+	if a.State != "attached" || a.PodUid != m.PodUID || a.SubnetID != m.SubnetID || a.VpcID != r.work.Resource.VPCID || a.Namespace != r.binding.Namespace || a.ClusterID != r.binding.ClusterID {
+		return false, nil
+	}
+	for _, address := range a.CurrentIps {
+		if address == m.Address {
+			return true, nil
+		}
+	}
 	return false, nil
 }
 
@@ -361,7 +433,9 @@ func (p *KCProvider) MutateLoadBalancer(ctx context.Context, w biz.Work, c biz.L
 		if err != nil {
 			return v, readFailure(err)
 		}
-		if action == "delete" && c.Identity != "" && c.Identity != string(obj.GetUID()) { return v, nil }
+		if action == "delete" && c.Identity != "" && c.Identity != string(obj.GetUID()) {
+			return v, nil
+		}
 		v, err = lbInspect(obj, desired, c, r)
 		if err != nil {
 			return v, err
@@ -420,23 +494,32 @@ func lbListenerRouteName(w biz.Work, id string) string {
 	return ""
 }
 
-
 // Optional fields written by Res must also disappear when removed from the
 // desired configuration. Provider defaults outside these fields are ignored.
 func lbManagedSpecMatches(actual, desired any, kind string) bool {
-	if !managedFieldsMatch(actual, desired) { return false }
+	if !managedFieldsMatch(actual, desired) {
+		return false
+	}
 	got, _ := actual.(map[string]any)
 	want, _ := desired.(map[string]any)
 	optional := func(a, b map[string]any, fields ...string) bool {
 		_, wanted, _ := unstructured.NestedFieldNoCopy(b, fields...)
-		if wanted { return true }
+		if wanted {
+			return true
+		}
 		value, present, _ := unstructured.NestedFieldNoCopy(a, fields...)
-		if !present || value == nil { return true }
+		if !present || value == nil {
+			return true
+		}
 		switch v := value.(type) {
-		case []any: return len(v) == 0
-		case map[string]any: return len(v) == 0
-		case string: return v == ""
-		case bool: return !v
+		case []any:
+			return len(v) == 0
+		case map[string]any:
+			return len(v) == 0
+		case string:
+			return v == ""
+		case bool:
+			return !v
 		}
 		return false
 	}
@@ -444,18 +527,35 @@ func lbManagedSpecMatches(actual, desired any, kind string) bool {
 		ar, _, _ := unstructured.NestedSlice(got, "rules")
 		br, _, _ := unstructured.NestedSlice(want, "rules")
 		for i := range br {
-			a, _ := ar[i].(map[string]any); b, _ := br[i].(map[string]any)
-			for _, field := range []string{"backendRefs", "filters", "sessionPersistence"} { if !optional(a,b,field) { return false } }
-			if !optional(a,b,"sessionPersistence","absoluteTimeout") { return false }
+			a, _ := ar[i].(map[string]any)
+			b, _ := br[i].(map[string]any)
+			for _, field := range []string{"backendRefs", "filters", "sessionPersistence"} {
+				if !optional(a, b, field) {
+					return false
+				}
+			}
+			if !optional(a, b, "sessionPersistence", "absoluteTimeout") {
+				return false
+			}
 		}
 	}
 	if kind == "gateway" {
-		al, _, _ := unstructured.NestedSlice(got,"listeners")
-		bl, _, _ := unstructured.NestedSlice(want,"listeners")
-		for i := range bl { a,_:=al[i].(map[string]any); b,_:=bl[i].(map[string]any); if !optional(a,b,"tls") { return false } }
+		al, _, _ := unstructured.NestedSlice(got, "listeners")
+		bl, _, _ := unstructured.NestedSlice(want, "listeners")
+		for i := range bl {
+			a, _ := al[i].(map[string]any)
+			b, _ := bl[i].(map[string]any)
+			if !optional(a, b, "tls") {
+				return false
+			}
+		}
 	}
 	if kind == "policy" {
-		for _, fields := range [][]string{{"compressor"},{"healthCheck","active","overrides"},{"healthCheck","active","http","hostname"}} { if !optional(got,want,fields...) { return false } }
+		for _, fields := range [][]string{{"compressor"}, {"healthCheck", "active", "overrides"}, {"healthCheck", "active", "http", "hostname"}} {
+			if !optional(got, want, fields...) {
+				return false
+			}
+		}
 	}
 	return true
 }

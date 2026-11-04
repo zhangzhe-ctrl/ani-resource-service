@@ -140,30 +140,39 @@ func TestKCVNicRequestedIPParentVersionConflictIsRetryable(t *testing.T) {
 }
 
 func TestKCVNicStatusIsAuthoritativeWithoutChildReads(t *testing.T) {
-    for _, name := range []string{"ready", "missing-address", "different-address", "valid-false", "ready-false", "unreported"} {
-        t.Run(name, func(t *testing.T) {
-            b, target, parent, _ := requestedVNicAddressFixture()
-            parent.SetAnnotations(map[string]string{requestedVNicIPUIDAnnotation: "declared-child"})
-            switch name {
-            case "missing-address":
-                unstructured.RemoveNestedField(parent.Object, "status", "primaryIP")
-                unstructured.RemoveNestedField(parent.Object, "status", "ips")
-            case "different-address":
-                _ = unstructured.SetNestedField(parent.Object, "10.42.1.99", "status", "primaryIP")
-                _ = unstructured.SetNestedField(parent.Object, "02:00:00:00:00:99", "spec", "macAddress")
-            case "valid-false":
-                _ = unstructured.SetNestedSlice(parent.Object, []any{map[string]any{"type":"Ready","status":"True"},map[string]any{"type":"Valid","status":"False"}}, "status", "conditions")
-            case "ready-false":
-                _ = unstructured.SetNestedSlice(parent.Object, []any{map[string]any{"type":"Ready","status":"False","reason":"Waiting"}}, "status", "conditions")
-            case "unreported":
-                unstructured.RemoveNestedField(parent.Object, "status", "conditions")
-            }
-            client := fake.NewSimpleDynamicClient(runtime.NewScheme())
-            p := &KCProvider{client: client}
-            got, err := p.inspectVNic(context.Background(), parent, b, target)
-            if err != nil || !got.Exists || got.NeedsUpdate || len(client.Actions()) != 0 { t.Fatal(got, err, client.Actions()) }
-            if name == "unreported" { if got.Ready != nil { t.Fatal(got) }; return }
-            if got.Ready == nil || *got.Ready != (name != "ready-false") { t.Fatal("Ready was reconstructed from child/address facts", got) }
-        })
-    }
+	for _, name := range []string{"ready", "missing-address", "different-address", "valid-false", "ready-false", "unreported"} {
+		t.Run(name, func(t *testing.T) {
+			b, target, parent, _ := requestedVNicAddressFixture()
+			parent.SetAnnotations(map[string]string{requestedVNicIPUIDAnnotation: "declared-child"})
+			switch name {
+			case "missing-address":
+				unstructured.RemoveNestedField(parent.Object, "status", "primaryIP")
+				unstructured.RemoveNestedField(parent.Object, "status", "ips")
+			case "different-address":
+				_ = unstructured.SetNestedField(parent.Object, "10.42.1.99", "status", "primaryIP")
+				_ = unstructured.SetNestedField(parent.Object, "02:00:00:00:00:99", "spec", "macAddress")
+			case "valid-false":
+				_ = unstructured.SetNestedSlice(parent.Object, []any{map[string]any{"type": "Ready", "status": "True"}, map[string]any{"type": "Valid", "status": "False"}}, "status", "conditions")
+			case "ready-false":
+				_ = unstructured.SetNestedSlice(parent.Object, []any{map[string]any{"type": "Ready", "status": "False", "reason": "Waiting"}}, "status", "conditions")
+			case "unreported":
+				unstructured.RemoveNestedField(parent.Object, "status", "conditions")
+			}
+			client := fake.NewSimpleDynamicClient(runtime.NewScheme())
+			p := &KCProvider{client: client}
+			got, err := p.inspectVNic(context.Background(), parent, b, target)
+			if err != nil || !got.Exists || got.NeedsUpdate || len(client.Actions()) != 0 {
+				t.Fatal(got, err, client.Actions())
+			}
+			if name == "unreported" {
+				if got.Ready != nil {
+					t.Fatal(got)
+				}
+				return
+			}
+			if got.Ready == nil || *got.Ready != (name != "ready-false") {
+				t.Fatal("Ready was reconstructed from child/address facts", got)
+			}
+		})
+	}
 }

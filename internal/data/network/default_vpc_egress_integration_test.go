@@ -3,16 +3,16 @@ package data_test
 import (
 	"context"
 	"errors"
+	"github.com/google/uuid"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
+	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
-	"github.com/google/uuid"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
-	controlled "github.com/zhangzhe-ctrl/ani-resource-service/tests/net05a/provider"
-	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
 )
 
 // PostgreSQL, admission, replay, authorization and worker logic are production
@@ -145,15 +145,25 @@ func (f *defaultEgressFixture) state(t *testing.T, id string, state biz.Resource
 }
 
 func TestDefaultVPCEgressKCRealBusinessLifecycle(t *testing.T) {
-	f:=newDefaultEgressFixture(t,nil)
-	accepted:=f.create(t,"native-lifecycle")
-	available:=f.state(t,accepted.ID,biz.Available)
-	if available.Address==""||available.EIPProviderUID==""||available.SnatProviderUID==""||available.AppliedEnabled==nil||!*available.AppliedEnabled{t.Fatal(available)}
-	if _,err:=f.e.DeletePlatform(f.ctx,"public_pool",f.pool.ID);biz.ReasonOf(err)!=biz.ResourceInUse{t.Fatal("pool reservation lost",err)}
-	if _,err:=f.usecase.Delete(f.ctx,accepted.ID);err!=nil{t.Fatal(err)}
-	deleted:=f.state(t,accepted.ID,biz.Deleted)
-	if deleted.PendingUnknown||deleted.PendingAction!=""||deleted.OperationState!="succeeded"{t.Fatal(deleted)}
-	if f.api.Object("snats",f.identity.Namespace,available.SnatProviderName)!=nil||f.api.Object("eips",f.identity.Namespace,available.EIPProviderName)!=nil{t.Fatal("own objects remain")}
+	f := newDefaultEgressFixture(t, nil)
+	accepted := f.create(t, "native-lifecycle")
+	available := f.state(t, accepted.ID, biz.Available)
+	if available.Address == "" || available.EIPProviderUID == "" || available.SnatProviderUID == "" || available.AppliedEnabled == nil || !*available.AppliedEnabled {
+		t.Fatal(available)
+	}
+	if _, err := f.e.DeletePlatform(f.ctx, "public_pool", f.pool.ID); biz.ReasonOf(err) != biz.ResourceInUse {
+		t.Fatal("pool reservation lost", err)
+	}
+	if _, err := f.usecase.Delete(f.ctx, accepted.ID); err != nil {
+		t.Fatal(err)
+	}
+	deleted := f.state(t, accepted.ID, biz.Deleted)
+	if deleted.PendingUnknown || deleted.PendingAction != "" || deleted.OperationState != "succeeded" {
+		t.Fatal(deleted)
+	}
+	if f.api.Object("snats", f.identity.Namespace, available.SnatProviderName) != nil || f.api.Object("eips", f.identity.Namespace, available.EIPProviderName) != nil {
+		t.Fatal("own objects remain")
+	}
 }
 
 func TestDefaultVPCEgressKCLostCreateResponseRecoversSameIdentity(t *testing.T) {
@@ -193,16 +203,23 @@ func TestDefaultVPCEgressKCLostCreateResponseRecoversSameIdentity(t *testing.T) 
 }
 
 func TestDefaultVPCEgressKCUnknownCreateDeletionCompletesOnGet404(t *testing.T) {
-	f:=newDefaultEgressFixture(t,func(w http.ResponseWriter,r *http.Request,_ *controlled.Server)bool{
-		if r.Method!=http.MethodPost||!strings.HasSuffix(r.URL.Path,"/eips"){return false}
-		http.Error(w,"provider result unknown",http.StatusGatewayTimeout);return true
+	f := newDefaultEgressFixture(t, func(w http.ResponseWriter, r *http.Request, _ *controlled.Server) bool {
+		if r.Method != http.MethodPost || !strings.HasSuffix(r.URL.Path, "/eips") {
+			return false
+		}
+		http.Error(w, "provider result unknown", http.StatusGatewayTimeout)
+		return true
 	})
-	accepted:=f.create(t,"unknown-undelivered")
-	f.driveDefault(t,accepted.ID,func(v biz.DefaultVPCEgress)bool{return v.PendingUnknown&&v.PendingAction=="create_eip"})
+	accepted := f.create(t, "unknown-undelivered")
+	f.driveDefault(t, accepted.ID, func(v biz.DefaultVPCEgress) bool { return v.PendingUnknown && v.PendingAction == "create_eip" })
 	f.restart(t)
-	if _,err:=f.usecase.Delete(f.ctx,accepted.ID);err!=nil{t.Fatal(err)}
-	deleted:=f.state(t,accepted.ID,biz.Deleted)
-	if deleted.PendingUnknown||deleted.PendingAction!=""{t.Fatal(deleted)}
+	if _, err := f.usecase.Delete(f.ctx, accepted.ID); err != nil {
+		t.Fatal(err)
+	}
+	deleted := f.state(t, accepted.ID, biz.Deleted)
+	if deleted.PendingUnknown || deleted.PendingAction != "" {
+		t.Fatal(deleted)
+	}
 }
 
 func TestDefaultVPCEgressKCExactIdentityAndStaleLease(t *testing.T) {
@@ -226,27 +243,44 @@ func TestDefaultVPCEgressKCExactIdentityAndStaleLease(t *testing.T) {
 
 func TestDefaultVPCEgressObservationFailureRetainsResult(t *testing.T) {
 	var unavailable atomic.Bool
-	f:=newDefaultEgressFixture(t,func(w http.ResponseWriter,r *http.Request,_ *controlled.Server)bool{
-		if unavailable.Load()&&r.Method==http.MethodGet&&strings.Contains(r.URL.Path,"/eips/"){w.WriteHeader(http.StatusServiceUnavailable);return true};return false
+	f := newDefaultEgressFixture(t, func(w http.ResponseWriter, r *http.Request, _ *controlled.Server) bool {
+		if unavailable.Load() && r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/eips/") {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return true
+		}
+		return false
 	})
-	accepted:=f.create(t,"read-failure")
-	before:=f.state(t,accepted.ID,biz.Available)
+	accepted := f.create(t, "read-failure")
+	before := f.state(t, accepted.ID, biz.Available)
 	unavailable.Store(true)
-	if _,err:=f.owner.Exec(f.ctx,`UPDATE network_default_vpc_egresses SET next_run_at=clock_timestamp() WHERE resource_id=$1`,accepted.ID);err!=nil{t.Fatal(err)}
-	after:=f.driveDefault(t,accepted.ID,func(v biz.DefaultVPCEgress)bool{return v.ObservationStale})
-	if after.State!=before.State||after.Reason!=before.Reason||after.Address!=before.Address||after.AppliedEnabled==nil||!*after.AppliedEnabled||after.ObservedAt==nil||!after.ObservedAt.Equal(*before.ObservedAt){t.Fatal(before,after)}
+	if _, err := f.owner.Exec(f.ctx, `UPDATE network_default_vpc_egresses SET next_run_at=clock_timestamp() WHERE resource_id=$1`, accepted.ID); err != nil {
+		t.Fatal(err)
+	}
+	after := f.driveDefault(t, accepted.ID, func(v biz.DefaultVPCEgress) bool { return v.ObservationStale })
+	if after.State != before.State || after.Reason != before.Reason || after.Address != before.Address || after.AppliedEnabled == nil || !*after.AppliedEnabled || after.ObservedAt == nil || !after.ObservedAt.Equal(*before.ObservedAt) {
+		t.Fatal(before, after)
+	}
 }
 
 func TestDefaultVPCEgressReadsOnlyItsDeclarations(t *testing.T) {
 	var lists atomic.Int32
-	f:=newDefaultEgressFixture(t,func(_ http.ResponseWriter,r *http.Request,_ *controlled.Server)bool{
-		if r.Method==http.MethodGet&&strings.HasSuffix(r.URL.Path,"/vpcs")&&r.URL.Query().Get("watch")!="true"{lists.Add(1)};return false
+	f := newDefaultEgressFixture(t, func(_ http.ResponseWriter, r *http.Request, _ *controlled.Server) bool {
+		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/vpcs") && r.URL.Query().Get("watch") != "true" {
+			lists.Add(1)
+		}
+		return false
 	})
-	accepted:=f.create(t,"direct-read")
-	f.state(t,accepted.ID,biz.Available)
+	accepted := f.create(t, "direct-read")
+	f.state(t, accepted.ID, biz.Available)
 	f.stopObservation()
-	before:=lists.Load()
-	if _,err:=f.owner.Exec(f.ctx,`UPDATE network_default_vpc_egresses SET next_run_at=clock_timestamp() WHERE resource_id=$1`,accepted.ID);err!=nil{t.Fatal(err)}
-	if worked,err:=f.worker.Step(f.ctx);err!=nil||!worked{t.Fatal(worked,err)}
-	if lists.Load()!=before{t.Fatal("default egress listed parent infrastructure")}
+	before := lists.Load()
+	if _, err := f.owner.Exec(f.ctx, `UPDATE network_default_vpc_egresses SET next_run_at=clock_timestamp() WHERE resource_id=$1`, accepted.ID); err != nil {
+		t.Fatal(err)
+	}
+	if worked, err := f.worker.Step(f.ctx); err != nil || !worked {
+		t.Fatal(worked, err)
+	}
+	if lists.Load() != before {
+		t.Fatal("default egress listed parent infrastructure")
+	}
 }

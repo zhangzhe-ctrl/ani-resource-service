@@ -32,14 +32,14 @@ const bindingLabel = "network.ani.io/binding-id"
 // KCProvider implements only the fixed networking.kubercloud.com/v1 VPC
 // contract. It does not import the kc repository or operate on OVN.
 type KCProvider struct {
-	namespaceIdentityReader  func(context.Context, string) (tenantnamespace.Identity, error)
-	vmAutoNetwork            *VMAutoNetworkConfig
-	vmNetworks               map[string]ManagedVMNAD
-	repository               *Postgres
-	client                   dynamic.Interface
-	watchClient              dynamic.Interface
-	observation              *KCObservation
-	io                       *providerIO
+	namespaceIdentityReader func(context.Context, string) (tenantnamespace.Identity, error)
+	vmAutoNetwork           *VMAutoNetworkConfig
+	vmNetworks              map[string]ManagedVMNAD
+	repository              *Postgres
+	client                  dynamic.Interface
+	watchClient             dynamic.Interface
+	observation             *KCObservation
+	io                      *providerIO
 }
 
 type KCClientPolicy struct {

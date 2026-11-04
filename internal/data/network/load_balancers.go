@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"net/netip"
-	"slices"
-	"strings"
-	"time"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network/sqlcgen"
+	"net/netip"
+	"slices"
+	"strings"
+	"time"
 )
 
 var _ biz.LoadBalancerRepository = (*Postgres)(nil)
@@ -191,17 +191,25 @@ func lbReplay(ctx context.Context, q *sqlcgen.Queries, i biz.LoadBalancerIntent)
 // occurs in the transaction.
 func lbBackendIdentity(ctx context.Context, q *sqlcgen.Queries, tenant, cluster, namespace, vpc string, b biz.LoadBalancerBackend) (sqlcgen.InsertLBMemberParams, error) {
 	rows, err := q.ListLBBackendAttachments(ctx, sqlcgen.ListLBBackendAttachmentsParams{TenantID: tenant, SubnetID: b.SubnetID})
-	if err != nil { return sqlcgen.InsertLBMemberParams{}, databaseFailure(err) }
+	if err != nil {
+		return sqlcgen.InsertLBMemberParams{}, databaseFailure(err)
+	}
 	var found []sqlcgen.InsertLBMemberParams
 	for _, a := range rows {
-		if a.State != "attached" || a.ClusterID != cluster || a.Namespace != namespace || a.VpcID != vpc || a.PodUid == "" { continue }
+		if a.State != "attached" || a.ClusterID != cluster || a.Namespace != namespace || a.VpcID != vpc || a.PodUid == "" {
+			continue
+		}
 		for _, address := range a.CurrentIps {
-			if address != b.Address { continue }
+			if address != b.Address {
+				continue
+			}
 			found = append(found, sqlcgen.InsertLBMemberParams{TenantID: tenant, ClusterID: cluster, Namespace: namespace, VpcID: vpc, SubnetID: b.SubnetID, AttachmentID: a.AttachmentID, Address: b.Address, Port: int32(b.Port), PodUid: a.PodUid, ObservedAt: a.ObservedAt})
 			break
 		}
 	}
-	if len(found) != 1 { return sqlcgen.InsertLBMemberParams{}, biz.Fail(biz.BackendIdentityMismatch, "backend requires one current Attachment address") }
+	if len(found) != 1 {
+		return sqlcgen.InsertLBMemberParams{}, biz.Fail(biz.BackendIdentityMismatch, "backend requires one current Attachment address")
+	}
 	return found[0], nil
 }
 func sameLBMember(m sqlcgen.NetworkLbMember, c sqlcgen.InsertLBMemberParams) bool {

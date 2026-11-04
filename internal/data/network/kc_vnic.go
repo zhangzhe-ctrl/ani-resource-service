@@ -31,7 +31,7 @@ func (p *KCProvider) inspectVNic(ctx context.Context, object *unstructured.Unstr
 	ready, reason := vnicAddressConditions(object)
 	return biz.ProviderObservation{
 		Exists: true, Identity: string(object.GetUID()), Ready: ready, StatusReason: reason,
-		VNic: vnicFacts(object),
+		VNic:        vnicFacts(object),
 		NeedsUpdate: !target.Deleting && target.RequestedIP != "" && object.GetAnnotations()[requestedVNicIPUIDAnnotation] == "",
 	}, nil
 }

@@ -12,15 +12,15 @@ import (
 )
 
 const (
-	ProviderUnavailable Reason = "PROVIDER_UNAVAILABLE"
-	ProviderNotReady    Reason = "PROVIDER_NOT_READY"
+	ProviderUnavailable      Reason = "PROVIDER_UNAVAILABLE"
+	ProviderNotReady         Reason = "PROVIDER_NOT_READY"
 	ProviderStatusUnreported Reason = "PROVIDER_STATUS_UNREPORTED"
-	ProviderRejected    Reason = "PROVIDER_REJECTED"
-	ProviderOwnership   Reason = "PROVIDER_OWNERSHIP_CONFLICT"
-	ProviderUnknown     Reason = "PROVIDER_RESULT_UNKNOWN"
-	ProviderMissing     Reason = "PROVIDER_OBJECT_MISSING"
-	CleanupPending      Reason = "CLEANUP_PENDING"
-	AddressConflict     Reason = "ADDRESS_CONFLICT"
+	ProviderRejected         Reason = "PROVIDER_REJECTED"
+	ProviderOwnership        Reason = "PROVIDER_OWNERSHIP_CONFLICT"
+	ProviderUnknown          Reason = "PROVIDER_RESULT_UNKNOWN"
+	ProviderMissing          Reason = "PROVIDER_OBJECT_MISSING"
+	CleanupPending           Reason = "CLEANUP_PENDING"
+	AddressConflict          Reason = "ADDRESS_CONFLICT"
 )
 
 type ProviderFailure string
@@ -44,9 +44,9 @@ func (e *ProviderError) Unwrap() error { return e.Cause }
 // ProviderTarget contains only domain references and an opaque provider object
 // identity. The adapter resolves namespace/name/cluster from its persisted map.
 type ProviderTarget struct {
-	SubnetOptions *SubnetOptions
-	Deleting      bool
-	Egress        *EgressWorkSpec
+	SubnetOptions                                        *SubnetOptions
+	Deleting                                             bool
+	Egress                                               *EgressWorkSpec
 	TenantID, ResourceID, BindingID, KnownIdentity, CIDR string
 	SubnetID                                             string
 	Kind, VPCID, Gateway                                 string
@@ -95,38 +95,38 @@ type ResourceWork struct {
 type Work struct {
 	// CleanupPending only orders deletion of Res-owned child products. It
 	// does not prevent reading this target or inspect lower-layer resources.
-	CleanupPending   bool
-	CancelUnsent     bool
+	CleanupPending    bool
+	CancelUnsent      bool
 	ClaimedGeneration int64
-	Resource         ResourceWork
-	Operation        Operation
-	ActiveOperation  bool
-	BindingID        string
-	KnownIdentity    string
-	PendingAction    string
-	Owner            string
-	Epoch            int64
-	Attempt          int32
-	Now              time.Time
+	Resource          ResourceWork
+	Operation         Operation
+	ActiveOperation   bool
+	BindingID         string
+	KnownIdentity     string
+	PendingAction     string
+	Owner             string
+	Epoch             int64
+	Attempt           int32
+	Now               time.Time
 }
 
 type Progress struct {
-	VNic           *VNicFacts
+	VNic *VNicFacts
 	// Diagnostic only; never persisted or returned in the public resource model.
-	ProviderError  error `json:"-"`
-	SubnetIPRanges SubnetIPRanges
-	LoadBalancer   *LoadBalancerObservation
-	Egress         *EgressAppliedFacts
-	Backoff        bool
-	State          ResourceState
-	OperationState OperationState
-	Reason         Reason
+	ProviderError    error `json:"-"`
+	SubnetIPRanges   SubnetIPRanges
+	LoadBalancer     *LoadBalancerObservation
+	Egress           *EgressAppliedFacts
+	Backoff          bool
+	State            ResourceState
+	OperationState   OperationState
+	Reason           Reason
 	ObservationError Reason
 	OperationReason  Reason
-	Observed       bool
-	Identity       string
-	ClearPending   bool
-	NextDelay      time.Duration
+	Observed         bool
+	Identity         string
+	ClearPending     bool
+	NextDelay        time.Duration
 }
 
 type WorkRepository interface {
@@ -143,7 +143,7 @@ func DefaultWorkerPolicy() WorkerPolicy {
 	return WorkerPolicy{
 		Lease: 20 * time.Second, RequestTimeout: 5 * time.Second,
 		ObserveEvery: 10 * time.Second,
-		RetryMin: time.Second, RetryMax: time.Minute,
+		RetryMin:     time.Second, RetryMax: time.Minute,
 	}
 }
 
@@ -212,7 +212,7 @@ func (w *Worker) Step(ctx context.Context) (worked bool, stepErr error) {
 		TenantID: work.Resource.TenantID, ResourceID: work.Resource.ID, BindingID: work.BindingID, Egress: work.Resource.Egress,
 		KnownIdentity: work.KnownIdentity, CIDR: work.Resource.CIDR,
 		Deleting: work.Resource.State == Deleting || work.Resource.State == Deleted,
-		Kind: work.Resource.Kind, VPCID: work.Resource.VPCID, SubnetID: work.Resource.SubnetID, Gateway: work.Resource.Gateway,
+		Kind:     work.Resource.Kind, VPCID: work.Resource.VPCID, SubnetID: work.Resource.SubnetID, Gateway: work.Resource.Gateway,
 		RequestedIP: work.Resource.RequestedIP, RequestedMAC: work.Resource.RequestedMAC,
 		SubnetOptions: work.Resource.SubnetOptions,
 	}

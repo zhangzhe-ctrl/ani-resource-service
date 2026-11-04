@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
-	"testing"
-	"time"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
+	"sync"
+	"testing"
+	"time"
 )
 
 func TestLBConcurrentSNATClaimBothArrivalOrders(t *testing.T) {

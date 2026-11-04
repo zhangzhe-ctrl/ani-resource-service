@@ -3,12 +3,12 @@ package biz
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"net/netip"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
-	"github.com/google/uuid"
 )
 
 const (
@@ -64,7 +64,7 @@ type LoadBalancer struct {
 	Health                                                                             LoadBalancerHealth
 	DesiredVersion, AppliedVersion                                                     int64
 	ProviderTargetVersion                                                              int64 `json:",omitempty"`
-	ConfigurationState string
+	ConfigurationState                                                                 string
 }
 type LoadBalancerResult struct {
 	LoadBalancer LoadBalancer

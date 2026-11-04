@@ -3,8 +3,8 @@ package biz
 import (
 	"context"
 	"errors"
-	"time"
 	"github.com/google/uuid"
+	"time"
 )
 
 type VirtualSwitchWorker struct {
@@ -18,14 +18,14 @@ type VirtualSwitchWorker struct {
 // VirtualSwitchProgress describes one attempt without treating retained healthy
 // state during a temporary read failure as a successful observation.
 type VirtualSwitchProgress struct {
-	ProviderError error `json:"-"`
-	BindingState  string
+	ProviderError                             error `json:"-"`
+	BindingState                              string
 	Reason, ObservationError, OperationReason Reason
-	Action        string
-	NodeName      string
-	NodeUID       string
-	Observed      bool
-	Backoff bool
+	Action                                    string
+	NodeName                                  string
+	NodeUID                                   string
+	Observed                                  bool
+	Backoff                                   bool
 }
 
 func NewVirtualSwitchWorker(r VirtualSwitchWorkRepository, p VirtualSwitchGroupProvider, owner string, policy WorkerPolicy, observers ...func(context.Context, VirtualSwitchWork, VirtualSwitchProgress, error)) (*VirtualSwitchWorker, error) {
@@ -72,7 +72,9 @@ func (w *VirtualSwitchWorker) Step(ctx context.Context) (worked bool, err error)
 		cancel()
 		if inspectErr != nil {
 			progress.ProviderError, progress.OperationReason = inspectErr, observationReason(inspectErr)
-			if providerKind(inspectErr) != ProviderConflict { progress.ObservationError = observationReason(inspectErr) }
+			if providerKind(inspectErr) != ProviderConflict {
+				progress.ObservationError = observationReason(inspectErr)
+			}
 			progress.Backoff = true
 			return finish(work.Switch.BindingState, work.Switch.Reason, w.policy.RetryMin)
 		}

@@ -64,14 +64,20 @@ func TestManualNetworkSaveAndCancelRetainRuntime(t *testing.T) {
 	}
 }
 func TestManualNetworkConfirmationUsesCurrentConfigurationAndPod(t *testing.T) {
-    c := NetworkInterfaceChoice{Mode:"manual", VNicID:"vnic_11111111111111111111111111111111", IPs:[]string{"10.0.0.9"}}
-    v := VM{NetworkInterfaces:[]NetworkInterface{{Slot:"primary", Desired:c, Applied:c, RequestedRevision:2, AppliedRevision:2}}}
-    w := &Worker{}
-    x := Observation{Running:true, VMI:&ObjectRef{UID:"new-vmi"}, Launcher:&ObjectRef{UID:"new-pod"}}
-    if err := w.confirmNetworkInterface(context.Background(), &v, x); err != nil { t.Fatal("missing allocated addresses blocked management confirmation", err) }
-    if PrimaryNetworkInterface(v).VerifiedPodUID != "new-pod" { t.Fatal(v) }
-    v.NetworkInterfaces[0].RequestedRevision++
-    if err := w.confirmNetworkInterface(context.Background(), &v, x); err == nil { t.Fatal("unapplied current configuration was confirmed") }
+	c := NetworkInterfaceChoice{Mode: "manual", VNicID: "vnic_11111111111111111111111111111111", IPs: []string{"10.0.0.9"}}
+	v := VM{NetworkInterfaces: []NetworkInterface{{Slot: "primary", Desired: c, Applied: c, RequestedRevision: 2, AppliedRevision: 2}}}
+	w := &Worker{}
+	x := Observation{Running: true, VMI: &ObjectRef{UID: "new-vmi"}, Launcher: &ObjectRef{UID: "new-pod"}}
+	if err := w.confirmNetworkInterface(context.Background(), &v, x); err != nil {
+		t.Fatal("missing allocated addresses blocked management confirmation", err)
+	}
+	if PrimaryNetworkInterface(v).VerifiedPodUID != "new-pod" {
+		t.Fatal(v)
+	}
+	v.NetworkInterfaces[0].RequestedRevision++
+	if err := w.confirmNetworkInterface(context.Background(), &v, x); err == nil {
+		t.Fatal("unapplied current configuration was confirmed")
+	}
 }
 func TestManualNetworkStopTemplateRetiresOnlyAfterApply(t *testing.T) {
 	net := &manualNetworkFixture{}

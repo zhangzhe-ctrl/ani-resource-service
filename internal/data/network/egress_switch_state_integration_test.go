@@ -2,11 +2,11 @@ package data_test
 
 import (
 	"errors"
-	"strings"
-	"testing"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	data "github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
 	"k8s.io/client-go/rest"
+	"strings"
+	"testing"
 )
 
 func TestEgressObservationReadsTargetDespiteSwitchRuntimeState(t *testing.T) {

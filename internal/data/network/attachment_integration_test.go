@@ -94,7 +94,9 @@ func (f attachmentFixture) prepare(t *testing.T) biz.Attachment {
 }
 func (f attachmentFixture) step(t *testing.T, id string) biz.Attachment {
 	t.Helper()
-	if err := f.p.NotifyAttachment(context.Background(), f.r.TenantID, id); err != nil { t.Fatal(err) }
+	if err := f.p.NotifyAttachment(context.Background(), f.r.TenantID, id); err != nil {
+		t.Fatal(err)
+	}
 	time.Sleep(6 * time.Millisecond)
 	if _, e := f.worker.Step(context.Background()); e != nil {
 		t.Fatal(e)
@@ -183,29 +185,39 @@ func TestAttachmentPermanentIdentityTenantScopeAndParentDeletion(t *testing.T) {
 	}
 }
 func TestAttachmentLegacyConfirmAndClosedReleaseUseManagementState(t *testing.T) {
-    f := newAttachmentFixture(t)
-    ctx := context.Background()
-    a := f.prepare(t)
-    podName, podUID := "durable-pod", uuid.NewString()
-    a, err := f.a.Confirm(ctx, biz.ConfirmAttachment{TenantID:a.TenantID, AttachmentID:a.ID, ExpectedVersion:a.Version, ClusterID:a.ClusterID, Namespace:a.Namespace, PodName:podName, PodUID:podUID})
-    if err != nil || a.State != biz.Attached { t.Fatal(a, err) }
-    f.consumer.mu.Lock()
-    f.consumer.err = nil
-    f.consumer.value = consumerFor(a, "open", "")
-    f.consumer.value.PodUIDs = []string{podUID}
-    f.consumer.mu.Unlock()
-    a = f.step(t, a.ID)
-    if a.State != biz.Attached || a.PodUID != podUID { t.Fatal("provider absence changed management relationship", a) }
-    finalization := uuid.NewString()
-    a, err = f.a.Release(ctx, biz.ReleaseAttachment{TenantID:a.TenantID, AttachmentID:a.ID, ExpectedVersion:a.Version, FinalizationID:finalization})
-    if err != nil || a.State != biz.Releasing { t.Fatal(a, err) }
-    f.consumer.mu.Lock()
-    f.consumer.value = consumerFor(a, "closed", finalization)
-    f.consumer.mu.Unlock()
-    a = f.step(t, a.ID)
-    if a.State != biz.Released || a.ReleasedAt == nil { t.Fatal(a) }
-    replay := f.prepare(t)
-    if replay.ID != a.ID || replay.State != biz.Released || replay.Plan != nil { t.Fatal(replay) }
+	f := newAttachmentFixture(t)
+	ctx := context.Background()
+	a := f.prepare(t)
+	podName, podUID := "durable-pod", uuid.NewString()
+	a, err := f.a.Confirm(ctx, biz.ConfirmAttachment{TenantID: a.TenantID, AttachmentID: a.ID, ExpectedVersion: a.Version, ClusterID: a.ClusterID, Namespace: a.Namespace, PodName: podName, PodUID: podUID})
+	if err != nil || a.State != biz.Attached {
+		t.Fatal(a, err)
+	}
+	f.consumer.mu.Lock()
+	f.consumer.err = nil
+	f.consumer.value = consumerFor(a, "open", "")
+	f.consumer.value.PodUIDs = []string{podUID}
+	f.consumer.mu.Unlock()
+	a = f.step(t, a.ID)
+	if a.State != biz.Attached || a.PodUID != podUID {
+		t.Fatal("provider absence changed management relationship", a)
+	}
+	finalization := uuid.NewString()
+	a, err = f.a.Release(ctx, biz.ReleaseAttachment{TenantID: a.TenantID, AttachmentID: a.ID, ExpectedVersion: a.Version, FinalizationID: finalization})
+	if err != nil || a.State != biz.Releasing {
+		t.Fatal(a, err)
+	}
+	f.consumer.mu.Lock()
+	f.consumer.value = consumerFor(a, "closed", finalization)
+	f.consumer.mu.Unlock()
+	a = f.step(t, a.ID)
+	if a.State != biz.Released || a.ReleasedAt == nil {
+		t.Fatal(a)
+	}
+	replay := f.prepare(t)
+	if replay.ID != a.ID || replay.State != biz.Released || replay.Plan != nil {
+		t.Fatal(replay)
+	}
 }
 
 func TestAttachmentUnknownConsumerDoesNotExpireAndEpochRejectsLateWrite(t *testing.T) {
@@ -271,40 +283,54 @@ func TestAttachmentPrepareRacesDeleteSubnet(t *testing.T) {
 }
 
 func TestReleasedAttachmentDoesNotReopenForLateObjects(t *testing.T) {
-    f := newAttachmentFixture(t)
-    ctx := context.Background()
-    a := f.prepare(t)
-    original := a
-    f.consumer.mu.Lock()
-    f.consumer.value, f.consumer.err = consumerFor(a, "closed", uuid.NewString()), nil
-    f.consumer.mu.Unlock()
-    a = f.step(t, a.ID)
-    if a.State != biz.Released { t.Fatal(a) }
-    subnet, err := f.n.DeleteSubnet(ctx, a.TenantID, a.SubnetID)
-    if err != nil { t.Fatal(err) }
-    driveSubnet(t, f.n, f.resourceWorker, subnet, biz.Deleted)
-    f.api.Mu.Lock()
-    f.api.Objects["pods/"+a.Namespace+"/late"] = attachmentPod(original, "late", uuid.NewString())
-    f.api.Mu.Unlock()
-    a = f.step(t, a.ID)
-    if a.State != biz.Released || a.Reason != "" { t.Fatal(a) }
-    if _, err = f.n.CreateSubnet(ctx, biz.CreateSubnet{TenantID:a.TenantID, VPCID:a.VPCID, Name:"reuse", CIDR:subnet.CIDR, IdempotencyKey:"reuse"}); err != nil { t.Fatal("late provider object blocked local CIDR reuse", err) }
+	f := newAttachmentFixture(t)
+	ctx := context.Background()
+	a := f.prepare(t)
+	original := a
+	f.consumer.mu.Lock()
+	f.consumer.value, f.consumer.err = consumerFor(a, "closed", uuid.NewString()), nil
+	f.consumer.mu.Unlock()
+	a = f.step(t, a.ID)
+	if a.State != biz.Released {
+		t.Fatal(a)
+	}
+	subnet, err := f.n.DeleteSubnet(ctx, a.TenantID, a.SubnetID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	driveSubnet(t, f.n, f.resourceWorker, subnet, biz.Deleted)
+	f.api.Mu.Lock()
+	f.api.Objects["pods/"+a.Namespace+"/late"] = attachmentPod(original, "late", uuid.NewString())
+	f.api.Mu.Unlock()
+	a = f.step(t, a.ID)
+	if a.State != biz.Released || a.Reason != "" {
+		t.Fatal(a)
+	}
+	if _, err = f.n.CreateSubnet(ctx, biz.CreateSubnet{TenantID: a.TenantID, VPCID: a.VPCID, Name: "reuse", CIDR: subnet.CIDR, IdempotencyKey: "reuse"}); err != nil {
+		t.Fatal("late provider object blocked local CIDR reuse", err)
+	}
 }
 
 func TestAttachmentAddressReadUsesExactCurrentPod(t *testing.T) {
-    f := newAttachmentFixture(t)
-    a := f.prepare(t)
-    a.State, a.PodName, a.PodUID = biz.Attached, "current", "current-uid"
-    var reads atomic.Int64
-    host := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != "GET" || r.URL.Path != "/api/v1/namespaces/"+a.Namespace+"/pods/current" { t.Errorf("unexpected provider request: %s %s", r.Method, r.URL.Path) }
-        reads.Add(1)
-        f.api.ServeHTTP(w, r)
-    }))
-    defer host.Close()
-    provider, err := data.NewKCProvider(f.p, &rest.Config{Host:host.URL})
-    if err != nil { t.Fatal(err) }
-    c := consumerFor(a, "open", "")
-    value, err := provider.ObserveAttachmentAddresses(context.Background(), a, c)
-    if err != nil || reads.Load() != 1 || len(value.CurrentIPs) != 0 { t.Fatal(value, err, reads.Load()) }
+	f := newAttachmentFixture(t)
+	a := f.prepare(t)
+	a.State, a.PodName, a.PodUID = biz.Attached, "current", "current-uid"
+	var reads atomic.Int64
+	host := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" || r.URL.Path != "/api/v1/namespaces/"+a.Namespace+"/pods/current" {
+			t.Errorf("unexpected provider request: %s %s", r.Method, r.URL.Path)
+		}
+		reads.Add(1)
+		f.api.ServeHTTP(w, r)
+	}))
+	defer host.Close()
+	provider, err := data.NewKCProvider(f.p, &rest.Config{Host: host.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := consumerFor(a, "open", "")
+	value, err := provider.ObserveAttachmentAddresses(context.Background(), a, c)
+	if err != nil || reads.Load() != 1 || len(value.CurrentIPs) != 0 {
+		t.Fatal(value, err, reads.Load())
+	}
 }

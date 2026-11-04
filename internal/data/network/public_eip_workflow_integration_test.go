@@ -3,12 +3,12 @@ package data_test
 import (
 	"context"
 	"errors"
-	"reflect"
-	"slices"
-	"testing"
 	"github.com/google/uuid"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/tenantnamespace"
+	"reflect"
+	"slices"
+	"testing"
 )
 
 // Only Kubernetes/controller HTTP is a boundary double. Admission, persistence,
@@ -107,7 +107,9 @@ func TestPublicEIPWorkflowOwnVPCReadyWithoutBase(t *testing.T) {
 func TestPublicEIPWorkflowDegradedBaseDoesNotBlockPublic(t *testing.T) {
 	f, _, _, _ := newBaseKCFixture(t, nil)
 	vpc := baseState(t, f, createBaseVPC(t, f, "public-independent-of-base").ID, biz.Available)
-	if _, err := f.owner.Exec(f.ctx, `UPDATE network_vpc_base_connectivity SET state='degraded' WHERE tenant_id=$1 AND vpc_id=$2`, f.tenant, vpc.ID); err != nil { t.Fatal(err) }
+	if _, err := f.owner.Exec(f.ctx, `UPDATE network_vpc_base_connectivity SET state='degraded' WHERE tenant_id=$1 AND vpc_id=$2`, f.tenant, vpc.ID); err != nil {
+		t.Fatal(err)
+	}
 	eip := f.eip(t, "public-while-base-degraded")
 	binding, err := f.e.BindVPCSnat(f.ctx, biz.EgressIntent{VPCID: vpc.ID, EIPID: eip.ID, IdempotencyKey: "bind-with-degraded-base"})
 	if err != nil {
@@ -139,20 +141,28 @@ func TestPublicEIPWorkflowAdmissionUsesManagementState(t *testing.T) {
 			vpc := availableEgressVPC(t, f, "public-admission")
 			eip := f.eip(t, "public-admission-address")
 			query := map[string]string{
-				"degraded": `UPDATE network_vpcs SET state='degraded' WHERE tenant_id=$1 AND vpc_id=$2`,
-				"old-read": `UPDATE network_vpcs SET observed_at=clock_timestamp()-interval '2 hour' WHERE tenant_id=$1 AND vpc_id=$2`,
+				"degraded":       `UPDATE network_vpcs SET state='degraded' WHERE tenant_id=$1 AND vpc_id=$2`,
+				"old-read":       `UPDATE network_vpcs SET observed_at=clock_timestamp()-interval '2 hour' WHERE tenant_id=$1 AND vpc_id=$2`,
 				"pending-parent": `UPDATE network_provider_bindings SET pending_action='create',pending_since=clock_timestamp() WHERE tenant_id=$1 AND vpc_id=$2`,
-				"deleting": `UPDATE network_vpcs SET state='deleting' WHERE tenant_id=$1 AND vpc_id=$2`,
+				"deleting":       `UPDATE network_vpcs SET state='deleting' WHERE tenant_id=$1 AND vpc_id=$2`,
 			}[scenario]
-			if _, err := f.owner.Exec(f.ctx, query, f.tenant, vpc.ID); err != nil { t.Fatal(err) }
+			if _, err := f.owner.Exec(f.ctx, query, f.tenant, vpc.ID); err != nil {
+				t.Fatal(err)
+			}
 			_, err := f.e.BindVPCSnat(f.ctx, biz.EgressIntent{VPCID: vpc.ID, EIPID: eip.ID, IdempotencyKey: scenario})
 			wantClaims := 1
 			if scenario == "deleting" {
 				wantClaims = 0
-				if biz.ReasonOf(err) != biz.ResourceBusy { t.Fatal("deletion did not close admission", err) }
-			} else if err != nil { t.Fatal("parent runtime facts gated own declaration", err) }
+				if biz.ReasonOf(err) != biz.ResourceBusy {
+					t.Fatal("deletion did not close admission", err)
+				}
+			} else if err != nil {
+				t.Fatal("parent runtime facts gated own declaration", err)
+			}
 			var claims int
-			if err := f.owner.QueryRow(f.ctx, `SELECT count(*) FROM network_eip_claims WHERE tenant_id=$1 AND eip_id=$2 AND released_at IS NULL`, f.tenant, eip.ID).Scan(&claims); err != nil || claims != wantClaims { t.Fatal(claims, err) }
+			if err := f.owner.QueryRow(f.ctx, `SELECT count(*) FROM network_eip_claims WHERE tenant_id=$1 AND eip_id=$2 AND released_at IS NULL`, f.tenant, eip.ID).Scan(&claims); err != nil || claims != wantClaims {
+				t.Fatal(claims, err)
+			}
 		})
 	}
 }

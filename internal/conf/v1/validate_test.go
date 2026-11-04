@@ -146,16 +146,20 @@ func TestBootstrapRequiresVPCDependenciesAndBoundedWorkerTiming(t *testing.T) {
 func TestNetworkRequestAndWorkerBudgetsAreBounded(t *testing.T) {
 	baseline := validConfig()
 	baseline.Network.Observation = &Observation{WorkersPerKind: 2, RequestQps: 5, RequestBurst: 10}
-	if err := baseline.Validate(); err != nil { t.Fatal(err) }
+	if err := baseline.Validate(); err != nil {
+		t.Fatal(err)
+	}
 	for name, mutate := range map[string]func(*Observation){
 		"unbounded workers": func(o *Observation) { o.WorkersPerKind = 5 },
-		"zero qps": func(o *Observation) { o.RequestQps = 0 },
-		"unbounded burst": func(o *Observation) { o.RequestBurst = 201 },
+		"zero qps":          func(o *Observation) { o.RequestQps = 0 },
+		"unbounded burst":   func(o *Observation) { o.RequestBurst = 201 },
 	} {
 		t.Run(name, func(t *testing.T) {
 			c := proto.Clone(baseline).(*Bootstrap)
 			mutate(c.Network.Observation)
-			if err := c.Validate(); err == nil { t.Fatal("invalid execution budget accepted") }
+			if err := c.Validate(); err == nil {
+				t.Fatal("invalid execution budget accepted")
+			}
 		})
 	}
 }
@@ -164,9 +168,11 @@ func TestLegacyNetworkEvidenceSettingsDoNotGateStartup(t *testing.T) {
 	c := validConfig()
 	c.Network.Worker.StaleAfter = nil
 	c.Network.Observation = &Observation{WorkersPerKind: 1, RequestQps: 5, RequestBurst: 10,
-		QueueCapacity: 0, AuditInterval: durationpb.New(24*time.Hour),
+		QueueCapacity: 0, AuditInterval: durationpb.New(24 * time.Hour),
 		AuditJitter: durationpb.New(0), AuditTimeout: nil, FlushInterval: nil}
 	c.Network.LoadBalancer = &LoadBalancer{EnableIsolatedApi: true, InstallationFingerprint: "obsolete",
 		ControllerImageId: "obsolete", EnvoyImageId: "obsolete", ShutdownImageId: "obsolete", KcImageId: "obsolete"}
-	if err := c.Validate(); err != nil { t.Fatalf("deprecated network settings blocked startup: %v", err) }
+	if err := c.Validate(); err != nil {
+		t.Fatalf("deprecated network settings blocked startup: %v", err)
+	}
 }

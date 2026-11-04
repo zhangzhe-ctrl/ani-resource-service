@@ -381,7 +381,9 @@ func TestNetworkJointBackendWorkerRefreshesAttachmentObservation(t *testing.T) {
 	if err = f.f.owner.QueryRow(f.f.ctx, "SELECT observed_at,pod_uid FROM network_attachments WHERE tenant_id=$1 AND instance_id='lb-backend'", f.f.tenant).Scan(&before, &podUID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.f.owner.Exec(f.f.ctx, "UPDATE network_attachments SET next_check_at=clock_timestamp() WHERE tenant_id=$1 AND instance_id='lb-backend'", f.f.tenant); err != nil { t.Fatal(err) }
+	if _, err := f.f.owner.Exec(f.f.ctx, "UPDATE network_attachments SET next_check_at=clock_timestamp() WHERE tenant_id=$1 AND instance_id='lb-backend'", f.f.tenant); err != nil {
+		t.Fatal(err)
+	}
 	awaitNET05A(t, 3*time.Second, func() bool {
 		if _, err := worker.Step(f.f.ctx); err != nil {
 			t.Fatal(err)

@@ -11,11 +11,11 @@ import (
 
 type earlyCompletionRepository struct {
 	WorkRepository
-	work     Work
-	progress Progress
+	work      Work
+	progress  Progress
 	mutations int
-	err      error
-	finishes int
+	err       error
+	finishes  int
 }
 
 func (r *earlyCompletionRepository) Claim(context.Context, string, time.Duration) (Work, bool, error) {
@@ -91,9 +91,10 @@ func (r *earlyCompletionRepository) BeginMutation(context.Context, Work, string,
 type directObservationProvider struct {
 	ResourceProvider
 	observation ProviderObservation
-	creates int
-	deletes int
+	creates     int
+	deletes     int
 }
+
 func (p *directObservationProvider) Observe(context.Context, ProviderTarget) (ProviderObservation, error) {
 	return p.observation, nil
 }
@@ -112,12 +113,23 @@ func TestWorkerNativeReadyRecoversHistoricalFailedAndPreservesUnknown(t *testing
 			r := &earlyCompletionRepository{work: Work{Resource: ResourceWork{Kind: "vpc", State: old, Reason: "previous"}, KnownIdentity: "original"}}
 			p := &directObservationProvider{observation: ProviderObservation{Exists: true, Identity: "original", Ready: ready, StatusReason: "native-reason"}}
 			w, err := NewWorker(r, p, uuid.NewString(), DefaultWorkerPolicy())
-			if err != nil { t.Fatal(err) }
-			if _, err = w.Step(context.Background()); err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err = w.Step(context.Background()); err != nil {
+				t.Fatal(err)
+			}
 			want := old
 			wantReason := Reason("native-reason")
 			if ready != nil {
-				if *ready { want = Available; wantReason = "" } else if old == Available || old == Degraded { want = Degraded } else { want = Provisioning }
+				if *ready {
+					want = Available
+					wantReason = ""
+				} else if old == Available || old == Degraded {
+					want = Degraded
+				} else {
+					want = Provisioning
+				}
 			}
 			if r.progress.State != want || !r.progress.Observed || r.progress.Reason != wantReason || r.progress.OperationState != "" || p.creates != 0 {
 				t.Fatalf("old=%s ready=%v progress=%+v", old, ready, r.progress)
@@ -128,10 +140,10 @@ func TestWorkerNativeReadyRecoversHistoricalFailedAndPreservesUnknown(t *testing
 
 func TestWorkerMissingOriginalNeverRecreatesAndDelete404Completes(t *testing.T) {
 	for _, tc := range []struct {
-		name string
-		work Work
+		name    string
+		work    Work
 		creates int
-		state ResourceState
+		state   ResourceState
 	}{
 		{"active-create-no-UID", Work{Resource: ResourceWork{Kind: "vpc", State: Provisioning}, ActiveOperation: true, Operation: Operation{Kind: "create_vpc"}, PendingAction: "create"}, 1, Available},
 		{"active-create-known-UID", Work{Resource: ResourceWork{Kind: "vpc", State: Provisioning}, KnownIdentity: "original", ActiveOperation: true, Operation: Operation{Kind: "create_vpc"}}, 0, Provisioning},
@@ -143,8 +155,12 @@ func TestWorkerMissingOriginalNeverRecreatesAndDelete404Completes(t *testing.T) 
 			r := &earlyCompletionRepository{work: tc.work}
 			p := &directObservationProvider{}
 			w, err := NewWorker(r, p, uuid.NewString(), DefaultWorkerPolicy())
-			if err != nil { t.Fatal(err) }
-			if _, err = w.Step(context.Background()); err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err = w.Step(context.Background()); err != nil {
+				t.Fatal(err)
+			}
 			if p.creates != tc.creates || p.deletes != 0 || r.progress.State != tc.state || !r.progress.Observed {
 				t.Fatalf("unexpected direct missing-object result: creates=%d deletes=%d progress=%+v", p.creates, p.deletes, r.progress)
 			}
@@ -156,8 +172,12 @@ func TestWorkerReadFailureKeepsEveryPriorResourceStateAndReason(t *testing.T) {
 	for _, old := range []ResourceState{Provisioning, Available, Degraded, Failed, Deleting} {
 		r := &earlyCompletionRepository{work: Work{Resource: ResourceWork{Kind: "vpc", State: old, Reason: "last-native-reason"}, KnownIdentity: "original", ActiveOperation: true, Operation: Operation{Kind: "create_vpc"}}}
 		w, err := NewWorker(r, failedObservationProvider{err: &ProviderError{Kind: ProviderTemporary}}, uuid.NewString(), DefaultWorkerPolicy())
-		if err != nil { t.Fatal(err) }
-		if _, err = w.Step(context.Background()); err != nil { t.Fatal(err) }
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err = w.Step(context.Background()); err != nil {
+			t.Fatal(err)
+		}
 		if r.progress.State != old || r.progress.Reason != "last-native-reason" || r.progress.Observed || r.progress.ObservationError != ProviderUnavailable || !r.progress.Backoff || r.mutations != 0 {
 			t.Fatalf("failed read changed last projection: %+v", r.progress)
 		}

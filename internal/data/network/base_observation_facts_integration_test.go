@@ -52,7 +52,10 @@ func baseFactsDirectWorker(t *testing.T, f *egressFixture, kube string) {
 func TestBaseObservationFailurePreservesConfirmedSnatAppliedFacts(t *testing.T) {
 	var fail atomic.Bool
 	f, _, _, kube := newBaseKCFixture(t, func(w http.ResponseWriter, r *http.Request, _ *controlled.Server) bool {
-		if fail.Load() && r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/snats/") { http.Error(w, "read failure", http.StatusServiceUnavailable); return true }
+		if fail.Load() && r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/snats/") {
+			http.Error(w, "read failure", http.StatusServiceUnavailable)
+			return true
+		}
 		return false
 	})
 	vpc := baseState(t, f, createBaseVPC(t, f, "snat-read-facts").ID, biz.Available)
@@ -61,38 +64,57 @@ func TestBaseObservationFailurePreservesConfirmedSnatAppliedFacts(t *testing.T) 
 	projection := func() string {
 		t.Helper()
 		var value string
-		if err := f.owner.QueryRow(f.ctx, `SELECT jsonb_build_array(state,reason,applied_enabled,observed_at)::text FROM network_snat_bindings WHERE tenant_id=$1 AND snat_id=$2`, f.tenant, snatID).Scan(&value); err != nil { t.Fatal(err) }
+		if err := f.owner.QueryRow(f.ctx, `SELECT jsonb_build_array(state,reason,applied_enabled,observed_at)::text FROM network_snat_bindings WHERE tenant_id=$1 AND snat_id=$2`, f.tenant, snatID).Scan(&value); err != nil {
+			t.Fatal(err)
+		}
 		return value
 	}
 	before := projection()
 	fail.Store(true)
 	baseFactsStep(t, f, snatID)
-	if projection() != before { t.Fatal("read failure changed confirmed SNAT state/reason/applied/time") }
+	if projection() != before {
+		t.Fatal("read failure changed confirmed SNAT state/reason/applied/time")
+	}
 	var observationError string
-	if err := f.owner.QueryRow(f.ctx, `SELECT observation_error FROM network_reconciliations WHERE tenant_id=$1 AND snat_id=$2`, f.tenant, snatID).Scan(&observationError); err != nil || observationError != string(biz.ProviderUnavailable) { t.Fatal(observationError, err) }
+	if err := f.owner.QueryRow(f.ctx, `SELECT observation_error FROM network_reconciliations WHERE tenant_id=$1 AND snat_id=$2`, f.tenant, snatID).Scan(&observationError); err != nil || observationError != string(biz.ProviderUnavailable) {
+		t.Fatal(observationError, err)
+	}
 	current, err := f.n.GetVPC(f.ctx, f.tenant, vpc.ID)
-	if err != nil || current.State != biz.Available || current.BaseConnectivity == nil || current.BaseConnectivity.State != "ready" || !current.BaseConnectivity.ObservationStale { t.Fatal(current, err) }
+	if err != nil || current.State != biz.Available || current.BaseConnectivity == nil || current.BaseConnectivity.State != "ready" || !current.BaseConnectivity.ObservationStale {
+		t.Fatal(current, err)
+	}
 	fail.Store(false)
 	baseFactsStep(t, f, snatID)
-	if err := f.owner.QueryRow(f.ctx, `SELECT observation_error FROM network_reconciliations WHERE tenant_id=$1 AND snat_id=$2`, f.tenant, snatID).Scan(&observationError); err != nil || observationError != "" { t.Fatal("successful current read did not clear diagnostic", observationError, err) }
+	if err := f.owner.QueryRow(f.ctx, `SELECT observation_error FROM network_reconciliations WHERE tenant_id=$1 AND snat_id=$2`, f.tenant, snatID).Scan(&observationError); err != nil || observationError != "" {
+		t.Fatal("successful current read did not clear diagnostic", observationError, err)
+	}
 }
 
 func TestVPCReadFailureDoesNotRewriteManagedEgressProjection(t *testing.T) {
 	var fail atomic.Bool
 	f, _, _, kube := newBaseKCFixture(t, func(w http.ResponseWriter, r *http.Request, _ *controlled.Server) bool {
-		if fail.Load() && r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/vpcs/") { http.Error(w, "read failure", http.StatusServiceUnavailable); return true }
+		if fail.Load() && r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/vpcs/") {
+			http.Error(w, "read failure", http.StatusServiceUnavailable)
+			return true
+		}
 		return false
 	})
 	vpc := baseState(t, f, createBaseVPC(t, f, "vpc-read-facts").ID, biz.Available)
 	baseFactsDirectWorker(t, f, kube)
 	var before, after string
 	query := `SELECT to_jsonb(b)::text FROM network_vpc_base_connectivity b WHERE tenant_id=$1 AND vpc_id=$2`
-	if err := f.owner.QueryRow(f.ctx, query, f.tenant, vpc.ID).Scan(&before); err != nil { t.Fatal(err) }
+	if err := f.owner.QueryRow(f.ctx, query, f.tenant, vpc.ID).Scan(&before); err != nil {
+		t.Fatal(err)
+	}
 	fail.Store(true)
 	baseFactsStep(t, f, vpc.ID)
-	if err := f.owner.QueryRow(f.ctx, query, f.tenant, vpc.ID).Scan(&after); err != nil || before != after { t.Fatal("VPC read error rewrote child relationship", before, after, err) }
+	if err := f.owner.QueryRow(f.ctx, query, f.tenant, vpc.ID).Scan(&after); err != nil || before != after {
+		t.Fatal("VPC read error rewrote child relationship", before, after, err)
+	}
 	current, err := f.n.GetVPC(f.ctx, f.tenant, vpc.ID)
-	if err != nil || current.State != vpc.State || current.Reason != vpc.Reason || !current.ObservedAt.Equal(*vpc.ObservedAt) || !current.ObservationStale { t.Fatal(current, err) }
+	if err != nil || current.State != vpc.State || current.Reason != vpc.Reason || !current.ObservedAt.Equal(*vpc.ObservedAt) || !current.ObservationStale {
+		t.Fatal(current, err)
+	}
 }
 
 func TestManagedChildStatusDoesNotFanOutParentHealthWork(t *testing.T) {
@@ -102,8 +124,12 @@ func TestManagedChildStatusDoesNotFanOutParentHealthWork(t *testing.T) {
 	baseFactsDirectWorker(t, f, kube)
 	var before, after int64
 	query := `SELECT requested_generation FROM network_reconciliations WHERE tenant_id=$1 AND vpc_id=$2`
-	if err := f.owner.QueryRow(f.ctx, query, f.tenant, vpc.ID).Scan(&before); err != nil { t.Fatal(err) }
+	if err := f.owner.QueryRow(f.ctx, query, f.tenant, vpc.ID).Scan(&before); err != nil {
+		t.Fatal(err)
+	}
 	baseFactsStep(t, f, eipID)
 	baseFactsStep(t, f, snatID)
-	if err := f.owner.QueryRow(f.ctx, query, f.tenant, vpc.ID).Scan(&after); err != nil || before != after { t.Fatal("child reads queued unrelated parent health checks", before, after, err) }
+	if err := f.owner.QueryRow(f.ctx, query, f.tenant, vpc.ID).Scan(&after); err != nil || before != after {
+		t.Fatal("child reads queued unrelated parent health checks", before, after, err)
+	}
 }
