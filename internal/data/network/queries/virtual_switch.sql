@@ -36,9 +36,9 @@ SELECT count(*) FROM network_virtual_switches WHERE
 
 -- name: ListVirtualSwitches :many
 SELECT sqlc.embed(s),coalesce(r.observation_error,'')::text AS observation_error FROM network_virtual_switches s LEFT JOIN network_virtual_switch_reconciliations r USING(resource_id) WHERE
- (sqlc.arg(name_filter)::text='' OR position(lower(sqlc.arg(name_filter)) in lower(name))>0)
- AND ((sqlc.arg(state_filter)::text='' AND state<>'deleted') OR state=sqlc.arg(state_filter))
- ORDER BY created_at DESC,resource_id DESC LIMIT sqlc.arg(max_results)::integer OFFSET sqlc.arg(page_offset)::bigint;
+ (sqlc.arg(name_filter)::text='' OR position(lower(sqlc.arg(name_filter)) in lower(s.name))>0)
+ AND ((sqlc.arg(state_filter)::text='' AND s.state<>'deleted') OR s.state=sqlc.arg(state_filter))
+ ORDER BY s.created_at DESC,s.resource_id DESC LIMIT sqlc.arg(max_results)::integer OFFSET sqlc.arg(page_offset)::bigint;
 
 -- name: BindVirtualSwitch :one
 UPDATE network_virtual_switches SET cluster_id=sqlc.arg(cluster_id),binding_id=sqlc.arg(binding_id),binding_version=1,
