@@ -265,6 +265,10 @@ func TestVMAutoNetworkPGBackfillsExistingSubnetAndPinsAcrossRestart(t *testing.T
 		t.Fatal("Subnet binding or shared NAD identity incorrect", second, err)
 	}
 	otherTenant := uuid.NewString()
+	otherNamespace := "tenant-" + otherTenant
+	api.legacy.Mu.Lock()
+	api.legacy.Objects["namespaces//"+otherNamespace] = map[string]any{"apiVersion": "v1", "kind": "Namespace", "metadata": map[string]any{"name": otherNamespace, "uid": uuid.NewString(), "labels": map[string]any{"network.ani.io/managed-by": "ani-network-service", "network.ani.io/tenant-id": otherTenant}}, "status": map[string]any{"phase": "Active"}}
+	api.legacy.Mu.Unlock()
 	v := availableVPC(t, f.n, f.resourceWorker, otherTenant, "second-tenant-auto")
 	otherSubnet, err := f.n.CreateSubnet(ctx, biz.CreateSubnet{TenantID: otherTenant, VPCID: v.ID, Name: "other-tenant-subnet", CIDR: "10.42.1.0/24", IdempotencyKey: "other-auto-subnet"})
 	if err != nil {
