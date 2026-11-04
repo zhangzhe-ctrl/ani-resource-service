@@ -2,7 +2,7 @@
 
 ## 2026-11-04：观测故障隔离与终态恢复
 
-基于 main `d23828c` 修复 VM/VNIC 当前网络准入、Released 协议恢复与 Deleted LB 共享审计、基础 SNAT 事实保留/父子恢复通知、可选 LB 采集及来源失效范围。当前直接依赖与原 UID 有效时，出口聚合或投影异常不单独阻塞 VM/VNIC；身份、未决写、owner 封闭和物理清理检查保留。Fedora `make verify`、36 项相关 PG/领域回归及对应 race 均 PASS；线上部署及业务验收 NOT_RUN。来源和具名验证见[实施记录](records/network-observation-isolation-20261104.md)。
+基于 main `d23828c` 修复 VM/VNIC 当前网络准入、终态共享审计、SNAT 事实保留与可选 LB 隔离；现场验收补修默认自动网卡删除收尾及共享观察等待误装故障退避。最终 Resource `99a03a1` 已部署 10–12，generation/observed 92、Ready1/restart0；真实 VM 平台启停/删除、VNIC 实际分配/删除与原 UID 清理通过，原用户 VM 保持。303.35s 静稳 GET/LIST 10.216 QPS，14 类基础 LIST 各9次、基础审计失败0，29组 VPC/base 全 available/ready；精确 EIP/SNAT Watch 均原UID/Bound且无事件。聚合时间仍滞后及一次可选 LB 审计失败未称修复，前者跟踪 Issue #55；guest 内部启动/关机 NOT_VERIFIED。Fedora 定向回归及最终 `make verify` PASS，未提高 QPS/TTL。来源、失败窗口与并行 Gov 原镜像重启的范围说明见[实施记录](records/network-observation-isolation-20261104.md)。
 
 <a id="subnet-creation-options-20261103"></a>
 
