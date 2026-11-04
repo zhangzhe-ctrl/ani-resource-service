@@ -147,6 +147,11 @@ func rpcError(err error) error {
 	if reason == "" && errors.Is(err, context.DeadlineExceeded) {
 		return status.Error(codes.DeadlineExceeded, "request deadline exceeded; replay creation with the same key")
 	}
+	var providerFailure *biz.ProviderError
+	if reason == "" && errors.As(err, &providerFailure) && providerFailure.Kind == biz.ProviderTemporary && errors.Is(err, biz.ErrObservationPending) {
+		err = biz.Fail(biz.DependencyUnavailable, "network observation is not ready")
+		reason = biz.DependencyUnavailable
+	}
 	code := codes.Internal
 	message := "Network request failed"
 	var failure *biz.Error

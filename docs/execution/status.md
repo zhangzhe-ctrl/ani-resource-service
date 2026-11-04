@@ -1,5 +1,13 @@
 # Network 执行状态
 
+## 2026-11-04：共享观察等待错误的 API 分类
+
+本次独立变更基于 main `5dc539d92e3150a3593bde3668082753aa4fdebe`：明确的 `ProviderTemporary` + `ErrObservationPending` 对外映射为 gRPC `Unavailable` / `DEPENDENCY_UNAVAILABLE`；不输出内部 Cause，不改变其他 Provider、租户或已有业务错误分类，不自动重试、不改变身份核验及意图受理。客户端重试同一写操作仍需沿用原幂等键，不因该错误假定请求未提交。此次未部署。
+
+用户允许远端不可用时本机回退；`ssh -F /home/chabking/.ssh/config ubuntu` 因文件不存在失败。独立工作区在本机 Ubuntu、Go 1.26.10、`GOWORK=off GOMAXPROCS=2 GOFLAGS=-p=1` 下运行 `GOMEMLIMIT=1600MiB make verify` 和 `go test -race -count=1 ./internal/service/network` 均 PASS；前者不含 PostgreSQL 集成测试。受测生产文件 SHA-256 `b01633d8cd77b291b5921908027e6c0d810bb057b4cc1f7054b4cb1ed62ce189`，测试文件 SHA-256 `e553cd1453a95c690f9825f0bd36f18ffb46f0456df087a47940c7bdaa75a792`；本段记录在门禁之后加入。
+
+另在隔离源码 `938713f919ecc7ef0dfdcb52a47d87d836edd741` 的测试中仅增加底层 Cause 诊断日志，使用独占 PostgreSQL 17.11（镜像 ID `sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b`）与 `go test -race -count=5 -timeout=8m -run '^TestLBDeferredActualAdapterLifecycleRestartAndReactivation$' -v ./internal/data/network`：2 PASS、3 FAIL，失败均为清理后重新激活时共享观察暂未就绪。测试容器已清理。上述错误分类不解决该生命周期测试的时序问题；远端 CI 底层 Cause、LB 测试修复与历史 Fedora 工作包验收均未由本轮证明。
+
 ## 2026-11-04：观测故障隔离与终态恢复
 
 基于 main `d23828c` 修复 VM/VNIC 当前网络准入、终态共享审计、SNAT 事实保留与可选 LB 隔离；现场验收补修默认自动网卡删除收尾及共享观察等待误装故障退避。最终 Resource `99a03a1` 已部署 10–12，generation/observed 92、Ready1/restart0；真实 VM 平台启停/删除、VNIC 实际分配/删除与原 UID 清理通过，原用户 VM 保持。303.35s 静稳 GET/LIST 10.216 QPS，14 类基础 LIST 各9次、基础审计失败0，29组 VPC/base 全 available/ready；精确 EIP/SNAT Watch 均原UID/Bound且无事件。聚合时间仍滞后及一次可选 LB 审计失败未称修复，前者跟踪 Issue #55；guest 内部启动/关机 NOT_VERIFIED。Fedora 定向回归及最终 `make verify` PASS，未提高 QPS/TTL。来源、失败窗口与并行 Gov 原镜像重启的范围说明见[实施记录](records/network-observation-isolation-20261104.md)。
