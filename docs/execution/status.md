@@ -4,11 +4,11 @@
 
 ## 2026-11-04：完全采信 KCN 的网络状态消费简化
 
-**业务源码、SQL/迁移源及对应测试已保存为 [草稿 PR #57](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/57)；正式生成、编译、测试和数据库升级：not_verified；未部署。** 基于实施时 main `5dc539d92e3150a3593bde3668082753aa4fdebe`，工作分支 `work/network-status-authority`。已按用户批准的方法/字段级方案移除网络证据覆盖、时效门槛、关系闭包、周期审计和底层清场证明，改为精确对象通知与直接状态读取；Attachment 管理生命周期、当前地址、SG applied 和计算侧通知分别接通。保留 Res 的租户账本、用户配置、引用、幂等、并发及原声明身份。0032 源码收敛旧列/表并搬运当前地址，未执行迁移；没有修改 KCN 或提出 KCN 改造前置。
+**已完成固定工具生成、Resource 镜像构建及 ani-kcn-full 集群发布；数据库已到 32，临时 VM 创建、关机、启动和删除的真实操作均 succeeded。** 工作分支仍为 `work/network-status-authority`，基线为 `5dc539d92e3150a3593bde3668082753aa4fdebe`，继续更新原 [PR #57](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/57)。所有生成、编译、测试、打包和推送在 `ubuntu@100.64.128.15` 执行，集群操作在 `kubercloud@100.64.128.12` 执行，本地仅编辑、Git 和轻量编排。
 
-当前环境无法解析 SSH host `fedora`，没有历史 SSH 配置或 agent；重任务按既定范围等待 Fedora 访问恢复。本地只做编辑和轻量检查。生成物仍为基线，当前工作树尚不能当作可编译发布的完成态。固定输入、具体落点、实际检查与剩余步骤见[本轮实施记录](records/2026-11-04-network-management-simplification.md)，正式合同见[规格 v3](../specs/cr-observation.md)。以下记录保留各自历史时点的执行事实。
+只发布 Resource，最终镜像为源码54aebd9，digest `sha256:c6f095b28f87897ccdb43e5347d9855315ab69bcecaea2eebe86d2214f95b3e5`，generation/observed173、Ready1、restart0。现场切换前已为 canonical31，因此实际只执行 0032；保留停止旧写入者后的备份，修正八张 Network 新表的迁移所有权，保留身份、幂等和历史操作，并应用匹配 RBAC。新镜像需配套 VM 配置，原含 `Service.ImageUpload` 的 Secret 保留未改；此分支不包含该额外配置对应的能力，见执行记录。
 
-2026-11-04 恢复交付：依用户随后“把改动都提 PR”的要求，原 298 个变更路径已完整保存为源码提交 `39a63cd6aa3abccc98a2669be633f3a313cca3d3`，远端 tree `720d1b3fba1f6ffd2dc786c67203f18e494e89f0` 与原补丁应用结果完全一致。GitHub 交付通过已连接接口完成；原工作区和补丁未覆盖。草稿状态不代表 `make verify` 门禁通过；生成物、编译、测试及迁移仍待接续，见[恢复记录](records/2026-11-04-network-management-simplification.md#recovery-pr-20261104)。
+**VM 和 VNIC 主流程已验收。** 用户随后授权升级 Governance，已发布最新 main `3a30c697`，digest `sha256:a035f93883068ee85998410863ae2d9f56e3d3f5782db608510d1769eebffed7`。通过官方 CLI 预览并增量同步 API，按仓库 SQL 登记9个新接口权限，仅为验收租户既有管理员追加所需5项权限，不改其他角色或套餐。正常登录后的 VNIC 创建、地址/MAC展示和删除均通过，临时资源已清理。28→32、31→32 及四项此前失败的定向 PG 用例分别通过。最终 Resource Pod 的340.238秒窗口为154次 Network provider 传输请求、0.4526 QPS、LIST0；34个租户删除任务、4个平台删除任务、32条释放连接均未改变，62个稳定任务停放、有限时刻待调度任务0。按用户要求未跑全量门禁，`make verify` 为 NOT_RUN；未重复验证最终镜像的完整 VM 生命周期，复用之前相同原生 VM 执行代码的实测，版本边界见[交付记录](records/2026-11-04-network-management-simplification.md#takeover-delivery-20261104)。PR交评审，不自动合并。以下各节保留其历史时点事实。
 
 ## 2026-11-04：观测故障隔离与终态恢复
 
