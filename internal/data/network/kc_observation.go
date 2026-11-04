@@ -691,7 +691,7 @@ func (o *KCObservation) cachedSnapshot(now time.Time) (*auditView, error) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	if o.view == nil || now.Sub(o.view.collected) > o.options.AuditInterval+o.options.AuditJitter {
-		return nil, fmt.Errorf("shared observation is pending")
+		return nil, fmt.Errorf("%w: shared observation is pending", biz.ErrObservationPending)
 	}
 	return o.view, nil
 }
