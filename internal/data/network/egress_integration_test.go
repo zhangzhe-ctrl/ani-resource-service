@@ -138,7 +138,7 @@ func (f *egressFixture) platform(t *testing.T, i biz.PlatformIntent) biz.Platfor
 	t.Helper()
 	v, err := f.e.CreatePlatform(f.ctx, i)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("create platform: %v; cause: %v", err, errors.Unwrap(err))
 	}
 	f.drive(t, func() bool {
 		v, err = f.e.GetPlatform(f.ctx, v.Kind, v.ID)
