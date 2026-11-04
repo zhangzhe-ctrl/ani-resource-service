@@ -84,8 +84,16 @@ func newAttachmentFixture(t *testing.T) attachmentFixture {
 	}
 	return attachmentFixture{p, owner, n, a, provider, api, r, c, aw, w}
 }
-func (f attachmentFixture) prepare(t *testing.T) biz.Attachment {
+func (f *attachmentFixture) prepare(t *testing.T) biz.Attachment {
 	t.Helper()
+	if f.r.ConsumerType == "" {
+		switch f.r.WorkloadMode {
+		case "controller_managed":
+			f.r.ConsumerType = biz.ConsumerContainerInstance
+		case "vm_managed":
+			f.r.ConsumerType = biz.ConsumerVirtualMachine
+		}
+	}
 	a, e := f.a.Prepare(context.Background(), f.r)
 	if e != nil {
 		t.Fatal(e)

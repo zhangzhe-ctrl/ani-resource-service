@@ -14,6 +14,7 @@ import (
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/internal/data/network"
 	"github.com/zhangzhe-ctrl/ani-resource-service/tests/testenv"
+	"github.com/zhangzhe-ctrl/ani-resource-service/internal/tenantnamespace"
 	"strings"
 )
 
@@ -24,6 +25,9 @@ func database(t *testing.T) (*data.Postgres, *pgxpool.Pool) {
 	// Admission, locking and SQL still run through the production implementation;
 	// NewDatabase itself remains closed until the fixture publishes its policy.
 	configureRepositoryVPCPresets(t, fixture.Repository)
+	fixture.Repository.ConfigureTenantNamespaceResolver(func(_ context.Context, tenant string) (tenantnamespace.Identity, error) {
+		return tenantnamespace.Identity{TenantID: tenant, ClusterID: "test-cluster", Name: "tenant-" + tenant, UID: "namespace-" + tenant}, nil
+	})
 	return fixture.Repository, fixture.Owner
 }
 

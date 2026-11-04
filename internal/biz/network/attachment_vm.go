@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"strings"
+	"time"
 )
 
 type VMNetworkExpectation struct {
@@ -34,6 +35,12 @@ type VMNetworkResolver interface {
 // availability; it only prepares the NAD declaration owned by this service.
 type VMNetworkPreparer interface {
 	PrepareVMNetwork(context.Context, ProviderTarget) error
+}
+
+// Retry only the unfinished Res declaration after the Subnet projection has
+// committed. It must not rewrite that projection or a completed operation.
+type VMNetworkPreparationRepository interface {
+	RetryVMNetworkPreparation(context.Context, Work, time.Duration) error
 }
 
 // VMReader is implemented by the VM domain. Instance IDs in this mode are VM

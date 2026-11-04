@@ -120,6 +120,10 @@ func TestInstanceNetworkSubmissionAdmissionAndIntentAreAtomic(t *testing.T) {
 	if _, err = f.repo.AcceptCreate(ctx, c); err != nil {
 		t.Fatal(err)
 	}
+	work, err := f.repo.Claim(ctx, "admission-owner", time.Minute)
+	if err != nil || work == nil || work.Operation == nil { t.Fatal("claim create", err) }
+	work.Operation.State = "succeeded"
+	if err := f.repo.Finish(ctx, *work, biz.Progress{Instance: work.Instance, Operation: work.Operation}); err != nil { t.Fatal("finish create", err) }
 	command(t, f, c, i, "stop")
 	i, err = f.repo.Get(ctx, c.TenantID, c.ID)
 	if err != nil {
@@ -234,7 +238,7 @@ func TestInstanceNetworkSubmissionTrustedServiceAcceptsFrozenSelectionAfterWrite
 	f := database(t)
 	c := networkCreate()
 	s := c.Spec
-	intake, err := service.NewService(f.repo, computeResolver(t, f, s.ClusterID), frozenNetworkIntakeBoundary{}, frozenNetworkIntakeBoundary{}, service.Config{NamespacePrefix: "tenant-", ClusterID: s.ClusterID, ServiceAccount: s.ServiceAccount, StorageClass: s.StorageClass, WorkspaceSize: s.WorkspaceSize, Shell: s.Shell, UID: s.UID, GID: s.GID})
+	intake, err := service.NewService(f.repo, computeResolver(t, f, s.ClusterID), frozenNetworkIntakeBoundary{}, frozenNetworkIntakeBoundary{}, service.Config{NewIntentsEnabled: true, NamespacePrefix: "tenant-", ClusterID: s.ClusterID, ServiceAccount: s.ServiceAccount, StorageClass: s.StorageClass, WorkspaceSize: s.WorkspaceSize, Shell: s.Shell, UID: s.UID, GID: s.GID})
 	if err != nil {
 		t.Fatal(err)
 	}

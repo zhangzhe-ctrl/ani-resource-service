@@ -256,13 +256,22 @@ func (w *Worker) Step(ctx context.Context) (worked bool, stepErr error) {
 	if err == nil {
 		err = w.finish(ctx, work, progress)
 	}
-	if err == nil && work.Resource.Kind == "subnet" && progress.Observed && progress.State == Available {
+	if err == nil && work.Resource.Kind == "subnet" && progress.State != Deleting && progress.State != Deleted {
 		if preparer, ok := w.provider.(VMNetworkPreparer); ok {
 			// NAD is a declaration owned by Res. Its result is persisted by
 			// that adapter and does not replace the Subnet's native status.
 			prepareCtx, cancel := context.WithTimeout(ctx, w.policy.RequestTimeout)
-			_ = preparer.PrepareVMNetwork(prepareCtx, target)
+			prepareErr := preparer.PrepareVMNetwork(prepareCtx, target)
 			cancel()
+			if prepareErr != nil {
+				if retry, ok := w.repository.(VMNetworkPreparationRepository); ok {
+					retryCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), w.policy.RequestTimeout)
+					err = retry.RetryVMNetworkPreparation(retryCtx, work, w.retryDelay(work.Attempt))
+					cancel()
+				} else {
+					err = prepareErr
+				}
+			}
 		}
 	}
 	return true, err

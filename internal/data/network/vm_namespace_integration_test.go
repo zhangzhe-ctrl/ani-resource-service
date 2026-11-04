@@ -114,6 +114,9 @@ func newAutoVMNetwork(t *testing.T) (attachmentFixture, *vmNetworkAPI, string) {
 	if err = f.p.SetVMNetworkResolver(provider); err != nil {
 		t.Fatal(err)
 	}
+	if err = f.p.WakeManagedTasks(context.Background()); err != nil {
+		t.Fatal("observer startup wake", err)
+	}
 	return f, api, host.URL
 }
 
