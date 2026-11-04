@@ -56,7 +56,8 @@ func TestServiceProcessesRecoverT1AndProviderSuccessWithoutCaller(t *testing.T) 
 					t.Fatalf("explicit migration replay failed: %v %s", err, output)
 				}
 			}
-			api := &controlledKC{}
+			tenant := uuid.NewString()
+			api := &controlledKC{namespace: processTenantNamespace(tenant)}
 			platform := controlled.New()
 			renewFacts := seedProcessVPCPlatformFacts(t, platform)
 			config := processVPCPresetConfig(t, root, "10.42.0.0/16")
@@ -113,7 +114,6 @@ func TestServiceProcessesRecoverT1AndProviderSuccessWithoutCaller(t *testing.T) 
 				return startNetworkProcess(t, root, binary, fixture.RuntimeDSN, kubeconfig, signingKey, "config="+config)
 			}
 			first := start()
-			tenant := uuid.NewString()
 			client, closeClient := first.client(t, tenant)
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			accepted, err := client.CreateVPC(ctx, &networkv1.CreateVPCRequest{TenantId: tenant, Name: fault, Cidr: "10.42.0.0/16", IdempotencyKey: "restart"})
@@ -257,6 +257,19 @@ func seedProcessVPCPlatformFacts(t *testing.T, api *controlled.Server) func(*htt
 		if strings.Contains(r.URL.Query().Get("labelSelector"), "ani-network-node-facts") {
 			t.Error("process attempted to read removed node facts")
 		}
+	}
+}
+
+// The tenant fixture represents a namespace already provisioned by the tenant
+// owner. Processes must resolve its exact name, labels and stable UID.
+func processTenantNamespace(tenant string) map[string]any {
+	return map[string]any{
+		"apiVersion": "v1", "kind": "Namespace",
+		"metadata": map[string]any{
+			"name": "tenant-" + tenant, "uid": uuid.NewString(),
+			"labels": map[string]any{"network.ani.io/managed-by": "ani-network-service", "network.ani.io/tenant-id": tenant},
+		},
+		"status": map[string]any{"phase": "Active"},
 	}
 }
 
