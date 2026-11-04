@@ -228,7 +228,11 @@ func runInstanceNetworkVertical(t *testing.T, confirmFaults bool) {
 	if err = nrepo.ConfigureVPCCIDRPresets([]string{"10.42.0.0/16"}); err != nil {
 		t.Fatal(err)
 	}
-	api := &testenv.KC{}
+	api := &testenv.KC{Objects: map[string]map[string]any{
+		"namespaces//" + c.Spec.Namespace: {"apiVersion": "v1", "kind": "Namespace", "metadata": map[string]any{
+			"name": c.Spec.Namespace, "uid": uuid.NewString(), "labels": map[string]any{
+				"network.ani.io/managed-by": "ani-network-service", "network.ani.io/tenant-id": c.TenantID}}, "status": map[string]any{"phase": "Active"}},
+	}, Creates: map[string]int{}, Deletes: map[string]int{}}
 	httpServer := httptest.NewServer(api)
 	defer httpServer.Close()
 	nprovider, err := networkdata.NewKCProvider(nrepo, &rest.Config{Host: httpServer.URL, QPS: 1000, Burst: 1000})

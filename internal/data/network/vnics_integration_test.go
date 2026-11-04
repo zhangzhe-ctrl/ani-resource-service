@@ -55,6 +55,7 @@ func manualVNic(t *testing.T, f attachmentFixture, key string) biz.VNic {
 			o["spec"].(map[string]any)["macAddress"] = fmt.Sprintf("02:%s:%s:%s:%s:%s", mac[0:2], mac[2:4], mac[4:6], mac[6:8], mac[8:10])
 			o["status"] = map[string]any{"primaryIP": "10.42.1.42", "ips": map[string]any{"allocated-ip": "10.42.1.42"}, "conditions": []any{map[string]any{"type": "Valid", "status": "True"}, map[string]any{"type": "Initialized", "status": "True"}, map[string]any{"type": "Ready", "status": "True"}}}
 			f.api.Mu.Unlock()
+			if e := f.p.NotifyResource(ctx, got.TenantID, got.ID); e != nil { t.Fatal(e) }
 			for time.Now().Before(deadline) {
 				time.Sleep(2 * time.Millisecond)
 				if _, e = f.resourceWorker.Step(ctx); e != nil {
