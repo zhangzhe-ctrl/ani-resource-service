@@ -14,6 +14,7 @@ import (
 
 func TestSecurityGroupsNotebookAndRegisteredCurrentPod(t *testing.T) {
 	n, i, client, pod := diagnosticFixture(t, false)
+	i.PodName, i.PodUID = pod.GetName(), string(pod.GetUID())
 	ctx := context.Background()
 	root, _ := client.Resource(notebookGVR).Namespace(i.Spec.Namespace).Get(ctx, i.Spec.NotebookName, metav1.GetOptions{})
 	root.SetResourceVersion("1")
