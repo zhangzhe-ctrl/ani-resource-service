@@ -29,6 +29,8 @@ type Config struct {
 	Media                                                                                            []*pb.MediaReference
 	DefaultDNSServers                                                                                []string
 	LogLimits                                                                                        biz.LogLimits
+	// ImageUpload is the fixed deployment input for the tenant image lane.
+	ImageUpload ImageUploadConfig
 }
 type Service struct {
 	pb.UnimplementedVMServiceServer
@@ -41,6 +43,7 @@ type Service struct {
 	runtime        biz.RuntimePort
 	config         Config
 	media          map[string]*pb.MediaReference
+	images         biz.ImageCatalogPort
 	addresses      AddressReader
 	relations      biz.RelationsPort
 	logs           biz.LogPort
@@ -68,6 +71,9 @@ func NewService(r biz.Repository, c ComputeResolver, e biz.EnvironmentPort, n bi
 	}
 	logs, _ := n.(biz.LogPort)
 	s := &Service{repo: r, compute: c, environment: e, native: n, config: cfg, media: map[string]*pb.MediaReference{}, logs: logs, logTenants: map[string]int{}, logVMs: map[string]int{}}
+	if e := ValidateStaticMediaKeys(cfg.Media); e != nil {
+		return nil, e
+	}
 	for _, m := range cfg.Media {
 		if m == nil || m.MediaKey == "" || s.media[m.MediaKey] != nil {
 			return nil, biz.ErrInvalid
@@ -90,7 +96,7 @@ func rpcError(e error) error {
 		code = codes.NotFound
 	case errors.Is(e, biz.ErrIdempotency):
 		code = codes.AlreadyExists
-	case errors.Is(e, biz.ErrVersion), errors.Is(e, biz.ErrBusy), errors.Is(e, biz.ErrOwnership), errors.Is(e, biz.ErrChanged), errors.Is(e, biz.ErrConsole):
+	case errors.Is(e, biz.ErrVersion), errors.Is(e, biz.ErrBusy), errors.Is(e, biz.ErrOwnership), errors.Is(e, biz.ErrChanged), errors.Is(e, biz.ErrConsole), errors.Is(e, biz.ErrNetworkAdmissionClosed):
 		code = codes.FailedPrecondition
 	case errors.Is(e, biz.ErrLogTarget):
 		code = codes.FailedPrecondition
@@ -129,11 +135,10 @@ func (s *Service) ResolveCreateSpec(ctx context.Context, r *pb.ResolveCreateSpec
 	if e != nil {
 		return nil, e
 	}
-	media := s.media[r.Data.MediaKey]
-	if media == nil {
-		return nil, rpcError(biz.ErrDependency)
+	media, e := s.resolveMedia(ctx, r.TenantId, r.Data.MediaKey)
+	if e != nil {
+		return nil, rpcError(e)
 	}
-	media = proto.Clone(media).(*pb.MediaReference)
 	if e = s.native.ValidateSource(ctx, domainSource(media)); e != nil {
 		return nil, rpcError(e)
 	}
@@ -152,14 +157,18 @@ func (s *Service) ResolveCreateSpec(ctx context.Context, r *pb.ResolveCreateSpec
 			return nil, rpcError(e)
 		}
 	}
-	spec := &pb.CreateSpec{SecurityGroupIds: append([]string(nil), r.Data.SecurityGroupIds...), Intent: intent, Compute: selection, ClusterId: s.config.ClusterID, Namespace: ns.Name, NamespaceUid: ns.UID, ServiceAccount: s.config.ServiceAccount, Storage: &pb.StoragePolicy{StorageClass: s.config.StorageClass, StorageClassUid: s.config.StorageClassUID, VolumeMode: "Block", AccessModes: []string{"ReadWriteOnce"}, BackendStorageClass: s.config.BackendStorageClass, MediaStorageClass: s.config.MediaStorageClass}, Media: media, Network: &pb.FrozenNetwork{VpcId: selectionNetwork.VPCID, SubnetId: selectionNetwork.SubnetID, NadName: selectionNetwork.NADName, NadUid: selectionNetwork.NADUID, NadConfigDigest: selectionNetwork.NADDigest}, Sockets: 1, Cores: uint32((selection.CpuMillis + 999) / 1000), Threads: 1, BootDevice: "SYSTEM_DISK", Dns: dns}
+	serviceAccount := selectionNetwork.ServiceAccount
+	if serviceAccount == "" {
+		serviceAccount = s.config.ServiceAccount
+	}
+	spec := &pb.CreateSpec{SecurityGroupIds: append([]string(nil), r.Data.SecurityGroupIds...), Intent: intent, Compute: selection, ClusterId: s.config.ClusterID, Namespace: ns.Name, NamespaceUid: ns.UID, ServiceAccount: serviceAccount, Storage: &pb.StoragePolicy{StorageClass: s.config.StorageClass, StorageClassUid: s.config.StorageClassUID, VolumeMode: "Block", AccessModes: []string{"ReadWriteOnce"}, BackendStorageClass: s.config.BackendStorageClass, MediaStorageClass: s.config.MediaStorageClass}, Media: media, Network: &pb.FrozenNetwork{VpcId: selectionNetwork.VPCID, SubnetId: selectionNetwork.SubnetID, NadName: selectionNetwork.NADName, NadUid: selectionNetwork.NADUID, NadConfigDigest: selectionNetwork.NADDigest}, Sockets: 1, Cores: uint32((selection.CpuMillis + 999) / 1000), Threads: 1, BootDevice: "SYSTEM_DISK", Dns: dns}
 	if media.Kind == "INSTALL_ISO" {
 		spec.BootDevice = "INSTALL_MEDIA"
 	}
 	if media.DriverMediaKey != "" {
-		driver := s.media[media.DriverMediaKey]
-		if driver == nil {
-			return nil, rpcError(biz.ErrDependency)
+		driver, e := s.resolveMedia(ctx, r.TenantId, media.DriverMediaKey)
+		if e != nil {
+			return nil, rpcError(e)
 		}
 		spec.DriverMedia = proto.Clone(driver).(*pb.MediaReference)
 		if e = s.native.ValidateSource(ctx, domainSource(driver)); e != nil {
@@ -271,7 +280,7 @@ func (s *Service) GetVM(ctx context.Context, r *pb.GetVMRequest) (*pb.VirtualMac
 	if e != nil {
 		return nil, rpcError(e)
 	}
-	return s.projectDetail(ctx, v)
+	return s.projectDetail(ctx, v, r.IncludeRuntime == nil || r.GetIncludeRuntime())
 }
 func wireVM(v biz.VM) (*pb.VirtualMachine, error) {
 	spec, e := pb.DecodeCreateSpec(v.Spec.Canonical)
@@ -282,16 +291,24 @@ func wireVM(v biz.VM) (*pb.VirtualMachine, error) {
 	if !v.SecurityGroupsInitialized {
 		out.SecurityGroupIds = append([]string(nil), v.Spec.SecurityGroupIDs...)
 	}
-	for _, d := range v.Disks {
-		if !d.Tombstone {
-			out.Disks = append(out.Disks, &pb.Disk{DiskId: d.ID, Role: d.Role, Name: d.Name, SizeGb: d.SizeGB, RequestedBytes: d.RequestedBytes, ObservedCapacityBytes: d.ObservedCapacityBytes, VolumeName: d.VolumeName, Serial: d.Serial, Attached: d.Attached, PreparationState: d.Preparation, Reason: d.Reason})
-		}
-	}
+	out.Disks = wireDisks(v)
 	for _, a := range v.Addresses {
 		out.Addresses = append(out.Addresses, &pb.CurrentAddress{NicName: a.NIC, Address: a.Address, ObservedAt: observed(a.ObservedAt)})
 	}
 	wireMedia(v, out)
 	return out, nil
+}
+
+// wireDisks projects the persisted disk inventory only. Disk reads must never
+// depend on spec decoding, relations or guest runtime collection.
+func wireDisks(v biz.VM) []*pb.Disk {
+	var out []*pb.Disk
+	for _, d := range v.Disks {
+		if !d.Tombstone {
+			out = append(out, &pb.Disk{DiskId: d.ID, Role: d.Role, Name: d.Name, SizeGb: d.SizeGB, RequestedBytes: d.RequestedBytes, ObservedCapacityBytes: d.ObservedCapacityBytes, VolumeName: d.VolumeName, Serial: d.Serial, Attached: d.Attached, PreparationState: d.Preparation, Reason: d.Reason})
+		}
+	}
+	return out
 }
 func observed(t time.Time) string {
 	if t.IsZero() {
@@ -437,13 +454,12 @@ func (s *Service) command(ctx context.Context, m proto.Message, action string) (
 					return nil, rpcError(biz.ErrBusy)
 				}
 			} else {
-				if e = n.ValidateDiskAttachment(ctx, v, v.Disks[i], action == "attach-disk"); e != nil {
-					return nil, rpcError(e)
-				}
-				observed, e := s.native.Observe(ctx, v)
+				observed, e := n.ValidateDiskAttachment(ctx, v, v.Disks[i], action == "attach-disk")
 				if e != nil {
 					return nil, rpcError(e)
 				}
+				// Reuse the observation the validation already paid for instead of
+				// issuing a second full native observation on the accept path.
 				if action == "detach-disk" && observed.Running && !intent.GuestPrepared {
 					return nil, rpcError(biz.ErrInvalid)
 				}
@@ -471,12 +487,12 @@ func (s *Service) command(ctx context.Context, m proto.Message, action string) (
 				return nil, commandPreflightError(ctx, c, "backend_configuration", e)
 			}
 		}
-		network, e := s.environment.ValidateNetwork(ctx, c.TenantID, v.Spec.ClusterID, v.Spec.Namespace, v.Spec.Network)
-		if e != nil {
-			return nil, commandPreflightError(ctx, c, "network", e)
-		}
-		if network != v.Spec.Network {
-			return nil, commandPreflightError(ctx, c, "network_identity", biz.ErrChanged)
+		if e := s.environment.ValidateExistingNetwork(ctx, v); e != nil {
+			stage := "network"
+			if errors.Is(e, biz.ErrChanged) || errors.Is(e, biz.ErrOwnership) {
+				stage = "network_identity"
+			}
+			return nil, commandPreflightError(ctx, c, stage, e)
 		}
 	}
 	o, e := s.repo.AcceptCommand(ctx, c)
@@ -510,11 +526,19 @@ func (s *Service) ForceStop(ctx context.Context, r *pb.ForceStopRequest) (*pb.Op
 	return s.command(ctx, r, "force-stop")
 }
 func (s *Service) ListDisks(ctx context.Context, r *pb.GetVMRequest) (*pb.ListDisksResponse, error) {
-	v, e := s.GetVM(ctx, r)
-	if e != nil {
-		return nil, e
+	if r == nil {
+		return nil, rpcError(biz.ErrInvalid)
 	}
-	return &pb.ListDisksResponse{Items: v.Disks}, nil
+	if e := biz.RequireTenant(ctx, r.TenantId); e != nil {
+		return nil, rpcError(e)
+	}
+	// Disks are a persisted projection. Reusing GetVM here used to pay the full
+	// detail projection (relations plus guest runtime) for data it never reads.
+	v, e := s.repo.Get(ctx, r.TenantId, r.VmId)
+	if e != nil {
+		return nil, rpcError(e)
+	}
+	return &pb.ListDisksResponse{Items: wireDisks(v)}, nil
 }
 func (s *Service) ListMedia(ctx context.Context, r *pb.ListMediaRequest) (*pb.ListMediaResponse, error) {
 	if r == nil {
@@ -527,6 +551,13 @@ func (s *Service) ListMedia(ctx context.Context, r *pb.ListMediaRequest) (*pb.Li
 	for _, m := range s.config.Media {
 		out.Items = append(out.Items, proto.Clone(m).(*pb.MediaReference))
 	}
+	// Tenant-uploaded READY images join the same picker with no contract change:
+	// the response keeps its shape, ordering of static entries stays first.
+	dynamic, e := s.dynamicMedia(ctx, r.TenantId)
+	if e != nil {
+		return nil, rpcError(e)
+	}
+	out.Items = append(out.Items, dynamic...)
 	return out, nil
 }
 func (s *Service) resolveConsole(ctx context.Context, tenant, id string, version int64) (*console.VMConsoleBinding, error) {

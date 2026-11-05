@@ -8,19 +8,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	network "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/network"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/vm"
 	migrations "github.com/zhangzhe-ctrl/ani-resource-service/migrations/vm"
 )
 
 type Postgres struct {
-	pool          *pgxpool.Pool
-	guestCipher   *guestCredentialCipher
-	notifyNetwork func(context.Context, string, string) error
+	pool            *pgxpool.Pool
+	guestCipher     *guestCredentialCipher
+	notifyNetwork   func(context.Context, string, string) error
+	admitNewNetwork func(context.Context, string, biz.Spec) (biz.NetworkSelection, error)
 }
 
 func schemaChecksum() (string, error) {
@@ -163,6 +166,24 @@ func Migrate(ctx context.Context, dsn, role string) error {
 	if e != nil {
 		return e
 	}
+	body, e = migrations.Files.ReadFile("004_image_management.sql")
+	if e != nil {
+		return e
+	}
+	h = sha256.Sum256(body)
+	checksum = hex.EncodeToString(h[:])
+	e = tx.QueryRow(ctx, "SELECT checksum FROM vm.schema_version WHERE version=4").Scan(&old)
+	if errors.Is(e, pgx.ErrNoRows) {
+		if _, e = tx.Exec(ctx, string(body)); e != nil {
+			return e
+		}
+		_, e = tx.Exec(ctx, "INSERT INTO vm.schema_version VALUES(4,$1)", checksum)
+	} else if e == nil && old != checksum {
+		return fmt.Errorf("VM image management migration checksum differs")
+	}
+	if e != nil {
+		return e
+	}
 	if _, e = tx.Exec(ctx, "GRANT SELECT ON vm.schema_version TO "+pgx.Identifier{role}.Sanitize()); e != nil {
 		return e
 	}
@@ -172,10 +193,23 @@ func Migrate(ctx context.Context, dsn, role string) error {
 	if _, e = tx.Exec(ctx, "GRANT SELECT,INSERT,UPDATE,DELETE ON vm.observation_work TO "+pgx.Identifier{role}.Sanitize()); e != nil {
 		return e
 	}
+	if _, e = tx.Exec(ctx, "GRANT SELECT,INSERT,UPDATE,DELETE ON vm.images,vm.image_requests,vm.image_source_references TO "+pgx.Identifier{role}.Sanitize()); e != nil {
+		return e
+	}
 	return tx.Commit(ctx)
 }
-func encode(v any) []byte             { b, _ := json.Marshal(v); return b }
-func vmFrom(b []byte) (biz.VM, error) { var v biz.VM; e := json.Unmarshal(b, &v); return v, e }
+func encode(v any) []byte { b, _ := json.Marshal(v); return b }
+func vmFrom(b []byte) (biz.VM, error) {
+	var v biz.VM
+	err := json.Unmarshal(b, &v)
+	if err == nil && v.Spec.Network.Reference.OwnerScope == "" && v.Spec.Network.VPCID != "" && v.Spec.Network.SubnetID != "" {
+		// Legacy revisions may append a provider UID. The reference uses the
+		// original binding ID while the runtime keeps its opaque replay token.
+		bindingID, _, _ := strings.Cut(v.Network.BindingRevision, ":")
+		v.Spec.Network.Reference = network.NetworkReference{OwnerScope: network.OwnerScopeTenant, VPCID: v.Spec.Network.VPCID, SubnetID: v.Spec.Network.SubnetID, SubnetBindingID: bindingID}
+	}
+	return v, err
+}
 func opFrom(b []byte) (biz.Operation, error) {
 	var v biz.Operation
 	e := json.Unmarshal(b, &v)
@@ -258,6 +292,16 @@ func (p *Postgres) AcceptCreate(ctx context.Context, a biz.Acceptance) (biz.Oper
 		}
 		return o, x
 	}
+	if p.admitNewNetwork != nil {
+		accepted, err := p.admitNewNetwork(ctx, a.TenantID, a.Spec)
+		if err != nil {
+			return biz.Operation{}, err
+		}
+		// Only internal owner data is enriched. The original canonical intent,
+		// digest and empty initial NAD UID remain exactly as Gov accepted them.
+		a.Spec.Network.Reference = accepted.Reference
+		a.Spec.Network.NADConfig = accepted.NADConfig
+	}
 	v := biz.VM{TenantID: a.TenantID, ID: a.VMID, Name: a.Spec.Name, CreateOperationID: a.OperationID, Spec: a.Spec, Version: 1, Disks: a.Spec.InitialDisks, Desired: "Stopped", Observed: "Unknown", LastOperationID: a.OperationID}
 	if e = biz.InitializeMedia(&v); e != nil {
 		return biz.Operation{}, e
@@ -278,6 +322,9 @@ func (p *Postgres) AcceptCreate(ctx context.Context, a biz.Acceptance) (biz.Oper
 		return biz.Operation{}, e
 	}
 	if e = saveDisks(ctx, tx, v); e != nil {
+		return biz.Operation{}, e
+	}
+	if e = p.pinImageSources(ctx, tx, v); e != nil {
 		return biz.Operation{}, e
 	}
 	return o, tx.Commit(ctx)
@@ -351,6 +398,21 @@ func (p *Postgres) accept(ctx context.Context, c biz.Command, id, createID strin
 	v.Version++
 	v.LastOperationID = id
 	o := biz.Operation{TenantID: c.TenantID, ID: id, VMID: c.VMID, Action: c.Action, Key: c.Key, RequestDigest: c.RequestDigest, Intent: c.Intent, IntentVersion: v.Version, State: "accepted"}
+	if c.Action == biz.DeleteAction && v.Network.AttachmentID == "" && v.Network.NADUID != "" {
+		// A completed first-round save alone has sent no Attachment. Carry only
+		// the existing second-round send checkpoint into Delete recovery.
+		var raw []byte
+		if e = tx.QueryRow(ctx, "SELECT record FROM vm.operations WHERE tenant_id=$1 AND vm_id=$2 AND id=$3", v.TenantID, v.ID, v.CreateOperationID).Scan(&raw); e != nil {
+			return biz.Operation{}, e
+		}
+		create, err := opFrom(raw)
+		if err != nil {
+			return biz.Operation{}, err
+		}
+		if create.Pending != nil && create.Pending.Action == "prepare-network" && create.Pending.Submitted {
+			o.Pending = create.Pending
+		}
+	}
 	if e = biz.ApplyAcceptedMedia(&v, &o); e != nil {
 		return biz.Operation{}, e
 	}
@@ -361,7 +423,58 @@ func (p *Postgres) accept(ctx context.Context, c biz.Command, id, createID strin
 	if e != nil {
 		return biz.Operation{}, e
 	}
+	if e = p.pinImageSources(ctx, tx, v); e != nil {
+		return biz.Operation{}, e
+	}
 	return o, tx.Commit(ctx)
+}
+
+// pinImageSources takes one HELD reference per dynamic image consumer inside the
+// caller's acceptance transaction. Consumers that already have a reference row, HELD
+// or RELEASED, are accounted for: they were admitted once and the VM now owns an
+// independent copy, so a later start, stop or delete must not ask their source to be
+// READY again. Every reference or none is written, the lock order is VM -> image rows
+// by id -> reference rows, and no cluster call happens here, so a slow API server
+// cannot hold row locks open.
+func (p *Postgres) pinImageSources(ctx context.Context, tx pgx.Tx, v biz.VM) error {
+	accounted, e := accountedImageConsumers(ctx, tx, v.TenantID, v.ID)
+	if e != nil {
+		return e
+	}
+	refs := make([]biz.ImageReference, 0, len(v.Disks)+len(v.MediaCopies))
+	// Only a DISK_IMAGE is cloned into the system disk; an INSTALL_ISO boots from the
+	// media copy and its system disk stays blank, so pinning that disk would leave a
+	// reference whose release condition can never be met and an ISO stuck in use.
+	if v.Spec.Media.Kind == "DISK_IMAGE" && strings.HasPrefix(v.Spec.Media.Key, biz.ImageMediaKeyPrefix) {
+		for _, disk := range v.Disks {
+			if disk.Role != "system" || disk.Tombstone || accounted["SYSTEM_DISK/"+disk.ID] {
+				continue
+			}
+			ref, e := biz.NewImageReference(v, disk.ID, "SYSTEM_DISK", v.Spec.Media)
+			if e != nil {
+				return e
+			}
+			refs = append(refs, ref)
+		}
+	}
+	for _, copy := range v.MediaCopies {
+		if copy.Tombstone || !strings.HasPrefix(copy.Source.Key, biz.ImageMediaKeyPrefix) || accounted["MEDIA_COPY/"+copy.ID] {
+			continue
+		}
+		ref, e := biz.NewImageReference(v, copy.ID, "MEDIA_COPY", copy.Source)
+		if e != nil {
+			return e
+		}
+		refs = append(refs, ref)
+	}
+	if len(refs) == 0 {
+		return nil
+	}
+	// Static media keys never reach here, so the legacy path is untouched.
+	if e := p.referenceImageRowsLocked(ctx, tx, refs); e != nil {
+		return e
+	}
+	return insertImageReferences(ctx, tx, refs)
 }
 func (p *Postgres) LookupReplay(ctx context.Context, c biz.Command) (biz.Operation, error) {
 	return readReplay(ctx, p.pool, c)

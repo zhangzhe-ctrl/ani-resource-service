@@ -1,5 +1,11 @@
 # Network 执行状态
 
+## 2026-11-05：Sandbox PR 对齐最新主线
+
+Resource Sandbox PR `8630c026e09c501314b665fa553d2ba68f8360d5` 在独立工作树合入主仓 main `953ae8d2c8d4d6df1b495d90dc56baf928f66de9`。冲突涉及本状态文档和 Network 故障注入脚本：保留双方记录，并对当前通知处理循环保持逐次暂停注入；主线 VM、网络与镜像接线和 Sandbox 接线保留。另将主线 `internal/service/vm/detail.go` 的缺失空行按 gofmt 补齐。
+
+指定远程命令 `ssh -F /home/chabking/.ssh/config -o BatchMode=yes -o ConnectTimeout=5 ubuntu true` 因配置文件不存在失败，按授权回退本机 Ubuntu、Go 1.26.10；在源码树 `83970dec99ab6fd4c6ae2904585c0df8c1f4295d`（本条记录除外）以 `GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 TMPDIR=/tmp make verify` **pass**，固定 Buf 1.60.0、sqlc 1.31.1。第一次测试在编译 Buf 工具期间手动中止，随后复用本机相同版本工具；第二次因主线 VM 文件 gofmt **fail**，修正后完整重跑通过。日志分别位于 `/tmp/resource-pr56-main-20261105-verify.log`、`/tmp/resource-pr56-main-20261105-verify-retry.log` 和 `/tmp/resource-pr56-main-20261105-verify-final.log`。本次未部署或运行真实集群验收；既有 PR CI 的失败和新提交 CI 结果需分别核查。
+
 ## 2026-11-04：Sandbox 详情及独立终端提交候选
 
 **66 Resource 现场切换（2026-11-04）：** 已部署源码提交 `097cf50f42823cb546e4b853a402caad02110ef4` 对应的镜像 `sandbox-097cf50-20261104122702`，registry digest `sha256:0a1703f8b815e87a4601668e3b48875434652c009c91790e1160b8272870d251`；Resource Ready 1/1。旧 writer 已停止，运行角色临时禁止登录，备份并迁移 Sandbox schema 16→18 后恢复登录；Network schema 保持 32。迁移前最终备份与隔离恢复摘要一致：16 条版本记录、24 个 Sandbox、79 个 operation、1 个 checkpoint、2 个 transfer。备份、恢复摘要、迁移 Job 和现场探针原始证据保留在执行机 `/tmp/resource-66-sandbox-upgrade-20261104`，该临时路径不是长期归档或自动回滚方案。
@@ -19,6 +25,19 @@
 66 已以现场兼容源码部署并验收独立 Sandbox 终端和二进制普通上传；WebSocket 两轮交互、跨租户和版本拒绝及票据重放拒绝均通过，上传读回哈希一致。终端权限验收后恢复 OFF；测试 Pod/PVC/PV 已回收，租户空间仍有保留。实际镜像构建使用旧现场基线加选择性移植，**不是本分支源码快照**；此前详情的其他真实验收与未解决限制见工作区证据，不能把现场结果当作本分支完整回归。Gov 与 Session Gateway 需各自固定可发布 API 依赖、完成权限启用和集成验证。
 
 `ssh -F /home/chabking/.ssh/config ubuntu` 失败（指定配置文件不存在），按允许规则回退本机 Ubuntu、Go 1.26.10。以 main `5dc539d` 和终端 SDK 提交 `a26e1a0` 为基础，测试输入 Git tree `336df0de269509a9b695950187530292463988d0`；`GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 TMPDIR=/tmp make verify`（Buf 1.60.0，SQLC 1.31.1）**pass**，随后仅更新本段执行记录。首次门禁因根 Buf 工作区误扫描终端子模块 **fail**，第二次因本地 replace 违反依赖边界 **fail**；修正工作区排除规则并固定已推送 SDK 伪版本后完整重跑通过。门禁包含生成一致性、架构边界、全量 Go 测试、vet、编译与模块校验，不包含真实 PostgreSQL 集成测试或将此源码部署到 66。
+<a id="platform-base-network-tenant-access-20261105"></a>
+
+## 2026-11-05：平台基础网络租户接入发布
+
+**Res #62、Gov #93、Console #1 的功能版本已构建、推送并发布，三服务 Ready1，Network schema33。**
+按用户指定只开放 `kcn-system/pool-8836e1121d3c40a4ab73859afef5d6d8`（`10.20.0.0/24`），
+平台 VPC 为 `kcn-system/kcn-cluster`。真实两租户 VNIC/隔离、VM 自动与手动网卡切换、
+CPU 容器创建/重启、关联分页、关闭准入重放/拒绝/清理及 Console 页面通过。
+修复现场发现的手动 VM 地址投影漏 UID，浏览器已显示“已生效”。本次临时资源和授权已清理，
+目录恢复开放，原五台 Running VM 保持原版本。三仓已推送原 PR 分支，未自动合并。
+遵用户最新指令未完成全量门禁；实际命令范围、保留的失败、ImageUpload 配置边界、镜像及备份见
+[发布与验收记录](records/platform-base-network-release-20261105.md)。
+
 <a id="network-management-simplification-20261104"></a>
 
 ## 2026-11-04：完全采信 KCN 的网络状态消费简化
