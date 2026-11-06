@@ -65,7 +65,7 @@ func (p *Postgres) AcceptFileOperation(ctx context.Context, c biz.FileCommand) (
 	if err != nil {
 		return biz.FileIntent{}, err
 	}
-	_, err = tx.Exec(ctx, `INSERT INTO sandbox.file_operations(tenant_id,sandbox_id,operation_id,idempotency_key,request_digest,target,state) VALUES($1,$2,$3,$4,$5,$6,'accepted')`, c.TenantID, c.SandboxID, c.OperationID, c.IdempotencyKey, digest, raw)
+	_, err = tx.Exec(ctx, `INSERT INTO sandbox.file_operations(tenant_id,sandbox_id,operation_id,idempotency_key,request_digest,target,state,action) VALUES($1,$2,$3,$4,$5,$6,'accepted',$7)`, c.TenantID, c.SandboxID, c.OperationID, c.IdempotencyKey, digest, raw, c.Request.Action)
 	if err != nil {
 		return biz.FileIntent{}, err
 	}
@@ -106,7 +106,7 @@ func (p *Postgres) BeginFileOperation(ctx context.Context, c biz.FileCommand) (b
 	}
 	current, targetErr := biz.DataPlaneTargetForSandbox(s, biz.DataPlaneFiles)
 	if targetErr != nil || current != intent.Target {
-		_, err = tx.Exec(ctx, `UPDATE sandbox.file_operations SET state='cancelled',reason='SANDBOX_LIFECYCLE_CHANGED',updated_at=clock_timestamp() WHERE tenant_id=$1 AND operation_id=$2`, c.TenantID, c.OperationID)
+		_, err = tx.Exec(ctx, `UPDATE sandbox.file_operations SET state='cancelled',reason='SANDBOX_LIFECYCLE_CHANGED',completed_at=clock_timestamp(),updated_at=clock_timestamp() WHERE tenant_id=$1 AND operation_id=$2`, c.TenantID, c.OperationID)
 		if err != nil {
 			return biz.FileIntent{}, false, err
 		}
@@ -151,7 +151,7 @@ func (p *Postgres) FinishFileOperation(ctx context.Context, tenant, id, operatio
 	if err != nil {
 		return err
 	}
-	tag, err := p.pool.Exec(ctx, `UPDATE sandbox.file_operations SET state=$4,reason=$5,result=$6,updated_at=clock_timestamp() WHERE tenant_id=$1 AND sandbox_id=$2 AND operation_id=$3 AND state=$7`, tenant, id, operation, state, reason, raw, allowed)
+	tag, err := p.pool.Exec(ctx, `UPDATE sandbox.file_operations SET state=$4,reason=$5,result=$6,completed_at=CASE WHEN $4='unknown' THEN NULL ELSE clock_timestamp() END,updated_at=clock_timestamp() WHERE tenant_id=$1 AND sandbox_id=$2 AND operation_id=$3 AND state=$7`, tenant, id, operation, state, reason, raw, allowed)
 	if err != nil {
 		return err
 	}

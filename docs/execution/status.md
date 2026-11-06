@@ -1,5 +1,30 @@
 # Network 执行状态
 
+## 2026-11-05：Sandbox PR 对齐最新主线
+
+Resource Sandbox PR `8630c026e09c501314b665fa553d2ba68f8360d5` 在独立工作树合入主仓 main `953ae8d2c8d4d6df1b495d90dc56baf928f66de9`。冲突涉及本状态文档和 Network 故障注入脚本：保留双方记录，并对当前通知处理循环保持逐次暂停注入；主线 VM、网络与镜像接线和 Sandbox 接线保留。另将主线 `internal/service/vm/detail.go` 的缺失空行按 gofmt 补齐。
+
+指定远程命令 `ssh -F /home/chabking/.ssh/config -o BatchMode=yes -o ConnectTimeout=5 ubuntu true` 因配置文件不存在失败，按授权回退本机 Ubuntu、Go 1.26.10；在源码树 `83970dec99ab6fd4c6ae2904585c0df8c1f4295d`（本条记录除外）以 `GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 TMPDIR=/tmp make verify` **pass**，固定 Buf 1.60.0、sqlc 1.31.1。第一次测试在编译 Buf 工具期间手动中止，随后复用本机相同版本工具；第二次因主线 VM 文件 gofmt **fail**，修正后完整重跑通过。日志分别位于 `/tmp/resource-pr56-main-20261105-verify.log`、`/tmp/resource-pr56-main-20261105-verify-retry.log` 和 `/tmp/resource-pr56-main-20261105-verify-final.log`。本次未部署或运行真实集群验收；既有 PR CI 的失败和新提交 CI 结果需分别核查。
+
+## 2026-11-04：Sandbox 详情及独立终端提交候选
+
+**66 Resource 现场切换（2026-11-04）：** 已部署源码提交 `097cf50f42823cb546e4b853a402caad02110ef4` 对应的镜像 `sandbox-097cf50-20261104122702`，registry digest `sha256:0a1703f8b815e87a4601668e3b48875434652c009c91790e1160b8272870d251`；Resource Ready 1/1。旧 writer 已停止，运行角色临时禁止登录，备份并迁移 Sandbox schema 16→18 后恢复登录；Network schema 保持 32。迁移前最终备份与隔离恢复摘要一致：16 条版本记录、24 个 Sandbox、79 个 operation、1 个 checkpoint、2 个 transfer。备份、恢复摘要、迁移 Job 和现场探针原始证据保留在执行机 `/tmp/resource-66-sandbox-upgrade-20261104`，该临时路径不是长期归档或自动回滚方案。
+
+**现场验证范围：** 新 Resource 显式设置 `ANI_SANDBOX_CLONE_WRITES_PAUSED=true`，mTLS 克隆探针返回 `Unavailable / SANDBOX_CLONE_TEMPORARILY_UNAVAILABLE`；原 Sandbox 的 `GetSandbox` 返回 running，Network `ListVPCs` 查询成功，原 Sandbox Pod UID 与重启次数保持。切换前的克隆探针因流权限返回 `PermissionDenied`，切换后的首次克隆探针因缺少租户作用域返回 `PermissionDenied`；两次均未验证闭闸，只有补齐正确身份和租户后的探针计为闭闸通过。旧镜像或隔离环境测试不计作此次新镜像的完整现场验收。
+
+**未完成：** Gov 本次未更新，克隆闭闸仍开启；此次未跑 Sandbox 创建、暂停、恢复、删除的完整生命周期，也未在新部署组合中完成终端和详情接口联调。关闭闭闸前须确认 Gov 前后台及其他可能的持证调用方兼容新拒绝回执，并按维护说明复核未决意图和旧 writer 排空。含新拒绝回执的数据不可未经兼容性核对直接回退到旧 Resource；应保留 journal 和备份并优先恢复兼容版本。
+
+以下为此前固定源码的测试与验收记录，均保留原时点和证据范围。
+
+对齐主仓 main `d7c344a02a7e3e1f7c4221286ec82bc33428bac4`（包含 Network 0032）及 Sandbox PR `16cb9d23a1503f58e9c9ab19c6e5bc2345d387de` 后，测试输入 Git tree 为 `5f2d2a75979848a55c2bd524ace47d7f9006bc25`。远程 `ssh -F /home/chabking/.ssh/config -o BatchMode=yes ubuntu true` 因指定配置文件不存在失败，按用户允许的回退在本机 Ubuntu、Go 1.26.10 执行：`GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 TMPDIR=/tmp make verify` **pass**（固定 Buf 1.60.0、SQLC 1.31.1）；第一次合并树门禁因 Network 旧故障注入点与 v3 不兼容 **fail**，修正测试工具后重跑通过。测试后只增加本段执行记录。
+
+从上述 tree 导出独立快照，添加临时 16→18 迁移回归测试（SHA-256 `172121dc4a2f29b34a0b88e6223256fed8f2ee6b8255aca3e91c7638a61872d0`，不随服务发布），通过随机 loopback 端口与固定镜像 `postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280` 运行 `/tmp/resource-final-tree-pg-verify-20261104.sh` **pass**：Network 28/30→32 升级及 v3 四项观察故障 race、Sandbox 16→18 历史回执/幂等、检查点恢复、入口迁移恢复及克隆维护闭闸 race；临时数据库已清理。维护闭闸默认关闭、开启时拒绝所有克隆受理 RPC（包括重放），不停止已持久化 worker；需要 017/018 时仍须先停止并排空所有旧数据库 writer。这些受控 PostgreSQL/Provider 验证和旧终端验收本身不等于新合并树的真实集群验收；随后现场切换与验证范围见上文。
+
+本分支以 Resource main `5dc539d` 为基础，整理此前独立 Sandbox 详情、文件分页、操作历史、代码执行时间、日志与事件、预览端口、检查点及终端变更；不回退主线 Network 修改。监控交由 Observability 服务；安全事件无可信数据源，Host 白名单尚无实际执行数据面，相关源码明确不可用或拒绝不受支持的声明。预览默认禁用，检查点仅支持文件系统快照；接口权限、存储能力和部署约束见 Sandbox 部署说明及调用合同。
+
+66 已以现场兼容源码部署并验收独立 Sandbox 终端和二进制普通上传；WebSocket 两轮交互、跨租户和版本拒绝及票据重放拒绝均通过，上传读回哈希一致。终端权限验收后恢复 OFF；测试 Pod/PVC/PV 已回收，租户空间仍有保留。实际镜像构建使用旧现场基线加选择性移植，**不是本分支源码快照**；此前详情的其他真实验收与未解决限制见工作区证据，不能把现场结果当作本分支完整回归。Gov 与 Session Gateway 需各自固定可发布 API 依赖、完成权限启用和集成验证。
+
+`ssh -F /home/chabking/.ssh/config ubuntu` 失败（指定配置文件不存在），按允许规则回退本机 Ubuntu、Go 1.26.10。以 main `5dc539d` 和终端 SDK 提交 `a26e1a0` 为基础，测试输入 Git tree `336df0de269509a9b695950187530292463988d0`；`GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 TMPDIR=/tmp make verify`（Buf 1.60.0，SQLC 1.31.1）**pass**，随后仅更新本段执行记录。首次门禁因根 Buf 工作区误扫描终端子模块 **fail**，第二次因本地 replace 违反依赖边界 **fail**；修正工作区排除规则并固定已推送 SDK 伪版本后完整重跑通过。门禁包含生成一致性、架构边界、全量 Go 测试、vet、编译与模块校验，不包含真实 PostgreSQL 集成测试或将此源码部署到 66。
 <a id="platform-base-network-tenant-access-20261105"></a>
 
 ## 2026-11-05：平台基础网络租户接入发布
@@ -16,6 +41,8 @@ CPU 容器创建/重启、关联分页、关闭准入重放/拒绝/清理及 Con
 <a id="network-management-simplification-20261104"></a>
 
 ## 2026-11-04：完全采信 KCN 的网络状态消费简化
+
+补充隔离回归：基于候选输入 tree `7c8a4a75555c85492691d963f598669ea4aaedd5` 加本次测试与故障工具改动，`ssh -F /home/chabking/.ssh/config ubuntu` 因配置缺失失败、`ssh fedora` 无法解析；按本轮 Sandbox 合并验证许可在本机 Ubuntu/Go 1.26.10 回退。`GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 scripts/net05a-build-faults.py --network-only` **pass**（仅证明显式故障 overlay 可编译）；隔离 PostgreSQL `postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280` 下 `go test -race -count=3 -timeout=15m -v ./internal/data/network -run '^Test(ObserverStoppedAllowsManagedWorkAndRestartReconcilesMissedChange|ActualAdapterUsesOriginalIdentityAndOwnDeletionOnly|ProviderReadFailurePreservesProjectionAndNativeReadyIgnoresGeneration|LeaseExpiryRejectsOldEpochWritesAndRecoversPendingIdentity)$'` **pass**。第一次同命令因既有受控 Provider 缺少租户 Namespace，在故障注入前 **fail**；补全夹具后重跑；随后新增重启前状态断言发现旧通知未排空导致假阳性，增加数据库停放校验后再次重跑。测试覆盖观察停止期间已存状态不变、新管理意图可完成、重启唤醒并追上错过的状态、原 UID/owner 删除保护、读取错误保留和过期租约写拒绝；受控 HTTP 不是真实 KCN。旧 V-09 的按年龄判 stale 和拒绝准入与 v3 相反，直接调用 `scripts/net05a-faults.py queries` 现明确失败；不得把故障 overlay 编译或这些隔离测试称作旧 V-09 的等价真实集群验收。`make verify` 在此快照 **not_verified**；真实节点 Watch 丢事件、客户端重连、RBAC 与数据面仍须现场验证。
 
 **已完成固定工具生成、Resource 镜像构建及 ani-kcn-full 集群发布；数据库已到 32，临时 VM 创建、关机、启动和删除的真实操作均 succeeded。** 工作分支仍为 `work/network-status-authority`，基线为 `5dc539d92e3150a3593bde3668082753aa4fdebe`，继续更新原 [PR #57](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/57)。所有生成、编译、测试、打包和推送在 `ubuntu@100.64.128.15` 执行，集群操作在 `kubercloud@100.64.128.12` 执行，本地仅编辑、Git 和轻量编排。
 
@@ -1661,3 +1688,16 @@ On the real cluster an isolated image-only Resource harness, using actual image 
 2026-11-02 用户明确统一 Namespace 由 Sandbox 的租户开通流程负责：先读取 `tenant-<完整 UUID>`，已存在且身份合法时复用，否则仅在不存在时以持久写前日志创建；其余业务复用共享名称计算，不添加业务前后缀。Namespace 尚未 Active 时先保存创建 UID 回执并等待；并发 AlreadyExists 先记录未发送回执再读取核验，响应丢失继续保留 unknown 栅栏。共享合同见 [租户 Namespace](../contracts/tenant-namespace.md)。
 
 本机回退输入合并源码树 `81cecf745aeba8674becafbc9fb9adc145c38f48`：`GOWORK=off GOMAXPROCS=2 GOMEMLIMIT=1600MiB GOFLAGS=-p=2 make verify` **pass**；独占 PostgreSQL `go test -tags=sandboxintegration -count=1 -timeout=20m -v ./internal/data/sandbox` **pass**（113 个顶层测试）。首次 PG 测试的两条生命周期夹具因未提供主线要求的 Namespace 失败；修正夹具后完整重跑通过，失败与重跑日志均保留。测试容器已清理。指定远端配置不存在，本轮按允许规则回退本机；Gov 单仓正式 Resource SDK 依赖尚未更新，跨仓 workspace 验证不能代替正式依赖。合并候选未部署、未执行现场迁移或真实集群验收。
+
+## 2026-11-04：Sandbox 检查点与预览审查修复
+
+本次针对 PR #56 审查修复克隆确定拒绝的持久回执、检查点保护释放的首次明确失败重试、检查点和工作盘清理在删除日志落库后重启的原 UID 删除恢复，以及实验性预览的明确拒绝收尾。客户端可能自动重试；对相关检查点写请求，无法证明只有一次完整投递时保留 unknown。新增 Sandbox 迁移 017、018；迁移与跨服务升级尚未在集群执行。
+
+执行位置：`/home/chabking/.ssh/config` 不存在、默认 `ssh ubuntu` 的 host key 校验失败，按允许规则回退本机 Linux、Go 1.26.10。固定输入为 PR 原提交 `847922a38d7aef4270cc69b481f8fac2c3317584` 加本次修复；执行时各临时测试库采用独占 PostgreSQL 17.11 镜像 `sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b`，容器与凭据均已清理。
+
+- **pass**：克隆确定拒绝、并发、既有对象及不同幂等键重放的定向 PostgreSQL 回归，日志 `/tmp/clone-preflight-final-pg-20261104.log`；服务测试 `/tmp/clone-preflight-final-service-20261104.log`。首次测试的旧断言及夹具问题修正后重跑通过。
+- **pass**：检查点释放、删除崩溃恢复、原 UID 防护和未知回执屏障的业务、HTTP 及 PostgreSQL 定向回归，命令和日志 `/tmp/sandbox-p1-review-20261104/unit-http.log`、`pg.log`。包括真实 client-go 请求首次生效后重试再被拒绝的模拟。
+- **pass**：预览 Service 明确拒绝与 unknown 栅栏的本机 HTTP 和独占 PostgreSQL 定向测试；各测试使用模拟 Kubernetes API，不能代表真实 CSI 或集群验收。
+- **not_verified**：66 部署、本次迁移及修复后的真实跨服务验收。Gov 固定的 Session Gateway 和 Observability API 提交尚未发布，其干净远程依赖构建仍受阻。
+
+冻结源码清单 SHA-256 `af9fa6ae37c26b74ad751e1718b3a7f3d538901ca8ca159663883cbfcb37e19e`（本段补记前）经 `GOWORK=off GOMAXPROCS=1 GOMEMLIMIT=1200MiB GOFLAGS=-p=1 TMPDIR=/tmp make verify BUF=<pinned buf> SQLC=<pinned sqlc>` **pass**，含源码生成一致性、分层、全量单测、vet、构建和模块校验；源码清单在测试后复核一致。日志 `/tmp/sandbox-review-final-20261104/resource-verify.log`。旧版 Resource 会将 017 新拒绝原因误报为 WFFC；升级须先暂停并排空全部克隆入口及 Gov 后台投递，迁移至 018 后确保所有旧 Resource 进程退出、升级 Gov，再恢复投递。含新拒绝记录时不能直接回滚到不识别这些原因的旧镜像，也不能删除拒绝记录绕过屏障；新旧进程并发及上述部署步骤 **not_verified**。

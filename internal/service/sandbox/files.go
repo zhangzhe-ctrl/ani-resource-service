@@ -26,7 +26,7 @@ func (s *Service) QueryFiles(ctx context.Context, r *pb.QueryFilesRequest) (*pb.
 	if s.config.FileService == nil {
 		return nil, status.Error(codes.Unavailable, "SANDBOX_FILES_UNAVAILABLE")
 	}
-	result, err := s.config.FileService.Read(ctx, r.TenantId, r.SandboxId, biz.FileRequest{Action: r.Action, Path: r.Path, Limit: r.Limit, Cursor: r.Cursor})
+	result, err := s.config.FileService.Read(ctx, r.TenantId, r.SandboxId, biz.FileRequest{Action: r.Action, Path: r.Path, Limit: r.Limit, Cursor: r.Cursor, Page: r.Page, PageSize: r.PageSize})
 	if err != nil {
 		return nil, rpcError(err)
 	}

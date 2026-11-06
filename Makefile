@@ -81,6 +81,7 @@ config: check-buf
 	$(BUF) generate --template buf.gen.yaml
 	BUF=$(BUF) TMPDIR=$${TMPDIR:-$(CURDIR)/.work} ./scripts/generate-instance-api
 	BUF=$(BUF) TMPDIR=$${TMPDIR:-$(CURDIR)/.work} ./scripts/generate-vm-console-api
+	BUF=$(BUF) TMPDIR=$${TMPDIR:-$(CURDIR)/.work} ./scripts/generate-sandbox-terminal-api
 	BUF=$(BUF) TMPDIR=$${TMPDIR:-$(CURDIR)/.work} bash ./scripts/generate-vm-api
 
 sql: check-sqlc

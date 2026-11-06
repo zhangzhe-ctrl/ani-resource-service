@@ -26,7 +26,7 @@ func TestSandboxTokenActorIsLimitedToDataPlane(t *testing.T) {
 		allow  bool
 	}{
 		{pb.SandboxService_ValidateToken_FullMethodName, true}, {pb.SandboxService_QueryFiles_FullMethodName, true}, {pb.SandboxService_RunCode_FullMethodName, true},
-		{pb.SandboxService_CreateToken_FullMethodName, false}, {pb.SandboxService_RevokeToken_FullMethodName, false}, {pb.SandboxService_Delete_FullMethodName, false}, {"/network.v1.NetworkService/GetVPC", false},
+		{pb.SandboxService_CreateToken_FullMethodName, false}, {pb.SandboxService_RevokeToken_FullMethodName, false}, {pb.SandboxService_Delete_FullMethodName, false}, {pb.SandboxService_ListEnvironmentVariables_FullMethodName, false}, {pb.SandboxService_ListSandboxEvents_FullMethodName, false}, {pb.SandboxService_ListSandboxSecurityEvents_FullMethodName, false}, {pb.SandboxService_GetSandboxEgress_FullMethodName, false}, {"/network.v1.NetworkService/GetVPC", false},
 	} {
 		t.Run(test.method, func(t *testing.T) {
 			called := false

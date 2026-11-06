@@ -4,5 +4,6 @@ modules:
   - path: api
     excludes:
       - api/instance
+      - api/sandbox/terminal
       - api/compute
       - api/vm

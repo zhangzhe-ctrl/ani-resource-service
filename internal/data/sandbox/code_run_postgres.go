@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	biz "github.com/zhangzhe-ctrl/ani-resource-service/internal/biz/sandbox"
@@ -30,7 +31,7 @@ func scanCodeRun(row interface{ Scan(...any) error }) (biz.CodeRunIntent, string
 	var intent biz.CodeRunIntent
 	var target []byte
 	var digest string
-	err := row.Scan(&intent.TenantID, &intent.SandboxID, &intent.RunID, &digest, &target, &intent.State, &intent.Reason, &intent.ExitCode, &intent.Stdout, &intent.Stderr, &intent.Truncated)
+	err := row.Scan(&intent.TenantID, &intent.SandboxID, &intent.RunID, &digest, &target, &intent.State, &intent.Reason, &intent.ExitCode, &intent.Stdout, &intent.Stderr, &intent.Truncated, &intent.CreatedAt, &intent.CompletedAt)
 	if err != nil {
 		return intent, "", err
 	}
@@ -40,7 +41,7 @@ func scanCodeRun(row interface{ Scan(...any) error }) (biz.CodeRunIntent, string
 	return intent, digest, nil
 }
 
-const codeRunSelect = `SELECT tenant_id::text,sandbox_id::text,run_id::text,request_digest,target,state,reason,exit_code,stdout,stderr,truncated FROM sandbox.code_runs`
+const codeRunSelect = `SELECT tenant_id::text,sandbox_id::text,run_id::text,request_digest,target,state,reason,exit_code,stdout,stderr,truncated,created_at,completed_at FROM sandbox.code_runs`
 
 // AcceptCodeRun records only a digest and frozen target, never source or stdin.
 // Replaying a key returns its original run even after a lifecycle transition.
@@ -83,14 +84,15 @@ func (p *Postgres) AcceptCodeRun(ctx context.Context, command biz.CodeRunCommand
 	if err != nil {
 		return biz.CodeRunIntent{}, err
 	}
-	_, err = tx.Exec(ctx, `INSERT INTO sandbox.code_runs(tenant_id,sandbox_id,run_id,idempotency_key,request_digest,target,state) VALUES($1,$2,$3,$4,$5,$6,'accepted')`, command.TenantID, command.SandboxID, command.RunID, command.IdempotencyKey, digest, raw)
+	var createdAt time.Time
+	err = tx.QueryRow(ctx, `INSERT INTO sandbox.code_runs(tenant_id,sandbox_id,run_id,idempotency_key,request_digest,target,state) VALUES($1,$2,$3,$4,$5,$6,'accepted') RETURNING created_at`, command.TenantID, command.SandboxID, command.RunID, command.IdempotencyKey, digest, raw).Scan(&createdAt)
 	if err != nil {
 		return biz.CodeRunIntent{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {
 		return biz.CodeRunIntent{}, err
 	}
-	return biz.CodeRunIntent{TenantID: command.TenantID, SandboxID: command.SandboxID, RunID: command.RunID, State: "accepted", Target: target}, nil
+	return biz.CodeRunIntent{TenantID: command.TenantID, SandboxID: command.SandboxID, RunID: command.RunID, State: "accepted", Target: target, CreatedAt: createdAt}, nil
 }
 
 // BeginCodeRunDispatch can succeed at most once. A committed dispatching row
@@ -127,7 +129,7 @@ func (p *Postgres) BeginCodeRunDispatch(ctx context.Context, command biz.CodeRun
 	}
 	current, targetErr := biz.DataPlaneTargetForSandbox(s, biz.DataPlaneCodeRun)
 	if targetErr != nil || current != intent.Target {
-		if _, err = tx.Exec(ctx, `UPDATE sandbox.code_runs SET state='cancelled',reason='SANDBOX_LIFECYCLE_CHANGED',updated_at=clock_timestamp() WHERE tenant_id=$1 AND run_id=$2`, command.TenantID, command.RunID); err != nil {
+		if err = tx.QueryRow(ctx, `UPDATE sandbox.code_runs SET state='cancelled',reason='SANDBOX_LIFECYCLE_CHANGED',completed_at=clock_timestamp(),updated_at=clock_timestamp() WHERE tenant_id=$1 AND sandbox_id=$2 AND run_id=$3 RETURNING completed_at`, command.TenantID, command.SandboxID, command.RunID).Scan(&intent.CompletedAt); err != nil {
 			return biz.CodeRunIntent{}, false, err
 		}
 		intent.State = "cancelled"
@@ -151,7 +153,7 @@ func (p *Postgres) FailCodeRunBeforeDispatch(ctx context.Context, tenant, sandbo
 	if !biz.UUID(sandboxID) || !biz.UUID(runID) {
 		return biz.ErrInvalid
 	}
-	result, err := p.pool.Exec(ctx, `UPDATE sandbox.code_runs SET state='failed',reason='SANDBOX_TARGET_UNAVAILABLE',updated_at=clock_timestamp() WHERE tenant_id=$1 AND sandbox_id=$2 AND run_id=$3 AND state='accepted'`, tenant, sandboxID, runID)
+	result, err := p.pool.Exec(ctx, `UPDATE sandbox.code_runs SET state='failed',reason='SANDBOX_TARGET_UNAVAILABLE',completed_at=clock_timestamp(),updated_at=clock_timestamp() WHERE tenant_id=$1 AND sandbox_id=$2 AND run_id=$3 AND state='accepted'`, tenant, sandboxID, runID)
 	if err != nil {
 		return err
 	}
@@ -206,7 +208,7 @@ func (p *Postgres) FinishCodeRun(ctx context.Context, tenant, sandboxID, runID s
 	if state == "unknown" {
 		reason = "SANDBOX_DISPATCH_OUTCOME_UNKNOWN"
 	}
-	result, err := p.pool.Exec(ctx, `UPDATE sandbox.code_runs SET state=$4,exit_code=$5,stdout=$6,stderr=$7,truncated=$8,reason=$9,updated_at=clock_timestamp() WHERE tenant_id=$1 AND sandbox_id=$2 AND run_id=$3 AND state='dispatching'`, tenant, sandboxID, runID, state, exitCode, stdout, stderr, truncated, reason)
+	result, err := p.pool.Exec(ctx, `UPDATE sandbox.code_runs SET state=$4,exit_code=$5,stdout=$6,stderr=$7,truncated=$8,reason=$9,completed_at=CASE WHEN $4 = 'unknown' THEN NULL ELSE clock_timestamp() END,updated_at=clock_timestamp() WHERE tenant_id=$1 AND sandbox_id=$2 AND run_id=$3 AND state='dispatching'`, tenant, sandboxID, runID, state, exitCode, stdout, stderr, truncated, reason)
 	if err != nil {
 		return err
 	}

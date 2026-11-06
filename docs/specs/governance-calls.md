@@ -12,7 +12,7 @@ Sandbox 条目定义 Resource RPC 合同和精确接收方 allowlist。Governanc
 - Gov 先完成 JWT/AK 认证、当前动作权限和套餐闸门，再将内部租户主键经持久映射转换为 Resource 租户 UUID。Resource 仅接受受信委托中的该租户，业务查询、关联与写入继续核验资源归属。
 - metadata 只由可信值重建：单值 `x-ani-tenant-id`、`x-ani-actor`、`x-ani-request-id`。tenant 和 request ID 必须是规范、非零 UUID；actor 是 `governance:user:<uint32>` 或 `governance:access-key:<uint32>`，ID 必须规范、非零。报文中的 tenant、actor、direct caller 和 correlation 必须与委托一致。
 - Network 的可选旧 `x-ani-operator` 只能是 actor 推导的 `gov-user-<id>` / `gov-ak-<id>`，不能覆盖 request ID。用户 Authorization、AK/SK 和外来身份 header 不转发。
-- 下列完整方法清单在 handler 之前授权。`vpc-read` 进一步只允许 GetVPC；其他模式按已注册服务及清单授权。Attachment、ImageRuntime、health/reflection 和未登记的 stream 未获 Gov 授权，默认拒绝；唯一日志服务端流按下节独立授权。健康检查使用既有 admin `/readyz`。
+- 下列完整方法清单在 handler 之前授权。`vpc-read` 进一步只允许 GetVPC；其他模式按已注册服务及清单授权。Attachment、ImageRuntime、health/reflection 和未登记的 stream 未获 Gov 授权，默认拒绝；已登记的日志服务端流按下节独立授权。健康检查使用既有 admin `/readyz`。
 
 ## 完整 RPC 清单
 
@@ -98,6 +98,14 @@ Sandbox 条目定义 Resource RPC 合同和精确接收方 allowlist。Governanc
 | `/sandbox.v1.SandboxService/GetSandbox` | 按租户与 Sandbox ID 查询快照和 Provider 观察 |
 | `/sandbox.v1.SandboxService/ListSandboxes` | 按租户分页查询，无父实例要求 |
 | `/sandbox.v1.SandboxService/GetOperation` | 按租户查询持久生命周期操作 |
+| `/sandbox.v1.SandboxService/ListOperations` | 按租户和 Sandbox ID 合并生命周期、代码运行、文件写删和预览端口操作；同一快照内倒序分页与计数 |
+| `/sandbox.v1.SandboxService/OpenPreview`、`ClosePreview` | 接受实验端口的开放、关闭意图；携带稳定幂等键与 Sandbox 版本，异步查询操作 |
+| `/sandbox.v1.SandboxService/ListPreviews`、`GetPreviewOperation` | 按租户和 Sandbox ID 查询端口分页及单个操作 |
+| `/sandbox.v1.SandboxService/ListSandboxPodHistory` | 按租户和 Sandbox ID 读取持久记录的 Pod 身份；仅供受信 Gov 监控链，不构成生命周期时刻或历史完整性证明 |
+| `/sandbox.v1.SandboxService/ListSandboxEvents` | 查询已记录 Pod 身份对应、Kubernetes 当前保留的普通事件；返回安全说明而非原始诊断 |
+| `/sandbox.v1.SandboxService/ListSandboxSecurityEvents` | 查询已记录 Pod 身份对应的 Kubernetes Warning 兼容投影；不代表完整安全审计 |
+| `/sandbox.v1.SandboxService/GetSandboxEgress` | 查询当前 Pod 选中的 Kubernetes NetworkPolicy 出口声明；不证明实际执行或 Host 白名单 |
+| `/sandbox.v1.SandboxService/ListEnvironmentVariables` | 按租户和 Sandbox ID 查询当前已核验 Pod 显式环境变量的元数据；不返回值、镜像 ENV 或服务自动注入项 |
 | `/sandbox.v1.SandboxService/Pause` | 原幂等键和 expected_version |
 | `/sandbox.v1.SandboxService/Resume` | 原幂等键和 expected_version |
 | `/sandbox.v1.SandboxService/Delete` | 原幂等键和 expected_version；等待真实 Provider 清理 |
@@ -110,7 +118,19 @@ Sandbox 条目定义 Resource RPC 合同和精确接收方 allowlist。Governanc
 | `/sandbox.v1.SandboxService/ValidateToken` | 受信 Gov 对 Token 逐请求验签、核对范围和撤销状态 |
 | `/sandbox.v1.SandboxService/RevokeToken` | 受授权用户撤销指定 Token |
 
+独立 Sandbox 终端使用 `sandbox.terminal.v1.SandboxTerminalService/ResolveTerminalSession`。Gov 继续使用本业务 gRPC 连接及用户租户 metadata，仅传 tenant_id 与 sandbox_id；租户须与可信 scope 匹配，Token actor 无权调用。Resource 对运行状态、版本、Namespace UID 和 Pod UID 进行当前核验，返回绑定。SG 在专用 mTLS 入口调用 `ValidateTerminalSession` 重新校验同一绑定，该入口只允许 SG 身份访问本方法；其他 Sandbox RPC 不向 SG 开放。执行时 SG 还必须在容器内比较 downward API 提供的 Pod UID。检查为时点证据，不能保证已经开始的终端会在暂停或删除请求后立即中断。
+
 接收方允许清单实现为 [governance.go](../../internal/server/governance.go)、[image_identity.go](../../internal/server/image_identity.go)、[compute_identity.go](../../internal/server/compute_identity.go) 与 [instance_identity.go](../../internal/server/instance_identity.go) 与 [sandbox_identity.go](../../internal/server/sandbox_identity.go)。Instance 普通 unary 调用上限 30s，后台投递继承其更短 deadline；StreamInstanceLogs 使用独立有限生命周期，不套此总期限。修改调用时同时修改登记、允许清单和真实链路测试，不使用 RPC 前缀或通配符授权。
+
+`ListSandboxEvents` 读取同租户 Sandbox 已持久记录的 Pod UID 对应的 core/v1 事件，包括暂停、恢复前的旧 Pod 和销毁后仍由 Kubernetes 保留的事件；不要求 Pod 仍存在。历史必须与 Sandbox 冻结的集群、命名空间 UID 和 Pod 名匹配，查询前后验证命名空间及历史集合；尚无已记录 Pod UID、命名空间被重建、身份不能核验或角色未授权时返回错误。查询按 UID 使用同一 Kubernetes resourceVersion 快照，过期或续取失败返回错误。时间优先使用最后观察时间，其次最后事件时间、事件时间、首次时间、创建时间；按时间和事件 UID 倒序，默认 1/20、最大 pageSize 100。`total` 是当前快照中已记录 UID 的可见事件总数，上限 10000 条、原始响应总计 4 MiB、历史最多 1000 个 Pod，超限或任一代查询失败不返回局部结果；跨请求不保证快照一致。响应的 `scope` 固定为 `retained_events_for_recorded_pods`，`history_complete_before_migration` 固定为 false。`type`、`reason` 使用安全白名单，未知或缺省值为 `Unknown`；`message` 是按 `reason` 映射的固定说明，不透传可能包含敏感信息的原始消息；不是安全事件。集群事件 TTL、删除和清理可使事件不再可见，迁移前已丢失的 UID 无法补回；空列表不证明从未发生事件，不提供独立持久归档。
+
+Sandbox 创建可选的 `egress_intent` 是冻结在 Sandbox 快照中的租户声明，仅用于回显，不表示 Resource 已配置或执行出站网络策略；未提供为未知，已提供 allowlist 而列表为空表示声明为空。`GetSandboxEgress` 将意图与 NetworkPolicy 声明分开，非运行状态可返回保存的意图及 `source=unavailable`。未携带意图的历史 v1 摘要保持原样，显式意图使用 v2 摘要并进入不可变请求、规格和快照。
+
+`ListSandboxSecurityEvents` 在同样的可信身份核验和事件快照上，仅投影 Kubernetes `Warning` 事件，先筛选再分页并统计真实 total，来源固定 `kubernetes_pod_warnings`。为兼容旧业务，记录级别固定为 `warning`、事件类型为 `kubernetes_warning`，说明仍只使用安全映射；`info` 和 `critical` 过滤结果为空不证明不存在相应安全事件。这不是安全审计或入侵检测数据，保留与历史覆盖边界同上。
+
+`GetSandboxEgress` 在 Resource 租户权限检查之后读取运行中 Pod 匹配的全部标准 Kubernetes NetworkPolicy Egress 声明。筛选使用 Pod 标签和 Kubernetes 选择器规则，多策略允许规则取并集；`isolated=false` 或存在无目的地与端口限制的规则时 `declaration=unrestricted`，隔离且无规则为 `deny_all`，其余为 `restricted`。规则中的空 peers、ports 分别表示任意目的地、任意协议与端口。返回 `source=kubernetes_network_policy`、`enforcement=unknown`，并按下述规则返回独立的意图状态；不得把 CIDR 或选择器转成 Host 白名单，也不得把 unrestricted 当成实际连通证明：CNI、集群级策略及其他数据面控制未在该查询范围。读取 NetworkPolicy 时运行中资源、租户、命名空间 UID 和 Pod UID 必须可核验，读取前后校验 Pod resourceVersion、命名空间和数据库生命周期；仅查询非运行资源已保存的意图时无需实时 Pod；Kubernetes 列表完整快照超过 10000 项、4 MiB 或 21 页，版本变化或 API 错误时拒绝返回部分结果。需要租户空间 `networking.k8s.io/networkpolicies:list`；角色升级顺序见[部署说明](../../deployments/sandbox/README.md#普通事件日志与出口查询权限升级顺序)。
+
+`ListSandboxPodHistory` 在单一数据库只读快照返回该租户和独立 Sandbox 的已记录 Pod UID 及冻结 cluster、Namespace、Namespace UID、Pod 名和 `first_recorded_at`；暂停或删除后仍可读。`first_recorded_at` 仅是首次落库时间，不是创建时间或采样范围边界；`history_complete_before_migration` 固定为 false，迁移前已清除的 UID 无法恢复。迁移后如果创建回执丢失且 Pod 在可观察到 UID 之前消失，仍无法推断历史一定完整，因此该列表始终不能证明所有 Pod 均已覆盖。超过 1000 条返回 `RESOURCE_EXHAUSTED`，不会静默截断。调用方仍需独立校验所需的指标来源、时间和 UID 对应关系；Pod 名不构成 UID 证据。新版本迁移、旧版回滚的 worker 停写与排空要求见[部署说明](../../deployments/sandbox/README.md#pod-uid-历史升级顺序)。
 
 租户空间后台事实使用 `/sandbox.v1.SandboxService/OpenTenantSpace`、`/sandbox.v1.SandboxService/CloseTenantSpace` 和 `/sandbox.v1.SandboxService/GetTenantSpace`。仅受信 Gov 证书及固定 actor `governance:tenant-space` 可调用，metadata 的 tenant UUID 与报文必须精确相同；该后台 actor不能调用任何其他业务方法，普通用户和 Sandbox Token actor 也不能调用这三个方法。Gov 从已持久化的租户映射和稳定开通 operation ID 派发，不传公网身份或伪造用户。`open` 是持久受理而不是资源已就绪；`ready` 表示已核验当前命名空间和权限；`closing` 表示仍有未确认写入，`closed` 表示开通栅栏已关闭。关闭不证明共享 namespace 或其他业务资源已删除；Sandbox 未完成清理时拒绝关闭。运维、自动恢复和真实集群验证范围见[租户空间目标](../plans/sandbox-runtime-design-20261025.md#222-共享租户空间开通目标)和[执行状态](../execution/status.md)。
 
@@ -150,9 +170,11 @@ TRAINING供普通训练与微调共享，INFERENCE只声明公共提供方支持
 
 ## 实例日志
 
-唯一获准流为 `/instance.v1.InstanceService/StreamInstanceLogs`：必须 server-streaming、非client-streaming，受信 Gov mTLS + 单值 tenant/actor/request_id，报文 tenant 再与委托比较。`vpc-read` 拒绝该流，其余流全部拒绝。handler 再按可信租户/实例从 DB 读取保存位置与当前 owner UID链，不接受任意 Namespace、Pod、container/path 或 previous。
+获准日志流为 `/instance.v1.InstanceService/StreamInstanceLogs`、`/vm.v1.VMService/StreamVMLogs` 和 `/sandbox.v1.SandboxService/StreamSandboxLogs`：必须 server-streaming、非 client-streaming，受信 Gov mTLS + 单值 tenant/actor/request_id，报文 tenant 再与委托比较。`vpc-read` 拒绝流，其余未登记流全部拒绝。各 handler 按可信租户与所属资源从 DB 读取保存位置及当前 owner UID 链，不接受任意 Namespace、Pod、container/path 或 previous。
 
 日志开流前及 HTTP 开流后分别 GET 同名 Pod 确认 UID；完成后才发送 READY，之后 DATA bytes / END / ERROR。流不跟随替换Pod；观察到变化时以 POD_CHANGED 结束。普通 Kubernetes client 保留15秒整体超时，独立日志client取消整体超时但保留15秒开流等待、10分钟连接期限及逐层取消。单帧16KiB、有界256KiB、发送等待10秒，进程/租户/实例100/10/3并发上限，可经受管 Service.LogLimits 调整。最小只读权限见 [诊断RBAC](../../deployments/instance/README.md)。
+
+Sandbox 日志源是当前可核验 Sandbox Pod 的固定 `sandbox` 容器 stdout/stderr，不是 code-run 输出或持久日志库。期望运行、观察为运行/创建中/未知且无 pending 时可读取，不要求 Pod Ready，容器尚未启动时由 Kubernetes 返回不可用；暂停、删除、Pod 不可核验时返回错误，Pod 更换后不沿用旧流。READY 携带 Pod UID，DATA 为附 Kubernetes 时间戳的原始字节；单帧最多 16 KiB，默认回看最后 100 行、最多 1000 行，单次最多 8 MiB、10 分钟；开流 15 秒、发送 10 秒超时，Resource 每进程/租户/Sandbox 并发上限为 100/10/3。`since_time` 和上次 READY 的 `pod_uid` 必须同时提供，续传不设置 tail 截断；client-go 对时间向下取整到秒，允许同一秒重复。客户端应基于最后完整行时间戳重连，单行或同一秒数据超过单次上限时无法承诺完整续传。日志及保留由 Kubernetes 节点管理，Sandbox 不承诺暂停、删除或 Pod 更换后保留。授权与升级顺序见 [Sandbox RBAC](../../deployments/sandbox/README.md#普通事件与日志权限升级顺序)。
 
 静态详情/列表独立读取数据库快照，集群故障只影响诊断读取；诊断不 Patch/Update、不签名、不调用占额/usage或清理。runtime/events 的安全字段、null与事件截断语义见 [实例合同](instance-mvp.md)。Kubernetes GET/LIST单元测试及HTTP pods/log适配测试与真实集群/公开SSE验收分开记录。
 

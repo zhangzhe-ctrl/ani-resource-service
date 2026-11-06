@@ -73,7 +73,12 @@ func (a TenantAccess) verifyTenantClusterRole(ctx context.Context) error {
 		map[string]any{"apiGroups": []any{""}, "resources": []any{"pods/exec"}, "verbs": []any{"create"}},
 		map[string]any{"apiGroups": []any{""}, "resources": []any{"secrets"}, "verbs": []any{"create"}},
 	}
-	if !reflect.DeepEqual(role.Object["rules"], want) || role.Object["aggregationRule"] != nil {
+	withEvents := append(append([]any{}, want...), map[string]any{"apiGroups": []any{""}, "resources": []any{"events"}, "verbs": []any{"list"}})
+	withLogs := append(append([]any{}, withEvents...), map[string]any{"apiGroups": []any{""}, "resources": []any{"pods/log"}, "verbs": []any{"get"}})
+	withNetworkPolicies := append(append([]any{}, withLogs...), map[string]any{"apiGroups": []any{"networking.k8s.io"}, "resources": []any{"networkpolicies"}, "verbs": []any{"list"}})
+	withPreview := append(append([]any{}, withNetworkPolicies...), map[string]any{"apiGroups": []any{""}, "resources": []any{"services"}, "verbs": []any{"get", "create", "delete"}}, map[string]any{"apiGroups": []any{"discovery.k8s.io"}, "resources": []any{"endpointslices"}, "verbs": []any{"list"}})
+	withCheckpoint := append(append([]any{}, withPreview...), map[string]any{"apiGroups": []any{"snapshot.storage.k8s.io"}, "resources": []any{"volumesnapshots"}, "verbs": []any{"get"}}, map[string]any{"apiGroups": []any{""}, "resources": []any{"persistentvolumeclaims"}, "verbs": []any{"patch"}}, map[string]any{"apiGroups": []any{"snapshot.storage.k8s.io"}, "resources": []any{"volumesnapshots"}, "verbs": []any{"create", "delete"}})
+	if (!reflect.DeepEqual(role.Object["rules"], want) && !reflect.DeepEqual(role.Object["rules"], withEvents) && !reflect.DeepEqual(role.Object["rules"], withLogs) && !reflect.DeepEqual(role.Object["rules"], withNetworkPolicies) && !reflect.DeepEqual(role.Object["rules"], withPreview) && !reflect.DeepEqual(role.Object["rules"], withCheckpoint)) || role.Object["aggregationRule"] != nil {
 		return fmt.Errorf("%w: sandbox tenant cluster role differs", biz.ErrOwnership)
 	}
 	return nil

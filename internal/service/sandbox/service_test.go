@@ -38,6 +38,9 @@ func (serviceRepo) Get(context.Context, string, string) (biz.Sandbox, error) {
 func (serviceRepo) List(context.Context, string, biz.ListFilter) ([]biz.Sandbox, int64, error) {
 	return nil, 0, nil
 }
+func (serviceRepo) ListOperations(context.Context, string, string, uint32, uint32) ([]biz.Operation, int64, error) {
+	return nil, 0, nil
+}
 func (serviceRepo) GetOperation(context.Context, string, string) (biz.Operation, error) {
 	return biz.Operation{}, biz.ErrNotFound
 }
@@ -660,5 +663,88 @@ func TestIndependentSandboxWithoutParentAndHistoricalRows(t *testing.T) {
 	}
 	if _, err = s.GetSandbox(serviceContext(), &pb.GetSandboxRequest{TenantId: "66666666-6666-4666-8666-666666666666", SandboxId: testSandbox}); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("cross-tenant access:", err)
+	}
+}
+
+func TestResolveAndReplayEgressIntent(t *testing.T) {
+	s := newTestService(t, validSelection())
+	req := validResolveRequest()
+	old, err := s.ResolveCreateSpec(serviceContext(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, policy := range []string{"allowlist", "deny_all"} {
+		req.Data.EgressIntent = &pb.SandboxEgressIntent{NetworkEgressPolicy: policy}
+		if _, err := s.ResolveCreateSpec(serviceContext(), req); status.Code(err) != codes.Unimplemented || status.Convert(err).Message() != "SANDBOX_EGRESS_ENFORCEMENT_UNSUPPORTED" {
+			t.Fatalf("%s should be rejected: %v", policy, err)
+		}
+	}
+	req.Data.EgressIntent = &pb.SandboxEgressIntent{NetworkEgressPolicy: "internet"}
+	internetSpec, err := s.ResolveCreateSpec(serviceContext(), req)
+	if err != nil {
+		t.Fatalf("internet declaration rejected: %v", err)
+	}
+	internetAccept := &pb.AcceptCreateRequest{Context: &pb.CommandContext{TenantId: testTenant, ResourceId: testSandbox, OperationId: testOp}, Spec: internetSpec}
+	internetAccept.Context.RequestDigest, err = pb.CommandDigest(internetAccept.Context, "", internetSpec, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.AcceptCreate(serviceContext(), internetAccept); err != nil {
+		t.Fatalf("internet command rejected: %v", err)
+	}
+	// Construct the frozen command as it existed before the admission guard.
+	req.Data.EgressIntent = &pb.SandboxEgressIntent{NetworkEgressPolicy: "allowlist", EgressAllowlist: []string{"a.example", "z.example"}}
+	spec := proto.Clone(old).(*pb.ResolveCreateSpecResponse)
+	spec.EgressIntent = req.Data.EgressIntent
+	spec.SpecDigest, err = frozenSpecDigest(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	intent, err := pb.CreateIntentDigest("", req.Data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	accept := &pb.AcceptCreateRequest{Context: &pb.CommandContext{TenantId: testTenant, ResourceId: testSandbox, OperationId: testOp}, Spec: spec, CreateIntentDigest: intent}
+	accept.Context.RequestDigest, err = pb.CommandDigest(accept.Context, "", spec, intent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot := frozenSnapshot(specValue(spec))
+	if snapshot.EgressIntentJSON == "" {
+		t.Fatal("intent not frozen")
+	}
+	if _, err := s.AcceptCreate(serviceContext(), accept); status.Code(err) != codes.Unimplemented || status.Convert(err).Message() != "SANDBOX_EGRESS_ENFORCEMENT_UNSUPPORTED" {
+		t.Fatalf("unaccepted command must be rejected: %v", err)
+	}
+	repo := &frozenReplayRepo{value: biz.Sandbox{ID: testSandbox, CreateOperationID: testOp, CreateRequestDigest: accept.Context.RequestDigest, CreateIntentDigest: intent, Snapshot: snapshot}}
+	s.repo = repo
+	out, err := s.AcceptCreate(serviceContext(), accept)
+	if err != nil || !out.Ack.Replayed {
+		t.Fatalf("replay %+v %v", out, err)
+	}
+	accept.Spec.EgressIntent.EgressAllowlist[0] = "changed.example"
+	if _, err = s.AcceptCreate(serviceContext(), accept); status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("tamper accepted %v", err)
+	}
+}
+
+func TestAcceptCreateRejectsUnenforcedDenyAll(t *testing.T) {
+	s := newTestService(t, validSelection())
+	spec, err := s.ResolveCreateSpec(serviceContext(), validResolveRequest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	spec.EgressIntent = &pb.SandboxEgressIntent{NetworkEgressPolicy: "deny_all"}
+	spec.SpecDigest, err = frozenSpecDigest(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := &pb.AcceptCreateRequest{Context: &pb.CommandContext{TenantId: testTenant, ResourceId: testSandbox, OperationId: testOp}, Spec: spec}
+	request.Context.RequestDigest, err = pb.CommandDigest(request.Context, "", spec, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.AcceptCreate(serviceContext(), request); status.Code(err) != codes.Unimplemented || status.Convert(err).Message() != "SANDBOX_EGRESS_ENFORCEMENT_UNSUPPORTED" {
+		t.Fatalf("deny_all command accepted: %v", err)
 	}
 }

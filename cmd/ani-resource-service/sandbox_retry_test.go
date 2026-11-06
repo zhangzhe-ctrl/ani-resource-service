@@ -8,6 +8,7 @@ import (
 	"time"
 
 	sandboxpb "github.com/zhangzhe-ctrl/ani-resource-service/api/sandbox/v1"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -43,6 +44,24 @@ func (s retryTestService) GetSandbox(context.Context, *sandboxpb.GetSandboxReque
 }
 func (s retryTestService) ListSandboxes(context.Context, *sandboxpb.ListSandboxesRequest) (*sandboxpb.ListSandboxesResponse, error) {
 	return nil, s.failure()
+}
+func (s retryTestService) ListOperations(context.Context, *sandboxpb.ListOperationsRequest) (*sandboxpb.ListOperationsResponse, error) {
+	return nil, s.failure()
+}
+func (s retryTestService) ListSandboxPodHistory(context.Context, *sandboxpb.ListSandboxPodHistoryRequest) (*sandboxpb.ListSandboxPodHistoryResponse, error) {
+	return nil, s.failure()
+}
+func (s retryTestService) ListEnvironmentVariables(context.Context, *sandboxpb.ListEnvironmentVariablesRequest) (*sandboxpb.ListEnvironmentVariablesResponse, error) {
+	return nil, s.failure()
+}
+func (s retryTestService) ListSandboxEvents(context.Context, *sandboxpb.ListSandboxEventsRequest) (*sandboxpb.ListSandboxEventsResponse, error) {
+	return nil, s.failure()
+}
+func (s retryTestService) GetSandboxEgress(context.Context, *sandboxpb.GetSandboxEgressRequest) (*sandboxpb.GetSandboxEgressResponse, error) {
+	return nil, s.failure()
+}
+func (s retryTestService) StreamSandboxLogs(*sandboxpb.StreamSandboxLogsRequest, grpc.ServerStreamingServer[sandboxpb.StreamSandboxLogsResponse]) error {
+	return s.failure()
 }
 func (s retryTestService) GetOperation(context.Context, *sandboxpb.GetOperationRequest) (*sandboxpb.GetOperationResponse, error) {
 	return nil, s.failure()
@@ -85,6 +104,57 @@ func (s retryTestService) RevokeToken(context.Context, *sandboxpb.RevokeTokenReq
 
 type retryTestWorker struct{ started chan struct{} }
 
+type retryLongLogService struct {
+	retryTestService
+	entered chan struct{}
+}
+
+func (s retryLongLogService) StreamSandboxLogs(_ *sandboxpb.StreamSandboxLogsRequest, stream grpc.ServerStreamingServer[sandboxpb.StreamSandboxLogsResponse]) error {
+	close(s.entered)
+	<-stream.Context().Done()
+	return stream.Context().Err()
+}
+
+type retryLogStream struct {
+	grpc.ServerStreamingServer[sandboxpb.StreamSandboxLogsResponse]
+}
+
+func (retryLogStream) Context() context.Context { return context.Background() }
+
+func TestSandboxRetryStopCancelsActiveLogStreamBeforeClosingTarget(t *testing.T) {
+	entered := make(chan struct{})
+	closed := make(chan struct{})
+	retry := newSandboxRetry(nil, time.Second)
+	retry.target = &sandboxRetryTarget{service: retryLongLogService{entered: entered}, close: func() { close(closed) }}
+	done := make(chan error, 1)
+	go func() { done <- retry.StreamSandboxLogs(&sandboxpb.StreamSandboxLogsRequest{}, retryLogStream{}) }()
+	select {
+	case <-entered:
+	case <-time.After(time.Second):
+		t.Fatal("stream did not start")
+	}
+	closeDone := make(chan struct{})
+	go func() { retry.Close(); close(closeDone) }()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("stream not canceled: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("stream blocked shutdown")
+	}
+	select {
+	case <-closeDone:
+	case <-time.After(time.Second):
+		t.Fatal("target did not close")
+	}
+	select {
+	case <-closed:
+	default:
+		t.Fatal("target close callback missing")
+	}
+}
+
 func (w retryTestWorker) Start(ctx context.Context) error { close(w.started); <-ctx.Done(); return nil }
 func (retryTestWorker) Stop(context.Context) error        { return nil }
 
@@ -109,7 +179,13 @@ func sandboxRetryStatusChecks(r *sandboxRetry) []error {
 	_, q := r.OpenTenantSpace(ctx, &sandboxpb.OpenTenantSpaceRequest{})
 	_, s := r.CloseTenantSpace(ctx, &sandboxpb.CloseTenantSpaceRequest{})
 	_, u := r.GetTenantSpace(ctx, &sandboxpb.GetTenantSpaceRequest{})
-	return []error{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, s, u}
+	_, v := r.ListOperations(ctx, &sandboxpb.ListOperationsRequest{})
+	_, w := r.ListEnvironmentVariables(ctx, &sandboxpb.ListEnvironmentVariablesRequest{})
+	_, x := r.ListSandboxEvents(ctx, &sandboxpb.ListSandboxEventsRequest{})
+	y := r.StreamSandboxLogs(&sandboxpb.StreamSandboxLogsRequest{}, nil)
+	_, z := r.ListSandboxPodHistory(ctx, &sandboxpb.ListSandboxPodHistoryRequest{})
+	_, aa := r.GetSandboxEgress(ctx, &sandboxpb.GetSandboxEgressRequest{})
+	return []error{a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, s, u, v, w, x, y, z, aa}
 }
 
 func TestSandboxRetryRecoversAllMethodsAndStopsWorker(t *testing.T) {
@@ -140,7 +216,7 @@ func TestSandboxRetryRecoversAllMethodsAndStopsWorker(t *testing.T) {
 			t.Fatalf("recovered handler not called: %v", err)
 		}
 	}
-	if calls.Load() != 19 || attempts.Load() != 2 {
+	if calls.Load() != 25 || attempts.Load() != 2 {
 		t.Fatalf("calls=%d attempts=%d", calls.Load(), attempts.Load())
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)

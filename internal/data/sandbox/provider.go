@@ -100,7 +100,16 @@ func (p *KubernetesProvider) requireCluster(s biz.Sandbox) error {
 	return nil
 }
 
-func names(s biz.Sandbox) (string, string) { return "workspace-" + s.ID, "sandbox-" + s.ID }
+func names(s biz.Sandbox) (string, string) {
+	workspace := "workspace-" + s.ID
+	if s.ProviderRefs.PVCName != "" && s.ProviderRefs.PVCUID != "" {
+		workspace = s.ProviderRefs.PVCName
+		if !biz.ValidWorkspaceName(s.ID, workspace) {
+			workspace = ""
+		}
+	}
+	return workspace, "sandbox-" + s.ID
+}
 func labels(s biz.Sandbox) map[string]string {
 	return map[string]string{providerOwnerLabel: s.ID, providerTenantLabel: s.TenantID, providerServiceLabel: "ani-resource-service"}
 }
@@ -122,7 +131,7 @@ func pendingCreateMatches(o *unstructured.Unstructured, s biz.Sandbox, kind stri
 	return s.Pending.ID != "" && o.GetUID() != "" && o.GetAnnotations()[providerMutationID] == s.Pending.ID
 }
 
-func pvcMatches(o *unstructured.Unstructured, s biz.Sandbox) bool {
+func pvcBaseMatches(o *unstructured.Unstructured, s biz.Sandbox) bool {
 	storageClass, found, err := unstructured.NestedString(o.Object, "spec", "storageClassName")
 	if err != nil || !found || storageClass != s.Snapshot.Workspace.StorageClass {
 		return false
@@ -142,6 +151,28 @@ func pvcMatches(o *unstructured.Unstructured, s biz.Sandbox) bool {
 	want, wantErr := resource.ParseQuantity(s.Snapshot.Workspace.Size)
 	got, gotErr := resource.ParseQuantity(requested)
 	return wantErr == nil && gotErr == nil && want.Equal(got)
+}
+
+// A normal workspace has no source. A restored generation is accepted only
+// with the exact immutable source and mutation facts committed in the ledger.
+func pvcMatches(o *unstructured.Unstructured, s biz.Sandbox) bool {
+	if !pvcBaseMatches(o, s) {
+		return false
+	}
+	refs := s.ProviderRefs
+	if refs.PVCName == "" || refs.PVCName == "workspace-"+s.ID {
+		for _, field := range []string{"dataSource", "dataSourceRef"} {
+			v, found, err := unstructured.NestedFieldNoCopy(o.Object, "spec", field)
+			if err != nil || (found && v != nil) {
+				return false
+			}
+		}
+		return refs.PVCSourceSnapshotName == "" && refs.PVCSourceSnapshotUID == "" && refs.PVCSourceContentUID == "" && refs.PVCSourceSnapshotHandle == "" && refs.PVCSourceMutationID == ""
+	}
+	if !biz.ValidWorkspaceName(s.ID, refs.PVCName) || refs.PVCUID == "" || string(o.GetUID()) != refs.PVCUID || refs.PVCSourceSnapshotName == "" || refs.PVCSourceSnapshotUID == "" || refs.PVCSourceContentUID == "" || refs.PVCSourceSnapshotHandle == "" || !biz.UUID(refs.PVCSourceMutationID) || o.GetAnnotations()[providerMutationID] != refs.PVCSourceMutationID {
+		return false
+	}
+	return transferDataSourceMatches(o, biz.CheckpointTransfer{SourceSnapshotName: refs.PVCSourceSnapshotName})
 }
 
 // An omitted list and an empty list are equivalent in Kubernetes responses.
@@ -324,7 +355,8 @@ func podMatches(o *unstructured.Unstructured, s biz.Sandbox) bool {
 	volumeName, volumeNameOK := volume["name"].(string)
 	claim, ok := volume["persistentVolumeClaim"].(map[string]any)
 	claimName, claimOK := claim["claimName"].(string)
-	return volumeNameOK && volumeName == "workspace" && ok && onlyKeys(volume, "name", "persistentVolumeClaim") && onlyKeys(claim, "claimName", "readOnly") && (claim["readOnly"] == nil || claim["readOnly"] == false) && claimOK && claimName == "workspace-"+s.ID
+	workspaceName, _ := names(s)
+	return workspaceName != "" && volumeNameOK && volumeName == "workspace" && ok && onlyKeys(volume, "name", "persistentVolumeClaim") && onlyKeys(claim, "claimName", "readOnly") && (claim["readOnly"] == nil || claim["readOnly"] == false) && claimOK && claimName == workspaceName
 }
 
 func pullSecretName(s biz.Sandbox) string { return "ani-sandbox-pull-" + s.TenantID }
@@ -997,6 +1029,7 @@ func (p *KubernetesProvider) getOwned(ctx context.Context, gvr schema.GroupVersi
 func renderPod(s biz.Sandbox, name string, ls map[string]string) *unstructured.Unstructured {
 	cpu := fmt.Sprintf("%dm", s.Snapshot.CPUMillis)
 	memory := fmt.Sprintf("%dMi", s.Snapshot.MemoryMiB)
+	workspaceName, _ := names(s)
 	return &unstructured.Unstructured{Object: map[string]any{
 		"apiVersion": "v1", "kind": "Pod",
 		"metadata": map[string]any{"name": name, "namespace": s.Snapshot.Namespace, "labels": stringMap(ls)},
@@ -1021,7 +1054,7 @@ func renderPod(s biz.Sandbox, name string, ls map[string]string) *unstructured.U
 				"resources":    map[string]any{"requests": map[string]any{"cpu": cpu, "memory": memory}, "limits": map[string]any{"cpu": cpu, "memory": memory}},
 				"volumeMounts": []any{map[string]any{"name": "workspace", "mountPath": s.Snapshot.Workspace.MountPath}},
 			}},
-			"volumes": []any{map[string]any{"name": "workspace", "persistentVolumeClaim": map[string]any{"claimName": "workspace-" + s.ID}}},
+			"volumes": []any{map[string]any{"name": "workspace", "persistentVolumeClaim": map[string]any{"claimName": workspaceName}}},
 		},
 	}}
 }

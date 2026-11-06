@@ -20,7 +20,7 @@ import (
 
 type Postgres struct{ pool *pgxpool.Pool }
 
-var schemaFiles = []string{"001_sandbox.sql", "002_workspace_bindings.sql", "003_recovery_and_create_intent.sql", "004_tenant_listing.sql", "005_code_runs.sql", "006_file_operations.sql", "007_access_tokens.sql", "008_tenant_space.sql"}
+var schemaFiles = []string{"001_sandbox.sql", "002_workspace_bindings.sql", "003_recovery_and_create_intent.sql", "004_tenant_listing.sql", "005_code_runs.sql", "006_file_operations.sql", "007_access_tokens.sql", "008_tenant_space.sql", "009_code_run_completion.sql", "010_operation_completion.sql", "011_file_operation_completion.sql", "012_pod_history.sql", "013_preview_experimental.sql", "014_checkpoint.sql", "015_checkpoint_transfer.sql", "016_checkpoint_transfer_rejections.sql", "017_checkpoint_clone_rejection_reasons.sql", "018_checkpoint_clone_identity_conflicts.sql"}
 
 func validDigest(v string) bool {
 	if len(v) != 64 || strings.ToLower(v) != v {
@@ -132,7 +132,7 @@ func Migrate(ctx context.Context, dsn, role string) error {
 		}
 	}
 	quoted := pgx.Identifier{role}.Sanitize()
-	if _, err = tx.Exec(ctx, "GRANT USAGE ON SCHEMA sandbox TO "+quoted+"; GRANT SELECT ON sandbox.schema_version TO "+quoted+"; GRANT SELECT,INSERT,UPDATE ON sandbox.sandboxes,sandbox.operations,sandbox.work,sandbox.workspace_bindings,sandbox.code_runs,sandbox.file_operations,sandbox.access_tokens,sandbox.tenant_spaces,sandbox.tenant_space_mutations TO "+quoted); err != nil {
+	if _, err = tx.Exec(ctx, "GRANT USAGE ON SCHEMA sandbox TO "+quoted+"; GRANT SELECT ON sandbox.schema_version TO "+quoted+"; GRANT SELECT,INSERT,UPDATE ON sandbox.sandboxes,sandbox.operations,sandbox.work,sandbox.workspace_bindings,sandbox.code_runs,sandbox.file_operations,sandbox.access_tokens,sandbox.tenant_spaces,sandbox.tenant_space_mutations,sandbox.pod_history,sandbox.preview_ports,sandbox.preview_port_operations,sandbox.checkpoints,sandbox.checkpoint_transfers,sandbox.workspace_generations,sandbox.checkpoint_transfer_rejections,sandbox.checkpoint_clone_identity_conflicts TO "+quoted); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
@@ -165,6 +165,14 @@ func (p *Postgres) AcceptCreate(ctx context.Context, c biz.Create) (biz.ACK, err
 		if _, err = tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1::text,84015010))", key); err != nil {
 			return biz.ACK{}, err
 		}
+	}
+	// A durably rejected clone owns its target/operation identity too.
+	var rejectedClone bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sandbox.checkpoint_transfer_rejections WHERE tenant_id=$1 AND kind='clone' AND (target_sandbox_id=$2 OR operation_id=$3 OR create_operation_id=$3))`, c.TenantID, c.ID, c.OperationID).Scan(&rejectedClone); err != nil {
+		return biz.ACK{}, err
+	}
+	if rejectedClone {
+		return biz.ACK{}, biz.ErrConflict
 	}
 	var existingSandbox, existingAction string
 	if err = tx.QueryRow(ctx, "SELECT sandbox_id::text,action FROM sandbox.operations WHERE tenant_id=$1 AND operation_id=$2", c.TenantID, c.OperationID).Scan(&existingSandbox, &existingAction); err == nil {
@@ -283,14 +291,119 @@ func (p *Postgres) GetOperation(ctx context.Context, tenant, id string) (biz.Ope
 		return biz.Operation{}, err
 	}
 	var o biz.Operation
-	err := p.pool.QueryRow(ctx, `SELECT o.operation_id::text,o.sandbox_id::text,s.instance_id,o.action,o.idempotency_key,o.state,o.reason,o.intent_version,o.created_at
+	err := p.pool.QueryRow(ctx, `SELECT o.operation_id::text,o.sandbox_id::text,s.instance_id,o.action,o.idempotency_key,o.state,o.reason,o.intent_version,o.created_at,o.completed_at
 		FROM sandbox.operations o JOIN sandbox.sandboxes s ON s.tenant_id=o.tenant_id AND s.sandbox_id=o.sandbox_id
-		WHERE o.tenant_id=$1 AND o.operation_id=$2`, tenant, id).Scan(&o.ID, &o.SandboxID, &o.InstanceID, &o.Action, &o.IdempotencyKey, &o.State, &o.Reason, &o.IntentVersion, &o.CreatedAt)
+		WHERE o.tenant_id=$1 AND o.operation_id=$2`, tenant, id).Scan(&o.ID, &o.SandboxID, &o.InstanceID, &o.Action, &o.IdempotencyKey, &o.State, &o.Reason, &o.IntentVersion, &o.CreatedAt, &o.CompletedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return o, biz.ErrNotFound
 	}
+	o.TenantID = tenant
 	return o, err
 }
+
+// ListOperations reads retained lifecycle, code and file mutation history even
+// after deletion. Existence, count and page use one database snapshot.
+func (p *Postgres) ListOperations(ctx context.Context, tenant, id string, page, pageSize uint32) ([]biz.Operation, int64, error) {
+	if err := biz.RequireTenant(ctx, tenant); err != nil {
+		return nil, 0, err
+	}
+	if !biz.UUID(id) || pageSize > 100 {
+		return nil, 0, biz.ErrInvalid
+	}
+	if page == 0 {
+		page = 1
+	}
+	if pageSize == 0 {
+		pageSize = 20
+	}
+	tx, err := p.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return nil, 0, err
+	}
+	defer tx.Rollback(ctx)
+	var instance string
+	err = tx.QueryRow(ctx, `SELECT instance_id FROM sandbox.sandboxes WHERE tenant_id=$1 AND sandbox_id=$2`, tenant, id).Scan(&instance)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, 0, biz.ErrNotFound
+	}
+	if err != nil {
+		return nil, 0, err
+	}
+	rows, err := tx.Query(ctx, `SELECT operation_id::text,action,state,reason,intent_version,created_at,completed_at FROM (
+		SELECT operation_id,action,state,reason,intent_version,created_at,completed_at,'lifecycle' AS source
+		  FROM sandbox.operations WHERE tenant_id=$1 AND sandbox_id=$2
+		UNION ALL
+		SELECT run_id,'code_run',
+		  CASE WHEN state='dispatching' AND updated_at < statement_timestamp()-interval '320 seconds' THEN 'unknown' ELSE state END,
+		  CASE WHEN state='dispatching' AND updated_at < statement_timestamp()-interval '320 seconds' THEN 'SANDBOX_DISPATCH_OUTCOME_UNKNOWN' ELSE reason END,
+		  0::bigint,created_at,
+		  CASE WHEN state='dispatching' AND updated_at < statement_timestamp()-interval '320 seconds' THEN NULL ELSE completed_at END,'code_run'
+		  FROM sandbox.code_runs WHERE tenant_id=$1 AND sandbox_id=$2
+		UNION ALL
+		SELECT operation_id,CASE action WHEN 'write' THEN 'file_write' WHEN 'delete' THEN 'file_delete' ELSE 'file_operation' END,
+		  CASE WHEN state='dispatching' AND updated_at < statement_timestamp()-interval '75 seconds' THEN 'unknown' ELSE state END,
+		  CASE WHEN state='dispatching' AND updated_at < statement_timestamp()-interval '75 seconds' THEN 'SANDBOX_FILE_OUTCOME_UNKNOWN' ELSE reason END,
+		  0::bigint,created_at,
+		  CASE WHEN state='dispatching' AND updated_at < statement_timestamp()-interval '75 seconds' THEN NULL ELSE completed_at END,'file'
+		  FROM sandbox.file_operations WHERE tenant_id=$1 AND sandbox_id=$2
+		UNION ALL
+		SELECT operation_id,CASE action WHEN 'open' THEN 'preview_open' ELSE 'preview_close' END,
+		  state,reason,0::bigint,created_at,completed_at,'preview'
+		  FROM sandbox.preview_port_operations WHERE tenant_id=$1 AND sandbox_id=$2
+		) history ORDER BY created_at DESC,operation_id DESC,source DESC LIMIT $3 OFFSET $4`, tenant, id, int64(pageSize), (int64(page)-1)*int64(pageSize))
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	items := make([]biz.Operation, 0)
+	for rows.Next() {
+		o := biz.Operation{TenantID: tenant, SandboxID: id, InstanceID: instance}
+		if err = rows.Scan(&o.ID, &o.Action, &o.State, &o.Reason, &o.IntentVersion, &o.CreatedAt, &o.CompletedAt); err != nil {
+			return nil, 0, err
+		}
+		items = append(items, o)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	rows.Close()
+	var total int64
+	if err = tx.QueryRow(ctx, `SELECT
+		(SELECT count(*) FROM sandbox.operations WHERE tenant_id=$1 AND sandbox_id=$2) +
+		(SELECT count(*) FROM sandbox.code_runs WHERE tenant_id=$1 AND sandbox_id=$2) +
+		(SELECT count(*) FROM sandbox.file_operations WHERE tenant_id=$1 AND sandbox_id=$2) +
+		(SELECT count(*) FROM sandbox.preview_port_operations WHERE tenant_id=$1 AND sandbox_id=$2)`, tenant, id).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
+}
+
+// cloneWorkspaceState reads the durable origin and active generation while the
+// caller holds work then Sandbox locks. A clone can start only after its own
+// creation succeeded and the currently committed volume matches a completed
+// source-backed transfer (which may be a later restore).
+func cloneWorkspaceState(ctx context.Context, tx pgx.Tx, tenant, sandbox string) (bool, bool, error) {
+	var origin, valid bool
+	err := tx.QueryRow(ctx, `SELECT
+	  EXISTS(SELECT 1 FROM sandbox.checkpoint_transfers c WHERE c.tenant_id=$1 AND c.target_sandbox_id=$2 AND c.kind='clone'),
+	  EXISTS(SELECT 1 FROM sandbox.checkpoint_transfers origin
+	    JOIN sandbox.sandboxes s ON s.tenant_id=origin.tenant_id AND s.sandbox_id=origin.target_sandbox_id
+	    JOIN sandbox.workspace_generations g ON g.tenant_id=s.tenant_id AND g.sandbox_id=s.sandbox_id AND g.state='active'
+	    JOIN sandbox.checkpoint_transfers t ON t.tenant_id=g.tenant_id AND t.transfer_id=g.generation_id AND t.target_sandbox_id=g.sandbox_id AND t.state='ready'
+	    WHERE origin.tenant_id=$1 AND origin.target_sandbox_id=$2 AND origin.kind='clone' AND origin.state='ready'
+	      AND g.pvc_name=t.candidate_name AND g.pvc_uid=t.candidate_uid AND g.pv_name=t.candidate_pv_name AND g.pv_uid=t.candidate_pv_uid
+	      AND g.pvc_name=COALESCE(s.provider_refs->>'PVCName','') AND g.pvc_uid=COALESCE(s.provider_refs->>'PVCUID','')
+	      AND g.pv_name=COALESCE(s.provider_refs->>'PVName','') AND g.pv_uid=COALESCE(s.provider_refs->>'PVUID','')
+	      AND t.mutation_id=COALESCE(s.provider_refs->>'PVCSourceMutationID','') AND t.source_snapshot_uid=COALESCE(s.provider_refs->>'PVCSourceSnapshotUID','')
+	      AND t.source_content_uid=COALESCE(s.provider_refs->>'PVCSourceContentUID','') AND t.source_snapshot_handle=COALESCE(s.provider_refs->>'PVCSourceSnapshotHandle','')
+	      AND t.source_snapshot_name=COALESCE(s.provider_refs->>'PVCSourceSnapshotName','')
+	      AND t.candidate_uid<>'' AND t.candidate_pv_uid<>'' AND t.mutation_id<>'')`, tenant, sandbox).Scan(&origin, &valid)
+	return origin, valid, err
+}
+
 func (p *Postgres) Change(ctx context.Context, c biz.Command) (biz.ACK, error) {
 	if err := biz.RequireTenant(ctx, c.TenantID); err != nil {
 		return biz.ACK{}, err
@@ -343,8 +456,58 @@ func (p *Postgres) Change(ctx context.Context, c biz.Command) (biz.ACK, error) {
 	if c.ExpectedVersion > 0 && c.ExpectedVersion != version {
 		return biz.ACK{}, biz.ErrVersion
 	}
+	// A checkpoint in flight must settle before a lifecycle change starts.
+	var checkpointBlocked bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM sandbox.checkpoints WHERE tenant_id=$1 AND sandbox_id=$2 AND state IN ('accepted','running','unknown'))`, c.TenantID, c.ID).Scan(&checkpointBlocked); err != nil {
+		return biz.ACK{}, err
+	}
+	if checkpointBlocked {
+		return biz.ACK{}, biz.ErrConflict
+	}
+	if c.Action == "delete" {
+		var hasCheckpoints bool
+		if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sandbox.checkpoints WHERE tenant_id=$1 AND sandbox_id=$2)`, c.TenantID, c.ID).Scan(&hasCheckpoints); err != nil {
+			return biz.ACK{}, err
+		}
+		if hasCheckpoints {
+			var transferTable *string
+			if err = tx.QueryRow(ctx, `SELECT to_regclass('sandbox.checkpoint_transfers')::text`).Scan(&transferTable); err != nil || transferTable == nil {
+				return biz.ACK{}, biz.ErrDependencyUnavailable
+			}
+			var hasReferences bool
+			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sandbox.checkpoint_transfers t JOIN sandbox.checkpoints cp ON cp.tenant_id=t.tenant_id AND cp.checkpoint_id=t.checkpoint_id WHERE cp.tenant_id=$1 AND cp.sandbox_id=$2 AND t.target_sandbox_id<>cp.sandbox_id AND NOT t.source_released)`, c.TenantID, c.ID).Scan(&hasReferences); err != nil {
+				return biz.ACK{}, err
+			}
+			if hasReferences {
+				return biz.ACK{}, biz.ErrCheckpointReferenced
+			}
+		}
+	}
+	var transferBlocked bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM sandbox.checkpoint_transfers WHERE tenant_id=$1 AND target_sandbox_id=$2 AND state IN ('accepted','creating','unknown','observing'))`, c.TenantID, c.ID).Scan(&transferBlocked); err != nil {
+		return biz.ACK{}, err
+	}
+	if transferBlocked {
+		return biz.ACK{}, biz.ErrConflict
+	}
+	if c.Action == "resume" || c.Action == "pause" {
+		origin, valid, err := cloneWorkspaceState(ctx, tx, c.TenantID, c.ID)
+		if err != nil {
+			return biz.ACK{}, err
+		}
+		if origin && !valid {
+			return biz.ACK{}, biz.ErrConflict
+		}
+	}
 	if desired == biz.DesiredDeleted {
 		return biz.ACK{}, biz.ErrConflict
+	}
+	if c.Action == "pause" || c.Action == "delete" {
+		// Under the same work→sandbox lock order as preview acceptance, fence
+		// any outstanding listener before publishing the lifecycle change.
+		if _, err = tx.Exec(ctx, `UPDATE sandbox.preview_ports SET desired='closed',state=CASE WHEN state IN ('opening','ready') THEN 'closing' ELSE state END,address='',updated_at=clock_timestamp() WHERE tenant_id=$1 AND sandbox_id=$2 AND state<>'closed'`, c.TenantID, c.ID); err != nil {
+			return biz.ACK{}, err
+		}
 	}
 	if _, err = tx.Exec(ctx, "UPDATE sandbox.sandboxes SET version=version+1,desired=$3,last_operation_id=$4,updated_at=clock_timestamp() WHERE tenant_id=$1 AND sandbox_id=$2", c.TenantID, c.ID, newDesired, c.OperationID); err != nil {
 		return biz.ACK{}, err
@@ -352,7 +515,7 @@ func (p *Postgres) Change(ctx context.Context, c biz.Command) (biz.ACK, error) {
 	if _, err = tx.Exec(ctx, `INSERT INTO sandbox.operations(tenant_id,operation_id,sandbox_id,action,idempotency_key,request_digest,intent_version,state) VALUES($1,$2,$3,$4,$5,$6,$7,'queued')`, c.TenantID, c.OperationID, c.ID, c.Action, c.IdempotencyKey, c.RequestDigest, version+1); err != nil {
 		return biz.ACK{}, err
 	}
-	if _, err = tx.Exec(ctx, `UPDATE sandbox.operations SET state='superseded'
+	if _, err = tx.Exec(ctx, `UPDATE sandbox.operations SET state='superseded',completed_at=clock_timestamp()
 		WHERE tenant_id=$1 AND sandbox_id=$2 AND operation_id<>$3 AND state IN ('queued','running','retrying','unknown')`, c.TenantID, c.ID, c.OperationID); err != nil {
 		return biz.ACK{}, err
 	}
@@ -401,7 +564,7 @@ func (p *Postgres) Claim(ctx context.Context, owner string, lease time.Duration)
 	defer tx.Rollback(ctx)
 	var tenant, id string
 	var epoch int64
-	err = tx.QueryRow(ctx, `SELECT tenant_id::text,sandbox_id::text,lease_epoch FROM sandbox.work WHERE due_at<=clock_timestamp() AND lease_until<clock_timestamp() ORDER BY due_at FOR UPDATE SKIP LOCKED LIMIT 1`).Scan(&tenant, &id, &epoch)
+	err = tx.QueryRow(ctx, `SELECT w.tenant_id::text,w.sandbox_id::text,w.lease_epoch FROM sandbox.work w JOIN sandbox.sandboxes s ON s.tenant_id=w.tenant_id AND s.sandbox_id=w.sandbox_id WHERE w.due_at<=clock_timestamp() AND w.lease_until<clock_timestamp() AND NOT EXISTS (SELECT 1 FROM sandbox.checkpoints c WHERE c.tenant_id=w.tenant_id AND c.sandbox_id=w.sandbox_id AND (c.state IN ('accepted','running','unknown') OR (s.desired='deleted' AND c.cleanup_state<>'done' AND NOT EXISTS (SELECT 1 FROM sandbox.checkpoint_transfers self_ref WHERE self_ref.tenant_id=c.tenant_id AND self_ref.checkpoint_id=c.checkpoint_id AND self_ref.target_sandbox_id=c.sandbox_id AND NOT self_ref.source_released)))) AND NOT EXISTS (SELECT 1 FROM sandbox.checkpoint_transfers t WHERE t.tenant_id=w.tenant_id AND t.target_sandbox_id=w.sandbox_id AND t.state IN ('accepted','creating','unknown','observing')) ORDER BY w.due_at FOR UPDATE OF w SKIP LOCKED LIMIT 1`).Scan(&tenant, &id, &epoch)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -457,6 +620,31 @@ func (p *Postgres) PrepareMutation(ctx context.Context, work biz.Work, mutation 
 	}
 	if current.Version != work.Sandbox.Version || current.LastOperationID != work.Sandbox.LastOperationID {
 		return biz.ErrLease
+	}
+	var checkpointBlocked bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM sandbox.checkpoints WHERE tenant_id=$1 AND sandbox_id=$2 AND state IN ('accepted','running','unknown')) OR EXISTS (SELECT 1 FROM sandbox.checkpoint_transfers WHERE tenant_id=$1 AND target_sandbox_id=$2 AND state IN ('accepted','creating','unknown','observing'))`, current.TenantID, current.ID).Scan(&checkpointBlocked); err != nil {
+		return err
+	}
+	if checkpointBlocked {
+		return biz.ErrConflict
+	}
+	if mutation.Kind == biz.MutationCreateWorkspace || mutation.Kind == biz.MutationCreatePod {
+		origin, valid, err := cloneWorkspaceState(ctx, tx, current.TenantID, current.ID)
+		if err != nil {
+			return err
+		}
+		if origin && (mutation.Kind == biz.MutationCreateWorkspace || !valid) {
+			return biz.ErrConflict
+		}
+	}
+	if mutation.Kind == biz.MutationDeleteWorkspace {
+		var retired bool
+		if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sandbox.workspace_generations WHERE tenant_id=$1 AND sandbox_id=$2 AND state IN ('retired','active'))`, current.TenantID, current.ID).Scan(&retired); err != nil {
+			return err
+		}
+		if retired {
+			return biz.ErrConflict
+		}
 	}
 	if current.Pending != nil {
 		// An identical first preparation can be retried after its commit reply
@@ -578,9 +766,17 @@ func (p *Postgres) Finish(ctx context.Context, work biz.Work, progress biz.Progr
 		return err
 	}
 	sameIntent := ownsLease && current.Version == work.Sandbox.Version && current.LastOperationID == work.Sandbox.LastOperationID
+	previousRefs := current.ProviderRefs
 	if sameIntent {
 		current.Observed, current.Reason, current.ObservedAt = progress.Sandbox.Observed, progress.Sandbox.Reason, progress.Sandbox.ObservedAt
 		current.ProviderRefs = observedRefs(current.ProviderRefs, work.Sandbox.ProviderRefs, progress.Sandbox.ProviderRefs)
+		var failedCloneReason *string
+		if err = tx.QueryRow(ctx, `SELECT (SELECT reason FROM sandbox.operations WHERE tenant_id=$1 AND operation_id=$2 AND action='checkpoint_clone' AND state='failed')`, current.TenantID, current.LastOperationID).Scan(&failedCloneReason); err != nil {
+			return err
+		}
+		if failedCloneReason != nil {
+			current.Observed, current.Reason = biz.ObservedUnknown, *failedCloneReason
+		}
 	}
 	if receipt := progress.Receipt; receipt != nil {
 		if current.Pending == nil || *current.Pending != receipt.Mutation {
@@ -600,6 +796,15 @@ func (p *Postgres) Finish(ctx context.Context, work biz.Work, progress biz.Progr
 			return biz.ErrInvalid
 		}
 		current.ProviderRefs = mergeRefs(current.ProviderRefs, receipt.Refs)
+	}
+	// Only the locked previous facts and the merged, journal-validated current
+	// facts are authoritative. In particular, never persist stale progress from
+	// a worker that lost its lease or whose intent has changed.
+	if err = recordSandboxPod(ctx, tx, current, previousRefs); err != nil {
+		return err
+	}
+	if err = recordSandboxPod(ctx, tx, current, current.ProviderRefs); err != nil {
+		return err
 	}
 	refs, err := json.Marshal(current.ProviderRefs)
 	if err != nil {
@@ -631,18 +836,19 @@ func (p *Postgres) Finish(ctx context.Context, work biz.Work, progress biz.Progr
 		} else if (current.Desired == biz.DesiredRunning && current.Observed == biz.ObservedRunning) || (current.Desired == biz.DesiredPaused && current.Observed == biz.ObservedPaused) || (current.Desired == biz.DesiredDeleted && current.Observed == biz.ObservedDeleted) {
 			state = "succeeded"
 		}
-		result, err := tx.Exec(ctx, `UPDATE sandbox.operations SET state=$3,reason=$4 WHERE tenant_id=$1 AND operation_id=$2
+		result, err := tx.Exec(ctx, `UPDATE sandbox.operations SET state=$3,reason=$4,
+			completed_at=CASE WHEN $3='succeeded' THEN clock_timestamp() ELSE NULL END WHERE tenant_id=$1 AND operation_id=$2
 			AND state IN ('queued','running','retrying','unknown')`, current.TenantID, current.LastOperationID, state, current.Reason)
 		if err != nil {
 			return err
 		}
 		if result.RowsAffected() != 1 {
-			var operationState string
-			if err = tx.QueryRow(ctx, "SELECT state FROM sandbox.operations WHERE tenant_id=$1 AND operation_id=$2", current.TenantID, current.LastOperationID).Scan(&operationState); errors.Is(err, pgx.ErrNoRows) {
+			var operationState, operationAction string
+			if err = tx.QueryRow(ctx, "SELECT state,action FROM sandbox.operations WHERE tenant_id=$1 AND operation_id=$2", current.TenantID, current.LastOperationID).Scan(&operationState, &operationAction); errors.Is(err, pgx.ErrNoRows) {
 				return biz.ErrNotFound
 			} else if err != nil {
 				return err
-			} else if operationState != "succeeded" && operationState != "superseded" {
+			} else if operationState != "succeeded" && operationState != "superseded" && !(operationState == "failed" && operationAction == "checkpoint_clone") {
 				return biz.ErrConflict
 			}
 		}

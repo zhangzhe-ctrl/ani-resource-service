@@ -19,7 +19,14 @@ import (
 func TestConfirmedProviderRejectionKeepsOperationHistoryAndDeletionRecoverable(t *testing.T) {
 	repository, _ := database(t)
 	n := newNetwork(t, repository, time.Minute)
-	api := &controlledKC{}
+	api := &controlledKC{namespace: map[string]any{
+		"apiVersion": "v1", "kind": "Namespace",
+		"metadata": map[string]any{
+			"name": "tenant-7a7750cf-73b0-49c5-a3b1-4dba42689401", "uid": uuid.NewString(),
+			"labels": map[string]any{"network.ani.io/managed-by": "ani-network-service", "network.ani.io/tenant-id": "7a7750cf-73b0-49c5-a3b1-4dba42689401"},
+		},
+		"status": map[string]any{"phase": "Active"},
+	}}
 	var rejected atomic.Int32
 	host := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/vpcs") {
@@ -79,7 +86,14 @@ func TestActualAdapterUsesOriginalIdentityAndOwnDeletionOnly(t *testing.T) {
 		t.Run(fault, func(t *testing.T) {
 			repository, _ := database(t)
 			n := newNetwork(t, repository, time.Minute)
-			api := &controlledKC{}
+			api := &controlledKC{namespace: map[string]any{
+				"apiVersion": "v1", "kind": "Namespace",
+				"metadata": map[string]any{
+					"name": "tenant-7a7750cf-73b0-49c5-a3b1-4dba42689401", "uid": uuid.NewString(),
+					"labels": map[string]any{"network.ani.io/managed-by": "ani-network-service", "network.ani.io/tenant-id": "7a7750cf-73b0-49c5-a3b1-4dba42689401"},
+				},
+				"status": map[string]any{"phase": "Active"},
+			}}
 			var childLists atomic.Int32
 			host := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/subnets") {
@@ -166,7 +180,14 @@ func TestActualAdapterUsesOriginalIdentityAndOwnDeletionOnly(t *testing.T) {
 func TestProviderReadFailurePreservesProjectionAndNativeReadyIgnoresGeneration(t *testing.T) {
 	repository, owner := database(t)
 	n := newNetwork(t, repository, time.Minute)
-	api := &controlledKC{}
+	api := &controlledKC{namespace: map[string]any{
+		"apiVersion": "v1", "kind": "Namespace",
+		"metadata": map[string]any{
+			"name": "tenant-7a7750cf-73b0-49c5-a3b1-4dba42689401", "uid": uuid.NewString(),
+			"labels": map[string]any{"network.ani.io/managed-by": "ani-network-service", "network.ani.io/tenant-id": "7a7750cf-73b0-49c5-a3b1-4dba42689401"},
+		},
+		"status": map[string]any{"phase": "Active"},
+	}}
 	var outage atomic.Bool
 	host := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if outage.Load() {

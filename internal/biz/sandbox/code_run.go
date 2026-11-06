@@ -41,6 +41,10 @@ type CodeRunIntent struct {
 	Stdout, Stderr                            []byte
 	Truncated                                 bool
 	Replayed                                  bool
+	CreatedAt                                 time.Time
+	// CompletedAt is present only when a terminal result was durably recorded.
+	// Historical terminal runs can lack it; unknown does not imply completion.
+	CompletedAt *time.Time
 }
 
 type CodeRunRepository interface {

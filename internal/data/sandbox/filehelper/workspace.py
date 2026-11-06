@@ -156,10 +156,7 @@ def delete_file(root_fd, path):
 
 def list_files(root_fd, path):
     path = valid_path(path, root_ok=True)
-    try:
-        fd = open_beneath(root_fd, path, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
-    except FileNotFoundError:
-        return {"items": []}
+    fd = open_beneath(root_fd, path, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
     result = []
     def append(path, kind, info):
         if len(result) >= MAX_ENTRIES:

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -88,27 +89,51 @@ func (s *FileService) Read(ctx context.Context, tenant, id string, request FileR
 	if err != nil || request.Action != "list" {
 		return result, err
 	}
-	start := 0
-	if request.Cursor != "" {
-		start, _ = strconv.Atoi(request.Cursor)
-	}
-	if start > len(result.Items) {
-		start = len(result.Items)
-	}
-	limit := int(request.Limit)
-	if limit == 0 {
-		limit = 100
-	}
-	end := start + limit
-	if end > len(result.Items) {
-		end = len(result.Items)
-	}
+	return paginateFileResult(result, request), nil
+}
+
+// paginateFileResult sorts and pages the complete result from one traversal.
+// Separate traversals do not provide snapshot consistency during concurrent edits.
+func paginateFileResult(result FileResult, request FileRequest) FileResult {
+	sort.Slice(result.Items, func(i, j int) bool { return result.Items[i].Path < result.Items[j].Path })
 	result.Total = int64(len(result.Items))
-	if end < len(result.Items) {
-		result.NextCursor = strconv.Itoa(end)
+	result.NextCursor = ""
+	pageMode := request.Page != 0 || request.PageSize != 0
+	var start uint64
+	var limit uint32
+	if pageMode {
+		page := request.Page
+		if page == 0 {
+			page = 1
+		}
+		limit = request.PageSize
+		if limit == 0 {
+			limit = 20
+		}
+		start = uint64(page-1) * uint64(limit)
+	} else {
+		if request.Cursor != "" {
+			cursor, _ := strconv.Atoi(request.Cursor) // validated before execution
+			start = uint64(cursor)
+		}
+		limit = request.Limit
+		if limit == 0 {
+			limit = 100
+		}
 	}
-	result.Items = result.Items[start:end]
-	return result, nil
+	if start >= uint64(len(result.Items)) {
+		result.Items = result.Items[len(result.Items):]
+		return result
+	}
+	end := start + uint64(limit)
+	if end > uint64(len(result.Items)) {
+		end = uint64(len(result.Items))
+	}
+	if !pageMode && end < uint64(len(result.Items)) {
+		result.NextCursor = strconv.FormatUint(end, 10)
+	}
+	result.Items = result.Items[int(start):int(end)]
+	return result
 }
 
 // Mutate commits dispatch before exec and never sends the same operation a

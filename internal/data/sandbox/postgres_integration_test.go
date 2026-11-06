@@ -396,6 +396,10 @@ func TestSandboxOperationSuccessRemainsTerminal(t *testing.T) {
 	if err := f.repo.Finish(ctx, *work, biz.Progress{Sandbox: progress, Next: time.Nanosecond}); err != nil {
 		t.Fatal(err)
 	}
+	completed, err := f.repo.GetOperation(ctx, c.TenantID, c.OperationID)
+	if err != nil || completed.CompletedAt == nil || completed.CompletedAt.Before(completed.CreatedAt) {
+		t.Fatal("completed operation did not record completion time", completed, err)
+	}
 	for _, observed := range []string{biz.ObservedUnknown, biz.ObservedProvisioning} {
 		work = claimWork(t, f, ctx, "worker-2")
 		progress = work.Sandbox
@@ -404,7 +408,7 @@ func TestSandboxOperationSuccessRemainsTerminal(t *testing.T) {
 			t.Fatal(err)
 		}
 		op, err := f.repo.GetOperation(ctx, c.TenantID, c.OperationID)
-		if err != nil || op.State != "succeeded" || op.Reason != "" {
+		if err != nil || op.State != "succeeded" || op.Reason != "" || op.CompletedAt == nil || !op.CompletedAt.Equal(*completed.CompletedAt) {
 			t.Fatal("terminal success changed with later observation", op, err)
 		}
 	}
@@ -447,11 +451,11 @@ func TestSandboxMutationJournalRestartAndLateIntent(t *testing.T) {
 		t.Fatal("late result overwrote current intent or lost UID", persisted, err)
 	}
 	oldOp, err := f.repo.GetOperation(ctx, c.TenantID, c.OperationID)
-	if err != nil || oldOp.State != "superseded" {
+	if err != nil || oldOp.State != "superseded" || oldOp.CompletedAt == nil || oldOp.CompletedAt.Before(oldOp.CreatedAt) {
 		t.Fatal("old operation changed", oldOp, err)
 	}
 	newOp, err := f.repo.GetOperation(ctx, c.TenantID, deleteID)
-	if err != nil || newOp.State != "queued" {
+	if err != nil || newOp.State != "queued" || newOp.CompletedAt != nil {
 		t.Fatal("new operation completed from old result", newOp, err)
 	}
 	next := claimWork(t, f, ctx, "delete-worker")
@@ -639,7 +643,7 @@ func TestSandboxDeleteRetryAttemptFenceAndNegativeReceipts(t *testing.T) {
 				t.Fatal("successor negative erased earlier possible dispatch", stored, err)
 			}
 			op, err := f.repo.GetOperation(ctx, c.TenantID, c.OperationID)
-			if err != nil || op.State != "unknown" {
+			if err != nil || op.State != "unknown" || op.CompletedAt != nil {
 				t.Fatal("pending uncertainty completed operation", op, err)
 			}
 			forceSandboxWorkDue(t, f, ctx, c, false)
@@ -803,5 +807,201 @@ func TestTenantListingMigrationIsAppliedAndReady(t *testing.T) {
 	}
 	if err := f.repo.CheckReady(ctx); err != nil {
 		t.Fatal("migrated schema not ready:", err)
+	}
+}
+
+func TestSandboxOperationHistoryPaginationIsolationAndTombstone(t *testing.T) {
+	f := sandboxDatabase(t)
+	tenant, id := uuid.NewString(), uuid.NewString()
+	ctx := biz.WithCaller(context.Background(), biz.Caller{TenantID: tenant, Actor: "governance:user:42"})
+	c := biz.Create{TenantID: tenant, ID: id, OperationID: uuid.NewString(), RequestDigest: strings.Repeat("a", 64), Spec: biz.CreateSpec{ImageDigest: "sha256:" + strings.Repeat("b", 64)}}
+	if _, err := f.repo.AcceptCreate(ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	ids := []string{c.OperationID}
+	for i, action := range []string{"pause", "resume", "delete"} {
+		op := uuid.NewString()
+		ids = append(ids, op)
+		if _, err := f.repo.Change(ctx, biz.Command{TenantID: tenant, ID: id, OperationID: op, Action: action, IdempotencyKey: action, RequestDigest: strings.Repeat("c", 64), ExpectedVersion: int64(i + 1)}); err != nil {
+			t.Fatal(action, err)
+		}
+	}
+	// Make timestamps equal to exercise the stable ID tie-break, and model a
+	// retained sandbox tombstone rather than excluding deleted resources.
+	if _, err := f.runtime.Exec(ctx, `UPDATE sandbox.operations SET created_at='2026-01-01T00:00:00Z' WHERE tenant_id=$1 AND sandbox_id=$2`, tenant, id); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.runtime.Exec(ctx, `UPDATE sandbox.sandboxes SET observed='deleted' WHERE tenant_id=$1 AND sandbox_id=$2`, tenant, id); err != nil {
+		t.Fatal(err)
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(ids)))
+	for page := uint32(1); page <= 3; page++ {
+		items, total, err := f.repo.ListOperations(ctx, tenant, id, page, 2)
+		if err != nil || total != 4 {
+			t.Fatalf("page %d: total=%d err=%v", page, total, err)
+		}
+		start := int(page-1) * 2
+		if start > len(ids) {
+			start = len(ids)
+		}
+		end := start + 2
+		if end > len(ids) {
+			end = len(ids)
+		}
+		var got []string
+		for _, op := range items {
+			got = append(got, op.ID)
+			if op.TenantID != tenant || op.SandboxID != id || (op.State == "superseded" && op.CompletedAt == nil) || (op.State == "queued" && op.CompletedAt != nil) {
+				t.Fatalf("invalid history record: %+v", op)
+			}
+		}
+		if !reflect.DeepEqual(got, append([]string(nil), ids[start:end]...)) {
+			t.Fatalf("page %d: got %v want %v", page, got, ids[start:end])
+		}
+	}
+	if _, _, err := f.repo.ListOperations(ctx, tenant, id, 1, 101); !errors.Is(err, biz.ErrInvalid) {
+		t.Fatal("page size bounds:", err)
+	}
+	if _, _, err := f.repo.ListOperations(ctx, tenant, "invalid", 1, 20); !errors.Is(err, biz.ErrInvalid) {
+		t.Fatal("invalid sandbox ID:", err)
+	}
+	otherTenant := uuid.NewString()
+	otherCtx := biz.WithCaller(context.Background(), biz.Caller{TenantID: otherTenant, Actor: "governance:user:other"})
+	if _, _, err := f.repo.ListOperations(otherCtx, otherTenant, id, 1, 20); !errors.Is(err, biz.ErrNotFound) {
+		t.Fatal("cross-tenant history:", err)
+	}
+	if _, _, err := f.repo.ListOperations(otherCtx, tenant, id, 1, 20); !errors.Is(err, biz.ErrDenied) {
+		t.Fatal("untrusted tenant history:", err)
+	}
+}
+
+func TestSandboxOperationHistoryCountAndItemsShareSnapshot(t *testing.T) {
+	f := sandboxDatabase(t)
+	tenant, id := uuid.NewString(), uuid.NewString()
+	ctx := biz.WithCaller(context.Background(), biz.Caller{TenantID: tenant, Actor: "governance:user:42"})
+	c := biz.Create{TenantID: tenant, ID: id, OperationID: uuid.NewString(), RequestDigest: strings.Repeat("a", 64), Spec: biz.CreateSpec{ImageDigest: "sha256:" + strings.Repeat("b", 64)}}
+	if _, err := f.repo.AcceptCreate(ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	writer := make(chan error, 1)
+	go func() {
+		for i := 0; i < 30; i++ {
+			op := uuid.NewString()
+			_, err := f.runtime.Exec(ctx, `INSERT INTO sandbox.operations(tenant_id,operation_id,sandbox_id,action,idempotency_key,intent_version,state) VALUES($1,$2,$3,'pause',$2::uuid::text,1,'queued')`, tenant, op, id)
+			if err != nil {
+				writer <- err
+				return
+			}
+		}
+		writer <- nil
+	}()
+	for range 40 {
+		items, total, err := f.repo.ListOperations(ctx, tenant, id, 1, 100)
+		if err != nil || int64(len(items)) != total {
+			t.Fatalf("count and page diverged: items=%d total=%d err=%v", len(items), total, err)
+		}
+	}
+	if err := <-writer; err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSandboxOperationHistoryUnionsSourcesBeforePaging(t *testing.T) {
+	f := sandboxDatabase(t)
+	tenant, id, sharedID := uuid.NewString(), uuid.NewString(), uuid.NewString()
+	ctx := biz.WithCaller(context.Background(), biz.Caller{TenantID: tenant, Actor: "governance:user:42"})
+	c := biz.Create{TenantID: tenant, ID: id, OperationID: sharedID, RequestDigest: strings.Repeat("a", 64), Spec: biz.CreateSpec{ImageDigest: "sha256:" + strings.Repeat("b", 64)}}
+	if _, err := f.repo.AcceptCreate(ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	// All three source tables may legitimately contain the same UUID and
+	// timestamp; source must break the tie without losing or repeating a row.
+	if _, err := f.runtime.Exec(ctx, `UPDATE sandbox.operations SET created_at='2026-01-01T00:00:00Z' WHERE tenant_id=$1 AND sandbox_id=$2`, tenant, id); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.runtime.Exec(ctx, `INSERT INTO sandbox.code_runs(tenant_id,sandbox_id,run_id,idempotency_key,request_digest,target,state,created_at) VALUES($1,$2,$3,'code','digest','{}','unknown','2026-01-01T00:00:00Z')`, tenant, id, sharedID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.runtime.Exec(ctx, `INSERT INTO sandbox.file_operations(tenant_id,sandbox_id,operation_id,idempotency_key,request_digest,target,state,action,created_at,completed_at) VALUES($1,$2,$3,'file','digest','{}','succeeded','write','2026-01-01T00:00:00Z','2026-01-02T00:00:00Z')`, tenant, id, sharedID); err != nil {
+		t.Fatal(err)
+	}
+	legacyID := uuid.NewString()
+	if _, err := f.runtime.Exec(ctx, `INSERT INTO sandbox.file_operations(tenant_id,sandbox_id,operation_id,idempotency_key,request_digest,target,state,created_at) VALUES($1,$2,$3,'legacy','digest','{}','succeeded','2025-01-01T00:00:00Z')`, tenant, id, legacyID); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"create", "file_write", "code_run", "file_operation"}
+	for page := uint32(1); page <= 2; page++ {
+		items, total, err := f.repo.ListOperations(ctx, tenant, id, page, 2)
+		if err != nil || total != 4 || len(items) != 2 {
+			t.Fatalf("page %d: %+v total=%d err=%v", page, items, total, err)
+		}
+		for i, op := range items {
+			index := (int(page)-1)*2 + i
+			if op.Action != want[index] || (index < 3 && op.ID != sharedID) || (index == 3 && op.ID != legacyID) {
+				t.Fatalf("row %d: %+v", index, op)
+			}
+			if (op.Action == "file_write") != (op.CompletedAt != nil) {
+				t.Fatalf("unreliable completion time: %+v", op)
+			}
+		}
+	}
+}
+
+func TestSandboxOperationHistoryProjectsExpiredDispatchWithoutWriting(t *testing.T) {
+	f, ctx, c := fileFixture(t)
+	type expectation struct {
+		id, source, state, reason string
+		age                       int
+	}
+	expected := []expectation{
+		{uuid.NewString(), "code", "dispatching", "", 290},
+		{uuid.NewString(), "code", "unknown", "SANDBOX_DISPATCH_OUTCOME_UNKNOWN", 340},
+		{uuid.NewString(), "file", "dispatching", "", 45},
+		{uuid.NewString(), "file", "unknown", "SANDBOX_FILE_OUTCOME_UNKNOWN", 95},
+	}
+	for _, e := range expected {
+		query := `INSERT INTO sandbox.code_runs(tenant_id,sandbox_id,run_id,idempotency_key,request_digest,target,state,updated_at) VALUES($1,$2,$3,$3::uuid::text,'digest','{}','dispatching',clock_timestamp()-$4::int*interval '1 second')`
+		if e.source == "file" {
+			query = `INSERT INTO sandbox.file_operations(tenant_id,sandbox_id,operation_id,idempotency_key,request_digest,target,state,updated_at,action) VALUES($1,$2,$3,$3::uuid::text,'digest','{}','dispatching',clock_timestamp()-$4::int*interval '1 second','write')`
+		}
+		if _, err := f.runtime.Exec(ctx, query, c.TenantID, c.SandboxID, e.id, e.age); err != nil {
+			t.Fatal(err)
+		}
+	}
+	items, total, err := f.repo.ListOperations(ctx, c.TenantID, c.SandboxID, 1, 20)
+	if err != nil || total != 5 {
+		t.Fatalf("list total=%d err=%v", total, err)
+	}
+	byID := make(map[string]biz.Operation, len(items))
+	for _, item := range items {
+		byID[item.ID] = item
+	}
+	for _, e := range expected {
+		got, ok := byID[e.id]
+		if !ok || got.State != e.state || got.Reason != e.reason || got.CompletedAt != nil {
+			t.Fatalf("history projection %s: %+v", e.id, got)
+		}
+		// The history endpoint is a read-only projection: it must not claim,
+		// dispatch, or update any underlying row.
+		table := "sandbox.code_runs"
+		idColumn := "run_id"
+		if e.source == "file" {
+			table, idColumn = "sandbox.file_operations", "operation_id"
+		}
+		var stored string
+		if err := f.runtime.QueryRow(ctx, "SELECT state FROM "+table+" WHERE tenant_id=$1 AND "+idColumn+"=$2", c.TenantID, e.id).Scan(&stored); err != nil || stored != "dispatching" {
+			t.Fatalf("history changed underlying state: %s %v", stored, err)
+		}
+		if e.source == "code" {
+			one, err := f.repo.GetCodeRun(ctx, c.TenantID, c.SandboxID, e.id)
+			if err != nil || one.State != got.State || one.Reason != got.Reason || one.CompletedAt != nil {
+				t.Fatalf("code detail disagrees with history: %+v %v", one, err)
+			}
+		} else {
+			one, err := f.repo.GetFileOperation(ctx, c.TenantID, c.SandboxID, e.id)
+			if err != nil || one.State != got.State || one.Reason != got.Reason {
+				t.Fatalf("file detail disagrees with history: %+v %v", one, err)
+			}
+		}
 	}
 }

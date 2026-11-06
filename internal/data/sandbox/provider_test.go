@@ -23,7 +23,7 @@ import (
 func providerFixture(t *testing.T) (*fake.FakeDynamicClient, *KubernetesProvider, biz.Sandbox) {
 	t.Helper()
 	sc := &unstructured.Unstructured{Object: map[string]any{"apiVersion": "storage.k8s.io/v1", "kind": "StorageClass", "metadata": map[string]any{"name": "fast", "uid": "storage-class-uid"}, "provisioner": "test.csi", "reclaimPolicy": "Delete"}}
-	client := fake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{pvGVR: "PersistentVolumeList"}, sc)
+	client := fake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{pvGVR: "PersistentVolumeList", sandboxEventGVR: "EventList"}, sc)
 	var sequence int
 	client.PrependReactor("create", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
 		sequence++
