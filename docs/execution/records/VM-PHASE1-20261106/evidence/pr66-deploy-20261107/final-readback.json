@@ -1,0 +1,27 @@
+{
+  "at": "2026-11-07T06:32:03.888702+00:00",
+  "generation": 211,
+  "ready_replicas": 1,
+  "pod": {
+    "name": "ani-resource-service-897855f4d-h9blp",
+    "uid": "21ce4e0e-0bf5-403d-868f-0a9c9bb81d24",
+    "node": "node2",
+    "phase": "Running",
+    "deletion_timestamp": null,
+    "containers": [
+      {
+        "name": "resource",
+        "image": "sha256:f8c79060c4d77d595201398354a5a3ed9e5696c84ab2b75eb43692b574574346",
+        "image_id": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc",
+        "ready": true,
+        "restart_count": 0
+      }
+    ]
+  },
+  "health": {
+    "healthz": "{\"status\":\"ok\"}",
+    "readyz": "{\"status\":\"ready\"}"
+  },
+  "vm_vmi_identity_and_runtime_summaries_unchanged": true,
+  "temporary_registry_auth_dirs_remaining": 0
+}

@@ -1,0 +1,17 @@
+{
+  "old_image": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:96cf48e8b82400ee533b6944da836062759a549e0968de2e8449cd8c02d6dc78",
+  "old_source_snapshot": "sha256:b3f13212578885a391c6e9a6e1253d23f6b0642e4328f1dc323b546c0448001c",
+  "new_source_revision": "d030edd4b4a3d4d7746703e2e32032dd9787e620",
+  "changed_build_inputs": [
+    "internal/biz/vm/disks.go",
+    "internal/biz/vm/observation.go",
+    "internal/biz/vm/snapshots.go",
+    "internal/biz/vm/worker.go",
+    "internal/data/vm/native.go",
+    "internal/data/vm/observation.go",
+    "internal/data/vm/observation_native.go"
+  ],
+  "sandbox_build_inputs_unchanged": true,
+  "sandbox_build_input_count": 50,
+  "conclusion": "Sandbox warning observed after rollout. Sandbox source and deployment config were not changed; exact pre-rollout log occurrence was not captured, so historical occurrence is not asserted."
+}

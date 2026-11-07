@@ -1,0 +1,69 @@
+{
+  "recorded_at": "2026-11-07T06:31:04.948520+00:00",
+  "authorization": "User: 部署到66集群吧",
+  "source_revision": "d030edd4b4a3d4d7746703e2e32032dd9787e620",
+  "source_dirty": false,
+  "source_snapshot": "sha256:a651f571a0f0a68ab4a8576a039c91b445b5658a871fe9b6140754305bdd4185",
+  "image": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc",
+  "image_tag": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service:pr66-d030edd-20261107",
+  "registry_digest": "sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc",
+  "build_execution": "Windows host, local WSL2 Ubuntu",
+  "deployment_entry": "ssh kubercloud@10.10.1.66",
+  "context": "kubernetes-admin@ani-kcn-full",
+  "namespace": "ani-system",
+  "deployment": "ani-resource-service",
+  "deployment_health": "PASS",
+  "generation": 211,
+  "ready_replicas": 1,
+  "restarts": 0,
+  "healthz": "PASS",
+  "readyz": "PASS",
+  "ready_service_endpoint": "PASS",
+  "rollout_started_at": "2026-11-07T06:27:00.265000+00:00",
+  "rollout_finished_at": "2026-11-07T06:27:07.343168+00:00",
+  "postcheck_at": "2026-11-07T06:28:39.460546+00:00",
+  "previous_image": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:96cf48e8b82400ee533b6944da836062759a549e0968de2e8449cd8c02d6dc78",
+  "config_strategy_replicas_unchanged": true,
+  "required_existing_storage_read_permissions": "PASS",
+  "preexisting_vm_count": 9,
+  "preexisting_vmi_count": 8,
+  "vm_vmi_identity_sets_unchanged": true,
+  "vm_states_before": {
+    "Running": 8,
+    "Stopped": 1
+  },
+  "vm_states_after": {
+    "Running": 8,
+    "Stopped": 1
+  },
+  "compared_with_previous_runtime_image": {
+    "changed_product_files": 7,
+    "all_are_scoped_VM_fixes": true,
+    "sandbox_source_files_unchanged": 50
+  },
+  "log_observation": {
+    "errors": 0,
+    "warnings": 4,
+    "window_end": "2026-11-07T06:28:39.460546+00:00",
+    "warning": "SANDBOX_PROVIDER_OWNERSHIP_CONFLICT: sandbox tenant cluster role differs",
+    "attribution": "OPEN: Sandbox source and deployment configuration unchanged; pre-rollout log occurrence not captured; do not claim historical root cause",
+    "action": "Recorded; no Sandbox code/config/RBAC changes"
+  },
+  "new_business_live_matrix": "NOT_RUN",
+  "prior_local_regressions": "PASS as recorded in ../pr66-followup-20261107; no product source changes after those tests",
+  "phase_two": "NOT_STARTED",
+  "ci": "DEFERRED_BY_USER; not checked or modified",
+  "pr_merged": false,
+  "cleanup": "No new cluster test resources or login sessions. Transient registry auth/CA directories removed; no SSH tunnels opened. Previous image digest retained for rollback.",
+  "evidence": {
+    "source_manifest": "source-manifest.json",
+    "build": "image-build-result.json",
+    "push": "image-push-result.json",
+    "preflight": "preflight.json",
+    "rollout": "rollout-result.json",
+    "postcheck": "postcheck.json",
+    "warning": "runtime-warning-classification.json"
+  },
+  "final_readback": "final-readback.json",
+  "preexisting_vm_vmi_runtime_summaries_unchanged": true
+}

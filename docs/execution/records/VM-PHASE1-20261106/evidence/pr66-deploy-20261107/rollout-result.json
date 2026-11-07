@@ -1,0 +1,78 @@
+{
+  "started_at": "2026-11-07T06:27:00.265000+00:00",
+  "finished_at": "2026-11-07T06:27:07.343168+00:00",
+  "ssh": "kubercloud@10.10.1.66",
+  "context": "kubernetes-admin@ani-kcn-full",
+  "namespace": "ani-system",
+  "source_revision": "d030edd4b4a3d4d7746703e2e32032dd9787e620",
+  "source_snapshot": "sha256:a651f571a0f0a68ab4a8576a039c91b445b5658a871fe9b6140754305bdd4185",
+  "previous_image": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:96cf48e8b82400ee533b6944da836062759a549e0968de2e8449cd8c02d6dc78",
+  "image": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc",
+  "rollout": "Waiting for deployment \"ani-resource-service\" rollout to finish: 0 out of 1 new replicas have been updated...\nWaiting for deployment \"ani-resource-service\" rollout to finish: 0 out of 1 new replicas have been updated...\nWaiting for deployment \"ani-resource-service\" rollout to finish: 0 out of 1 new replicas have been updated...\nWaiting for deployment \"ani-resource-service\" rollout to finish: 0 of 1 updated replicas are available...\ndeployment \"ani-resource-service\" successfully rolled out",
+  "deployment": {
+    "uid": "9b17ed7e-6521-40e8-8bf5-70a44237e501",
+    "resource_version": "43851646",
+    "generation": 211,
+    "replicas": 1,
+    "strategy": {
+      "type": "Recreate"
+    },
+    "containers": [
+      {
+        "name": "resource",
+        "image": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc"
+      }
+    ],
+    "status": {
+      "availableReplicas": 1,
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-11-07T06:27:04Z",
+          "lastUpdateTime": "2026-11-07T06:27:04Z",
+          "message": "Deployment has minimum availability.",
+          "reason": "MinimumReplicasAvailable",
+          "status": "True",
+          "type": "Available"
+        },
+        {
+          "lastTransitionTime": "2026-11-05T03:15:58Z",
+          "lastUpdateTime": "2026-11-07T06:27:04Z",
+          "message": "ReplicaSet \"ani-resource-service-897855f4d\" has successfully progressed.",
+          "reason": "NewReplicaSetAvailable",
+          "status": "True",
+          "type": "Progressing"
+        }
+      ],
+      "observedGeneration": 211,
+      "readyReplicas": 1,
+      "replicas": 1,
+      "terminatingReplicas": 0,
+      "updatedReplicas": 1
+    },
+    "pod_template_sha256": "977a79db087b4d9f81b5500d61f9a5785d079b1fcc5ded7fd61ddda4acf9e0ea"
+  },
+  "pods": [
+    {
+      "name": "ani-resource-service-897855f4d-h9blp",
+      "uid": "21ce4e0e-0bf5-403d-868f-0a9c9bb81d24",
+      "node": "node2",
+      "phase": "Running",
+      "deletion_timestamp": null,
+      "containers": [
+        {
+          "name": "resource",
+          "image": "sha256:f8c79060c4d77d595201398354a5a3ed9e5696c84ab2b75eb43692b574574346",
+          "image_id": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc",
+          "ready": true,
+          "restart_count": 0
+        }
+      ]
+    }
+  ],
+  "health": {
+    "healthz": "{\"status\":\"ok\"}",
+    "readyz": "{\"status\":\"ready\"}"
+  },
+  "deployment_spec_only_expected_edits": true,
+  "status": "PASS"
+}

@@ -1,0 +1,7 @@
+{
+  "deployment_pull_secret_lookup": "Existing resource-sandbox-registry-pull credentials match docker.changqingyun.cn, not the target Harbor endpoint. Used only the existing Resource Harbor credentials after exact configured endpoint check.",
+  "first_push": "Succeeded with immutable digest matching the local descriptor.",
+  "initial_cli_inspection": "Read-only buildx imagetools inspection rejected the private CA. No deployment occurred on that inspection result.",
+  "final_registry_verification": "PASS: official Harbor artifact API, existing Resource Harbor CA, TLS verification enabled; digest matched. Idempotent final push log preserved.",
+  "credential_handling": "Only transient mode-0600 Docker config/CA files in task-owned temporary directories; all removed automatically. No credentials copied into the build snapshot or release evidence."
+}

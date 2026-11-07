@@ -1,0 +1,236 @@
+{
+  "at": "2026-11-07T06:24:00.803263+00:00",
+  "ssh": "kubercloud@10.10.1.66",
+  "context": "kubernetes-admin@ani-kcn-full",
+  "namespace": "ani-system",
+  "deployment": {
+    "uid": "9b17ed7e-6521-40e8-8bf5-70a44237e501",
+    "resource_version": "41445325",
+    "generation": 210,
+    "replicas": 1,
+    "strategy": {
+      "type": "Recreate"
+    },
+    "containers": [
+      {
+        "name": "resource",
+        "image": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:96cf48e8b82400ee533b6944da836062759a549e0968de2e8449cd8c02d6dc78"
+      }
+    ],
+    "status": {
+      "availableReplicas": 1,
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-11-06T17:32:45Z",
+          "lastUpdateTime": "2026-11-06T17:32:45Z",
+          "message": "Deployment has minimum availability.",
+          "reason": "MinimumReplicasAvailable",
+          "status": "True",
+          "type": "Available"
+        },
+        {
+          "lastTransitionTime": "2026-11-05T03:15:58Z",
+          "lastUpdateTime": "2026-11-06T17:32:45Z",
+          "message": "ReplicaSet \"ani-resource-service-5fb5c7f78f\" has successfully progressed.",
+          "reason": "NewReplicaSetAvailable",
+          "status": "True",
+          "type": "Progressing"
+        }
+      ],
+      "observedGeneration": 210,
+      "readyReplicas": 1,
+      "replicas": 1,
+      "terminatingReplicas": 0,
+      "updatedReplicas": 1
+    },
+    "pod_template_sha256": "28f2456490d45388bf718b1913965cca4263805dc5cfe5046b76ae6682133fad"
+  },
+  "pods": [
+    {
+      "name": "ani-resource-service-5fb5c7f78f-2lv7h",
+      "uid": "d18bba43-550d-4bfb-a2b7-c2f5149a6ed2",
+      "node": "node2",
+      "phase": "Running",
+      "deletion_timestamp": null,
+      "containers": [
+        {
+          "name": "resource",
+          "image": "sha256:df5d80cf6e0370301afbae7dd022f7350624f0e800f67575173754af1c8160bf",
+          "image_id": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:96cf48e8b82400ee533b6944da836062759a549e0968de2e8449cd8c02d6dc78",
+          "ready": true,
+          "restart_count": 0
+        }
+      ]
+    }
+  ],
+  "health": {
+    "healthz": "{\"status\":\"ok\"}",
+    "readyz": "{\"status\":\"ready\"}"
+  },
+  "preexisting_vm_resources": {
+    "virtualmachines.kubevirt.io": [
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-0f1ca6ba-a128-4292-a0ba-5f702e383145",
+        "uid": "f5e84973-8558-4980-af3e-708822865204",
+        "vm_id": "0f1ca6ba-a128-4292-a0ba-5f702e383145",
+        "phase": null,
+        "printable_status": "Running",
+        "ready": true
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-3be21c33-31be-4e7c-93b5-b8e91bd9b855",
+        "uid": "381da33f-ad0e-4daf-99ae-4cec69fff582",
+        "vm_id": "3be21c33-31be-4e7c-93b5-b8e91bd9b855",
+        "phase": null,
+        "printable_status": "Running",
+        "ready": true
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-5c4aead8-9c48-4a15-9ae9-f7721934e29d",
+        "uid": "180d7dcb-9da9-480f-8976-e7df1a47c546",
+        "vm_id": "5c4aead8-9c48-4a15-9ae9-f7721934e29d",
+        "phase": null,
+        "printable_status": "Running",
+        "ready": true
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-6f8ee0cf-cada-4224-9ac0-bb1394408a25",
+        "uid": "2544a077-817c-4d11-ac48-12d1aaf6bbd0",
+        "vm_id": "6f8ee0cf-cada-4224-9ac0-bb1394408a25",
+        "phase": null,
+        "printable_status": "Running",
+        "ready": true
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-978c70c3-ecc2-45c9-aacc-bbdbf56f1f73",
+        "uid": "5d8efbb0-1009-4478-8944-7f69ca72dde8",
+        "vm_id": "978c70c3-ecc2-45c9-aacc-bbdbf56f1f73",
+        "phase": null,
+        "printable_status": "Running",
+        "ready": true
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-b027f704-d514-4521-821b-2b0d4ea8700b",
+        "uid": "9044afb4-e595-4e17-92ed-5d6922d3d5d4",
+        "vm_id": "b027f704-d514-4521-821b-2b0d4ea8700b",
+        "phase": null,
+        "printable_status": "Running",
+        "ready": true
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-bf320c9b-018f-4dfa-afd8-007142159805",
+        "uid": "8a2fd567-d9d6-45ac-9a23-20e5371d4b3d",
+        "vm_id": "bf320c9b-018f-4dfa-afd8-007142159805",
+        "phase": null,
+        "printable_status": "Running",
+        "ready": true
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-c4fdb935-5357-42e7-b6c6-194c475de9a7",
+        "uid": "37566067-f378-43e4-9478-7cf0308a8f3c",
+        "vm_id": "c4fdb935-5357-42e7-b6c6-194c475de9a7",
+        "phase": null,
+        "printable_status": "Running",
+        "ready": true
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-e739fb1a-4921-472d-baa3-743616aa7c42",
+        "uid": "d07c79d7-741c-4b03-a3d5-cea7a98873e8",
+        "vm_id": "e739fb1a-4921-472d-baa3-743616aa7c42",
+        "phase": null,
+        "printable_status": "Stopped",
+        "ready": null
+      }
+    ],
+    "virtualmachineinstances.kubevirt.io": [
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-0f1ca6ba-a128-4292-a0ba-5f702e383145",
+        "uid": "5c572557-bc85-4040-ae0a-60b92400ac1f",
+        "vm_id": "0f1ca6ba-a128-4292-a0ba-5f702e383145",
+        "phase": "Running",
+        "printable_status": null,
+        "ready": null
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-3be21c33-31be-4e7c-93b5-b8e91bd9b855",
+        "uid": "04ced5f3-b766-404c-b829-8b55be4589d7",
+        "vm_id": "3be21c33-31be-4e7c-93b5-b8e91bd9b855",
+        "phase": "Running",
+        "printable_status": null,
+        "ready": null
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-5c4aead8-9c48-4a15-9ae9-f7721934e29d",
+        "uid": "19f924ff-07ab-4681-bc86-3ade5aafddc9",
+        "vm_id": "5c4aead8-9c48-4a15-9ae9-f7721934e29d",
+        "phase": "Running",
+        "printable_status": null,
+        "ready": null
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-6f8ee0cf-cada-4224-9ac0-bb1394408a25",
+        "uid": "e0c24364-5d0b-47e7-94bc-a885f46ea625",
+        "vm_id": "6f8ee0cf-cada-4224-9ac0-bb1394408a25",
+        "phase": "Running",
+        "printable_status": null,
+        "ready": null
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-978c70c3-ecc2-45c9-aacc-bbdbf56f1f73",
+        "uid": "ac1eac9a-ee7c-48a8-8895-757d53af69ec",
+        "vm_id": "978c70c3-ecc2-45c9-aacc-bbdbf56f1f73",
+        "phase": "Running",
+        "printable_status": null,
+        "ready": null
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-b027f704-d514-4521-821b-2b0d4ea8700b",
+        "uid": "d2c5df27-45d3-43d0-9f48-db79f2782884",
+        "vm_id": "b027f704-d514-4521-821b-2b0d4ea8700b",
+        "phase": "Running",
+        "printable_status": null,
+        "ready": null
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-bf320c9b-018f-4dfa-afd8-007142159805",
+        "uid": "d9385c87-a035-4d89-bf0c-31c60d0f117e",
+        "vm_id": "bf320c9b-018f-4dfa-afd8-007142159805",
+        "phase": "Running",
+        "printable_status": null,
+        "ready": null
+      },
+      {
+        "namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420",
+        "name": "vm-c4fdb935-5357-42e7-b6c6-194c475de9a7",
+        "uid": "2a0a85a2-930c-4ebd-81f5-2dac0c3f9fd6",
+        "vm_id": "c4fdb935-5357-42e7-b6c6-194c475de9a7",
+        "phase": "Running",
+        "printable_status": null,
+        "ready": null
+      }
+    ]
+  },
+  "required_storage_get_permissions": {
+    "namespaces": "yes",
+    "virtualmachines.kubevirt.io": "yes",
+    "datavolumes.cdi.kubevirt.io": "yes",
+    "persistentvolumeclaims": "yes"
+  },
+  "permission_namespace": "tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420"
+}

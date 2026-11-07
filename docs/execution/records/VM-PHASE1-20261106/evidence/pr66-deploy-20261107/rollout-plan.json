@@ -1,0 +1,71 @@
+{
+  "at": "2026-11-07T06:27:00.265000+00:00",
+  "ssh": "kubercloud@10.10.1.66",
+  "context": "kubernetes-admin@ani-kcn-full",
+  "namespace": "ani-system",
+  "deployment": "ani-resource-service",
+  "uid": "9b17ed7e-6521-40e8-8bf5-70a44237e501",
+  "resource_version": "41445325",
+  "source_revision": "d030edd4b4a3d4d7746703e2e32032dd9787e620",
+  "before_image": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:96cf48e8b82400ee533b6944da836062759a549e0968de2e8449cd8c02d6dc78",
+  "after_image": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc",
+  "patch": [
+    {
+      "op": "test",
+      "path": "/metadata/uid",
+      "value": "9b17ed7e-6521-40e8-8bf5-70a44237e501"
+    },
+    {
+      "op": "test",
+      "path": "/metadata/resourceVersion",
+      "value": "41445325"
+    },
+    {
+      "op": "test",
+      "path": "/spec/template/spec/containers/0/image",
+      "value": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:96cf48e8b82400ee533b6944da836062759a549e0968de2e8449cd8c02d6dc78"
+    },
+    {
+      "op": "replace",
+      "path": "/spec/template/spec/containers/0/image",
+      "value": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc"
+    },
+    {
+      "op": "add",
+      "path": "/metadata/annotations/ani.io~1source-revision",
+      "value": "d030edd4b4a3d4d7746703e2e32032dd9787e620"
+    },
+    {
+      "op": "add",
+      "path": "/metadata/annotations/ani.io~1source-image-digest",
+      "value": "sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc"
+    },
+    {
+      "op": "add",
+      "path": "/metadata/annotations/ani.io~1source-snapshot",
+      "value": "sha256:a651f571a0f0a68ab4a8576a039c91b445b5658a871fe9b6140754305bdd4185"
+    },
+    {
+      "op": "add",
+      "path": "/spec/template/metadata/annotations/ani.io~1source-revision",
+      "value": "d030edd4b4a3d4d7746703e2e32032dd9787e620"
+    },
+    {
+      "op": "add",
+      "path": "/spec/template/metadata/annotations/ani.io~1source-image-digest",
+      "value": "sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc"
+    },
+    {
+      "op": "add",
+      "path": "/spec/template/metadata/annotations/ani.io~1source-snapshot",
+      "value": "sha256:a651f571a0f0a68ab4a8576a039c91b445b5658a871fe9b6140754305bdd4185"
+    },
+    {
+      "op": "add",
+      "path": "/metadata/annotations/kubernetes.io~1change-cause",
+      "value": "PR #66 local fixes d030edd4; 2026-11-07"
+    }
+  ],
+  "authorization": "User: 部署到66集群吧",
+  "scope": "Resource image and source annotations only; existing strategy/config/replicas/RBAC retained"
+}

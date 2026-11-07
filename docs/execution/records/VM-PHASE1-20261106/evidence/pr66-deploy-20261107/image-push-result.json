@@ -1,0 +1,14 @@
+{
+  "started_at": "2026-11-07T06:26:05.794487+00:00",
+  "finished_at": "2026-11-07T06:26:07.626243+00:00",
+  "source_revision": "d030edd4b4a3d4d7746703e2e32032dd9787e620",
+  "source_snapshot": "sha256:a651f571a0f0a68ab4a8576a039c91b445b5658a871fe9b6140754305bdd4185",
+  "image_tag": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service:pr66-d030edd-20261107",
+  "registry_digest": "sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc",
+  "image_ref": "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc",
+  "registry_matches_local_descriptor": true,
+  "registry_verification": "Harbor artifact API over TLS with the existing Resource Harbor CA",
+  "credential_source": "existing Resource Harbor credentials in ani-resource-private; configured endpoint matched",
+  "credential_export": "temporary mode-0600 Docker config; removed automatically; no credentials archived",
+  "status": "PASS"
+}

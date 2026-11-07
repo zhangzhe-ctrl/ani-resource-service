@@ -1,6 +1,6 @@
 # VM 一阶段实施与验收报告
 
-2026-11-07 PR #66 两项局部修复及本地验证见[本次补充记录](#pr66-local-fixes-20261107)。下列原一阶段验收时间、源码、镜像和 LIVE 记录保持历史含义，不代表补充代码已部署。
+2026-11-07 PR #66 两项局部修复及本地验证见[本次补充记录](#pr66-local-fixes-20261107)。后续按用户授权的 66 集群发布见[本次部署记录](#pr66-deploy-20261107)。下列原一阶段验收时间、源码、镜像和 LIVE 记录保持历史含义，不替代后续修复版本的验收。
 
 一阶段结论：**PASS**。报告时间 2026-11-07T08:05:24.404233+08:00。仅 R01–R09；二阶段 **NOT_STARTED**，克隆专属字段为空。
 
@@ -167,3 +167,22 @@ Res 常规 worker 已移出 CDI prime/scratch 接管与 uploader finalizer 补�
 **本轮没有连接或使用集群**，没有发布镜像/部署，没有重跑 LIVE 恢复矩阵、R09 finalizer 接替或二阶段。原 2026-11-06～07 的 R4 LIVE 证据仍只对应原代码提交 `991eb61a8acf245662a9cea70074835121415439`；不能据此声明本次修复已在真实集群验收。各次集成测试均使用脚本独占的固定 PostgreSQL 镜像并在退出时删除自己的临时容器，既有无关容器保留；本次基线临时工作树已清理，原工作区及既有 audit 工作树未重置或覆盖。
 
 按用户后续“ci暂不处理，解决其他问题”，本轮没有修复或继续追踪 GitHub CI，没有关闭/放宽门禁，也不宣称新提交 CI 通过；最新 CI 状态未复查，失败根因未继续归因。PR #66 原分支更新，暂不合并；停止于这两项修复和本地验证，不扩展其他模块。
+
+
+<a id="pr66-deploy-20261107"></a>
+
+## 2026-11-07：PR #66 修复版部署到 66
+
+用户随后明确要求“部署到66集群吧”。本次发布与上节 14:04 前完成的本地修复验证分开：**Resource 已于北京时间 2026-11-07 14:27 部署到 10.10.1.66**，未合并 PR。
+
+- 执行前核对 PR 最新 HEAD 与本机干净源码均为 `d030edd4b4a3d4d7746703e2e32032dd9787e620`。镜像在 Windows 宿主的本机 WSL2 Ubuntu，按 `scripts/build-image.py` 标准工作流构建；version 为 `pr66-d030edd-20261107`，source snapshot 为 `sha256:a651f571a0f0a68ab4a8576a039c91b445b5658a871fe9b6140754305bdd4185`。与原 R4 构建输入逐文件比较，仅本轮 7 个 VM 产品源码文件变化，且均与先前定点/PG/make verify/race 受测文件一致；没有再改产品代码。
+- 构建使用固定 Go builder `golang@sha256:71a929e06118f3f502c775df18ae7f68d32180a56dfd0c1272701a44242cb803`，沿用此前运行时基底 `ani-resource-service@sha256:0d6126e13df66797811914c2cbb4e5f743d514a683704953783cd1506f1ae22e`。实际构建命令与时间见[构建回执](evidence/pr66-deploy-20261107/image-build-command.json)、[构建结果](evidence/pr66-deploy-20261107/image-build-result.json)和[源文件清单](evidence/pr66-deploy-20261107/source-manifest.json)。
+- 最终镜像：`10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc`。tag 为 `pr66-d030edd-20261107`；Harbor 官方 artifact API 以现有 CA 完整校验 TLS 后返回的 digest 与本地构建 descriptor 一致。最初只读 CLI 检查不信任私有 CA，未用该失败结果部署，也未禁用 TLS 校验；认证查找、成功推送与可信校验过程见[推送回执](evidence/pr66-deploy-20261107/image-push-result.json)、[校验说明](evidence/pr66-deploy-20261107/registry-verification-notes.json)。标准构建结果内 pushed=false 是构建时快照，成功 push 另有回执。
+- 集群入口 `ssh kubercloud@10.10.1.66`，context `kubernetes-admin@ani-kcn-full`，`ani-system/ani-resource-service`。先核对当前 UID、原 R4 digest、配置和现有存储 GET 权限，再用 UID/resourceVersion/原镜像 test 的 JSON Patch 只更新 Resource 镜像及对应源码追溯注解。Recreate、单副本、command、配置引用、verifier、Service 和 RBAC 保留；没有新增 schema 迁移或发布其他服务。[执行计划](evidence/pr66-deploy-20261107/rollout-plan.json)、[rollout 回执](evidence/pr66-deploy-20261107/rollout-result.json)。
+- 14:27:00 开始切换，14:27:07 rollout 成功；generation/observedGeneration=211，Ready/Available=1，新 Pod `ani-resource-service-897855f4d-h9blp`，restart=0，实际 imageID 与新 digest 相同。`/healthz`、`/readyz` 通过，Service Ready endpoint 指向新 Pod。14:28:39 后置核对中，原 9 个 VM、8 个 VMI 的集合和 UID 保持一致，VM 仍为 8 Running / 1 Stopped。[预检](evidence/pr66-deploy-20261107/preflight.json)、[后置检查](evidence/pr66-deploy-20261107/postcheck.json)。
+
+发布健康检查通过，日志不能宣称全无告警：部署后至 14:28:39 的窗口有 0 条 ERROR、4 条 Sandbox worker 告警，内容为 `SANDBOX_PROVIDER_OWNERSHIP_CONFLICT: sandbox tenant cluster role differs`。原 R4 与新构建的 50 个 Sandbox 输入文件逐项相同，部署配置也未改；由于未采集旧 Pod 的部署前日志，不直接认定该告警为历史问题，也未完成其根因归属。本轮记录并保留该项，不修改 Sandbox 或其角色/RBAC；原始 postcheck 的 NEEDS_CLASSIFICATION 与部署健康 PASS 分开解释。[源码差异与告警边界](evidence/pr66-deploy-20261107/runtime-warning-classification.json)。
+
+本次只做发布健康、就绪、endpoint 与既有对象保护检查，没有重跑新建/Start/恢复/删除的业务 LIVE 矩阵，没有 R09 finalizer 操作，也没有二阶段内容；本地回归仍按上节实际源码和时间使用。没有创建集群测试资源或登录会话，临时 registry 认证/CA 目录已自动删除，没有开启 SSH 转发；前一 R4 digest 保留用于必要回退。CI 继续按用户要求不处理或宣称通过。
+
+汇总见[部署结构化记录](evidence/pr66-deploy-20261107/deployment-summary.json)，文件完整性见[本次校验和](evidence/pr66-deploy-20261107/SHA256SUMS)。原一阶段与本地修复阶段的历史记录不改写为新版本 LIVE 验收。

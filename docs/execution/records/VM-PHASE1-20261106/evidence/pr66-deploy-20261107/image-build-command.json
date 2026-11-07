@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "scripts/build-image.py",
+    "--image",
+    "10.10.1.66:30003/ani-gpu-platform/ani-resource-service:pr66-d030edd-20261107",
+    "--version",
+    "pr66-d030edd-20261107",
+    "--builder-image",
+    "golang@sha256:71a929e06118f3f502c775df18ae7f68d32180a56dfd0c1272701a44242cb803",
+    "--runtime-image",
+    "10.10.1.66:30003/ani-gpu-platform/ani-resource-service@sha256:0d6126e13df66797811914c2cbb4e5f743d514a683704953783cd1506f1ae22e",
+    "--output-dir",
+    ".work/pr66-deploy-20261107/images"
+  ],
+  "started_at": "2026-11-07T06:22:10.210735+00:00",
+  "execution": "local WSL2 Ubuntu on Windows",
+  "source_revision": "d030edd4b4a3d4d7746703e2e32032dd9787e620",
+  "finished_at": "2026-11-07T06:22:46.597395+00:00",
+  "exit_code": 0
+}

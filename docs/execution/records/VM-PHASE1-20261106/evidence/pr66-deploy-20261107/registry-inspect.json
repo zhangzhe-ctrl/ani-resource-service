@@ -1,0 +1,19 @@
+{
+  "digest": "sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc",
+  "type": "IMAGE",
+  "media_type": "application/vnd.oci.image.index.v1+json",
+  "manifest_media_type": "application/vnd.oci.image.index.v1+json",
+  "size": 41035614,
+  "push_time": "2026-11-07T06:25:23.924Z",
+  "tags": [
+    {
+      "artifact_id": 740,
+      "id": 575,
+      "immutable": false,
+      "name": "pr66-d030edd-20261107",
+      "pull_time": "0001-01-01T00:00:00.000Z",
+      "push_time": "2026-11-07T06:25:24.010Z",
+      "repository_id": 10
+    }
+  ]
+}
