@@ -47,17 +47,6 @@ type ObservationRescanNotifier interface {
 	NotifyAllObservations(context.Context) error
 }
 
-// ObservationRecovery is a fresh, shared audit proof for one native VM. A
-// normal event hint cannot stand in for this proof when releasing backoff.
-type ObservationRecovery struct {
-	Native     ObjectRef
-	ObservedAt time.Time
-}
-
-type ObservationRecoveryNotifier interface {
-	RecoverObservations(context.Context, []ObservationRecovery) error
-}
-
 type Observer struct {
 	repo   ObservationRepository
 	source ObservationSource
