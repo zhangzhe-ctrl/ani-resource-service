@@ -148,5 +148,6 @@
   },
   "phase_two": "NOT_STARTED",
   "merged": false,
-  "cleanup": "Every integration invocation removed its own PostgreSQL container; no task PostgreSQL container remains. Pre-existing unrelated container retained."
+  "cleanup": "Every integration invocation removed its own PostgreSQL container; no task PostgreSQL container remains. Pre-existing unrelated container retained.",
+  "code_commit": "4cc64e028957d716976d85e62404f64ddd401592"
 }

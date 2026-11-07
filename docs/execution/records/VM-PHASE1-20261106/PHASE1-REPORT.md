@@ -141,7 +141,7 @@ Res 常规 worker 已移出 CDI prime/scratch 接管与 uploader finalizer 补�
 
 ## 2026-11-07：PR #66 两项局部修复
 
-审核基准与执行前再次核对的 PR 最新提交均为 `241bacd8cd001f4d0075707311c225a36876656b`；工作分支继续使用 `codex/vm-phase1-remediation-20261106`，初始工作区干净。两项问题在该提交仍存在，未重复修复已完成事项。本次只修复以下两点，不改变 R01–R09 原 LIVE 证据，不进入二阶段。
+审核基准与执行前再次核对的 PR 最新提交均为 `241bacd8cd001f4d0075707311c225a36876656b`；工作分支继续使用 `codex/vm-phase1-remediation-20261106`，初始工作区干净。两项问题在该提交仍存在，未重复修复已完成事项。本次只修复以下两点，不改变 R01–R09 原 LIVE 证据，不进入二阶段。 修复代码提交为 `4cc64e028957d716976d85e62404f64ddd401592`，之后仅补充文档证据。
 
 1. **具名恢复输出正常消失。** `recordRestoreVolumes` 对同 kind/namespace/name 的记录合并身份：观察 UID 为空时保留已知 UID，退休磁盘/介质保留原记录和 cleanup，backend 保留原身份及诊断/容量并标记不再存在；两个非空 UID 不同仍返回 `ErrOwnership`。当前磁盘/介质也按同一规则识别，避免缺失观察造成重复退休记录。保留 namespace、kind、VM owner 校验，没有吞掉身份冲突或清空旧 UID。适配层已正确把实际 NotFound 返回为具名空 UID 引用，因此本次不修改其既有行为。
 2. **异步磁盘准备最终刷新。** 复用现有 `Observer` / `StateObservation` / `vm.observation_work`，只对已登记且尚未完成准备的盘定向读取 DV/PVC，复用 `observeDisk` 的 UID、owner、容量检查。运行事实和磁盘读取分别限时，磁盘错误不作为运行观察错误落库；成功的准备事实在现有租约、generation/version/closing 及当前物理映射校验下，原子更新 current configuration 与 `vm.disks`。只合并 UID、Preparation 和观察容量，保留当前挂载、命名、cleanup 等意图字段。已完成准备的盘不持续审计。Start/Stop/Restart 仍使用 `ObserveLifecycle`，没有改回全量 `Observe`，没有新增 controller、常驻轮询体系或存储前置门槛。
