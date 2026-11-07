@@ -53,7 +53,7 @@
   "prior_local_regressions": "PASS as recorded in ../pr66-followup-20261107; no product source changes after those tests",
   "phase_two": "NOT_STARTED",
   "ci": "DEFERRED_BY_USER; not checked or modified",
-  "pr_merged": false,
+  "pr_merged": true,
   "cleanup": "No new cluster test resources or login sessions. Transient registry auth/CA directories removed; no SSH tunnels opened. Previous image digest retained for rollback.",
   "evidence": {
     "source_manifest": "source-manifest.json",
@@ -65,5 +65,10 @@
     "warning": "runtime-warning-classification.json"
   },
   "final_readback": "final-readback.json",
-  "preexisting_vm_vmi_runtime_summaries_unchanged": true
+  "preexisting_vm_vmi_runtime_summaries_unchanged": true,
+  "pr_merged_at": "2026-11-07T06:20:56Z",
+  "pr_merge_commit": "ab189b99a5bcfc482a0208102ee3328c9a60ae27",
+  "pr_merged_head": "d030edd4b4a3d4d7746703e2e32032dd9787e620",
+  "merge_performed_by": "User confirmed manual merge; deployment agent did not merge",
+  "pr_description_update": "Not performed, per user follow-up"
 }

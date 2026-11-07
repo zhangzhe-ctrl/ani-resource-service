@@ -10,7 +10,7 @@
 构建为 digest `sha256:0b0113fda90d1c434be7fafe63f0d3d3bd1e31bd237668a3d973d71cfbf179bc` 并部署到 10.10.1.66。
 Resource generation/observed211、Ready1、restart0，healthz/readyz/Service endpoint 通过；原 9 VM / 8 VMI 身份及 8 Running / 1 Stopped 保持。
 部署后日志存在 Sandbox cluster role 归属告警；Sandbox 源码/配置未改，缺部署前日志，不判定历史根因，本轮未处理。
-未重跑业务 LIVE 矩阵；CI 按用户要求暂不处理且未复查，PR 不合并。
+未重跑业务 LIVE 矩阵；CI 按用户要求暂不处理且未复查。PR #66 已由用户于 14:20:56 +08:00 手动合并，本轮未执行合并；部署源码匹配其合并 head。
 [本地修复及原始失败](records/VM-PHASE1-20261106/PHASE1-REPORT.md#pr66-local-fixes-20261107)、
 [本次实际发布、后置检查及告警边界](records/VM-PHASE1-20261106/PHASE1-REPORT.md#pr66-deploy-20261107)。
 

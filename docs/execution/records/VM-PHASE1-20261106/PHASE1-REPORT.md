@@ -173,7 +173,7 @@ Res 常规 worker 已移出 CDI prime/scratch 接管与 uploader finalizer 补�
 
 ## 2026-11-07：PR #66 修复版部署到 66
 
-用户随后明确要求“部署到66集群吧”。本次发布与上节 14:04 前完成的本地修复验证分开：**Resource 已于北京时间 2026-11-07 14:27 部署到 10.10.1.66**，未合并 PR。
+用户随后明确要求“部署到66集群吧”。本次发布与上节 14:04 前完成的本地修复验证分开：**Resource 已于北京时间 2026-11-07 14:27 部署到 10.10.1.66**。收尾复查确认 PR #66 已于 14:20:56 +08:00 由用户手动合并，merge commit 为 `ab189b99a5bcfc482a0208102ee3328c9a60ae27`，合并时 head 为本次部署的 `d030edd4b4a3d4d7746703e2e32032dd9787e620`；本轮未执行合并。发布记录保存在原分支后续文档提交，按用户后续要求不再修改 PR 说明。
 
 - 执行前核对 PR 最新 HEAD 与本机干净源码均为 `d030edd4b4a3d4d7746703e2e32032dd9787e620`。镜像在 Windows 宿主的本机 WSL2 Ubuntu，按 `scripts/build-image.py` 标准工作流构建；version 为 `pr66-d030edd-20261107`，source snapshot 为 `sha256:a651f571a0f0a68ab4a8576a039c91b445b5658a871fe9b6140754305bdd4185`。与原 R4 构建输入逐文件比较，仅本轮 7 个 VM 产品源码文件变化，且均与先前定点/PG/make verify/race 受测文件一致；没有再改产品代码。
 - 构建使用固定 Go builder `golang@sha256:71a929e06118f3f502c775df18ae7f68d32180a56dfd0c1272701a44242cb803`，沿用此前运行时基底 `ani-resource-service@sha256:0d6126e13df66797811914c2cbb4e5f743d514a683704953783cd1506f1ae22e`。实际构建命令与时间见[构建回执](evidence/pr66-deploy-20261107/image-build-command.json)、[构建结果](evidence/pr66-deploy-20261107/image-build-result.json)和[源文件清单](evidence/pr66-deploy-20261107/source-manifest.json)。
