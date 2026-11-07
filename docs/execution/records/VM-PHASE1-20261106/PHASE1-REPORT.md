@@ -9,7 +9,7 @@ R01–R09、P1A01–P1A10、P1L01–P1L04 及登记存量处置均满足本次�
 ## 代码、环境与制品
 
 - 本机 WSL2 发行版 Ubuntu，仓库 `/home/ubuntu/workspace/ani-resource-service`，分支 `codex/vm-phase1-remediation-20261106`。
-- 初始 main/HEAD、实际 base 与审核基线均为 `1498c223d902f24b2786ac017514087a476da091`，初始工作树干净。当前交付可审阅未提交差异，未推送、未开 PR、未合并。HEAD 只标识差异基底，不能代表完整测试版本。
+- 初始 main/HEAD、实际 base 与审核基线均为 `1498c223d902f24b2786ac017514087a476da091`，初始工作树干净。验收时交付为未提交差异，原 HEAD 只标识差异基底，不能代表完整测试版本。后续按用户要求整理为代码提交 991eb61a8acf245662a9cea70074835121415439，并提交 [PR #66](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/66)；尚未合并。已逐文件核对提交的产品/测试源码与验收快照一致，发布记录见 [PR-HANDOFF.json](PR-HANDOFF.json)。
 - 最终测试与构建的源码清单 SHA-256 为 `19cdb8e29a5a4757031aadfd478e1ee72c01260c4b9bb97fcde508c1d1dd863f`；标准镜像工作流的 dirty source snapshot 为 `sha256:b3f13212578885a391c6e9a6e1253d23f6b0642e4328f1dc323b546c0448001c`。见 [evidence/final-source-provenance.json](evidence/final-source-provenance.json)、[evidence/verify-06.manifest.json](evidence/verify-06.manifest.json)、[evidence/service-image-r4-build-result.json](evidence/service-image-r4-build-result.json)。
 - Go 1.26.10、buf 1.60.0、sqlc 1.31.1；所有编辑、生成、编译、自动化、镜像构建及验收驱动在本机 WSL。未建立远端开发工作区。Gov 仓库仅按 `61cb1b6c74bd16d32f327aef42182566a87fe024f` 检视，没有修改。
 - 既有 SSH config 在 WSL 和 Windows 均缺失，用户随后指定 `ssh kubercloud@10.10.1.66`；本次直接使用该入口，无 Host 别名。context `kubernetes-admin@ani-kcn-full`，API `https://lb.kubesphere.local:6443`；服务 namespace `ani-system`，fixture namespace `tenant-64c5c35a-f554-432c-b4bc-7b4f36f08420`。
@@ -123,6 +123,8 @@ Res 常规 worker 已移出 CDI prime/scratch 接管与 uploader finalizer 补�
 - 全部必要原始检查历史封装在 [evidence/checks-history.tar.gz](evidence/checks-history.tar.gz)；最终常用结果另行展开。公开驱动在 evidence/drivers，登录材料、upload token、console URL、registry 凭据和 Secret 备份未交付至证据目录；已做已知密码/token/auth 值泄漏检查。[evidence/SHA256SUMS](evidence/SHA256SUMS) 只用于交付文件完整性。
 
 本次登录逻辑会话已正常登出并确认 session_revoked；临时登录/curl/token/Secret 备份已清理，两个任务 SSH 转发已关闭，原始 SSH 密钥未动。见 [会话清理回执](evidence/local-session-cleanup.json)。最终源码、14 项检查、9 项整改、实际部署、已知对象新一轮精确读取及平台终态审核见 [最终交付核对](evidence/final-delivery-check.json)。
+
+提交 PR 前重新执行 make verify；门禁发现独立证据驱动的格式及归档方式问题，规范格式并以源码文本归档，避免其参与服务 Go module，最终门禁通过。原始失败和重跑记录保留于 evidence/pr-verify-01.*、evidence/pr-verify-02.*、evidence/pr-verify-03.*，服务与测试源码没有新增差异。
 
 ## 交接与停止点
 

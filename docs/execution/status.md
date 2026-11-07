@@ -4,7 +4,8 @@
 
 状态 **PASS**：R01–R09、P1A01–P1A10 和 P1L01–P1L04 均已完成本次验收。
 本机 WSL2 Ubuntu 完成代码、生成/编译、make verify 与 PostgreSQL 回归；实际集群为 10.10.1.66。
-最终 R4 候选已部署，交付为固定源码清单对应的可审阅未提交差异。
+最终 R4 候选已部署；验收源码已逐文件对应代码提交 991eb61a8acf245662a9cea70074835121415439，
+[PR #66](https://github.com/zhangzhe-ctrl/ani-resource-service/pull/66) 已提交、尚未合并。原 dirty snapshot 与提交映射见报告内 PR-HANDOFF.json。
 2026-11-07 北京时间 08:01，按用户明确单 Pod 授权，以 UID/resourceVersion/完整 finalizer 校验
 仅移除失败 uploader 的 foregroundDeletion；原生 GC 完成已知对象清理，平台镜像 DELETED。
 用户已接收既有运维路径责任；Res 常规补偿未恢复，PR65 引用退休回归保留。

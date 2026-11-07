@@ -19,8 +19,8 @@
       "source_dirty": true,
       "tested_manifest_sha256": "19cdb8e29a5a4757031aadfd478e1ee72c01260c4b9bb97fcde508c1d1dd863f",
       "build_source_snapshot": "sha256:b3f13212578885a391c6e9a6e1253d23f6b0642e4328f1dc323b546c0448001c",
-      "pr_url": null,
-      "integration_state": "local reviewable uncommitted diff; no push/PR/merge",
+      "pr_url": "https://github.com/zhangzhe-ctrl/ani-resource-service/pull/66",
+      "integration_state": "PR_OPEN; unmerged; acceptance product sources byte-matched to code commit",
       "related_uncommitted_changes": [
         " M cmd/vm-image-verify/main.go",
         " M cmd/vm-image-verify/mode_test.go",
@@ -73,7 +73,8 @@
         "path": "/home/ubuntu/workspace/ani-governance",
         "head": "61b7b6c74bd16d32f327aef42182566a87fe024f",
         "changed": false
-      }
+      },
+      "committed_implementation_sha": "991eb61a8acf245662a9cea70074835121415439"
     },
     "remediation_items": [
       {
@@ -1170,15 +1171,17 @@
     "handoff": {
       "report_path": "/home/ubuntu/workspace/ani-resource-service/docs/execution/records/VM-PHASE1-20261106/PHASE1-REPORT.md",
       "result_path": "/home/ubuntu/workspace/ani-resource-service/docs/execution/records/VM-PHASE1-20261106/PHASE1-RESULT.json",
-      "validated_res_sha": null,
+      "validated_res_sha": "991eb61a8acf245662a9cea70074835121415439",
       "validated_dirty_snapshot": "19cdb8e29a5a4757031aadfd478e1ee72c01260c4b9bb97fcde508c1d1dd863f",
-      "integration_reference": "review branch codex/vm-phase1-remediation-20261106",
+      "integration_reference": "https://github.com/zhangzhe-ctrl/ani-resource-service/pull/66",
       "related_post_validation_changes": [
         "docs/execution/status.md"
       ],
       "targeted_rechecks": "targeted-15, verify-06, postgres-04; actual R4 Restart/Stop/Start/ForceStop/Start, runtime media effective/pending, source-independent consumer, Console, >60s observation and normal Delete",
       "phase2_authorized": false,
-      "final_completion_audit": "evidence/final-delivery-check.json"
+      "final_completion_audit": "evidence/final-delivery-check.json",
+      "publication_record": "PR-HANDOFF.json",
+      "publication_check": "evidence/pr-verify-03.json; no post-acceptance service/test-source differences"
     },
     "cleanup": {
       "state": "PASS",
