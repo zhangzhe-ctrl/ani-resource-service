@@ -1,5 +1,7 @@
 # VM 一阶段实施与验收报告
 
+2026-11-07 PR #66 两项局部修复及本地验证见[本次补充记录](#pr66-local-fixes-20261107)。下列原一阶段验收时间、源码、镜像和 LIVE 记录保持历史含义，不代表补充代码已部署。
+
 一阶段结论：**PASS**。报告时间 2026-11-07T08:05:24.404233+08:00。仅 R01–R09；二阶段 **NOT_STARTED**，克隆专属字段为空。
 
 R01–R09、P1A01–P1A10、P1L01–P1L04 及登记存量处置均满足本次范围。
@@ -133,3 +135,35 @@ Res 常规 worker 已移出 CDI prime/scratch 接管与 uploader finalizer 补�
 报告 WSL 路径：`/home/ubuntu/workspace/ani-resource-service/docs/execution/records/VM-PHASE1-20261106/PHASE1-REPORT.md`。JSON：`/home/ubuntu/workspace/ani-resource-service/docs/execution/records/VM-PHASE1-20261106/PHASE1-RESULT.json`。证据目录：`/home/ubuntu/workspace/ani-resource-service/docs/execution/records/VM-PHASE1-20261106/evidence`。
 
 二阶段始终 **NOT_STARTED**。未实现 VM_CLONE、未创建整机克隆 source/target/Clone 或开展二阶段测试。本次停止于一阶段交付；任何后续克隆任务均需另行安排。
+
+
+<a id="pr66-local-fixes-20261107"></a>
+
+## 2026-11-07：PR #66 两项局部修复
+
+审核基准与执行前再次核对的 PR 最新提交均为 `241bacd8cd001f4d0075707311c225a36876656b`；工作分支继续使用 `codex/vm-phase1-remediation-20261106`，初始工作区干净。两项问题在该提交仍存在，未重复修复已完成事项。本次只修复以下两点，不改变 R01–R09 原 LIVE 证据，不进入二阶段。
+
+1. **具名恢复输出正常消失。** `recordRestoreVolumes` 对同 kind/namespace/name 的记录合并身份：观察 UID 为空时保留已知 UID，退休磁盘/介质保留原记录和 cleanup，backend 保留原身份及诊断/容量并标记不再存在；两个非空 UID 不同仍返回 `ErrOwnership`。当前磁盘/介质也按同一规则识别，避免缺失观察造成重复退休记录。保留 namespace、kind、VM owner 校验，没有吞掉身份冲突或清空旧 UID。适配层已正确把实际 NotFound 返回为具名空 UID 引用，因此本次不修改其既有行为。
+2. **异步磁盘准备最终刷新。** 复用现有 `Observer` / `StateObservation` / `vm.observation_work`，只对已登记且尚未完成准备的盘定向读取 DV/PVC，复用 `observeDisk` 的 UID、owner、容量检查。运行事实和磁盘读取分别限时，磁盘错误不作为运行观察错误落库；成功的准备事实在现有租约、generation/version/closing 及当前物理映射校验下，原子更新 current configuration 与 `vm.disks`。只合并 UID、Preparation 和观察容量，保留当前挂载、命名、cleanup 等意图字段。已完成准备的盘不持续审计。Start/Stop/Restart 仍使用 `ObserveLifecycle`，没有改回全量 `Observe`，没有新增 controller、常驻轮询体系或存储前置门槛。
+
+### 本次实际执行
+
+本机 Windows 宿主、WSL2 Ubuntu，主机 `WIN-HUFRHKJT097`，目录 `/home/ubuntu/workspace/ani-resource-service`，Go 1.26.10、buf 1.60.0、sqlc 1.31.1。按本轮用户明确要求本地执行，不沿用历史远端构建约定。最终受测 Go 文件清单 SHA-256 为 `98d3914bdb5d69f48af25335ea31612f98eeab701b37c3ca0e21fa1627e2e718`；[源文件清单](evidence/pr66-followup-20261107/source-manifest.json)与审核基准组合标识最终受测源码。最终检查后逐文件核对无源码变化。
+
+- `GOMAXPROCS=4 GOFLAGS=-p=4 ./scripts/integration -tags=instanceintegration -timeout=20m -v ./internal/data/vm`：**PASS**，111 个顶层测试通过，95.232s。[完整日志](evidence/pr66-followup-20261107/vm-pg-full.log)。另有 12 项 Image 专用数据库测试因未设置 `VM_IMAGE_TEST_ADMIN_DSN` 跳过，不属于本轮两项修复；进程子测试入口单独运行时跳过，实际父进程退出恢复测试通过，不能把 13 个 skip 计为通过。
+- `GOWORK=off GOMAXPROCS=4 GOFLAGS=-p=4 GOMEMLIMIT=4GiB make verify`：**PASS**，2026-11-07 14:02:20–14:04:40 +08:00；固定工具生成一致性、边界/故障编译、tidy、全包普通测试、vet、build、module verify、diff check 均完成。[日志](evidence/pr66-followup-20261107/make-verify.log)、[命令及时间回执](evidence/pr66-followup-20261107/make-verify.json)。
+- 相同四个环境变量下执行 `./scripts/integration -race -tags=instanceintegration -timeout=10m -run 'TestStoppedCreateInventoryRefreshAfterIndependentStart|TestObservationPreparationFencesRemap|TestRestoreMissingRegisteredOutputs' -v ./internal/data/vm`：**PASS**，三项新增顶层集成回归均通过；2026-11-07 14:03:49–14:04:32 +08:00。[日志](evidence/pr66-followup-20261107/vm-pg-race-focused.log)、[命令及时间回执](evidence/pr66-followup-20261107/vm-pg-race-focused.json)。
+
+新增回归覆盖退休磁盘、介质、backend 以及当前盘/介质的“已知 UID → 正常缺失”、同名不同非空 UID 拒绝及原归属边界；真实 Native Restore 输出读取、PG 台账和 Worker 快照删除共同证明旧输出消失不阻断删除。磁盘回归使用实现了 `ObserveLifecycle` 的真实 Native、受控 KubeVirt Start HTTP 接口和实际 PostgreSQL：停机创建时 PVC 缺失/Pending，独立 Start 在存储 GET 失败时仍完成；后台运行投影保持 Running，存储恢复/PVC Bound 后自动补齐 UID、Preparation、容量及数据库镜像，GetVM/ListDisks 直接显示新台账且不额外读取存储。另验证旧观察不能覆盖同版本新物理映射，也不覆盖当前挂载/命名/cleanup。
+
+### 基线、原始失败和边界
+
+在独立 detached 工作树 `ani-resource-service-pr66-review-base` 的原审核提交，只加入相同三份回归测试：
+- `GOMAXPROCS=4 go test -p=4 ./internal/biz/vm -run '^TestRestoreOutputMerge' -count=1` **EXPECTED_FAIL**，复现缺失 UID 合并误报身份冲突；[原始日志](evidence/pr66-followup-20261107/baseline-restore-unit.log)。
+- 同上定点 PG 命令（不带 race，timeout=5m）**EXPECTED_FAIL**：旧 observer 没有执行磁盘刷新读取/持久化，快照删除以 `VM_OBJECT_OWNERSHIP_CONFLICT` 失败；[原始日志](evidence/pr66-followup-20261107/baseline-targeted-pg.log)。这与最新实现的通过结果分开记录。
+
+早期新测试先因未用 import 编译失败，随后因 Native Start 夹具缺少现有 tablet/resourceVersion、删除动作断言包含夹具初始化动作而失败；已修正测试夹具及动作范围，未放宽产品校验。中间失败、定点重跑和最终结果均保存在[结构化记录](evidence/pr66-followup-20261107/results.json)与同目录日志；完整源快照未捕获的中间尝试不冒充最终源码证据。[本次校验和](evidence/pr66-followup-20261107/SHA256SUMS)独立于原验收校验和。
+
+**本轮没有连接或使用集群**，没有发布镜像/部署，没有重跑 LIVE 恢复矩阵、R09 finalizer 接替或二阶段。原 2026-11-06～07 的 R4 LIVE 证据仍只对应原代码提交 `991eb61a8acf245662a9cea70074835121415439`；不能据此声明本次修复已在真实集群验收。各次集成测试均使用脚本独占的固定 PostgreSQL 镜像并在退出时删除自己的临时容器，既有无关容器保留；本次基线临时工作树已清理，原工作区及既有 audit 工作树未重置或覆盖。
+
+按用户后续“ci暂不处理，解决其他问题”，本轮没有修复或继续追踪 GitHub CI，没有关闭/放宽门禁，也不宣称新提交 CI 通过；最新 CI 状态未复查，失败根因未继续归因。PR #66 原分支更新，暂不合并；停止于这两项修复和本地验证，不扩展其他模块。

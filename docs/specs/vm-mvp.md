@@ -161,6 +161,8 @@ VM 电源事实在操作结束后仍独立持续观测，不依赖页面访问�
 
 观察任务保留独立租约、generation/version/closing 栅栏及只更新观察投影的事务，来源使用独立 2 QPS / burst 4 预算。首次同步、Watch 故障、队列积压不作为开关机的新闸门；事件有界合并，普通通知不绕过真实故障退避。调度继续使用 vm.observation_work 与 [只读观察 RBAC](../../deployments/vm/observation-rbac.yaml)，不新建证明表。Guest Agent 详情读取另用独立预算，不改变电源判断。
 
+异步磁盘准备由既有持久观察任务独立刷新：对已登记但尚未完成准备的盘，定向读取 DV/PVC 的 UID、preparation 与观察容量，并在原租约、generation/version/closing 及当前盘映射校验下更新当前配置和磁盘台账。存储读取失败保留已有库存并由观察任务后续重试，不改变独立电源操作的提交或完成结果；无需额外磁盘、介质或快照操作触发刷新。
+
 生命周期读取与盘、介质和 backend inventory 分开。Stop/ForceStop/Restart、根 VM 删除及原生提交身份检查不依赖无关盘或介质的存储读取；未读取的库存不能用空值覆盖。VM/VMI UID/owner、原生请求与 Restart 代次继续有效。多个关联 Pod 不否定 Running VMI 或 Console 的当前 VMI 归属；需要具体 launcher 的 Network/日志保持唯一当前目标，歧义不提供错误 Pod。停止/删除完成仍检查所有相关非终态 Pod 已退出，不能把空 Launcher 当作无运行依赖。
 
 Manual 下客机关机会保留终态 VMI。Succeeded 投影为 Stopped；Failed 保持失败状态。它们不等于对象已清理：Stop 仍要求已退出、无活跃 launcher、无原生变更请求及旧网络地址资格撤销；显式 Start 由 KubeVirt 原生 Start 处理终态 VMI 的替换。未知启动结果重试和快照恢复继续要求 VMI 对象不存在，不能用电源显示状态代替该证明。
@@ -220,6 +222,8 @@ VNC 不依赖 guest IP、Network attached、AgentConnected、OS 安装完成或�
 6. 新映射、必要原生配置和清理都完成后才结束 operation，用户随后显式 Start。恢复后 Start 不重解析 compute 或重写创建快照。
 
 Restore CR 在输出映射或取消清理清单持久交接前保留。取消先保存公开输出名称（包含未创建/未取得 UID 的名称）及已知 UID 到现有退休盘/介质/backend 清单，再终止 producer 并定向清理。结果载体丢失且没有持久输出时保持 Unknown，不能将空清单解释为无产物。旧已 checkpoint 的 Plan/intent 原样继续；已接受但尚无 Plan 的旧摘要须在切换前由旧规则排空或登记。旧已完成输出 checkpoint 可用于有限兼容，不重新推导底层产物。
+
+具名恢复输出重新观察为不存在时，只在相同 kind/namespace/name 和归属范围内合并，保留已登记 UID 及退休盘、介质、backend state 的既有清理信息，继续缺失收尾。缺少新 UID 不表示替换；新旧 UID 均非空且不同仍是身份冲突。
 
 恢复后的 WFFC PVC 可保持 Pending；完成核验不要求先 Bound/Succeeded，也不启动消费者，后续用户显式 Start 再驱动绑定与准备。
 

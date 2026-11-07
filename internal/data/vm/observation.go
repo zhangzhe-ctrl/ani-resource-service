@@ -105,6 +105,20 @@ func (p *Postgres) SaveObservation(ctx context.Context, work biz.ObservationWork
 	} else if generation != work.Generation {
 		fence = biz.ErrLease
 	}
+	if readErr == nil {
+		if observed.VM != current.Native {
+			readErr = biz.ErrOwnership
+		} else if observed.ObservedAt.IsZero() || observed.ObservedAt.After(now.Add(time.Second)) || observed.ObservedAt.Before(now.Add(-60*time.Second)) {
+			readErr = biz.ErrDependency
+		} else if !observationState(observed) {
+			readErr = biz.ErrInvalid
+		}
+	}
+	if fence == nil && readErr == nil && len(observed.Volumes) > 0 {
+		if err := biz.ApplyDiskPreparation(&current, observed.Volumes); err != nil {
+			fence = err
+		}
+	}
 	if fence != nil {
 		_, err = tx.Exec(ctx, `UPDATE vm.observation_work SET lease_token=NULL,lease_until=NULL,
  next_attempt_at=GREATEST(not_before,now()+interval '1 second') WHERE tenant_id=$1 AND vm_id=$2`, work.TenantID, work.VMID)
@@ -115,15 +129,6 @@ func (p *Postgres) SaveObservation(ctx context.Context, work biz.ObservationWork
 			return err
 		}
 		return fence
-	}
-	if readErr == nil {
-		if observed.VM != current.Native {
-			readErr = biz.ErrOwnership
-		} else if observed.ObservedAt.IsZero() || observed.ObservedAt.After(now.Add(time.Second)) || observed.ObservedAt.Before(now.Add(-60*time.Second)) {
-			readErr = biz.ErrDependency
-		} else if !observationState(observed) {
-			readErr = biz.ErrInvalid
-		}
 	}
 	interval := 30 * time.Second
 	if readErr != nil {
@@ -159,10 +164,15 @@ func (p *Postgres) SaveObservation(ctx context.Context, work biz.ObservationWork
 	// a concurrent UpdateNetwork and user intent cannot be replaced by the VM
 	// snapshot captured at claim time.
 	_, err = tx.Exec(ctx, `UPDATE vm.virtual_machines SET current_configuration=
- jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(current_configuration,'{Observed}',$3::jsonb),'{Reason}',$4::jsonb),'{ObservedAt}',$5::jsonb),'{Addresses}',$6::jsonb),'{Network}',$7::jsonb),updated_at=now()
- WHERE tenant_id=$1 AND id=$2`, work.TenantID, work.VMID, encode(current.Observed), encode(current.Reason), encode(current.ObservedAt), encode(current.Addresses), encode(current.Network))
+ jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(current_configuration,'{Observed}',$3::jsonb),'{Reason}',$4::jsonb),'{ObservedAt}',$5::jsonb),'{Addresses}',$6::jsonb),'{Network}',$7::jsonb),'{Disks}',$8::jsonb),updated_at=now()
+ WHERE tenant_id=$1 AND id=$2`, work.TenantID, work.VMID, encode(current.Observed), encode(current.Reason), encode(current.ObservedAt), encode(current.Addresses), encode(current.Network), encode(current.Disks))
 	if err != nil {
 		return err
+	}
+	if readErr == nil && len(observed.Volumes) > 0 {
+		if err = saveDisks(ctx, tx, current); err != nil {
+			return err
+		}
 	}
 	minimum := time.Second
 	if readErr != nil {

@@ -184,7 +184,7 @@ func (w *Worker) create(ctx context.Context, o *Operation, v *VM) error {
 }
 
 // observeLifecycle reads only runtime facts; inventory is reconciled by its
-// owning create/disk/media/restore paths.
+// owning create/disk/media/restore paths and independent preparation observation.
 func (w *Worker) observeLifecycle(ctx context.Context, v VM) (Observation, error) {
 	if n, ok := w.native.(interface {
 		ObserveLifecycle(context.Context, VM) (Observation, error)

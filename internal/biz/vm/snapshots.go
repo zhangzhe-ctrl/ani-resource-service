@@ -804,16 +804,49 @@ func (w *Worker) removeRetiredVolumes(ctx context.Context, o *Operation, v *VM) 
 	return false, nil
 }
 
+// mergeRegisteredRef preserves a registered identity when an observation has
+// no UID. A different observed UID is still a replacement, never an adoption.
+func mergeRegisteredRef(old, observed ObjectRef) (ObjectRef, error) {
+	if old.Kind != observed.Kind || old.Namespace != observed.Namespace || old.Name != observed.Name ||
+		(old.UID != "" && observed.UID != "" && old.UID != observed.UID) {
+		return ObjectRef{}, ErrOwnership
+	}
+	if observed.UID == "" {
+		return old, nil
+	}
+	return observed, nil
+}
+
+func restoreCleanupRefs(old, observed []ObjectRef) []ObjectRef {
+	result := append([]ObjectRef(nil), old...)
+	for _, ref := range observed {
+		found := false
+		for _, saved := range result {
+			if saved == ref {
+				found = true
+				break
+			}
+		}
+		if !found {
+			result = append(result, ref)
+		}
+	}
+	return result
+}
+
 // Native completion may precede the mapping checkpoint (or its ACK). Keep all
 // newly observed physical refs in the aggregate before either operation wins.
 func recordRestoreVolumes(v *VM, x RestoreObservation) error {
 	for _, disk := range x.Disks {
-		if disk.PVC.Name == "" || disk.PVC.Namespace != v.Spec.Namespace || disk.DV.Name != "" || disk.DV.UID != "" {
+		if disk.PVC.Kind != "PersistentVolumeClaim" || disk.PVC.Name == "" || disk.PVC.Namespace != v.Spec.Namespace || disk.DV.Name != "" || disk.DV.UID != "" {
 			return ErrOwnership
 		}
 		current := false
 		for _, d := range v.Disks {
-			if d.PVC == disk.PVC {
+			if d.PVC.Namespace == disk.PVC.Namespace && d.PVC.Name == disk.PVC.Name {
+				if _, err := mergeRegisteredRef(d.PVC, disk.PVC); err != nil {
+					return err
+				}
 				current = true
 				break
 			}
@@ -824,10 +857,15 @@ func recordRestoreVolumes(v *VM, x RestoreObservation) error {
 		found := false
 		for i, old := range v.RetiredDisks {
 			if old.PVC.Namespace == disk.PVC.Namespace && old.PVC.Name == disk.PVC.Name {
-				if old.PVC.UID != "" && old.PVC != disk.PVC {
-					return ErrOwnership
+				ref, err := mergeRegisteredRef(old.PVC, disk.PVC)
+				if err != nil {
+					return err
 				}
-				v.RetiredDisks[i] = disk
+				if disk.PVC.UID != "" {
+					disk.PVC = ref
+					disk.Cleanup = restoreCleanupRefs(old.Cleanup, disk.Cleanup)
+					v.RetiredDisks[i] = disk
+				}
 				found = true
 				break
 			}
@@ -837,12 +875,15 @@ func recordRestoreVolumes(v *VM, x RestoreObservation) error {
 		}
 	}
 	for _, copy := range x.MediaCopies {
-		if copy.PVC.Name == "" || copy.PVC.Namespace != v.Spec.Namespace || copy.DV.Name != "" || copy.DV.UID != "" {
+		if copy.PVC.Kind != "PersistentVolumeClaim" || copy.PVC.Name == "" || copy.PVC.Namespace != v.Spec.Namespace || copy.DV.Name != "" || copy.DV.UID != "" {
 			return ErrOwnership
 		}
 		current := false
 		for _, c := range v.MediaCopies {
-			if c.PVC == copy.PVC {
+			if c.PVC.Namespace == copy.PVC.Namespace && c.PVC.Name == copy.PVC.Name {
+				if _, err := mergeRegisteredRef(c.PVC, copy.PVC); err != nil {
+					return err
+				}
 				current = true
 				break
 			}
@@ -853,10 +894,15 @@ func recordRestoreVolumes(v *VM, x RestoreObservation) error {
 		found := false
 		for i, old := range v.RetiredMediaCopies {
 			if old.PVC.Namespace == copy.PVC.Namespace && old.PVC.Name == copy.PVC.Name {
-				if old.PVC.UID != "" && old.PVC != copy.PVC {
-					return ErrOwnership
+				ref, err := mergeRegisteredRef(old.PVC, copy.PVC)
+				if err != nil {
+					return err
 				}
-				v.RetiredMediaCopies[i] = copy
+				if copy.PVC.UID != "" {
+					copy.PVC = ref
+					copy.Cleanup = restoreCleanupRefs(old.Cleanup, copy.Cleanup)
+					v.RetiredMediaCopies[i] = copy
+				}
 				found = true
 				break
 			}
@@ -866,14 +912,26 @@ func recordRestoreVolumes(v *VM, x RestoreObservation) error {
 		}
 	}
 	for _, state := range x.BackendStates {
-		if state.PVC.Name == "" || state.Owner != v.Native || state.PVC.Namespace != v.Spec.Namespace {
+		if state.PVC.Kind != "PersistentVolumeClaim" || state.PVC.Name == "" || state.Owner != v.Native || state.PVC.Namespace != v.Spec.Namespace {
 			return ErrOwnership
 		}
 		found := false
 		for i, old := range v.BackendStates {
 			if old.PVC.Namespace == state.PVC.Namespace && old.PVC.Name == state.PVC.Name {
-				if old.PVC.UID != "" && old.PVC != state.PVC {
+				if old.Owner != v.Native {
 					return ErrOwnership
+				}
+				ref, err := mergeRegisteredRef(old.PVC, state.PVC)
+				if err != nil {
+					return err
+				}
+				if state.PVC.UID == "" {
+					state = old
+					state.Current, state.Present = false, false
+				} else {
+					state.PVC = ref
+					// Legacy lower-layer fields remain diagnostics for the same identity.
+					state.PV, state.ReclaimPolicy, state.CSIDriver, state.VolumeHandle = old.PV, old.ReclaimPolicy, old.CSIDriver, old.VolumeHandle
 				}
 				v.BackendStates[i] = state
 				found = true

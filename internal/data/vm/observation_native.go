@@ -425,6 +425,12 @@ func (o *StateObservation) Stop(ctx context.Context) error {
 	}
 }
 
+// Preparation uses this read client's budget, isolated from lifecycle clients.
+// The existing observation job owns retries; no storage watch/controller is added.
+func (o *StateObservation) ObserveDiskPreparation(ctx context.Context, v biz.VM) ([]biz.Disk, error) {
+	return NewNativeWithClients(o.client, nil).ObserveDiskPreparation(ctx, v)
+}
+
 func (o *StateObservation) ObserveState(ctx context.Context, v biz.VM) (biz.Observation, error) {
 	unknown := biz.Observation{State: "Unknown"}
 	if err := ctx.Err(); err != nil {
@@ -578,3 +584,5 @@ func trackStateWatch(raw watch.Interface, disconnected func()) watch.Interface {
 	}()
 	return w
 }
+
+var _ biz.DiskPreparationSource = (*StateObservation)(nil)

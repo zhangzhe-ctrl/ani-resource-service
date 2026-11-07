@@ -315,6 +315,34 @@ func (n *Native) observeDisk(ctx context.Context, v biz.VM, d biz.Disk) (biz.Dis
 	}
 	return d, nil
 }
+
+// ObserveDiskPreparation reads only registered, unfinished user-disk inventory.
+// It is called by the independent durable observer, never by a power request.
+// A bounded attempt can retain a successful prefix and retry the remainder.
+func (n *Native) ObserveDiskPreparation(ctx context.Context, v biz.VM) ([]biz.Disk, error) {
+	var pending []biz.Disk
+	for _, d := range v.Disks {
+		if biz.DiskPreparationPending(d) && (d.DV.UID != "" || d.PVC.UID != "") {
+			pending = append(pending, d)
+		}
+	}
+	if len(pending) == 0 {
+		return nil, nil
+	}
+	if _, err := n.snapshotRoot(ctx, v); err != nil {
+		return nil, err
+	}
+	var result []biz.Disk
+	for _, d := range pending {
+		observed, err := n.observeDisk(ctx, v, d)
+		if err != nil {
+			return result, err
+		}
+		result = append(result, observed)
+	}
+	return result, nil
+}
+
 func (n *Native) ObserveLifecycle(ctx context.Context, v biz.VM) (biz.Observation, error) {
 	return n.observe(ctx, v, false)
 }
